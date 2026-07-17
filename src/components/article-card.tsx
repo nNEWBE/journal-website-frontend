@@ -21,7 +21,7 @@ export function ArticleCard({ article }: { article: Article }) {
         {/* Subtle book spine overlay effect */}
         <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-black/25 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-black/[0.04] group-hover:bg-transparent transition-colors" />
-        
+
         {/* Absolute category badge on image overlay */}
         <div className="absolute top-3 left-3 z-10">
           <span className="inline-flex items-center rounded bg-slate-950/80 backdrop-blur-sm text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 shadow-sm select-none">
@@ -37,7 +37,7 @@ export function ArticleCard({ article }: { article: Article }) {
           <span className="text-[9px] font-black text-[color:var(--color-gb-gold-dark)] uppercase tracking-wider block">
             {article.topic}
           </span>
-          
+
           <Link href={`/articles/${article.slug}`} className="block mt-1">
             <h3 className="text-[13px] font-semibold font-academic leading-snug text-slate-800 group-hover:text-[color:var(--color-gb-blue)] transition-colors line-clamp-2">
               {article.title}
@@ -54,7 +54,7 @@ export function ArticleCard({ article }: { article: Article }) {
           <span className="text-[9px] font-mono text-slate-300 truncate max-w-[100px]">
             {article.doi}
           </span>
-          
+
           <Link
             href={`/articles/${article.slug}`}
             className="inline-flex items-center gap-0.5 font-bold text-[color:var(--color-gb-blue)] group-hover:text-[color:var(--color-gb-gold)] transition-colors uppercase tracking-wider"

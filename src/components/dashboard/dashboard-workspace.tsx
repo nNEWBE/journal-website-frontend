@@ -435,7 +435,7 @@ export function DashboardWorkspace() {
       {/* Logo */}
       <div className="h-16 flex items-center border-b border-white/8 overflow-hidden shrink-0">
         <div className="w-16 flex items-center justify-center shrink-0">
-          <div className="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden border border-white/10">
+          <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center overflow-hidden border border-white/10">
             <img
               src="/gb-logo-official.png"
               alt="Gono Bishwabidyalay emblem"
@@ -556,11 +556,14 @@ export function DashboardWorkspace() {
       </div>
 
       {/* Footer */}
-      <div className="mt-auto pb-4 space-y-2 border-t border-white/8 pt-3 shrink-0 overflow-hidden">
+      <div className={cn(
+        "mt-auto pb-4 space-y-2 border-t border-white/8 pt-3 shrink-0",
+        isCollapsed ? "overflow-hidden" : ""
+      )}>
         {/* Demo switcher */}
         <div className={cn(
-          "transition-all duration-300 overflow-hidden shrink-0",
-          isCollapsed ? "mx-0 bg-transparent border-transparent" : "mx-2 rounded-xl border border-amber-500/20 bg-amber-500/8 p-2"
+          "transition-all duration-300 shrink-0",
+          isCollapsed ? "mx-0 bg-transparent border-transparent overflow-hidden" : "mx-2 rounded-xl border border-amber-500/20 bg-amber-500/8 p-2"
         )}>
           {isCollapsed ? (
             <div className="relative group flex justify-center w-full">
