@@ -16,6 +16,7 @@ export function CustomDatePicker({
   className,
 }: CustomDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Parse current date or default to today
@@ -32,6 +33,16 @@ export function CustomDatePicker({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      // Calendar height is about 340px (300px calendar + some buffer)
+      setOpenUpward(spaceBelow < 340);
+    }
+  }, [isOpen]);
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -131,14 +142,19 @@ export function CustomDatePicker({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 rounded-lg border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm transition-all hover:border-slate-300 focus:border-[color:var(--university-green)] outline-none cursor-pointer"
+        className="flex items-center gap-2 rounded-lg border border-[color:var(--border)] bg-white px-2.5 h-8 text-[11px] font-bold text-slate-800 shadow-sm transition-all hover:border-slate-300 focus:border-[color:var(--university-green)] outline-none cursor-pointer whitespace-nowrap"
       >
-        <Calendar className="h-4 w-4 text-[color:var(--university-green)] shrink-0" />
+        <Calendar className="h-3.5 w-3.5 text-[color:var(--university-green)] shrink-0" />
         <span>{formatDateDisplay(value)}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1.5 w-[280px] rounded-xl border border-[color:var(--border)] bg-white p-4 shadow-xl animate-fade">
+        <div
+          className={cn(
+            "absolute z-50 w-[280px] rounded-xl border border-[color:var(--border)] bg-white p-4 shadow-xl animate-fade right-0",
+            openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5"
+          )}
+        >
           {/* Calendar Header */}
           <div className="flex items-center justify-between pb-3 border-b border-[color:var(--border)]">
             <button

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { articleTypes, topics, submissions as seedSubmissions } from "@/lib/data";
 import { getSession } from "@/lib/auth";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { PremiumLoader } from "@/components/ui/loader";
 
 const steps = [
   "Article type",
@@ -113,12 +114,7 @@ export function SubmissionWizard() {
 
   if (loading) {
     return (
-      <div className="journal-shell min-h-screen flex items-center justify-center">
-        <div className="text-center animate-pulse">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[color:var(--university-green)] border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-xs font-bold text-[color:var(--ink-muted)]">Verifying author credentials...</p>
-        </div>
-      </div>
+      <PremiumLoader text="Verifying author credentials..." className="journal-shell min-h-screen flex items-center justify-center" />
     );
   }
 

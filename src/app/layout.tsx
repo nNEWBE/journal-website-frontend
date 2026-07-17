@@ -38,6 +38,11 @@ export const metadata: Metadata = {
   title: "Gono Bishwabidyalay Journal Portal",
   description:
     "A peer-reviewed interdisciplinary journal portal for Gono Bishwabidyalay featuring manuscript discovery, author guidelines, peer review, and editorial management.",
+  icons: {
+    icon: "/gb-logo-official.png",
+    shortcut: "/gb-logo-official.png",
+    apple: "/gb-logo-official.png",
+  },
 };
 
 export default function RootLayout({
@@ -49,6 +54,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${plusJakartaSans.variable} ${lora.variable} ${notoBangla.variable} ${jetBrainsMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         {children}
