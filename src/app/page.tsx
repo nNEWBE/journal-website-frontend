@@ -12,12 +12,40 @@ import {
   ShieldCheck,
   Unlock,
   Users,
+  Target,
+  Eye,
+  Flag,
+  Rocket,
+  Sparkles,
+  Shield,
+  Cpu,
+  HeartHandshake,
+  Activity,
 } from "lucide-react";
 import { ArticleCard } from "@/components/article-card";
 import { HeroSlider } from "@/components/hero-slider";
 import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { issues, topics } from "@/lib/data";
+
+function LinkedinIcon(props: React.ComponentProps<"svg">) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+      <rect width="4" height="12" x="2" y="9" />
+      <circle cx="4" cy="4" r="2" />
+    </svg>
+  );
+}
 
 export default function Home() {
   const currentIssue = issues[0];
@@ -74,7 +102,8 @@ export default function Home() {
                     <input
                       name="q"
                       placeholder="Search by title, author, DOI, keywords…"
-                      className="w-full bg-transparent text-sm text-white/90 placeholder:text-white/30 outline-none"
+                      className="w-full bg-transparent text-sm text-white/90 placeholder:text-white/30 outline-none border-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+                      style={{ outline: "none", boxShadow: "none" }}
                     />
                   </div>
                   <button
@@ -130,7 +159,7 @@ export default function Home() {
                       <Icon className="h-4.5 w-4.5" />
                     </div>
                     <div>
-                      <p className="font-academic text-xl md:text-2xl font-extrabold text-[color:var(--green-dark)] leading-none">
+                      <p className="text-xl md:text-2xl font-black text-[color:var(--green-dark)] leading-none">
                         {stat.value}
                       </p>
                       <p className="mt-0.5 text-[10px] md:text-[11px] font-bold text-[color:var(--ink-muted)] uppercase tracking-wider">
@@ -388,6 +417,215 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+
+
+      {/* ── MISSION & VISION + JOURNEY ── */}
+      <section className="py-16 md:py-24 bg-slate-50/50 border-t border-[color:var(--border)]">
+        <div className="container-x">
+          <div className="grid gap-12 lg:grid-cols-2">
+            {/* Left Column: Mission, Vision & Scope */}
+            <div className="space-y-8">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-gb-blue-soft)] border border-blue-100/50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[color:var(--color-gb-blue)] mb-3">
+                  Our Purpose
+                </span>
+                <h3 className="font-academic text-2xl sm:text-3xl font-black text-slate-955">
+                  Mission, Vision & Scope
+                </h3>
+              </div>
+              <div className="space-y-6">
+                {/* Mission */}
+                <div className="flex gap-4 p-5 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                    <Target className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Mission</h4>
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                      To champion and disseminate peer-reviewed research by providing a robust, open-access platform that connects scholars, faculty, and students, while maintaining absolute editorial integrity and publication quality.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Vision */}
+                <div className="flex gap-4 p-5 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                    <Eye className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Vision</h4>
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                      To establish the Gono Bishwabidyalay Journal of Research as a premier interdisciplinary academic repository, inspiring scientific discovery and addressing national and global challenges through open research.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Scope & Mandate */}
+                <div className="flex gap-4 p-5 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Scope & Mandate</h4>
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                      Publishing diverse research across healthcare, clinical sciences, engineering, social sciences, and humanities, facilitating rigorous peer review and academic discourse for a worldwide scholarly community.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Our Journey (Timeline) */}
+            <div className="space-y-8">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-gb-blue-soft)] border border-blue-100/50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[color:var(--color-gb-blue)] mb-3">
+                  Our Growth
+                </span>
+                <h3 className="font-academic text-2xl sm:text-3xl font-black text-slate-955">
+                  Our Journey
+                </h3>
+              </div>
+
+              {/* Timeline Container */}
+              <div className="relative pl-6 border-l-2 border-slate-150 space-y-8 mt-4">
+                {[
+                  { year: "2016", title: "Portal Established", desc: "The Gono Bishwabidyalay Journal portal was founded to archive and showcase university research.", icon: Flag },
+                  { year: "2018", title: "First Release", desc: "Launched our digital platform to host peer-reviewed journals and manage publications online.", icon: Rocket },
+                  { year: "2020", title: "Global Indexing", desc: "Expanded indexation and achieved international visibility for our scholarly articles.", icon: Globe },
+                  { year: "2022", title: "Modern Workflow", desc: "Introduced advanced submission tracking, editorial dashboards, and automated review tasks.", icon: Sparkles },
+                  { year: "2024+", title: "Future Forward", desc: "Continuing to support open access publishing and promote academic research excellence globally.", icon: ArrowRight },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.year} className="relative group">
+                      {/* Timeline dot */}
+                      <div className="absolute -left-[35px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white border-2 border-slate-200 group-hover:border-[color:var(--color-gb-blue)] group-hover:bg-[color:var(--color-gb-blue-soft)] transition-colors z-10">
+                        <Icon className="h-3 w-3 text-slate-400 group-hover:text-[color:var(--color-gb-blue)] transition-colors" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-[color:var(--color-gb-gold)]">{item.year}</span>
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide mt-0.5">{item.title}</h4>
+                        <p className="text-[11px] leading-relaxed text-slate-500 mt-1 max-w-md">{item.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CORE VALUES & LEADERSHIP ── */}
+      <section className="py-16 md:py-24 bg-white border-t border-[color:var(--border)]">
+        <div className="container-x">
+          <div className="grid gap-12 lg:grid-cols-2">
+            {/* Left Column: Our Core Values */}
+            <div className="space-y-8">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-gb-blue-soft)] border border-blue-100/50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[color:var(--color-gb-blue)] mb-3">
+                  What We Stand For
+                </span>
+                <h3 className="font-academic text-2xl sm:text-3xl font-black text-slate-955">
+                  Our Core Values
+                </h3>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                {[
+                  { title: "Integrity", desc: "We Uphold the highest ethical standards in everything we do.", icon: Shield },
+                  { title: "Innovation", desc: "We build smart solutions that solve real problems for real people.", icon: Cpu },
+                  { title: "Collaboration", desc: "We believe in the power of community and shared knowledge.", icon: Users },
+                  { title: "Impact", desc: "We are committed to advancing research and societal progress.", icon: Activity },
+                  { title: "Customer Success", desc: "Our users' success is our mission. We're here to help.", icon: HeartHandshake },
+                ].map((val) => {
+                  const Icon = val.icon;
+                  return (
+                    <div key={val.title} className="flex gap-3.5 p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                        <Icon className="h-4.5 w-4.5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">{val.title}</h4>
+                        <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{val.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Column: Our Leadership */}
+            <div className="space-y-8">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-gb-blue-soft)] border border-blue-100/50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[color:var(--color-gb-blue)] mb-3">
+                  The Team
+                </span>
+                <h3 className="font-academic text-2xl sm:text-3xl font-black text-slate-955">
+                  Our Leadership
+                </h3>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2">
+                {[
+                  { name: "Dr. Emily Parker", role: "Co-Founder & Editor-in-Chief", img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200&h=200" },
+                  { name: "Michael Chen", role: "Co-Founder & CTO", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200" },
+                  { name: "Priya Nair", role: "Head of Product", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200&h=200" },
+                  { name: "James Wilson", role: "Head of Customer Success", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200" },
+                ].map((member) => (
+                  <div key={member.name} className="flex flex-col items-center text-center p-5 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow group">
+                    <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-slate-100 group-hover:border-[color:var(--color-gb-blue)] transition-colors">
+                      <img src={member.img} alt={member.name} className="h-full w-full object-cover" />
+                    </div>
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide mt-3.5">{member.name}</h4>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{member.role}</p>
+                    <a
+                      href="#linkedin"
+                      className="mt-3 text-slate-300 hover:text-[color:var(--color-gb-blue)] transition-colors"
+                      title="LinkedIn Profile"
+                    >
+                      <LinkedinIcon className="h-4 w-4" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CALL TO ACTION ── */}
+      <section className="pt-8 pb-16 bg-transparent">
+        <div className="container-x">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[color:var(--color-gb-blue-dark)] to-[color:var(--color-gb-blue-deep)] text-white p-8 md:p-12 border border-[color:var(--color-gb-blue)]/20 shadow-xl">
+            <div className="absolute inset-0 opacity-[0.03] bg-[size:30px_30px]" style={{ backgroundImage: "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)" }} />
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+              <div className="space-y-2">
+                <h3 className="text-xl md:text-2xl font-black tracking-tight font-academic">
+                  Ready to transform your publishing workflow?
+                </h3>
+                <p className="text-xs md:text-sm text-blue-100/70 font-semibold max-w-xl">
+                  Join our academic portal at Gono Bishwabidyalay to publish scholarly research smarter, faster, and with absolute integrity.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 justify-center">
+                <Link
+                  href="/dashboard/submissions/new"
+                  className="inline-flex items-center gap-2 rounded-lg bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-md transition-all active:scale-[0.98]"
+                >
+                  Get Started Free
+                </Link>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/20 hover:bg-white/10 px-5 py-2.5 text-xs font-bold text-white transition-all active:scale-[0.98]"
+                >
+                  Contact Our Team
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </PageShell>
   );
 }
