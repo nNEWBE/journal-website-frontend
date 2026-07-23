@@ -52,6 +52,7 @@ export const navLinks = [
   { href: "/articles", label: "Articles" },
   { href: "/issues", label: "Issues" },
   { href: "/authors", label: "For Authors" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export const roles: { id: Role; label: string; icon: typeof LayoutDashboard }[] = [

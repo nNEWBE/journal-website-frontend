@@ -87,17 +87,17 @@ export function HeroSlider() {
   const slide = slides[current];
 
   return (
-    <div className="hero-publication-card relative overflow-hidden rounded-[20px] border border-white/15 bg-white p-2 shadow-[0_24px_70px_rgba(2,6,30,0.32)]">
+    <div className="hero-publication-card relative overflow-hidden rounded-[22px] border border-white/15 bg-white/[0.06] p-3 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/[0.08]">
       <div className="flex items-center justify-between gap-4 px-2.5 py-2">
-        <span className="text-[8px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue-deep)]">
+        <span className="text-[8px] font-black uppercase tracking-[0.16em] text-white/90">
           GB Journal · Issue record
         </span>
-        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-amber-300">
           {slide.volume} / {slide.issue}
         </span>
       </div>
 
-      <div className="group/cover relative aspect-[16/10] overflow-hidden rounded-[14px] bg-[color:var(--color-gb-blue-deep)]">
+      <div className="group/cover relative aspect-[16/10] overflow-hidden rounded-[16px] bg-[color:var(--color-gb-blue-deep)]">
         {slides.map((item, index) => {
           const isActive = index === current;
           return (
@@ -151,12 +151,12 @@ export function HeroSlider() {
               {slide.theme}
             </h2>
             <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-white/15 pt-3.5">
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/55">
-                <CalendarDays className="h-3.5 w-3.5 text-amber-300" />
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">
+                <CalendarDays className="h-3.5 w-3.5 text-white/60" />
                 {slide.month}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/55">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">
+                <ShieldCheck className="h-3.5 w-3.5 text-white/60" />
                 Peer reviewed
               </span>
             </div>
@@ -181,7 +181,7 @@ export function HeroSlider() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-2.5 py-2.5">
+      <div className="flex items-center gap-3 px-3 py-3">
         <div className="flex items-center gap-1.5">
           {slides.map((item, index) => (
             <button
@@ -193,8 +193,8 @@ export function HeroSlider() {
               }}
               aria-label={`Show ${item.volume}, ${item.issue}`}
               className={cn(
-                "relative h-1 overflow-hidden rounded-full bg-slate-200 transition-all",
-                index === current ? "w-10" : "w-2.5 hover:bg-slate-300",
+                "relative h-1 overflow-hidden rounded-full bg-white/20 transition-all",
+                index === current ? "w-10" : "w-2.5 hover:bg-white/40",
               )}
             >
               {index === current && (
@@ -206,16 +206,16 @@ export function HeroSlider() {
             </button>
           ))}
         </div>
-        <span className="font-mono text-[8px] font-bold text-slate-400">
+        <span className="font-mono text-[9px] font-bold text-white/70">
           {String(current + 1).padStart(2, "0")} /{" "}
           {String(slides.length).padStart(2, "0")}
         </span>
         <Link
           href="/issues/current"
-          className="group/link ml-auto inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.09em] text-[color:var(--color-gb-blue-deep)] focus-ring"
+          className="group/link ml-auto inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.09em] text-white hover:text-amber-300 transition-colors focus-ring"
         >
-          Explore issue
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover/link:bg-[color:var(--color-gb-blue)] group-hover/link:text-white">
+          <span>Explore issue</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white transition-all group-hover/link:bg-[color:var(--color-gb-gold)] group-hover/link:text-[color:var(--color-gb-blue-deep)] group-hover/link:border-transparent">
             <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
           </span>
         </Link>

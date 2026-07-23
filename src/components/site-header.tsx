@@ -73,6 +73,7 @@ export function SiteHeader() {
                 <Link href="/about" className="hover:text-white transition-colors">ISSN 2959-1082</Link>
                 <Link href="/policies" className="hover:text-white transition-colors">Ethics</Link>
                 <Link href="/reviewers" className="hover:text-white transition-colors">Reviewers</Link>
+                <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
               </div>
             )}
           </div>
@@ -126,7 +127,7 @@ export function SiteHeader() {
 
             <Link
               href={user ? "/dashboard/submissions/new" : "/login"}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--bangla-red)] hover:bg-[color:var(--color-gb-red-dark)] px-4 py-2 text-[12px] font-extrabold text-white shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-4 py-2 text-[12px] font-extrabold text-white shadow-xs transition-all"
             >
               <Send className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Submit</span>
