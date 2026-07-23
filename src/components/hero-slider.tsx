@@ -1,7 +1,17 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, ArrowRight } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Archive,
+  ArrowUpRight,
+  BookOpen,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SlideData {
@@ -49,151 +59,146 @@ export function HeroSlider() {
   const [progress, setProgress] = useState(0);
 
   const handleNext = useCallback(() => {
-    setCurrent((prev) => (prev + 1) % slides.length);
+    setCurrent((previous) => (previous + 1) % slides.length);
     setProgress(0);
   }, []);
 
-  const handlePrev = useCallback(() => {
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+  const handlePrevious = useCallback(() => {
+    setCurrent(
+      (previous) => (previous - 1 + slides.length) % slides.length,
+    );
     setProgress(0);
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
+      setProgress((previous) => {
+        if (previous >= 100) {
           handleNext();
           return 0;
         }
-        return prev + 100 / (SLIDE_DURATION / 50);
+        return previous + 100 / (SLIDE_DURATION / 50);
       });
     }, 50);
+
     return () => clearInterval(interval);
   }, [handleNext]);
 
   const slide = slides[current];
 
   return (
-    <div className="hero-slider-wrap group relative w-full overflow-hidden rounded-2xl shadow-2xl">
-      {/* Geometric decorative frame */}
-      <div className="absolute inset-0 z-[1] pointer-events-none rounded-2xl ring-1 ring-inset ring-white/10" />
+    <div className="hero-publication-card relative overflow-hidden rounded-[20px] border border-white/15 bg-white p-2 shadow-[0_24px_70px_rgba(2,6,30,0.32)]">
+      <div className="flex items-center justify-between gap-4 px-2.5 py-2">
+        <span className="text-[8px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue-deep)]">
+          GB Journal · Issue record
+        </span>
+        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+          {slide.volume} / {slide.issue}
+        </span>
+      </div>
 
-
-
-      {/* Slides */}
-      <div className="relative aspect-[4/5] sm:aspect-[3/4] md:aspect-[4/3] lg:aspect-[16/10] w-full bg-[color:var(--color-gb-blue-deep)]">
-        {slides.map((s, index) => {
+      <div className="group/cover relative aspect-[16/10] overflow-hidden rounded-[14px] bg-[color:var(--color-gb-blue-deep)]">
+        {slides.map((item, index) => {
           const isActive = index === current;
           return (
             <div
-              key={s.id}
+              key={item.id}
               className={cn(
-                "absolute inset-0 transition-all duration-[1200ms] ease-in-out",
-                isActive ? "opacity-100 scale-100 z-10" : "opacity-0 scale-[1.04] z-0"
+                "absolute inset-0 transition-all duration-[1000ms] ease-out",
+                isActive
+                  ? "z-10 scale-100 opacity-100"
+                  : "z-0 scale-[1.045] opacity-0",
               )}
             >
-              {/* Cover image */}
-              <img
-                src={s.image}
-                alt={s.theme}
-                className="h-full w-full object-cover"
+              <Image
+                src={item.image}
+                alt=""
+                fill
+                priority={index === 0}
+                sizes="(max-width: 1023px) 100vw, 48vw"
+                className="object-cover"
               />
-              {/* Dark cinematic overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/95 via-[#060b2f]/45 to-[#060b2f]/10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#060b2f]/55 via-transparent to-transparent" />
             </div>
           );
         })}
 
-        {/* Content overlay — always on top */}
-        <div className="absolute inset-0 z-20 flex flex-col justify-between p-5 sm:p-7 md:p-8 text-white">
-          {/* Header row */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 rounded bg-white/10 backdrop-blur-md border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/90">
-                {slide.volume} &bull; {slide.issue}
-              </span>
-              {slide.isCurrent ? (
-                <span className="inline-flex items-center gap-1 rounded bg-[color:var(--bangla-red)] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-lg shadow-red-900/30">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                  Current Issue
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded border border-white/20 bg-white/5 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/70">
-                  Archive
-                </span>
+        <div className="absolute inset-0 z-20 flex flex-col justify-between p-5 text-white sm:p-6">
+          <div>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] backdrop-blur-md",
+                slide.isCurrent
+                  ? "border-emerald-300/25 bg-emerald-400/15 text-emerald-100"
+                  : "border-white/15 bg-slate-950/30 text-white/65",
               )}
-            </div>
+            >
+              {slide.isCurrent ? (
+                <BookOpen className="h-3 w-3" />
+              ) : (
+                <Archive className="h-3 w-3" />
+              )}
+              {slide.isCurrent ? "Current issue" : "Archive"}
+            </span>
           </div>
 
-          {/* Main content area */}
-          <div className="mt-auto mb-0">
-
-
-            {/* Theme title */}
-            <h2 className="font-academic max-w-md text-xl sm:text-2xl md:text-[1.75rem] lg:text-3xl font-extrabold leading-[1.15] text-white tracking-tight drop-shadow-lg">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.17em] text-amber-300">
+              Issue theme
+            </p>
+            <h2 className="mt-2.5 max-w-md font-academic text-2xl font-bold leading-[1.12] tracking-[-0.02em] text-white sm:text-[1.75rem]">
               {slide.theme}
             </h2>
-
-            {/* Footer meta row */}
-            <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
-                  <CalendarDays className="h-3.5 w-3.5 text-[color:var(--color-gb-gold)]" />
-                  {slide.month}
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
-                  <span className="h-1 w-1 rounded-full bg-white/30" />
-                  Peer-Reviewed
-                </span>
-              </div>
-              <a
-                href="/issues"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white/90 hover:bg-white/20 hover:text-white transition-all group/btn"
-              >
-                Explore Issue
-                <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover/btn:-rotate-45" />
-              </a>
+            <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-white/15 pt-3.5">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/55">
+                <CalendarDays className="h-3.5 w-3.5 text-amber-300" />
+                {slide.month}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/55">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                Peer reviewed
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Navigation buttons */}
         <button
-          onClick={handlePrev}
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
-          title="Previous Issue"
+          type="button"
+          onClick={handlePrevious}
+          aria-label="Show previous issue"
+          className="absolute left-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/35 text-white opacity-0 backdrop-blur-md transition-all hover:bg-slate-950/60 group-hover/cover:opacity-100 focus:opacity-100"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <button
+          type="button"
           onClick={handleNext}
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
-          title="Next Issue"
+          aria-label="Show next issue"
+          className="absolute right-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/35 text-white opacity-0 backdrop-blur-md transition-all hover:bg-slate-950/60 group-hover/cover:opacity-100 focus:opacity-100"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Bottom progress bar and slide indicators */}
-      <div className="relative z-30 flex items-center gap-3 bg-[color:var(--color-gb-blue-deep)] px-5 py-2.5">
-        {/* Slide tabs */}
-        <div className="flex gap-1">
-          {slides.map((s, index) => (
+      <div className="flex items-center gap-3 px-2.5 py-2.5">
+        <div className="flex items-center gap-1.5">
+          {slides.map((item, index) => (
             <button
-              key={s.id}
+              key={item.id}
+              type="button"
               onClick={() => {
                 setCurrent(index);
                 setProgress(0);
               }}
+              aria-label={`Show ${item.volume}, ${item.issue}`}
               className={cn(
-                "relative h-1 rounded-full overflow-hidden transition-all duration-300 cursor-pointer",
-                index === current ? "w-12 bg-white/20" : "w-3 bg-white/10 hover:bg-white/20"
+                "relative h-1 overflow-hidden rounded-full bg-slate-200 transition-all",
+                index === current ? "w-10" : "w-2.5 hover:bg-slate-300",
               )}
-              title={`${s.volume}, ${s.issue}`}
             >
               {index === current && (
-                <div
+                <span
                   className="absolute inset-y-0 left-0 rounded-full bg-[color:var(--color-gb-gold)] transition-[width] duration-75 ease-linear"
                   style={{ width: `${progress}%` }}
                 />
@@ -201,11 +206,19 @@ export function HeroSlider() {
             </button>
           ))}
         </div>
-
-        {/* Slide counter */}
-        <span className="ml-auto text-[10px] font-mono font-bold text-white/40 tracking-wider">
-          {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+        <span className="font-mono text-[8px] font-bold text-slate-400">
+          {String(current + 1).padStart(2, "0")} /{" "}
+          {String(slides.length).padStart(2, "0")}
         </span>
+        <Link
+          href="/issues/current"
+          className="group/link ml-auto inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.09em] text-[color:var(--color-gb-blue-deep)] focus-ring"
+        >
+          Explore issue
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover/link:bg-[color:var(--color-gb-blue)] group-hover/link:text-white">
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+          </span>
+        </Link>
       </div>
     </div>
   );

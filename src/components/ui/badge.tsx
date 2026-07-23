@@ -7,8 +7,6 @@ interface BadgeProps {
   variant?: BadgeVariant;
   children: React.ReactNode;
   className?: string;
-  showDot?: boolean;
-  pulseDot?: boolean;
   icon?: React.ReactNode;
 }
 
@@ -16,8 +14,6 @@ export function Badge({
   variant = "default",
   children,
   className,
-  showDot = false,
-  pulseDot = false,
   icon,
 }: BadgeProps) {
   const variantStyles: Record<BadgeVariant, string> = {
@@ -26,14 +22,6 @@ export function Badge({
     success: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
     warning: "bg-amber-50 text-amber-800 border-amber-200/60",
     error: "bg-red-50 text-red-700 border-red-200/60",
-  };
-
-  const dotColors: Record<BadgeVariant, string> = {
-    default: "bg-slate-400",
-    info: "bg-[color:var(--color-gb-blue)]",
-    success: "bg-emerald-500",
-    warning: "bg-amber-500",
-    error: "bg-red-500",
   };
 
   return (
@@ -45,15 +33,6 @@ export function Badge({
       )}
     >
       {icon && <span className="shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>}
-      {showDot && !icon && (
-        <span
-          className={cn(
-            "h-1.5 w-1.5 rounded-full shrink-0",
-            dotColors[variant],
-            pulseDot && "animate-pulse"
-          )}
-        />
-      )}
       <span>{children}</span>
     </span>
   );

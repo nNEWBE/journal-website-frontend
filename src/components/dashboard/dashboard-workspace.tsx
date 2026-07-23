@@ -109,18 +109,18 @@ const roleAccentMap: Record<
   },
 };
 
-const statusConfig: Record<string, { label: string; classes: string; dot: string }> = {
-  "Under Review":      { label: "Under Review",      classes: "bg-blue-50 text-blue-700 border-blue-200",      dot: "bg-blue-500" },
-  "Revision Requested":{ label: "Revision Req.",      classes: "bg-amber-50 text-amber-700 border-amber-200",    dot: "bg-amber-500" },
-  "Awaiting Editor":   { label: "Awaiting Editor",    classes: "bg-slate-50 text-slate-600 border-slate-200",    dot: "bg-slate-400" },
-  "Accepted":          { label: "Accepted",            classes: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
-  "Published":         { label: "Published",           classes: "bg-green-50 text-green-700 border-green-200",   dot: "bg-green-500" },
-  "Reviews Complete":  { label: "Reviews Done",        classes: "bg-violet-50 text-violet-700 border-violet-200",dot: "bg-violet-500" },
-  "Revised Manuscript Submitted": { label: "Revised", classes: "bg-cyan-50 text-cyan-700 border-cyan-200",      dot: "bg-cyan-500" },
+const statusConfig: Record<string, { label: string; classes: string; icon: React.ElementType }> = {
+  "Under Review":      { label: "Under Review",      classes: "bg-blue-50 text-blue-700 border-blue-200",      icon: Search },
+  "Revision Requested":{ label: "Revision Req.",      classes: "bg-amber-50 text-amber-700 border-amber-200",    icon: RefreshCw },
+  "Awaiting Editor":   { label: "Awaiting Editor",    classes: "bg-slate-50 text-slate-600 border-slate-200",    icon: Clock },
+  "Accepted":          { label: "Accepted",            classes: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
+  "Published":         { label: "Published",           classes: "bg-green-50 text-green-700 border-green-200",   icon: BookOpen },
+  "Reviews Complete":  { label: "Reviews Done",        classes: "bg-violet-50 text-violet-700 border-violet-200",icon: ClipboardCheck },
+  "Revised Manuscript Submitted": { label: "Revised", classes: "bg-cyan-50 text-cyan-700 border-cyan-200",      icon: FileCheck2 },
 };
 
 function getStatusConfig(status: string) {
-  return statusConfig[status] ?? { label: status, classes: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" };
+  return statusConfig[status] ?? { label: status, classes: "bg-slate-50 text-slate-600 border-slate-200", icon: Activity };
 }
 
 const navItems = [
@@ -135,11 +135,12 @@ const navItems = [
 
 function StatusPill({ status }: { status: string }) {
   const cfg = getStatusConfig(status);
+  const StatusIcon = cfg.icon;
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${cfg.classes}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+      <StatusIcon className="h-3 w-3 shrink-0" />
       {cfg.label}
     </span>
   );
@@ -489,7 +490,7 @@ export function DashboardWorkspace() {
           {!isCollapsed && (
             <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-2 animate-fade">
               <span className="inline-flex items-center gap-1 rounded-md bg-white/8 border border-white/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white/70">
-                <span className="h-1 w-1 rounded-full bg-emerald-400" />
+                <ShieldCheck className="h-2.5 w-2.5 text-emerald-300" />
                 {currentUser.role}
               </span>
               <span className="text-[10px] text-white/35 truncate max-w-[100px] text-right">{currentUser.department}</span>
@@ -1056,7 +1057,7 @@ export function DashboardWorkspace() {
                   className="px-4 pt-3 pb-3"
                   actions={
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <Activity className="h-3 w-3" />
                       Live
                     </span>
                   }
@@ -1072,7 +1073,7 @@ export function DashboardWorkspace() {
                       transition={{ duration: 0.18, delay: i < 3 ? i * 0.05 : 0 }}
                       className="flex gap-2.5 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] p-2.5"
                     >
-                      <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-[color:var(--color-gb-blue)] shrink-0 mt-1.5" />
+                      <Activity className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--color-gb-blue)]" />
                       <p className="text-[10px] font-medium text-[color:var(--color-gb-muted)] leading-relaxed">{item}</p>
                     </motion.div>
                   ))}

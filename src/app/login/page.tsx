@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { KeyRound, LockKeyhole, Mail, ShieldAlert, Sparkles, UserCheck } from "lucide-react";
+import { KeyRound, LockKeyhole, Mail, ShieldAlert, UserCheck } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { authenticate, DEMO_USERS, getSession } from "@/lib/auth";
 
@@ -118,7 +118,7 @@ function LoginForm() {
       {/* Right Column: Demo Accounts Quick Select */}
       <div className="lg:col-span-5 rounded-xl p-5 md:p-6 bg-white/[0.06] border border-white/10 backdrop-blur-sm">
         <h3 className="font-academic text-sm font-extrabold text-white flex items-center gap-1.5 border-b border-white/10 pb-2.5">
-          <Sparkles className="h-4 w-4 text-[color:var(--color-gb-gold)] animate-pulse" />
+          <KeyRound className="h-4 w-4 text-[color:var(--color-gb-gold)]" />
           Developer Quick-Login
         </h3>
         <p className="mt-2 text-xs leading-relaxed text-white/50">

@@ -369,46 +369,80 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-/* ── Hero Masthead Styles ── */
+/* Professional journal hero */
+.professional-hero {
+  background: #ffffff;
+}
+
+.hero-masthead {
+  background: linear-gradient(135deg, #0b123d 0%, #111b52 100%);
+}
+
 .hero-title-accent {
-  background: linear-gradient(135deg, var(--color-gb-gold) 0%, #f0c45a 50%, var(--color-gb-gold) 100%);
+  background: linear-gradient(
+    135deg,
+    #f7c653 0%,
+    #ffd978 50%,
+    var(--color-gb-gold) 100%
+  );
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: brightness(1.1);
+  filter: brightness(1.06);
 }
 
 .hero-pattern {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(90deg, black, transparent 82%);
 }
 
-.hero-slider-wrap {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--color-gb-blue-deep);
+.hero-search-card {
+  transition:
+    box-shadow 320ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-search-card:focus-within {
+  box-shadow:
+    0 24px 70px rgba(2, 6, 30, 0.36),
+    0 0 0 3px rgba(217, 154, 34, 0.22);
+  transform: translateY(-2px);
+}
+
+.hero-publication-card {
+  transition:
+    box-shadow 500ms ease,
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-publication-card:hover {
+  box-shadow: 0 34px 90px rgba(2, 6, 30, 0.42);
+  transform: translateY(-2px);
 }
 
 .hero-stats-strip {
   position: relative;
+  border-bottom: 1px solid var(--border);
 }
 
-.hero-stats-strip::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--color-gb-blue) 0%,
-    var(--color-gb-gold) 35%,
-    var(--color-gb-red) 65%,
-    var(--color-gb-blue) 100%
-  );
-  opacity: 0.7;
+.hero-stat-item {
+  transition: background-color 250ms ease;
+}
+
+@media (min-width: 768px) {
+  .hero-stat-item + .hero-stat-item {
+    border-left: 1px solid var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-search-card:focus-within,
+  .hero-publication-card:hover {
+    transform: none;
+  }
 }
 
 /* ── Reusable Page Header ── */
@@ -513,6 +547,215 @@ textarea:focus-visible {
   border-color: var(--color-gb-blue);
 }
 
+/* Editorial home showcase */
+.journal-showcase {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(245, 247, 251, 0.96)),
+    radial-gradient(circle at 10% 8%, rgba(217, 154, 34, 0.1), transparent 32rem);
+}
+
+.showcase-aurora {
+  background:
+    radial-gradient(circle at 13% 18%, rgba(31, 47, 130, 0.08), transparent 24rem),
+    radial-gradient(circle at 88% 8%, rgba(217, 154, 34, 0.09), transparent 22rem);
+  animation: showcase-breathe 9s ease-in-out infinite alternate;
+}
+
+.editorial-card::before {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  left: 12%;
+  width: 38%;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, var(--color-gb-gold), transparent);
+  transform: translateX(-130%);
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.editorial-card:hover::before {
+  transform: translateX(230%);
+}
+
+.feature-kicker-icon {
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 300ms ease;
+}
+
+.editorial-card:hover .feature-kicker-icon {
+  background: var(--color-gb-blue);
+  transform: rotate(-7deg) scale(1.06);
+}
+
+.feature-cover::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(115deg, transparent 25%, rgba(255, 255, 255, 0.22) 48%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.feature-cover:hover::after {
+  transform: translateX(130%);
+}
+
+.metric-chip {
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.metric-chip:hover {
+  border-color: rgba(31, 47, 130, 0.25);
+  box-shadow: 0 8px 20px rgba(17, 27, 82, 0.08);
+  transform: translateY(-3px);
+}
+
+.journal-detail-row {
+  transition:
+    padding 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 250ms ease;
+}
+
+.journal-detail-row:hover {
+  margin-inline: -0.35rem;
+  padding-inline: 0.35rem;
+  background: var(--color-gb-blue-soft);
+}
+
+.index-pill::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(110deg, transparent 25%, rgba(31, 47, 130, 0.1), transparent 75%);
+  transform: translateX(-110%);
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.index-pill:hover {
+  border-color: rgba(31, 47, 130, 0.3);
+  background: var(--color-gb-blue-soft);
+  transform: translateY(-2px);
+}
+
+.index-pill:hover::before {
+  transform: translateX(110%);
+}
+
+.issue-paper-card {
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease,
+    box-shadow 420ms ease;
+}
+
+.issue-paper-card:hover {
+  border-color: rgba(31, 47, 130, 0.25);
+  box-shadow: 0 24px 60px rgba(17, 27, 82, 0.13);
+  transform: translateY(-7px);
+}
+
+.issue-paper-card .paper-arrow {
+  transition:
+    color 260ms ease,
+    background-color 260ms ease,
+    transform 260ms ease;
+}
+
+.issue-paper-card:hover .paper-arrow {
+  color: white;
+  background: var(--color-gb-blue);
+  transform: rotate(3deg);
+}
+
+.current-issue-badge {
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 280ms ease,
+    box-shadow 350ms ease,
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.current-issue-badge::after {
+  position: absolute;
+  top: 0;
+  left: -55%;
+  width: 32%;
+  height: 100%;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(31, 47, 130, 0.08),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.current-issue-badge:hover {
+  border-color: rgba(31, 47, 130, 0.24);
+  box-shadow: 0 12px 32px rgba(17, 27, 82, 0.12);
+  transform: translateY(-2px);
+}
+
+.current-issue-badge:hover::after {
+  left: 125%;
+}
+
+.current-issue-badge-icon {
+  transition:
+    background-color 280ms ease,
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.current-issue-badge:hover .current-issue-badge-icon {
+  background: var(--color-gb-blue);
+  transform: rotate(-6deg) scale(1.06);
+}
+
+@keyframes showcase-breathe {
+  from {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.045);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase-aurora {
+    animation: none;
+  }
+
+  .editorial-card::before,
+  .feature-cover::after {
+    display: none;
+  }
+
+  .issue-paper-card:hover,
+  .metric-chip:hover,
+  .index-pill:hover,
+  .current-issue-badge:hover {
+    transform: none;
+  }
+
+  .current-issue-badge::after {
+    display: none;
+  }
+
+  .animate-ping {
+    animation: none !important;
+  }
+}
+
 @media (min-width: 640px) {
   .page-header .page-title {
     font-size: 2.75rem;
@@ -543,7 +786,7 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
-/* Sidebar nav item active dot indicator */
+/* Sidebar navigation active state */
 .dash-nav-active {
   background: rgba(255, 255, 255, 0.94);
   color: var(--color-gb-blue-dark);
@@ -706,5 +949,363 @@ textarea:focus-visible {
 @keyframes shimmer {
   to {
     background-position: 200% center;
+  }
+}
+
+/* Home journal story */
+.story-topics {
+  background:
+    linear-gradient(180deg, #f8faff 0%, #f3f6fc 100%),
+    radial-gradient(circle at 20% 15%, rgba(31, 47, 130, 0.08), transparent 30rem);
+}
+
+.story-topics-orb {
+  background: rgba(217, 154, 34, 0.12);
+  animation: story-orbit 10s ease-in-out infinite alternate;
+}
+
+.story-number {
+  display: inline-flex;
+  height: 2rem;
+  min-width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(31, 47, 130, 0.15);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--color-gb-blue);
+  font-family: var(--font-code), var(--font-code-fallback);
+  font-size: 0.625rem;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgba(17, 27, 82, 0.06);
+}
+
+.story-number-light {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  box-shadow: none;
+}
+
+.topic-link,
+.capability-card,
+.workflow-preview,
+.value-card,
+.governance-role {
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease,
+    box-shadow 360ms ease,
+    background-color 260ms ease;
+}
+
+.topic-link:hover {
+  border-color: rgba(31, 47, 130, 0.32);
+  box-shadow: 0 12px 24px rgba(17, 27, 82, 0.09);
+  transform: translateY(-2px);
+}
+
+.capability-card::after {
+  position: absolute;
+  top: -55%;
+  left: -80%;
+  width: 50%;
+  height: 210%;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  transform: rotate(18deg);
+  transition: left 850ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.capability-card:hover {
+  border-color: rgba(31, 47, 130, 0.23);
+  box-shadow: 0 26px 64px rgba(17, 27, 82, 0.13);
+  transform: translateY(-7px);
+}
+
+.capability-card:hover::after {
+  left: 140%;
+}
+
+.capability-icon,
+.value-icon,
+.governance-role-icon {
+  transition:
+    color 300ms ease,
+    background-color 300ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.capability-card:hover .capability-icon,
+.governance-role:hover .governance-role-icon {
+  color: white;
+  background: var(--color-gb-blue);
+  transform: rotate(-5deg) scale(1.06);
+}
+
+.capability-line {
+  transform: translateX(-101%);
+  transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.capability-card:hover .capability-line {
+  transform: translateX(0);
+}
+
+.story-cta-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+
+.workflow-paper-grid {
+  background-image:
+    linear-gradient(rgba(31, 47, 130, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 47, 130, 0.026) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 12%,
+    black 88%,
+    transparent
+  );
+}
+
+.workflow-preview:hover {
+  border-color: rgba(31, 47, 130, 0.17);
+  box-shadow: 0 14px 34px rgba(17, 27, 82, 0.08);
+}
+
+.workflow-preview-icon {
+  transition:
+    color 220ms ease,
+    background-color 220ms ease;
+}
+
+.workflow-preview:hover .workflow-preview-icon {
+  background: #e7ebff;
+}
+
+.workflow-node {
+  transition:
+    background-color 300ms ease,
+    box-shadow 300ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.workflow-row:hover .workflow-node {
+  background: var(--color-gb-gold);
+  box-shadow: 0 0 0 7px rgba(217, 154, 34, 0.14);
+  scale: 1.2;
+}
+
+.story-values::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(1180px, calc(100% - 32px));
+  height: 1px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(31, 47, 130, 0.16),
+    transparent
+  );
+  transform: translateX(-50%);
+}
+
+.value-card:hover {
+  border-color: rgba(31, 47, 130, 0.22);
+  background: white;
+  box-shadow: 0 22px 48px rgba(17, 27, 82, 0.1);
+  transform: translateY(-6px);
+}
+
+.value-card:hover .value-icon {
+  color: white;
+  background: var(--color-gb-blue-deep);
+  transform: rotate(-6deg) scale(1.06);
+}
+
+.leadership-panel::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    var(--color-gb-blue),
+    var(--color-gb-gold),
+    var(--color-gb-red)
+  );
+  opacity: 0.75;
+}
+
+.leadership-panel-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(90deg, black, transparent 85%);
+}
+
+.governance-map {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 70px rgba(0, 0, 0, 0.14);
+}
+
+.governance-role {
+  position: relative;
+  overflow: hidden;
+}
+
+.governance-role::after {
+  position: absolute;
+  top: 0;
+  left: -65%;
+  width: 34%;
+  height: 100%;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.governance-role:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.16);
+  transform: translateY(-4px);
+}
+
+.governance-role:hover::after {
+  left: 125%;
+}
+
+.governance-role-lead:hover {
+  border-color: rgba(252, 211, 77, 0.4);
+  background: rgba(252, 211, 77, 0.13);
+}
+
+.governance-role-board:hover {
+  border-color: rgba(110, 231, 183, 0.3);
+  background: rgba(110, 231, 183, 0.1);
+}
+
+.faq-section-grid {
+  background-image:
+    linear-gradient(rgba(31, 47, 130, 0.024) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 47, 130, 0.024) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(90deg, black, transparent 82%);
+}
+
+.faq-item {
+  transition:
+    border-color 280ms ease,
+    box-shadow 350ms ease,
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.faq-item:hover {
+  border-color: rgba(31, 47, 130, 0.22);
+  transform: translateX(4px);
+}
+
+.faq-trigger:focus-visible {
+  outline: 2px solid var(--color-gb-blue);
+  outline-offset: -3px;
+  border-radius: 1rem;
+}
+
+@media (max-width: 639px) {
+  .governance-branch-line,
+  .governance-branch-stem {
+    display: none;
+  }
+
+  .governance-branch {
+    padding-top: 0;
+  }
+}
+
+.story-cta::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 8%;
+  width: 34%;
+  height: 2px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gb-gold),
+    transparent
+  );
+  transform: translateX(-120%);
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.story-cta:hover::before {
+  transform: translateX(265%);
+}
+
+.story-cta-glow {
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.story-cta:hover .story-cta-glow {
+  transform: scale(1.25) translate(-5%, 8%);
+}
+
+@keyframes story-orbit {
+  from {
+    opacity: 0.6;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(48px, 22px, 0) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-topics-orb {
+    animation: none;
+  }
+
+  .capability-card::after,
+  .story-cta::before {
+    display: none;
+  }
+
+  .topic-link:hover,
+  .capability-card:hover,
+  .workflow-preview:hover,
+  .value-card:hover,
+  .governance-role:hover,
+  .faq-item:hover {
+    transform: none;
+  }
+
+  .workflow-row:hover .workflow-node {
+    scale: 1;
   }
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Download, FileText } from "lucide-react";
+import { BookOpen, Download } from "lucide-react";
 import { IssueCover } from "@/components/issue-cover";
 import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ export default function CurrentIssuePage() {
       <div className="page-header">
         <div className="container-x page-header-inner py-10 md:py-14">
           <span className="page-badge">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <BookOpen className="h-3.5 w-3.5" />
             Current Issue
           </span>
           <h1 className="page-title">{issue.theme}</h1>
