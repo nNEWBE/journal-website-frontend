@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ArticleCard } from "@/components/article-card";
 import { EditorialPageHeader } from "@/components/editorial-page-header";
+import { SupportingTag } from "@/components/ui/badge";
 import { PageShell } from "@/components/page-shell";
 import { articles, filterArticles, topics } from "@/lib/data";
 
@@ -32,18 +33,9 @@ export default async function SearchPage({
         description="Find peer-reviewed articles by title, author, abstract keyword, subject, or DOI across every published issue."
         supporting={
           <>
-            <span className="inline-flex items-center gap-2">
-              <BookOpen className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-              Titles and abstracts
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <Library className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-              Authors and DOI
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <Globe2 className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-              Open-access records
-            </span>
+            <SupportingTag icon={BookOpen}>Titles and abstracts</SupportingTag>
+            <SupportingTag icon={Library}>Authors and DOI</SupportingTag>
+            <SupportingTag icon={Globe2}>Open-access records</SupportingTag>
           </>
         }
         aside={

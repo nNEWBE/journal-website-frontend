@@ -2,12 +2,9 @@ import Link from "next/link";
 import {
   Archive,
   ArrowRight,
-  BookOpen,
   CheckCircle2,
   ClipboardCheck,
-  FileCheck2,
   FileText,
-  Gavel,
   Globe2,
   LockKeyhole,
   MessageSquareWarning,
@@ -17,8 +14,12 @@ import {
   Users,
 } from "lucide-react";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
+import { SupportingTag } from "@/components/ui/badge";
 import { EditorialPageHeader } from "@/components/editorial-page-header";
+import { PolicyFrameworkCard } from "@/components/ui/policy-framework-card";
 import { PageShell } from "@/components/page-shell";
+import { ProcessSteps } from "@/components/ui/process-steps";
+import type { ProcessStep } from "@/components/ui/process-steps";
 import { policies } from "@/lib/data";
 
 const policyEntries = [
@@ -78,36 +79,36 @@ const policyEntries = [
   },
 ];
 
-const editorialSafeguards = [
+const editorialSafeguards: ProcessStep[] = [
   {
     number: "01",
-    icon: FileCheck2,
+    icon: "file",
     title: "Editorial screening",
-    text: "Scope, files, declarations, and baseline ethical requirements are checked before assignment.",
+    description: "Scope, files, declarations, and baseline ethical requirements are checked before assignment.",
   },
   {
     number: "02",
-    icon: SearchCheck,
+    icon: "search",
     title: "Integrity checks",
-    text: "Originality and disclosure information are reviewed before the manuscript progresses.",
+    description: "Originality and disclosure information are reviewed before the manuscript progresses.",
   },
   {
     number: "03",
-    icon: Users,
+    icon: "users",
     title: "Independent review",
-    text: "Qualified reviewers evaluate the contribution without access to author identities.",
+    description: "Qualified reviewers evaluate the contribution without access to author identities.",
   },
   {
     number: "04",
-    icon: Gavel,
+    icon: "gavel",
     title: "Accountable decision",
-    text: "Editors weigh the reports, revisions, evidence, and policy requirements before deciding.",
+    description: "Editors weigh the reports, revisions, evidence, and policy requirements before deciding.",
   },
   {
     number: "05",
-    icon: Archive,
+    icon: "archive",
     title: "Record stewardship",
-    text: "The published version remains connected to any later correction or editorial notice.",
+    description: "The published version remains connected to any later correction or editorial notice.",
   },
 ];
 
@@ -157,99 +158,12 @@ export default function PoliciesPage() {
         }
         supporting={
           <>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-white/75">
-              <ShieldCheck className="h-3 w-3 text-amber-300" />
-              Research Integrity
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-white/75">
-              <ClipboardCheck className="h-3 w-3 text-amber-300" />
-              Transparent Review
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-white/75">
-              <Globe2 className="h-3 w-3 text-amber-300" />
-              Open Publication
-            </span>
+            <SupportingTag icon={ShieldCheck}>Research Integrity</SupportingTag>
+            <SupportingTag icon={ClipboardCheck}>Transparent Review</SupportingTag>
+            <SupportingTag icon={Globe2}>Open Publication</SupportingTag>
           </>
         }
-        aside={
-          <div className="rounded-2xl border border-white/15 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-md">
-            {/* Header */}
-            <div className="flex items-center gap-2.5 border-b border-white/10 pb-3 mb-3">
-              <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-300">
-                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-              </span>
-              <div>
-                <p className="text-[8.5px] font-black uppercase tracking-[0.16em] text-amber-300">
-                  Policy Framework
-                </p>
-                <h2 className="font-academic text-xs font-bold text-white">
-                  Responsible Publication
-                </h2>
-              </div>
-            </div>
-
-            {/* Bento Grid */}
-            <div className="space-y-2">
-              {/* Featured Top Card */}
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-wider text-amber-300">
-                    <ShieldCheck className="h-3 w-3" />
-                    Peer Review
-                  </span>
-                  <span className="rounded bg-amber-400/10 px-1.5 py-0.5 text-[8.5px] font-bold text-amber-300 border border-amber-400/20">
-                    Featured
-                  </span>
-                </div>
-                <div className="mt-1 font-academic text-sm font-bold text-white">
-                  Double Blind Evaluation
-                </div>
-              </div>
-
-              {/* 2x2 Sub-Grid */}
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  {
-                    label: "Similarity",
-                    val: "Pre-Assignment",
-                    icon: FileCheck2,
-                  },
-                  {
-                    label: "Copyright",
-                    val: "Author Retained",
-                    icon: Scale,
-                  },
-                  {
-                    label: "Access Model",
-                    val: "Open Access",
-                    icon: Globe2,
-                  },
-                  {
-                    label: "Ethics Basis",
-                    val: "COPE Aligned",
-                    icon: CheckCircle2,
-                  },
-                ].map((item) => {
-                  const ItemIcon = item.icon;
-                  return (
-                    <div
-                      key={item.label}
-                      className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 transition-colors hover:bg-white/[0.06]"
-                    >
-                      <div className="flex items-center gap-1 text-[9px] font-semibold text-white/45">
-                        <ItemIcon className="h-2.5 w-2.5 text-amber-300" />
-                        <span>{item.label}</span>
-                      </div>
-                      <div className="mt-0.5 text-[10.5px] font-bold text-white leading-snug">
-                        {item.val}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        }
+        aside={<PolicyFrameworkCard />}
       />
 
       <section className="bg-white py-10 md:py-12">
@@ -338,7 +252,7 @@ export default function PoliciesPage() {
 
       <section
         id="policy-directory"
-        className="scroll-mt-24 border-y border-slate-200 bg-[#f7f8fc] py-12 md:py-16"
+        className="scroll-mt-24 border-t border-slate-200 bg-white py-12 md:py-16"
       >
         <div className="container-x">
           <div className="max-w-3xl">
@@ -393,49 +307,15 @@ export default function PoliciesPage() {
         </div>
       </section>
 
-      <section className="bg-white py-12 md:py-16">
-        <div className="container-x">
-          <div className="max-w-3xl">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-gold-dark)]">
-              Editorial safeguards
-            </p>
-            <h2 className="mt-3 font-academic text-3xl font-bold tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
-              How policy is applied to every manuscript
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500">
-              Defined checkpoints make responsibility visible from first
-              upload through publication and long-term record stewardship.
-            </p>
-          </div>
+      <ProcessSteps
+        sectionLabel="Editorial safeguards"
+        heading="How policy is applied to every manuscript"
+        description="Five documented checkpoints connect initial screening, independent assessment, editorial judgment, and stewardship of the published record."
+        steps={editorialSafeguards}
+        className="border-t border-slate-100 bg-[#f7f8fc]"
+      />
 
-          <div className="relative mt-11">
-            <div className="pointer-events-none absolute bottom-8 left-[21px] top-[21px] w-px bg-slate-200 md:hidden" />
-            <div className="pointer-events-none absolute left-[5%] right-[5%] top-[21px] hidden h-px bg-slate-200 md:block" />
-            <ol className="grid gap-9 md:grid-cols-5 md:gap-6">
-              {editorialSafeguards.map(({ number, icon: Icon, title, text }) => (
-                <li key={number} className="relative">
-                  <div className="relative flex items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-[color:var(--color-gb-blue)] shadow-sm">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <span className="font-mono text-[9px] font-black text-slate-300">
-                      {number}
-                    </span>
-                  </div>
-                  <h3 className="mt-5 text-xs font-black text-[color:var(--color-gb-blue-deep)]">
-                    {title}
-                  </h3>
-                  <p className="mt-2 max-w-[220px] text-xs leading-6 text-slate-500">
-                    {text}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-[#f7f8fc] py-12 md:py-16">
+      <section className="bg-white border-t border-slate-100 py-12 md:py-16">
         <div className="container-x grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="relative overflow-hidden rounded-[20px] bg-[color:var(--color-gb-blue-deep)] p-7 text-white md:p-9">
             <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />

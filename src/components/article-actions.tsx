@@ -4,63 +4,133 @@ import { Download, Quote, Share2, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Article } from "@/lib/data";
+import { HeroActionButton } from "@/components/ui/hero-action-button";
 
-export function ArticleActions({ article }: { article: Article }) {
+function formatApaAuthor(author: string) {
+  const parts = author
+    .replace(/^(Dr|Prof)\.\s+/i, "")
+    .trim()
+    .split(/\s+/);
+  const surname = parts.pop() ?? author;
+  const initials = parts
+    .map((part) => `${part.replace(/\./g, "").charAt(0).toUpperCase()}.`)
+    .join(" ");
+
+  return `${surname}, ${initials}`;
+}
+
+function joinApaAuthors(authors: string[]) {
+  const formatted = authors.map(formatApaAuthor);
+
+  if (formatted.length <= 1) {
+    return formatted[0] ?? "";
+  }
+
+  return `${formatted.slice(0, -1).join(", ")}, & ${formatted.at(-1)}`;
+}
+
+export function ArticleActions({
+  article,
+  variant = "default",
+}: {
+  article: Article;
+  variant?: "hero" | "default";
+}) {
   const [copiedCite, setCopiedCite] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
-  const handleCite = () => {
-    const citation = `${article.authors.join(", ")} (${article.publishedAt.split(" ")[1] || "2026"}). ${article.title}. GB Journal, ${article.volume}, ${article.issue}, ${article.pages}. doi:${article.doi}`;
-    navigator.clipboard.writeText(citation);
-    toast.success("Citation copied in APA format!");
-    setCopiedCite(true);
-    setTimeout(() => setCopiedCite(false), 2000);
+  const handleCite = async () => {
+    const year = article.publishedAt.match(/\d{4}/)?.[0] ?? "2026";
+    const volume = article.volume.replace(/\D/g, "");
+    const issue = article.issue.replace(/\D/g, "");
+    const citation = `${joinApaAuthors(article.authors)} (${year}). ${article.title}. Gono Bishwabidyalay Journal, ${volume}(${issue}), ${article.pages}. https://doi.org/${article.doi}`;
+
+    try {
+      await navigator.clipboard.writeText(citation);
+      toast.success("APA citation copied");
+      setCopiedCite(true);
+      window.setTimeout(() => setCopiedCite(false), 2000);
+    } catch {
+      toast.error("Could not copy the citation");
+    }
   };
 
-  const handleShare = () => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard!");
-    setCopiedShare(true);
-    setTimeout(() => setCopiedShare(false), 2000);
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Article link copied");
+      setCopiedShare(true);
+      window.setTimeout(() => setCopiedShare(false), 2000);
+    } catch {
+      toast.error("Could not copy the article link");
+    }
   };
+
+  const isHero = variant === "hero";
+  const pdfUrl = article.pdf || `https://doi.org/${article.doi}`;
+
+  if (isHero) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <HeroActionButton
+          href={pdfUrl}
+          download={!!article.pdf}
+          variant="primary"
+          icon={Download}
+        >
+          Download PDF
+        </HeroActionButton>
+
+        <HeroActionButton
+          variant="secondary"
+          icon={copiedCite ? Check : Quote}
+          onClick={handleCite}
+        >
+          {copiedCite ? "Citation copied" : "Cite article"}
+        </HeroActionButton>
+
+        <HeroActionButton
+          variant="secondary"
+          icon={copiedShare ? Check : Share2}
+          onClick={handleShare}
+        >
+          {copiedShare ? "Link copied" : "Share article"}
+        </HeroActionButton>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-4 grid gap-2.5">
-      <a
-        href={article.pdf || "#"}
-        download
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--color-gb-blue)] hover:bg-[color:var(--color-gb-blue-dark)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 w-full cursor-pointer text-center active:scale-[0.98]"
+    <div className="flex flex-col gap-2.5">
+      <HeroActionButton
+        href={pdfUrl}
+        download={!!article.pdf}
+        variant="dark"
+        icon={Download}
+        className="w-full justify-center text-xs py-2.5 shadow-sm"
       >
-        <Download className="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5" />
         Download PDF
-      </a>
-      
-      <button
-        onClick={handleCite}
-        className="group inline-flex items-center justify-center gap-2 rounded-lg border border-[color:var(--border)] bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-[color:var(--color-gb-blue-dark)] transition-all duration-200 w-full cursor-pointer active:scale-[0.98]"
-      >
-        {copiedCite ? (
-          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-        ) : (
-          <Quote className="h-4 w-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
-        )}
-        {copiedCite ? "Citation Copied" : "Cite Article"}
-      </button>
+      </HeroActionButton>
 
-      <button
-        onClick={handleShare}
-        className="group inline-flex items-center justify-center gap-2 rounded-lg border border-[color:var(--border)] bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-[color:var(--color-gb-blue-dark)] transition-all duration-200 w-full cursor-pointer active:scale-[0.98]"
-      >
-        {copiedShare ? (
-          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-        ) : (
-          <Share2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
-        )}
-        {copiedShare ? "Link Copied" : "Share Article"}
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <HeroActionButton
+          variant="outline"
+          icon={copiedCite ? Check : Quote}
+          onClick={handleCite}
+          className="w-full justify-center px-2 py-2 text-xs"
+        >
+          {copiedCite ? "Copied" : "Cite"}
+        </HeroActionButton>
+
+        <HeroActionButton
+          variant="outline"
+          icon={copiedShare ? Check : Share2}
+          onClick={handleShare}
+          className="w-full justify-center px-2 py-2 text-xs"
+        >
+          {copiedShare ? "Copied" : "Share"}
+        </HeroActionButton>
+      </div>
     </div>
   );
 }

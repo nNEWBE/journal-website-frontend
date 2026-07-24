@@ -375,12 +375,14 @@ export const boardMembers = [
     role: "Editor-in-Chief",
     unit: "Gono Bishwabidyalay",
     expertise: "Public health, community medicine",
+    image: "/images/editor_chief.png",
   },
   {
     name: "Prof. Saiful Islam",
     role: "Managing Editor",
     unit: "Department of Pharmacy",
     expertise: "Pharmacy education, stewardship",
+    image: "/images/managing_editor.png",
   },
   {
     name: "Dr. Rehana Akter",

@@ -2,13 +2,17 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { ProcessSteps } from "@/components/ui/process-steps";
+import type { ProcessStep } from "@/components/ui/process-steps";
+import { HeroActionButton } from "@/components/ui/hero-action-button";
+import { PublishingCharterSection } from "@/components/ui/publishing-charter-section";
 import {
   Archive,
   ArrowRight,
   BookOpen,
+  CalendarDays,
   ClipboardCheck,
   Cpu,
-  FileCheck2,
   Globe2,
   GraduationCap,
   HeartPulse,
@@ -54,36 +58,36 @@ const publishingCommitments = [
   },
 ];
 
-const editorialSteps = [
+const editorialSteps: ProcessStep[] = [
   {
     number: "01",
-    icon: FileCheck2,
+    icon: "file",
     title: "Submission",
-    text: "Files, metadata, authorship, and declarations enter one record.",
+    description: "Files, metadata, authorship, and declarations enter one record.",
   },
   {
     number: "02",
-    icon: ShieldCheck,
+    icon: "shield",
     title: "Screening",
-    text: "Scope, completeness, ethics, and originality are checked.",
+    description: "Scope, completeness, ethics, and originality are checked.",
   },
   {
     number: "03",
-    icon: Users,
+    icon: "users",
     title: "Peer review",
-    text: "Independent experts assess the scholarly contribution.",
+    description: "Independent experts assess the scholarly contribution.",
   },
   {
     number: "04",
-    icon: ClipboardCheck,
+    icon: "clipboard",
     title: "Decision",
-    text: "Reports and author revisions inform the editorial outcome.",
+    description: "Reports and author revisions inform the editorial outcome.",
   },
   {
     number: "05",
-    icon: BookOpen,
+    icon: "book",
     title: "Publication",
-    text: "The version of record is prepared for open discovery.",
+    description: "The version of record is prepared for open discovery.",
   },
 ];
 
@@ -136,73 +140,115 @@ export function AboutJournalStory({ topics }: { topics: string[] }) {
 
   return (
     <>
-      <section className="bg-white py-12 md:py-16">
-        <div className="container-x grid gap-12 lg:grid-cols-[0.68fr_1.32fr] lg:items-start">
-          <Reveal className="lg:sticky lg:top-24">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-[10px] font-black text-slate-300">
+      <section
+        className="bg-[#fbfcff] py-12 md:py-16 lg:py-20"
+        aria-labelledby="publishing-purpose-heading"
+      >
+        <div className="container-x grid gap-10 lg:grid-cols-[0.42fr_0.58fr] lg:items-start lg:gap-16 xl:gap-20">
+          <Reveal>
+            <div className="flex items-center gap-2.5">
+              <span
+                className="font-mono text-[11px] font-extrabold tracking-[0.08em] text-slate-400"
+                aria-hidden="true"
+              >
                 01
               </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
                 Why we publish
               </span>
             </div>
-            <h2 className="mt-5 max-w-md font-academic text-3xl font-bold leading-tight tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
+
+            <h2
+              id="publishing-purpose-heading"
+              className="mt-5 max-w-lg font-academic text-3xl font-bold leading-[1.14] tracking-[-0.035em] text-[color:var(--color-gb-blue-deep)] md:text-4xl lg:text-[2.55rem]"
+            >
               A university journal with a public purpose
             </h2>
-            <p className="mt-5 max-w-md text-xs leading-6 text-slate-500">
-              Scholarship becomes more valuable when it is carefully assessed,
-              permanently recorded, and made useful beyond a single discipline
-              or campus.
+            <p className="mt-4 max-w-md text-sm leading-6 text-slate-600">
+              Scholarship is recorded, peer-reviewed, and made useful across research disciplines.
             </p>
+
+            <blockquote className="mt-6 max-w-lg border-l-2 border-[color:var(--color-gb-gold)] pl-4">
+              <p className="font-academic text-base font-bold leading-7 text-[color:var(--color-gb-blue-deep)]">
+                &ldquo;Helping credible research travel from author to global reader through peer review.&rdquo;
+              </p>
+            </blockquote>
           </Reveal>
 
-          <Reveal>
-            <p className="font-academic text-2xl font-bold leading-[1.45] tracking-[-0.02em] text-[color:var(--color-gb-blue-deep)] md:text-[2rem]">
-              We provide a credible home for research that advances knowledge
-              and remains attentive to the needs of communities, institutions,
-              and professional practice.
+          <Reveal delay={0.08}>
+            <p className="max-w-2xl font-academic text-xl font-bold leading-snug tracking-[-0.02em] text-[color:var(--color-gb-blue-deep)] md:text-2xl">
+              Advancing peer-reviewed research for academic, institutional, and public practice.
             </p>
-            <div className="mt-8 grid gap-6 border-t border-slate-200 pt-8 md:grid-cols-2">
-              <p className="text-sm leading-7 text-slate-600">
-                The journal publishes original research, critical reviews, case
-                studies, perspectives, and academic correspondence. Editorial
-                decisions are based on scholarly merit, methodological clarity,
-                ethical responsibility, and relevance to the journal&apos;s
-                scope.
-              </p>
-              <p className="text-sm leading-7 text-slate-600">
-                Published by Gono Bishwabidyalay, it creates a shared scholarly
-                record across health, science, agriculture, technology, law,
-                governance, and the social sciences.
-              </p>
+
+            <div className="mt-6 grid border-t border-slate-200 sm:grid-cols-2">
+              <article className="border-b border-slate-200 py-5 sm:border-r sm:pr-6">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                    <BookOpen className="h-4.5 w-4.5" aria-hidden="true" />
+                  </span>
+                  <h3 className="font-academic text-base font-bold text-[color:var(--color-gb-blue-deep)]">
+                    Publication scope
+                  </h3>
+                </div>
+                <p className="mt-3 text-xs leading-6 text-slate-600">
+                  Original research, reviews, case studies, and scholarly papers selected by academic merit.
+                </p>
+              </article>
+
+              <article className="border-b border-slate-200 py-5 sm:pl-6">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                    <Landmark className="h-4.5 w-4.5" aria-hidden="true" />
+                  </span>
+                  <h3 className="font-academic text-base font-bold text-[color:var(--color-gb-blue-deep)]">
+                    Institutional stewardship
+                  </h3>
+                </div>
+                <p className="mt-3 text-xs leading-6 text-slate-600">
+                  Published by Gono Bishwabidyalay across science, health, technology, and social sciences.
+                </p>
+              </article>
             </div>
 
-            <div className="mt-10 grid grid-cols-3 border-y border-slate-200 py-6">
+            <dl className="grid border-b border-slate-200 sm:grid-cols-3">
               {[
-                [String(topics.length), "Academic fields"],
-                ["2", "Editions yearly"],
-                ["Open", "Reader access"],
-              ].map(([value, label], index) => (
+                {
+                  value: String(topics.length),
+                  label: "Academic fields",
+                  icon: GraduationCap,
+                },
+                {
+                  value: "2",
+                  label: "Editions yearly",
+                  icon: CalendarDays,
+                },
+                {
+                  value: "Open",
+                  label: "Reader access",
+                  icon: Globe2,
+                },
+              ].map(({ value, label, icon: StatIcon }, index) => (
                 <div
                   key={label}
-                  className={index === 0 ? "" : "border-l border-slate-200 pl-5"}
+                  className={`flex items-center justify-between py-4 sm:flex-col sm:items-start sm:justify-start sm:py-5 ${index === 0
+                    ? "sm:pr-4"
+                    : "border-t border-slate-200 sm:border-l sm:border-t-0 sm:px-4"
+                    }`}
                 >
-                  <p className="font-academic text-2xl font-bold text-[color:var(--color-gb-blue-deep)]">
-                    {value}
-                  </p>
-                  <p className="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                  <dt className="order-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-500 sm:order-2 sm:mt-2 sm:text-[9px]">
                     {label}
-                  </p>
+                  </dt>
+                  <dd className="order-2 flex items-center gap-2.5 sm:order-1">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[color:var(--color-gb-gold-dark)]">
+                      <StatIcon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="font-academic text-xl font-bold text-[color:var(--color-gb-blue-deep)]">
+                      {value}
+                    </span>
+                  </dd>
                 </div>
               ))}
-            </div>
-
-            <blockquote className="mt-10 border-l-2 border-[color:var(--color-gb-gold)] pl-6 font-academic text-xl font-bold leading-relaxed text-[color:var(--color-gb-blue-deep)] md:text-2xl">
-              &ldquo;Our purpose is to help credible research travel&mdash;from
-              the researcher, through rigorous review, to every reader it can
-              serve.&rdquo;
-            </blockquote>
+            </dl>
           </Reveal>
         </div>
       </section>
@@ -278,176 +324,127 @@ export function AboutJournalStory({ topics }: { topics: string[] }) {
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-[#f7f8fc] py-12 md:py-16">
-        <div className="container-x grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
-          <Reveal className="lg:sticky lg:top-24">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-[10px] font-black text-slate-300">
-                03
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
-                Publishing charter
-              </span>
-            </div>
-            <h2 className="mt-5 max-w-md font-academic text-3xl font-bold leading-tight tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
-              Standards readers and authors can rely on
-            </h2>
-            <p className="mt-5 max-w-md text-xs leading-6 text-slate-500">
-              Quality is not a decorative claim. It is a set of repeatable
-              editorial responsibilities applied to every manuscript and every
-              published record.
-            </p>
-            <Link
-              href="/policies"
-              className="mt-7 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue)] focus-ring"
-            >
-              Read journal policies
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Reveal>
+      <PublishingCharterSection
+        sectionNumber="03"
+        sectionLabel="Publishing charter"
+        heading="Standards readers and authors can rely on"
+        description="Quality is not a decorative claim. It is a set of repeatable editorial responsibilities applied to every manuscript and every published record."
+        buttonText="Read journal policies"
+        buttonHref="/policies"
+        commitments={publishingCommitments}
+      />
 
-          <Reveal className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            {publishingCommitments.map(
-              ({ number, icon: Icon, title, text }) => (
-                <article
-                  key={number}
-                  className="group grid grid-cols-[32px_42px_minmax(0,1fr)] gap-4 border-b border-slate-100 p-5 transition-colors last:border-b-0 hover:bg-[#f9faff] md:p-6"
-                >
-                  <span className="pt-2 font-mono text-[9px] font-black text-slate-300">
-                    {number}
-                  </span>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover:bg-white group-hover:shadow-sm">
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-black text-[color:var(--color-gb-blue-deep)]">
-                      {title}
-                    </h3>
-                    <p className="mt-2 text-xs leading-6 text-slate-500">
-                      {text}
-                    </p>
-                  </div>
-                </article>
-              ),
-            )}
-          </Reveal>
-        </div>
-      </section>
+      <ProcessSteps
+        sectionNumber="04"
+        sectionLabel="Editorial lifecycle"
+        heading="How research becomes part of the scholarly record"
+        description="Defined stages make responsibility visible while keeping authors informed from first upload to the version of record."
+        steps={editorialSteps}
+      />
 
-      <section className="bg-white py-12 md:py-16">
+      <section
+        className="border-t border-slate-200/80 bg-[#f8f9fc] py-12 md:py-16"
+        aria-labelledby="discovery-registries-heading"
+      >
         <div className="container-x">
-          <Reveal className="max-w-3xl">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-[10px] font-black text-slate-300">
-                04
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
-                Editorial lifecycle
-              </span>
-            </div>
-            <h2 className="mt-5 font-academic text-3xl font-bold leading-tight tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
-              How research becomes part of the scholarly record
-            </h2>
-            <p className="mt-4 max-w-2xl text-xs leading-6 text-slate-500">
-              Defined stages make responsibility visible while keeping authors
-              informed from first upload to the version of record.
-            </p>
-          </Reveal>
-
-          <div className="relative mt-12 grid gap-9 md:grid-cols-5 md:gap-6">
-            <div className="pointer-events-none absolute bottom-8 left-[21px] top-[21px] w-px bg-slate-200 md:hidden" />
-            <div className="pointer-events-none absolute left-[5%] right-[5%] top-[21px] hidden h-px bg-slate-200 md:block" />
-            {editorialSteps.map(({ number, icon: Icon, title, text }, index) => (
-              <Reveal key={number} delay={index * 0.07}>
-                <article className="relative">
-                  <div className="relative flex items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-[color:var(--color-gb-blue)] shadow-sm">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <span className="font-mono text-[9px] font-black text-slate-300">
-                      {number}
-                    </span>
-                  </div>
-                  <h3 className="mt-5 text-xs font-black text-[color:var(--color-gb-blue-deep)]">
-                    {title}
-                  </h3>
-                  <p className="mt-2 max-w-[220px] text-xs leading-6 text-slate-500">
-                    {text}
-                  </p>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-[#f7f8fc] py-12 md:py-16">
-        <div className="container-x grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <Reveal className="rounded-[20px] border border-slate-200 bg-white p-6 md:p-8">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
-                <Library className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-gold-dark)]">
-                  Discovery and registries
-                </p>
-                <h2 className="mt-1 font-academic text-2xl font-bold text-[color:var(--color-gb-blue-deep)]">
+          <Reveal>
+            <div className="grid overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_20px_60px_rgba(11,18,61,0.08)] lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="p-6 sm:p-8 xl:p-10">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="font-mono text-[11px] font-extrabold tracking-[0.08em] text-slate-400"
+                    aria-hidden="true"
+                  >
+                    05
+                  </span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
+                    Discovery and registries
+                  </span>
+                </div>
+                <h2
+                  id="discovery-registries-heading"
+                  className="mt-5 max-w-xl font-academic text-3xl font-bold leading-[1.16] tracking-[-0.035em] text-[color:var(--color-gb-blue-deep)] md:text-4xl"
+                >
                   Prepared to be found and cited
                 </h2>
-              </div>
-            </div>
-            <div className="mt-7 grid gap-x-6 sm:grid-cols-2">
-              {registries.map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-3 border-b border-slate-100 py-3.5 text-xs font-bold text-slate-600"
-                >
-                  <Icon
-                    className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]"
-                    aria-hidden="true"
-                  />
-                  {label}
-                </div>
-              ))}
-            </div>
-          </Reveal>
 
-          <Reveal
-            delay={0.08}
-            className="relative overflow-hidden rounded-[20px] bg-[color:var(--color-gb-blue-deep)] p-7 text-white md:p-8"
-          >
-            <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />
-            <div className="relative">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-amber-300">
-                <Landmark className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <p className="mt-6 text-[9px] font-black uppercase tracking-[0.14em] text-amber-300">
-                Institutional stewardship
-              </p>
-              <h2 className="mt-3 max-w-md font-academic text-3xl font-bold leading-tight text-white">
-                Published with academic responsibility
-              </h2>
-              <p className="mt-4 max-w-lg text-sm leading-7 text-white/55">
-                Gono Bishwabidyalay supports the journal through defined
-                editorial roles, independent academic evaluation, transparent
-                policies, and long-term stewardship of the publication record.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link
-                  href="/editorial-board"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-white px-4 text-[10px] font-extrabold text-[color:var(--color-gb-blue-deep)] transition-colors hover:bg-amber-50 focus-ring"
+                <div className="mt-7 flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                    <Library className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm font-extrabold text-[color:var(--color-gb-blue-deep)]">
+                    Registry and access framework
+                  </p>
+                </div>
+
+                <ul
+                  className="mt-5 grid gap-3 sm:grid-cols-2"
+                  aria-label="Discovery registries and publication standards"
                 >
-                  Editorial governance
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-                <Link
-                  href="/contact"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-[10px] font-extrabold text-white transition-colors hover:bg-white/10 focus-ring"
-                >
-                  Contact the office
-                </Link>
+                  {registries.map(({ icon: Icon, label }) => (
+                    <li
+                      key={label}
+                      className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 px-4 py-3.5"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[color:var(--color-gb-blue)] shadow-[0_4px_12px_rgba(11,18,61,0.06)]">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <span className="text-[13px] font-bold leading-5 text-slate-700">
+                        {label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
+
+              <article
+                className="m-2 flex flex-col justify-between rounded-[22px] bg-[color:var(--color-gb-blue-deep)] p-6 text-white sm:p-8 xl:p-10"
+                aria-labelledby="institutional-stewardship-heading"
+              >
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-amber-300">
+                      <Landmark className="h-4.5 w-4.5" aria-hidden="true" />
+                    </span>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-300">
+                      Institutional stewardship
+                    </p>
+                  </div>
+                  <h3
+                    id="institutional-stewardship-heading"
+                    className="mt-5 max-w-lg font-academic text-2xl font-bold leading-[1.2] text-white md:text-3xl"
+                  >
+                    Published with academic responsibility
+                  </h3>
+                  <p className="mt-4 max-w-[58ch] text-sm leading-7 text-white/65">
+                    Gono Bishwabidyalay supports the journal through defined
+                    editorial roles, independent academic evaluation,
+                    transparent policies, and long-term stewardship of the
+                    publication record.
+                  </p>
+                </div>
+
+                <div className="mt-7 flex flex-row items-center gap-2.5 sm:gap-3">
+                  <HeroActionButton
+                    href="/editorial-board"
+                    variant="white"
+                    hasArrow
+                  >
+                    <span className="sm:hidden">Governance</span>
+                    <span className="hidden sm:inline">
+                      Editorial governance
+                    </span>
+                  </HeroActionButton>
+                  <HeroActionButton
+                    href="/contact"
+                    variant="secondary"
+                    hasArrow
+                  >
+                    <span className="sm:hidden">Contact</span>
+                    <span className="hidden sm:inline">Contact the office</span>
+                  </HeroActionButton>
+                </div>
+              </article>
             </div>
           </Reveal>
         </div>
@@ -462,20 +459,22 @@ export function AboutJournalStory({ topics }: { topics: string[] }) {
                 Explore the journal&apos;s scholarly record
               </h2>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
+            <div className="flex flex-row items-center gap-2.5 sm:gap-3">
+              <HeroActionButton
                 href="/issues/current"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-5 text-xs font-extrabold text-white transition-colors hover:bg-[color:var(--color-gb-blue)] focus-ring"
+                variant="dark"
+                hasArrow
               >
-                Read the current issue
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </Link>
-              <Link
+                <span className="sm:hidden">Current issue</span>
+                <span className="hidden sm:inline">Read current issue</span>
+              </HeroActionButton>
+              <HeroActionButton
                 href="/contact"
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-xs font-extrabold text-[color:var(--color-gb-blue-deep)] transition-colors hover:border-[color:var(--color-gb-blue)]/25 hover:bg-[color:var(--color-gb-blue-soft)]/30 focus-ring"
+                variant="outline"
               >
-                Contact the journal
-              </Link>
+                <span className="sm:hidden">Contact</span>
+                <span className="hidden sm:inline">Contact journal</span>
+              </HeroActionButton>
             </div>
           </div>
         </Reveal>

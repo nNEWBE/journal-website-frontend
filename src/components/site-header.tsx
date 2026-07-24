@@ -80,17 +80,11 @@ export const mainNav: NavItem[] = [
   },
   {
     label: "Issues & Articles",
-    href: "/issues/current",
+    href: "/issues",
     dropdownHeader: "Browse published volumes, editions & indexed papers",
     footerHref: "/articles",
     footerLabel: "Search all articles",
     dropdown: [
-      {
-        label: "Current Issue",
-        href: "/issues/current",
-        description: "Explore the latest published edition (Vol 4, Issue 2)",
-        icon: BookOpen,
-      },
       {
         label: "All Issues & Archive",
         href: "/issues",
@@ -108,7 +102,7 @@ export const mainNav: NavItem[] = [
   {
     label: "For Authors",
     href: "/authors",
-    dropdownHeader: "Guidelines, submission portal & ethics policies",
+    dropdownHeader: "Guidelines & submission portal",
     footerHref: "/dashboard/submissions/new",
     footerLabel: "Submit your manuscript",
     dropdown: [
@@ -123,12 +117,6 @@ export const mainNav: NavItem[] = [
         href: "/dashboard/submissions/new",
         description: "Online manuscript submission portal",
         icon: Send,
-      },
-      {
-        label: "Publication Ethics",
-        href: "/policies",
-        description: "Plagiarism screening & author declarations",
-        icon: ShieldCheck,
       },
     ],
   },
@@ -174,7 +162,11 @@ export function SiteHeader() {
   const [direction, setDirection] = useState<"left" | "right">("right");
 
   useEffect(() => {
-    setUser(getSession());
+    const sessionTimer = window.setTimeout(() => {
+      setUser(getSession());
+    }, 0);
+
+    return () => window.clearTimeout(sessionTimer);
   }, []);
 
   useEffect(() => {
@@ -249,8 +241,8 @@ export function SiteHeader() {
         }`}
       >
         <div className="container-x flex min-h-16 items-center justify-between gap-4 py-2.5">
-          <Link href="/" className="flex items-center gap-3 shrink-0">
-            <GbJournalLogo />
+          <Link href="/" className="flex shrink-0 items-center gap-3">
+            <GbJournalLogo className="max-[380px]:gap-0 max-[380px]:[&>div:first-child]:h-[42px] max-[380px]:[&>div:first-child]:w-[42px] max-[380px]:[&>div:last-child]:hidden" />
           </Link>
 
           {/* Desktop Navigation with Hover Dropdowns */}
@@ -421,7 +413,8 @@ export function SiteHeader() {
 
             <Link
               href={user ? "/dashboard/submissions/new" : "/login"}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-4 py-2 text-[12px] font-extrabold text-white shadow-xs transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-3 py-2 text-[12px] font-extrabold text-white shadow-xs transition-all hover:bg-[color:var(--color-gb-blue)] sm:px-4"
+              aria-label={user ? "Submit a new manuscript" : "Sign in to submit a manuscript"}
             >
               <Send className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Submit</span>
@@ -448,11 +441,11 @@ export function SiteHeader() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--border)] bg-white hover:bg-slate-50 px-3.5 py-2 text-[12px] font-bold text-[color:var(--color-gb-blue-dark)] transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--border)] bg-white px-2.5 py-2 text-[12px] font-bold text-[color:var(--color-gb-blue-dark)] transition-colors hover:bg-slate-50 min-[440px]:px-3.5"
                 title="Access Workspace"
               >
                 <UserIcon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-                Login
+                <span className="hidden min-[440px]:inline">Login</span>
               </Link>
             )}
 

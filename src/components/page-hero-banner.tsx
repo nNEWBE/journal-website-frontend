@@ -53,7 +53,7 @@ export function PageHeroBanner({
       <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-[color:var(--color-gb-blue)] opacity-[0.13] blur-[90px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 h-[280px] w-[280px] rounded-full bg-[color:var(--color-gb-gold)] opacity-[0.07] blur-[80px]" />
 
-      <div className="container-x relative py-7 md:py-9">
+      <div className="container-x relative py-12 md:py-16">
         <div
           className={`grid gap-7 ${
             hasRightCol ? (coverCard ? "lg:grid-cols-[1fr_360px] lg:items-center" : "lg:grid-cols-[1fr_auto] lg:items-center") : ""
