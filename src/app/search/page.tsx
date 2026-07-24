@@ -8,6 +8,7 @@ import {
   Search,
 } from "lucide-react";
 import { ArticleCard } from "@/components/article-card";
+import { EditorialPageHeader } from "@/components/editorial-page-header";
 import { PageShell } from "@/components/page-shell";
 import { articles, filterArticles, topics } from "@/lib/data";
 
@@ -24,66 +25,106 @@ export default async function SearchPage({
 
   return (
     <PageShell>
-      <section className="relative z-20 bg-[color:var(--color-gb-blue-deep)] text-white">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden hero-pattern" />
-        <div className="container-x relative py-14 md:py-18">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/70 backdrop-blur-md">
-              <FileSearch className="h-3.5 w-3.5 text-white/60" />
-              <span>Journal Search</span>
+      <EditorialPageHeader
+        icon={FileSearch}
+        eyebrow="Journal search"
+        title="Search the scholarly record"
+        description="Find peer-reviewed articles by title, author, abstract keyword, subject, or DOI across every published issue."
+        supporting={
+          <>
+            <span className="inline-flex items-center gap-2">
+              <BookOpen className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+              Titles and abstracts
             </span>
-            <h1 className="mt-5 font-academic text-4xl font-bold leading-[1.06] tracking-[-0.035em] text-white md:text-5xl">
-              Search the scholarly record
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/60">
-              Find peer-reviewed articles by title, author, abstract keyword,
-              subject, or DOI across every published issue.
-            </p>
-          </div>
-
-          <form
-            action="/search"
-            method="get"
-            className="mx-auto mt-9 max-w-4xl rounded-2xl border border-white/15 bg-white/[0.06] p-3 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <label className="flex min-h-12 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 transition-colors">
-                <Search className="h-4 w-4 shrink-0 text-white/60" />
-                <span className="sr-only">Search the journal</span>
-                <input
-                  name="q"
-                  defaultValue={q}
-                  autoComplete="off"
-                  placeholder="Enter a title, author, DOI, or keyword"
-                  className="w-full border-none bg-transparent text-sm font-medium text-white outline-none focus:outline-none focus:ring-0 focus:border-none hover:border-none placeholder:text-white/50"
-                />
-              </label>
-              <button
-                type="submit"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-sky-500 px-6 text-xs font-bold text-slate-950 shadow-md transition-all hover:bg-sky-400 focus:outline-none"
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span>Search journal</span>
-              </button>
+            <span className="inline-flex items-center gap-2">
+              <Library className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+              Authors and DOI
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Globe2 className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+              Open-access records
+            </span>
+          </>
+        }
+        aside={
+          <div className="relative overflow-hidden rounded-[20px] bg-[color:var(--color-gb-blue-deep)] p-6 text-white shadow-[0_22px_52px_rgba(17,27,82,0.16)]">
+            <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />
+            <div className="relative flex items-center gap-3 border-b border-white/10 pb-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-amber-300">
+                <Search className="h-4.5 w-4.5" />
+              </span>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-amber-300">
+                  Search coverage
+                </p>
+                <h2 className="mt-1 text-xs font-black text-white">
+                  Complete journal metadata
+                </h2>
+              </div>
             </div>
-          </form>
-
-          <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[9px] font-bold text-slate-400">
-            <span className="uppercase tracking-[0.1em]">Popular subjects</span>
-            {suggestedTopics.map((topic) => (
-              <Link
-                key={topic}
-                href={`/search?q=${encodeURIComponent(topic)}`}
-                className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-slate-500 transition-colors hover:border-[color:var(--color-gb-blue)]/20 hover:text-[color:var(--color-gb-blue)] focus-ring"
-              >
-                {topic}
-              </Link>
-            ))}
+            <dl className="relative mt-2 divide-y divide-white/10">
+              {[
+                ["Indexed articles", String(articles.length)],
+                ["Subject areas", String(topics.length)],
+                ["Search fields", "Title, author, DOI"],
+                ["Full text", "Abstract keywords"],
+                ["Access", "Open records"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-5 py-3.5 text-[10px]"
+                >
+                  <dt className="text-white/40">{label}</dt>
+                  <dd className="text-right font-bold text-white/75">{value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       <section className="container-x py-12 md:py-16">
+        <form
+          action="/search"
+          method="get"
+          className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_40px_rgba(17,27,82,0.07)]"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex min-h-12 flex-1 items-center gap-3 rounded-xl bg-slate-50 px-4 transition-colors focus-within:bg-white focus-within:ring-1 focus-within:ring-[color:var(--color-gb-blue)]/30">
+              <Search className="h-4 w-4 shrink-0 text-[color:var(--color-gb-blue)]" />
+              <span className="sr-only">Search the journal</span>
+              <input
+                name="q"
+                required
+                defaultValue={q}
+                autoComplete="off"
+                placeholder="Enter a title, author, DOI, or keyword"
+                className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+              />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] px-6 text-xs font-extrabold text-white transition-colors hover:bg-[color:var(--color-gb-blue)] focus-ring"
+            >
+              <Search className="h-3.5 w-3.5" />
+              Search journal
+            </button>
+          </div>
+        </form>
+
+        <div className="mx-auto mb-12 mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[9px] font-bold text-slate-400">
+          <span className="uppercase tracking-[0.1em]">Popular subjects</span>
+          {suggestedTopics.map((topic) => (
+            <Link
+              key={topic}
+              href={`/search?q=${encodeURIComponent(topic)}`}
+              className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-slate-500 transition-colors hover:border-[color:var(--color-gb-blue)]/20 hover:text-[color:var(--color-gb-blue)] focus-ring"
+            >
+              {topic}
+            </Link>
+          ))}
+        </div>
+
         {hasQuery ? (
           <>
             <div className="flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">

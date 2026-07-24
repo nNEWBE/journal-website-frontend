@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -10,9 +11,11 @@ import {
   Eye,
   FileText,
   Globe2,
+  Hash,
   Library,
   Quote,
   ShieldCheck,
+  Tag,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { articles, findArticle } from "@/lib/data";
@@ -65,74 +68,121 @@ export default async function ArticlePage({
   if (!article) notFound();
 
   const abstractSection = article.sections.find(
-    (section) => section.heading.toLowerCase() === "abstract",
+    (s) => s.heading.toLowerCase() === "abstract",
   );
   const bodySections = article.sections.filter(
-    (section) => section.heading.toLowerCase() !== "abstract",
+    (s) => s.heading.toLowerCase() !== "abstract",
   );
+  const references = getArticleReferences(article.slug);
+
+  // related articles (same topic, excluding current)
+  const related = articles
+    .filter((a) => a.topic === article.topic && a.slug !== article.slug)
+    .slice(0, 2);
 
   return (
     <PageShell>
-      <section className="relative overflow-hidden border-b border-slate-200 bg-[#f7f8fc]">
-        <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.025]" />
-        <div className="container-x relative grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
-          <div className="max-w-4xl">
+      {/* ── Hero ─────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-[color:var(--color-gb-blue-deep)]">
+        <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />
+        <div className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full bg-[color:var(--color-gb-blue)] opacity-[0.14] blur-[90px]" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-[260px] w-[260px] rounded-full bg-[color:var(--color-gb-gold)] opacity-[0.08] blur-[70px]" />
+
+        <div className="container-x relative grid gap-10 py-14 md:py-18 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center lg:py-20">
+          {/* Left: metadata + title */}
+          <div className="max-w-3xl">
+            {/* breadcrumb */}
             <Link
               href="/articles"
-              className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 transition-colors hover:text-[color:var(--color-gb-blue)] focus-ring"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] font-bold text-white/50 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white/80 backdrop-blur-sm"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3 w-3" />
               Research archive
             </Link>
 
+            {/* type + topic badges */}
             <div className="mt-6 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-gb-blue)]/10 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue)]">
-                <FileText className="h-3 w-3" />
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.07] px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/80">
+                <FileText className="h-3 w-3 text-amber-300" />
                 {article.type}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-300">
                 <Globe2 className="h-3 w-3" />
                 Open access
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">
                 {article.topic}
               </span>
             </div>
 
-            <h1 className="mt-5 max-w-4xl font-academic text-3xl font-bold leading-[1.15] tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-[2.65rem]">
+            {/* title */}
+            <h1 className="mt-5 font-academic text-3xl font-bold leading-[1.14] tracking-[-0.03em] text-white md:text-[2.5rem] md:leading-[1.1]">
               {article.title}
             </h1>
-            <p className="mt-5 text-sm font-semibold text-slate-600">
-              {article.authors.join(", ")}
-            </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-200 pt-5 text-[10px] font-semibold text-slate-500">
+            {/* authors */}
+            <div className="mt-4 flex flex-wrap items-center gap-1.5">
+              {article.authors.map((author, i) => (
+                <span
+                  key={author}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-white/65"
+                >
+                  {author}
+                  {i < article.authors.length - 1 && (
+                    <span className="text-white/25">·</span>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            {/* meta strip */}
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-white/10 pt-5 text-[10px] font-semibold text-white/45">
               <span className="inline-flex items-center gap-2">
-                <BookOpen className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-                {article.volume}, {article.issue}, pages {article.pages}
+                <BookOpen className="h-3.5 w-3.5 text-amber-300" />
+                {article.volume}, {article.issue}, pp. {article.pages}
               </span>
               <span className="inline-flex items-center gap-2">
-                <CalendarDays className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+                <CalendarDays className="h-3.5 w-3.5 text-sky-300" />
                 Published {article.publishedAt}
               </span>
-              <span className="font-mono text-slate-400">DOI {article.doi}</span>
+              <span className="inline-flex items-center gap-2">
+                <Hash className="h-3.5 w-3.5 text-slate-400" />
+                <span className="font-mono">DOI: {article.doi}</span>
+              </span>
+            </div>
+
+            {/* quick metrics */}
+            <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-bold text-white/35">
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-3 w-3 text-white/25" />
+                {article.metrics.views.toLocaleString()} views
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Download className="h-3 w-3 text-white/25" />
+                {article.metrics.downloads.toLocaleString()} downloads
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Quote className="h-3 w-3 text-white/25" />
+                {article.metrics.citations} citations
+              </span>
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-[340px] lg:ml-auto">
-            <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_rgba(17,27,82,0.10)]">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[13px] bg-slate-900">
+          {/* Right: cover card */}
+          <div className="mx-auto w-full max-w-sm">
+            <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.05] p-2.5 shadow-[0_32px_80px_rgba(0,0,0,0.32)] backdrop-blur-md">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-900">
                 <Image
                   src={article.image || "/covers/medical.png"}
-                  alt=""
+                  alt={article.title}
                   fill
                   priority
-                  sizes="(max-width: 1023px) 100vw, 340px"
+                  sizes="(max-width: 1023px) 100vw, 360px"
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/90 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/95 via-[#060b2f]/25 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-5">
-                  <p className="text-[9px] font-black uppercase tracking-[0.13em] text-amber-300">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-amber-300">
                     {article.department}
                   </p>
                   <p className="mt-2 font-academic text-lg font-bold leading-snug text-white line-clamp-2">
@@ -140,7 +190,7 @@ export default async function ArticlePage({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-between px-1 pb-1 pt-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <div className="flex items-center justify-between px-1.5 pb-1 pt-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/35">
                 <span>GB Journal of Research</span>
                 <span>{article.publishedAt}</span>
               </div>
@@ -149,142 +199,214 @@ export default async function ArticlePage({
         </div>
       </section>
 
-      <article className="bg-white py-12 md:py-16">
-        <div className="container-x grid gap-10 lg:grid-cols-[minmax(0,760px)_290px] lg:justify-center lg:items-start">
+      {/* ── Article body ─────────────────────────── */}
+      <div className="bg-[#f5f7fb] py-12 md:py-16">
+        <div className="container-x grid gap-8 lg:grid-cols-[minmax(0,740px)_300px] lg:items-start lg:justify-center">
+
+          {/* Main content */}
           <main>
-            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-[#f8f9fc] p-4 sm:grid-cols-2">
+            {/* Department + review banner */}
+            <div className="grid gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:grid-cols-2">
               <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[color:var(--color-gb-blue)] shadow-sm">
-                  <Library className="h-4 w-4" />
-                </span>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)]">
+                  <Library className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
+                </div>
                 <div>
-                  <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                    Academic unit
-                  </p>
-                  <p className="mt-1 text-[10px] font-extrabold text-slate-700">
-                    {article.department}
-                  </p>
+                  <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-slate-400">Academic unit</p>
+                  <p className="mt-0.5 text-[11px] font-extrabold text-slate-700">{article.department}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 sm:border-l sm:border-slate-200 sm:pl-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[color:var(--color-gb-blue)] shadow-sm">
-                  <ShieldCheck className="h-4 w-4" />
-                </span>
+              <div className="flex items-center gap-3 sm:border-l sm:border-slate-100 sm:pl-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)]">
+                  <ShieldCheck className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
+                </div>
                 <div>
-                  <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                    Editorial review
-                  </p>
-                  <p className="mt-1 text-[10px] font-extrabold text-slate-700">
-                    Double-blind peer reviewed
-                  </p>
+                  <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-slate-400">Editorial review</p>
+                  <p className="mt-0.5 text-[11px] font-extrabold text-slate-700">Double-blind peer reviewed</p>
                 </div>
               </div>
             </div>
 
+            {/* Abstract */}
             {abstractSection && (
               <section
                 id={sectionId(abstractSection.heading)}
-                className="mt-8 scroll-mt-24 rounded-2xl border border-[color:var(--color-gb-blue)]/15 bg-[color:var(--color-gb-blue-soft)]/35 p-6 md:p-8"
+                className="mt-6 scroll-mt-24 overflow-hidden rounded-2xl border border-[color:var(--color-gb-blue)]/15 bg-white shadow-xs"
               >
-                <div className="flex items-center gap-2">
-                  <Quote className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
-                  <h2 className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue)]">
-                    Abstract
-                  </h2>
+                <div className="border-b border-[color:var(--color-gb-blue)]/10 bg-[color:var(--color-gb-blue-soft)]/60 px-6 py-3.5">
+                  <div className="flex items-center gap-2">
+                    <Quote className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-blue)]">
+                      Abstract
+                    </h2>
+                  </div>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-slate-600">
-                  {abstractSection.body}
-                </p>
+                <div className="px-6 py-5">
+                  <p className="text-sm leading-7 text-slate-600">{abstractSection.body}</p>
+                </div>
               </section>
             )}
 
-            <div className="article-prose mt-8 border-t border-slate-200 pt-1">
-              {bodySections.map((section) => (
+            {/* Body sections */}
+            <div className="mt-6 space-y-4">
+              {bodySections.map((section, idx) => (
                 <section
                   key={section.heading}
                   id={sectionId(section.heading)}
-                  className="scroll-mt-24"
+                  className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"
                 >
-                  <h2>{section.heading}</h2>
-                  <p>{section.body}</p>
+                  <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-[10px] font-black text-slate-300">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <h2 className="font-academic text-base font-bold text-[color:var(--color-gb-blue-deep)]">
+                        {section.heading}
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="px-6 py-5">
+                    <p className="text-sm leading-7 text-slate-600">{section.body}</p>
+                  </div>
                 </section>
               ))}
-
-              <section id="references" className="scroll-mt-24">
-                <h2>References</h2>
-                <ol className="mt-5 space-y-4 border-t border-slate-200 pt-5 font-sans text-xs leading-6 text-slate-500">
-                  {getArticleReferences(article.slug).map((reference, index) => (
-                    <li
-                      key={reference}
-                      className="grid grid-cols-[26px_minmax(0,1fr)] gap-3"
-                    >
-                      <span className="font-mono text-[9px] font-bold text-slate-300">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span>{reference}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
             </div>
-          </main>
 
-          <aside className="space-y-4 lg:sticky lg:top-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(17,27,82,0.06)]">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-blue-deep)]">
-                Article access
-              </h2>
-              <ArticleActions article={article} />
-              <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-4">
-                {[
-                  { label: "Views", value: article.metrics.views, icon: Eye },
-                  {
-                    label: "Downloads",
-                    value: article.metrics.downloads,
-                    icon: Download,
-                  },
-                  {
-                    label: "Citations",
-                    value: article.metrics.citations,
-                    icon: Quote,
-                  },
-                ].map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="px-1 text-center">
-                    <Icon className="mx-auto h-3 w-3 text-slate-300" />
-                    <p className="mt-1.5 text-sm font-black text-[color:var(--color-gb-blue-deep)]">
-                      {value.toLocaleString()}
-                    </p>
-                    <p className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.08em] text-slate-400">
-                      {label}
-                    </p>
-                  </div>
+            {/* Keywords */}
+            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="h-3.5 w-3.5 text-slate-400" />
+                <h2 className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue-deep)]">
+                  Keywords
+                </h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {article.keywords.map((kw) => (
+                  <span
+                    key={kw}
+                    className="rounded-lg border border-[color:var(--color-gb-blue)]/15 bg-[color:var(--color-gb-blue-soft)] px-3 py-1.5 text-[10px] font-bold text-[color:var(--color-gb-blue)]"
+                  >
+                    {kw}
+                  </span>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-blue-deep)]">
+            {/* References */}
+            <section
+              id="references"
+              className="mt-4 scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"
+            >
+              <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-3.5">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-blue-deep)]">
+                  References
+                </h2>
+              </div>
+              <ol className="divide-y divide-slate-100 px-6">
+                {references.map((ref, i) => (
+                  <li key={ref} className="flex items-start gap-4 py-4 text-xs leading-6 text-slate-500">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 font-mono text-[9px] font-black text-slate-400">
+                      {i + 1}
+                    </span>
+                    <span>{ref}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            {/* Related articles */}
+            {related.length > 0 && (
+              <div className="mt-8">
+                <p className="mb-4 text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-blue)]">
+                  Related in {article.topic}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {related.map((rel) => (
+                    <Link
+                      key={rel.slug}
+                      href={`/articles/${rel.slug}`}
+                      className="group flex gap-3 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all hover:border-[color:var(--color-gb-blue)]/25 hover:shadow-md hover:-translate-y-0.5"
+                    >
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                        <Image
+                          src={rel.image || "/covers/medical.png"}
+                          alt=""
+                          fill
+                          sizes="64px"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black uppercase tracking-wider text-[color:var(--color-gb-blue)]">
+                          {rel.type}
+                        </p>
+                        <h3 className="mt-1 line-clamp-2 text-[11px] font-bold leading-4.5 text-slate-800 group-hover:text-[color:var(--color-gb-blue)]">
+                          {rel.title}
+                        </h3>
+                        <p className="mt-1.5 flex items-center gap-1 text-[9px] text-slate-400">
+                          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                          Read article
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* Sticky sidebar */}
+          <aside className="space-y-4 lg:sticky lg:top-24">
+            {/* Access actions */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(11,18,61,0.06)]">
+              <div className="border-b border-slate-100 bg-[color:var(--color-gb-blue-deep)] px-5 py-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-300">Article Access</p>
+              </div>
+              <div className="p-5">
+                <ArticleActions article={article} />
+
+                {/* Impact metrics */}
+                <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-4">
+                  {[
+                    { label: "Views",     value: article.metrics.views,     icon: Eye      },
+                    { label: "Downloads", value: article.metrics.downloads, icon: Download },
+                    { label: "Citations", value: article.metrics.citations, icon: Quote    },
+                  ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="px-2 text-center">
+                      <Icon className="mx-auto h-3 w-3 text-slate-300" />
+                      <p className="mt-1.5 text-sm font-black text-[color:var(--color-gb-blue-deep)]">
+                        {value.toLocaleString()}
+                      </p>
+                      <p className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Table of contents */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue-deep)]">
                 In this article
-              </h2>
-              <nav
-                aria-label="Article sections"
-                className="mt-4 flex flex-col border-l border-slate-200"
-              >
-                {article.sections.map((section, index) => (
+              </p>
+              <nav aria-label="Article sections" className="mt-4 flex flex-col">
+                {article.sections.map((section, i) => (
                   <a
                     key={section.heading}
                     href={`#${sectionId(section.heading)}`}
-                    className="group flex items-center gap-3 border-l-2 border-transparent py-2 pl-3 text-[10px] font-bold text-slate-500 transition-colors hover:border-[color:var(--color-gb-blue)] hover:text-[color:var(--color-gb-blue)]"
+                    className="group flex items-center gap-3 border-l-2 border-transparent py-2 pl-3 text-[10px] font-bold text-slate-500 transition-all hover:border-[color:var(--color-gb-blue)] hover:text-[color:var(--color-gb-blue)] hover:pl-4"
                   >
                     <span className="font-mono text-[8px] text-slate-300">
-                      {String(index + 1).padStart(2, "0")}
+                      {String(i + 1).padStart(2, "0")}
                     </span>
                     {section.heading}
                   </a>
                 ))}
                 <a
                   href="#references"
-                  className="group flex items-center gap-3 border-l-2 border-transparent py-2 pl-3 text-[10px] font-bold text-slate-500 transition-colors hover:border-[color:var(--color-gb-blue)] hover:text-[color:var(--color-gb-blue)]"
+                  className="group flex items-center gap-3 border-l-2 border-transparent py-2 pl-3 text-[10px] font-bold text-slate-500 transition-all hover:border-[color:var(--color-gb-blue)] hover:text-[color:var(--color-gb-blue)] hover:pl-4"
                 >
                   <span className="font-mono text-[8px] text-slate-300">
                     {String(article.sections.length + 1).padStart(2, "0")}
@@ -294,47 +416,44 @@ export default async function ArticlePage({
               </nav>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-[#f8f9fc] p-5">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-blue-deep)]">
+            {/* Article record */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue-deep)]">
                 Article record
-              </h2>
-              <dl className="mt-4 divide-y divide-slate-200">
+              </p>
+              <dl className="mt-4 divide-y divide-slate-100">
                 {[
-                  ["DOI", article.doi],
-                  ["Pages", article.pages],
-                  ["Published", article.publishedAt],
+                  ["DOI",       article.doi          ],
+                  ["Pages",     article.pages        ],
+                  ["Published", article.publishedAt  ],
+                  ["Volume",    article.volume       ],
+                  ["Issue",     article.issue        ],
                 ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-start justify-between gap-4 py-3 text-[9px]"
-                  >
-                    <dt className="font-bold uppercase tracking-[0.08em] text-slate-400">
-                      {label}
-                    </dt>
-                    <dd className="max-w-[170px] text-right font-semibold text-slate-600">
-                      {value}
-                    </dd>
+                  <div key={label} className="flex items-start justify-between gap-4 py-2.5 text-[10px]">
+                    <dt className="font-bold uppercase tracking-[0.08em] text-slate-400">{label}</dt>
+                    <dd className="max-w-[160px] text-right font-semibold text-slate-700">{value}</dd>
                   </div>
                 ))}
               </dl>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {article.keywords.map((keyword) => (
-                  <span
-                    key={keyword}
-                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[8px] font-bold text-slate-500"
-                  >
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center gap-2 border-t border-slate-200 pt-4 text-[9px] font-bold text-emerald-700">
-                <CheckCircle2 className="h-3.5 w-3.5" />
+
+              {/* version of record */}
+              <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-[10px] font-bold text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                 Version of record
               </div>
             </div>
+
+            {/* Back to archive */}
+            <Link
+              href="/articles"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white p-4 text-[11px] font-bold text-slate-500 shadow-xs transition-all hover:border-[color:var(--color-gb-blue)]/25 hover:text-[color:var(--color-gb-blue)] hover:shadow-md"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to research archive
+            </Link>
           </aside>
         </div>
-      </article>
+      </div>
     </PageShell>
   );
 }

@@ -5,244 +5,225 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  Download,
   Eye,
   FileText,
   Globe2,
+  Hash,
   Library,
   ShieldCheck,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { issues } from "@/lib/data";
 
+import { PageHeroBanner } from "@/components/page-hero-banner";
+
 export default function CurrentIssuePage() {
   const issue = issues[0];
   const leadArticle = issue.articles[0];
 
+  const meta = [
+    { label: "Published", value: issue.month },
+    { label: "Volume", value: issue.volume },
+    { label: "Issue", value: issue.issue },
+    { label: "ISSN", value: "2959-1082" },
+  ];
+
+  const standards = [
+    { icon: ShieldCheck, label: "Double-blind peer reviewed" },
+    { icon: Globe2,       label: "Open-access publication"  },
+    { icon: CheckCircle2, label: "DOI and citation metadata" },
+    { icon: Download,     label: "Free PDF download"        },
+  ];
+
   return (
     <PageShell>
-      <section className="relative overflow-hidden bg-[color:var(--color-gb-blue-deep)] text-white">
-        <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.025]" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[color:var(--color-gb-blue)]/20" />
-
-        <div className="container-x relative grid gap-12 py-14 md:py-18 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/75">
-                <BookOpen className="h-3.5 w-3.5 text-[color:var(--color-gb-gold)]" />
-                Current issue
-              </span>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
-                {issue.volume} / {issue.issue}
-              </span>
-            </div>
-
-            <h1 className="mt-6 max-w-3xl font-academic text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-white md:text-5xl lg:text-[3.55rem]">
-              {issue.theme}
-            </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-white/60 md:text-[15px]">
-              A peer-reviewed collection examining how research, public
-              institutions, and local practice can strengthen healthier and
-              more resilient communities.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#contents"
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-5 text-xs font-extrabold text-[color:var(--color-gb-blue-deep)] transition-colors hover:bg-amber-50 focus-ring"
+      {/* ── Hero ───────────────────────────────────── */}
+      <PageHeroBanner
+        badgeLabel="Current Issue"
+        badgeIcon={BookOpen}
+        subBadge={`${issue.volume} · ${issue.issue}`}
+        title={issue.theme}
+        description="A peer-reviewed collection examining how research, public institutions, and local practice can strengthen healthier and more resilient communities."
+        actions={
+          <>
+            <a
+              href="#contents"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-5 text-xs font-black text-[color:var(--color-gb-blue-deep)] shadow-xs transition-all hover:bg-amber-50 hover:-translate-y-0.5"
+            >
+              Browse this issue
+              <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+            {leadArticle && (
+              <Link
+                href={`/articles/${leadArticle.slug}`}
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/[0.07] px-5 text-xs font-bold text-white backdrop-blur-sm transition-all hover:bg-white/[0.14] hover:-translate-y-0.5"
               >
-                Browse this issue
-                <ArrowRight className="h-3.5 w-3.5" />
-              </a>
-              {leadArticle && (
-                <Link
-                  href={`/articles/${leadArticle.slug}`}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.05] px-5 text-xs font-extrabold text-white transition-colors hover:border-white/30 hover:bg-white/10 focus-ring"
-                >
-                  Start reading
-                  <BookOpen className="h-3.5 w-3.5" />
-                </Link>
-              )}
-            </div>
+                Start reading
+                <BookOpen className="h-3.5 w-3.5 text-amber-300" />
+              </Link>
+            )}
+          </>
+        }
+        stats={[
+          { val: String(issue.articleCount), label: "Articles" },
+          { val: "Double", label: "Blind review" },
+          { val: "Open", label: "Access" },
+        ]}
+        coverCard={{
+          imageSrc: leadArticle?.image || "/covers/medical.png",
+          title: issue.theme,
+          date: issue.month,
+          footerLeft: "GB Journal of Research",
+          footerRight: String(issue.year),
+        }}
+      />
 
-            <div className="mt-9 grid max-w-xl grid-cols-3 border-t border-white/10 pt-5">
-              <div>
-                <p className="text-xl font-black text-white">{issue.articleCount}</p>
-                <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/40">
-                  Articles
-                </p>
-              </div>
-              <div className="border-l border-white/10 pl-5">
-                <p className="text-xl font-black text-white">Double</p>
-                <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/40">
-                  Blind review
-                </p>
-              </div>
-              <div className="border-l border-white/10 pl-5">
-                <p className="text-xl font-black text-white">Open</p>
-                <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/40">
-                  Access
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* ── Contents + Sidebar ─────────────────────── */}
+      <section id="contents" className="scroll-mt-20 bg-[#f5f7fb] py-14 md:py-18">
+        <div className="container-x grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
 
-          <div className="mx-auto w-full max-w-[520px] lg:ml-auto">
-            <div className="overflow-hidden rounded-[22px] border border-white/15 bg-white/[0.06] p-3 shadow-[0_28px_70px_rgba(0,0,0,0.24)]">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[15px] bg-slate-900">
-                <Image
-                  src={leadArticle?.image || "/covers/medical.png"}
-                  alt=""
-                  fill
-                  priority
-                  sizes="(max-width: 1023px) 100vw, 520px"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/95 via-[#060b2f]/35 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em] text-amber-300">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    {issue.month}
-                  </div>
-                  <p className="mt-3 max-w-md font-academic text-2xl font-bold leading-tight text-white">
-                    {issue.theme}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between px-2 pb-1 pt-3 text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">
-                <span>GB Journal of Research</span>
-                <span>{issue.year}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="contents" className="scroll-mt-24 bg-[#f7f8fc] py-14 md:py-18">
-        <div className="container-x grid gap-10 lg:grid-cols-[minmax(0,1fr)_290px] lg:items-start">
+          {/* Article list */}
           <div>
-            <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-8 flex flex-col gap-3 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-gold-dark)]">
+                <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
                   <Library className="h-3.5 w-3.5" />
-                  Issue contents
+                  Issue Contents
                 </p>
-                <h2 className="mt-2 font-academic text-3xl font-bold tracking-[-0.02em] text-[color:var(--color-gb-blue-deep)]">
+                <h2 className="mt-1.5 font-academic text-3xl font-bold tracking-tight text-[color:var(--color-gb-blue-deep)]">
                   Research in this edition
                 </h2>
               </div>
-              <p className="text-[11px] font-bold text-slate-400">
-                {issue.articles.length} articles currently available online
-              </p>
+              <span className="rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-400 shadow-xs">
+                {issue.articles.length} articles online
+              </span>
             </div>
 
-            <div className="mt-6 space-y-4">
+            <div className="flex flex-col gap-4">
               {issue.articles.map((article, index) => (
                 <article
                   key={article.id}
-                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 transition-all duration-300 hover:border-[color:var(--color-gb-blue)]/20 hover:shadow-[0_16px_38px_rgba(17,27,82,0.07)]"
+                  className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_12px_rgba(11,18,61,0.04)] transition-all duration-300 hover:border-[color:var(--color-gb-blue)]/25 hover:shadow-[0_12px_36px_rgba(11,18,61,0.09)] hover:-translate-y-0.5"
                 >
-                  <div className="grid gap-5 sm:grid-cols-[150px_minmax(0,1fr)_auto] sm:items-center">
+                  <div className="grid gap-0 sm:grid-cols-[160px_minmax(0,1fr)]">
+                    {/* thumbnail */}
                     <Link
                       href={`/articles/${article.slug}`}
-                      className="relative block aspect-[4/3] overflow-hidden rounded-xl bg-slate-900 focus-ring sm:aspect-[5/4]"
+                      className="relative block overflow-hidden bg-slate-900 sm:rounded-l-2xl"
                     >
-                      <Image
-                        src={article.image || "/covers/medical.png"}
-                        alt=""
-                        fill
-                        sizes="(max-width: 639px) 100vw, 150px"
-                        className="object-cover transition-transform duration-700 group-hover:scale-[1.045]"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/65 via-transparent to-transparent" />
-                      <span className="absolute bottom-3 left-3 flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-slate-950/45 font-mono text-[9px] font-black text-white backdrop-blur-sm">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    </Link>
-
-                    <div className="min-w-0 py-1">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue)]">
-                          <FileText className="h-3 w-3" />
-                          {article.type}
-                        </span>
-                        <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                          {article.topic}
+                      <div className="relative aspect-[4/3] sm:aspect-auto sm:h-full sm:min-h-[160px]">
+                        <Image
+                          src={article.image || "/covers/medical.png"}
+                          alt=""
+                          fill
+                          sizes="(max-width: 639px) 100vw, 160px"
+                          className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/70 via-transparent to-transparent" />
+                        <span className="absolute bottom-2.5 left-2.5 flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-slate-950/50 font-mono text-[9px] font-black text-white backdrop-blur-sm">
+                          {String(index + 1).padStart(2, "0")}
                         </span>
                       </div>
+                    </Link>
 
-                      <Link href={`/articles/${article.slug}`}>
-                        <h3 className="mt-3 max-w-3xl font-academic text-lg font-bold leading-snug text-[color:var(--color-gb-blue-deep)] transition-colors group-hover:text-[color:var(--color-gb-blue)] md:text-xl">
-                          {article.title}
-                        </h3>
-                      </Link>
-                      <p className="mt-2 max-w-3xl text-[11px] leading-5 text-slate-500 line-clamp-2">
-                        {article.abstract}
-                      </p>
-                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[9px] font-semibold text-slate-400">
-                        <span>{article.authors.join(", ")}</span>
-                        <span>Pages {article.pages}</span>
-                        <span className="inline-flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {article.metrics.views.toLocaleString()} views
-                        </span>
+                    {/* content */}
+                    <div className="flex flex-col justify-between p-5">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                          <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-blue)]">
+                            <FileText className="h-3 w-3" />
+                            {article.type}
+                          </span>
+                          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                            {article.topic}
+                          </span>
+                        </div>
+
+                        <Link href={`/articles/${article.slug}`}>
+                          <h3 className="mt-2.5 font-academic text-lg font-bold leading-snug text-[color:var(--color-gb-blue-deep)] transition-colors group-hover:text-[color:var(--color-gb-blue)] md:text-xl">
+                            {article.title}
+                          </h3>
+                        </Link>
+                        <p className="mt-2 text-[11px] leading-5 text-slate-500 line-clamp-2">
+                          {article.abstract}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-slate-400">
+                          <span>{article.authors.slice(0, 2).join(", ")}{article.authors.length > 2 ? " et al." : ""}</span>
+                          <span className="flex items-center gap-1">
+                            <Hash className="h-2.5 w-2.5" />Pages {article.pages}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-2.5 w-2.5" />
+                            {article.metrics.views.toLocaleString()} views
+                          </span>
+                        </div>
+                        <Link
+                          href={`/articles/${article.slug}`}
+                          aria-label={`Read ${article.title}`}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[color:var(--color-gb-blue)] shadow-xs transition-all hover:border-[color:var(--color-gb-blue)]/30 hover:bg-[color:var(--color-gb-blue-soft)] hover:shadow-md"
+                        >
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
                       </div>
                     </div>
-
-                    <Link
-                      href={`/articles/${article.slug}`}
-                      aria-label={`Read ${article.title}`}
-                      className="mr-2 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[color:var(--color-gb-blue)] transition-all hover:border-[color:var(--color-gb-blue)]/30 hover:bg-[color:var(--color-gb-blue-soft)] focus-ring"
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
                   </div>
                 </article>
               ))}
             </div>
           </div>
 
+          {/* Sticky sidebar */}
           <aside className="space-y-4 lg:sticky lg:top-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(17,27,82,0.05)]">
-              <h2 className="text-xs font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue-deep)]">
-                Issue information
-              </h2>
-              <dl className="mt-4 divide-y divide-slate-100">
-                {[
-                  ["Published", issue.month],
-                  ["Volume", issue.volume],
-                  ["Issue", issue.issue],
-                  ["ISSN", "2959-1082"],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between gap-4 py-3 text-[11px]"
-                  >
-                    <dt className="text-slate-400">{label}</dt>
-                    <dd className="text-right font-bold text-slate-700">{value}</dd>
+            {/* Issue info */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(11,18,61,0.05)]">
+              <div className="border-b border-slate-100 bg-[color:var(--color-gb-blue-deep)] px-5 py-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-300">Issue Information</p>
+              </div>
+              <dl className="divide-y divide-slate-100 px-5">
+                {meta.map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between gap-4 py-3 text-[11px]">
+                    <dt className="font-medium text-slate-400">{label}</dt>
+                    <dd className="font-bold text-slate-800">{value}</dd>
                   </div>
                 ))}
               </dl>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-xs font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue-deep)]">
-                Publishing standards
-              </h2>
+            {/* Publishing standards */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-blue-deep)]">
+                Publishing Standards
+              </p>
               <div className="mt-4 space-y-3">
-                {[
-                  { icon: ShieldCheck, label: "Double-blind peer reviewed" },
-                  { icon: Globe2, label: "Open-access publication" },
-                  { icon: CheckCircle2, label: "DOI and citation metadata" },
-                ].map(({ icon: Icon, label }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-2.5 text-[10px] font-bold text-slate-500"
-                  >
-                    <Icon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+                {standards.map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2.5 text-[11px] font-semibold text-slate-600">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)]">
+                      <Icon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+                    </div>
                     {label}
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* CTA */}
+            <div className="relative overflow-hidden rounded-2xl bg-[color:var(--color-gb-blue-deep)] p-5 text-white">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[color:var(--color-gb-gold)] opacity-10 blur-2xl" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-300">Submit Research</p>
+              <p className="mt-2 text-xs font-bold text-white/80 leading-5">
+                Accepting submissions for the January 2027 edition.
+              </p>
+              <Link
+                href="/submit"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-4 py-2 text-xs font-black text-[color:var(--color-gb-blue-deep)] transition-all hover:bg-amber-300"
+              >
+                Submit a manuscript
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
           </aside>
         </div>

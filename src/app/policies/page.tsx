@@ -1,45 +1,532 @@
-import { ShieldCheck, Scale } from "lucide-react";
+import Link from "next/link";
+import {
+  Archive,
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ClipboardCheck,
+  FileCheck2,
+  FileText,
+  Gavel,
+  Globe2,
+  LockKeyhole,
+  MessageSquareWarning,
+  Scale,
+  SearchCheck,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
+import { HeroActionButton } from "@/components/ui/hero-action-button";
+import { EditorialPageHeader } from "@/components/editorial-page-header";
 import { PageShell } from "@/components/page-shell";
 import { policies } from "@/lib/data";
+
+const policyEntries = [
+  {
+    id: "peer-review",
+    icon: Users,
+    category: "Review",
+    title: "Independent peer review",
+    description: policies[0],
+    detail:
+      "Research and review articles are evaluated through a double-blind process designed to protect impartial academic judgment.",
+  },
+  {
+    id: "declarations",
+    icon: FileText,
+    category: "Authorship",
+    title: "Complete declarations",
+    description: policies[1],
+    detail:
+      "Authors provide the information editors need to assess responsibility, transparency, and ethical compliance.",
+  },
+  {
+    id: "originality",
+    icon: SearchCheck,
+    category: "Integrity",
+    title: "Originality screening",
+    description: policies[2],
+    detail:
+      "Every manuscript is checked before editorial assignment so potential overlap can be addressed at the appropriate stage.",
+  },
+  {
+    id: "record-integrity",
+    icon: Archive,
+    category: "Published record",
+    title: "Corrections and retractions",
+    description: policies[3],
+    detail:
+      "Published records are updated through visible, accountable notices when a correction or stronger editorial action is required.",
+  },
+  {
+    id: "open-access",
+    icon: Globe2,
+    category: "Access",
+    title: "Author rights and open access",
+    description: policies[4],
+    detail:
+      "Readers can access published scholarship openly while authors retain copyright in their work.",
+  },
+  {
+    id: "confidentiality",
+    icon: LockKeyhole,
+    category: "Review",
+    title: "Reviewer confidentiality",
+    description: policies[5],
+    detail:
+      "Review materials remain confidential, and reviewers disclose any relationship that could affect independent assessment.",
+  },
+];
+
+const editorialSafeguards = [
+  {
+    number: "01",
+    icon: FileCheck2,
+    title: "Editorial screening",
+    text: "Scope, files, declarations, and baseline ethical requirements are checked before assignment.",
+  },
+  {
+    number: "02",
+    icon: SearchCheck,
+    title: "Integrity checks",
+    text: "Originality and disclosure information are reviewed before the manuscript progresses.",
+  },
+  {
+    number: "03",
+    icon: Users,
+    title: "Independent review",
+    text: "Qualified reviewers evaluate the contribution without access to author identities.",
+  },
+  {
+    number: "04",
+    icon: Gavel,
+    title: "Accountable decision",
+    text: "Editors weigh the reports, revisions, evidence, and policy requirements before deciding.",
+  },
+  {
+    number: "05",
+    icon: Archive,
+    title: "Record stewardship",
+    text: "The published version remains connected to any later correction or editorial notice.",
+  },
+];
+
+const recordActions = [
+  {
+    icon: CheckCircle2,
+    title: "Corrections",
+    text: "Material errors are clarified through a visible notice linked to the article record.",
+  },
+  {
+    icon: MessageSquareWarning,
+    title: "Expressions of concern",
+    text: "Readers are alerted when a serious question requires investigation before a final outcome.",
+  },
+  {
+    icon: Archive,
+    title: "Retractions",
+    text: "Articles that cannot remain part of the reliable record are clearly marked while their history is preserved.",
+  },
+];
 
 export default function PoliciesPage() {
   return (
     <PageShell>
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="container-x page-header-inner py-10 md:py-14">
-          <span className="page-badge">
-            <Scale className="h-3 w-3" />
-            Publication Ethics
-          </span>
-          <h1 className="page-title">Policies</h1>
-          <p className="page-subtitle">
-            Our commitment to research integrity, ethical peer review, and transparent publishing practices.
-          </p>
-        </div>
-        <div className="page-header-accent" />
-      </div>
+      <EditorialPageHeader
+        icon={Scale}
+        eyebrow="Publication ethics"
+        title="Policies and research integrity"
+        description="A clear framework for authors, reviewers, and editors—from submission and independent assessment to open publication and stewardship of the scholarly record."
+        actions={
+          <>
+            <HeroActionButton
+              href="#policy-directory"
+              variant="primary"
+              hasArrow={true}
+              arrowRotateDeg={-45}
+            >
+              Browse Policy Directory
+            </HeroActionButton>
+            <HeroActionButton
+              href="/contact"
+              variant="secondary"
+            >
+              Contact Editorial Office
+            </HeroActionButton>
+          </>
+        }
+        supporting={
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-white/75">
+              <ShieldCheck className="h-3 w-3 text-amber-300" />
+              Research Integrity
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-white/75">
+              <ClipboardCheck className="h-3 w-3 text-amber-300" />
+              Transparent Review
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-white/75">
+              <Globe2 className="h-3 w-3 text-amber-300" />
+              Open Publication
+            </span>
+          </>
+        }
+        aside={
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-md">
+            {/* Header */}
+            <div className="flex items-center gap-2.5 border-b border-white/10 pb-3 mb-3">
+              <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-300">
+                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-[8.5px] font-black uppercase tracking-[0.16em] text-amber-300">
+                  Policy Framework
+                </p>
+                <h2 className="font-academic text-xs font-bold text-white">
+                  Responsible Publication
+                </h2>
+              </div>
+            </div>
 
-      <section className="container-x py-8">
-        <div className="surface-elevated p-6">
-          <h2 className="text-sm font-black uppercase tracking-wider text-[color:var(--color-gb-blue-dark)] flex items-center gap-2 mb-5">
-            <ShieldCheck className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
-            Publication Ethics & Standards
-          </h2>
-          <div className="grid gap-3">
-            {policies.map((policy, index) => (
-              <div
-                key={policy}
-                className="flex gap-3.5 rounded-lg border border-[color:var(--border)] bg-slate-50/50 p-4 hover:border-[color:var(--color-gb-blue)] hover:bg-[color:var(--color-gb-blue-soft)] transition-all group"
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-gb-blue-soft)] text-[10px] font-black text-[color:var(--color-gb-blue)] group-hover:bg-[color:var(--color-gb-blue)] group-hover:text-white transition-colors">
-                  {index + 1}
-                </span>
-                <p className="font-semibold leading-6 text-slate-600 text-sm">
-                  {policy}
+            {/* Bento Grid */}
+            <div className="space-y-2">
+              {/* Featured Top Card */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-wider text-amber-300">
+                    <ShieldCheck className="h-3 w-3" />
+                    Peer Review
+                  </span>
+                  <span className="rounded bg-amber-400/10 px-1.5 py-0.5 text-[8.5px] font-bold text-amber-300 border border-amber-400/20">
+                    Featured
+                  </span>
+                </div>
+                <div className="mt-1 font-academic text-sm font-bold text-white">
+                  Double Blind Evaluation
+                </div>
+              </div>
+
+              {/* 2x2 Sub-Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {
+                    label: "Similarity",
+                    val: "Pre-Assignment",
+                    icon: FileCheck2,
+                  },
+                  {
+                    label: "Copyright",
+                    val: "Author Retained",
+                    icon: Scale,
+                  },
+                  {
+                    label: "Access Model",
+                    val: "Open Access",
+                    icon: Globe2,
+                  },
+                  {
+                    label: "Ethics Basis",
+                    val: "COPE Aligned",
+                    icon: CheckCircle2,
+                  },
+                ].map((item) => {
+                  const ItemIcon = item.icon;
+                  return (
+                    <div
+                      key={item.label}
+                      className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 transition-colors hover:bg-white/[0.06]"
+                    >
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-white/45">
+                        <ItemIcon className="h-2.5 w-2.5 text-amber-300" />
+                        <span>{item.label}</span>
+                      </div>
+                      <div className="mt-0.5 text-[10.5px] font-bold text-white leading-snug">
+                        {item.val}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        }
+      />
+
+      <section className="bg-white py-10 md:py-12">
+        <div className="container-x grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-start">
+          <div className="lg:sticky lg:top-24">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-gb-gold-dark)] border border-amber-400/20">
+              Policy Purpose
+            </span>
+            <h2 className="mt-3.5 max-w-md font-academic text-2xl font-bold leading-tight tracking-[-0.025em] text-[color:var(--color-gb-blue-deep)] md:text-3xl">
+              Standards that make editorial decisions trustworthy
+            </h2>
+            <p className="mt-3.5 max-w-md text-xs leading-relaxed text-slate-600 md:text-sm">
+              The policy framework defines what the journal expects, how work
+              is assessed, and how concerns are handled before and after
+              publication.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="border-l-3 border-amber-400 pl-4 py-0.5">
+              <p className="font-academic text-xl font-bold leading-snug tracking-[-0.015em] text-[color:var(--color-gb-blue-deep)] md:text-2xl">
+                Research integrity is a shared responsibility across authors,
+                reviewers, editors, and the institution that stewards the
+                journal.
+              </p>
+            </div>
+
+            <div className="grid gap-3.5 md:grid-cols-2">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
+                <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 mb-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
+                  Pre-Publication Assessment
+                </h3>
+                <p className="text-xs leading-relaxed text-slate-600">
+                  Policies are applied from initial screening through editorial
+                  decision-making. They support fair assessment, complete
+                  disclosure, confidentiality, and responsible communication
+                  with contributors.
                 </p>
               </div>
-            ))}
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
+                <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 mb-1.5">
+                  <Globe2 className="h-3.5 w-3.5 text-amber-500" />
+                  Post-Publication Stewardship
+                </h3>
+                <p className="text-xs leading-relaxed text-slate-600">
+                  After publication, the same framework protects the reliability
+                  of the scholarly record through transparent corrections,
+                  notices, and durable article metadata.
+                </p>
+              </div>
+            </div>
+
+            <dl className="grid grid-cols-3 gap-3 rounded-xl border border-slate-200/80 bg-slate-50/40 p-3.5">
+              {[
+                { value: "6", label: "Core Standards", icon: Scale },
+                { value: "Double", label: "Blind Review", icon: ShieldCheck },
+                { value: "Open", label: "Reader Access", icon: Globe2 },
+              ].map((item, index) => {
+                const ItemIcon = item.icon;
+                return (
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-3 p-1.5 ${index === 0 ? "" : "border-l border-slate-200/80 pl-4"
+                      }`}
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-600">
+                      <ItemIcon className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <dt className="font-academic text-lg font-bold leading-tight text-[color:var(--color-gb-blue-deep)]">
+                        {item.value}
+                      </dt>
+                      <dd className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                        {item.label}
+                      </dd>
+                    </div>
+                  </div>
+                );
+              })}
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="policy-directory"
+        className="scroll-mt-24 border-y border-slate-200 bg-[#f7f8fc] py-12 md:py-16"
+      >
+        <div className="container-x">
+          <div className="max-w-3xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-gold-dark)]">
+              Policy directory
+            </p>
+            <h2 className="mt-3 font-academic text-3xl font-bold tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
+              The journal&apos;s core publication standards
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500">
+              Each standard addresses a specific point of responsibility in
+              manuscript evaluation or stewardship of the published record.
+            </p>
+          </div>
+
+          <div className="mt-9 overflow-hidden rounded-[20px] border border-slate-200 bg-white">
+            <div className="grid lg:grid-cols-2">
+              {policyEntries.map(
+                ({ id, icon: Icon, category, title, description, detail }, index) => (
+                  <article
+                    id={id}
+                    key={id}
+                    className={`group scroll-mt-24 p-6 transition-colors hover:bg-[#f9faff] md:p-7 ${index < policyEntries.length - 2
+                        ? "border-b border-slate-200"
+                        : ""
+                      } ${index % 2 === 0 ? "lg:border-r lg:border-slate-200" : ""}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover:bg-white group-hover:shadow-sm">
+                        <Icon className="h-4.5 w-4.5" aria-hidden="true" />
+                      </span>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-gold-dark)]">
+                          {category}
+                        </p>
+                        <h3 className="mt-1.5 text-base font-black text-[color:var(--color-gb-blue-deep)]">
+                          {title}
+                        </h3>
+                      </div>
+                    </div>
+                    <p className="mt-5 text-xs font-bold leading-6 text-slate-700">
+                      {description}
+                    </p>
+                    <p className="mt-2 text-xs leading-6 text-slate-500">
+                      {detail}
+                    </p>
+                  </article>
+                ),
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-12 md:py-16">
+        <div className="container-x">
+          <div className="max-w-3xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-gold-dark)]">
+              Editorial safeguards
+            </p>
+            <h2 className="mt-3 font-academic text-3xl font-bold tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
+              How policy is applied to every manuscript
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500">
+              Defined checkpoints make responsibility visible from first
+              upload through publication and long-term record stewardship.
+            </p>
+          </div>
+
+          <div className="relative mt-11">
+            <div className="pointer-events-none absolute bottom-8 left-[21px] top-[21px] w-px bg-slate-200 md:hidden" />
+            <div className="pointer-events-none absolute left-[5%] right-[5%] top-[21px] hidden h-px bg-slate-200 md:block" />
+            <ol className="grid gap-9 md:grid-cols-5 md:gap-6">
+              {editorialSafeguards.map(({ number, icon: Icon, title, text }) => (
+                <li key={number} className="relative">
+                  <div className="relative flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-[color:var(--color-gb-blue)] shadow-sm">
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="font-mono text-[9px] font-black text-slate-300">
+                      {number}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-xs font-black text-[color:var(--color-gb-blue-deep)]">
+                    {title}
+                  </h3>
+                  <p className="mt-2 max-w-[220px] text-xs leading-6 text-slate-500">
+                    {text}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-[#f7f8fc] py-12 md:py-16">
+        <div className="container-x grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="relative overflow-hidden rounded-[20px] bg-[color:var(--color-gb-blue-deep)] p-7 text-white md:p-9">
+            <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />
+            <div className="relative">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-amber-300">
+                <Globe2 className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <p className="mt-6 text-[9px] font-black uppercase tracking-[0.14em] text-amber-300">
+                Author rights and access
+              </p>
+              <h2 className="mt-3 max-w-md font-academic text-3xl font-bold leading-tight text-white">
+                Open scholarship with author-retained copyright
+              </h2>
+              <p className="mt-4 max-w-lg text-sm leading-7 text-white/60">
+                The journal&apos;s access model supports broad reading and
+                responsible scholarly use while authors retain copyright in
+                their published work.
+              </p>
+              <div className="mt-7 grid gap-3 text-xs text-white/65 sm:grid-cols-2">
+                <div className="flex items-center gap-2 border-t border-white/10 pt-4">
+                  <Globe2 className="h-3.5 w-3.5 text-emerald-300" />
+                  Open reader access
+                </div>
+                <div className="flex items-center gap-2 border-t border-white/10 pt-4">
+                  <ShieldCheck className="h-3.5 w-3.5 text-amber-300" />
+                  Author-retained rights
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[20px] border border-slate-200 bg-white p-7 md:p-9">
+            <div className="flex items-start gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                <Archive className="h-4.5 w-4.5" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-gold-dark)]">
+                  Published record
+                </p>
+                <h2 className="mt-1.5 font-academic text-2xl font-bold text-[color:var(--color-gb-blue-deep)]">
+                  When an article record changes
+                </h2>
+              </div>
+            </div>
+            <div className="mt-6 divide-y divide-slate-100">
+              {recordActions.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                  <Icon
+                    className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-gb-blue)]"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <h3 className="text-xs font-black text-[color:var(--color-gb-blue-deep)]">
+                      {title}
+                    </h3>
+                    <p className="mt-1.5 text-xs leading-6 text-slate-500">
+                      {text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="container-x mt-10">
+          <div className="flex flex-col gap-5 border-t border-slate-200 pt-8 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[color:var(--color-gb-gold-dark)]">
+                Need clarification?
+              </p>
+              <h2 className="mt-2 font-academic text-2xl font-bold text-[color:var(--color-gb-blue-deep)]">
+                Discuss a policy with the editorial office
+              </h2>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/contact"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-5 text-xs font-extrabold text-white transition-colors hover:bg-[color:var(--color-gb-blue)] focus-ring"
+              >
+                Contact the journal
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+              <Link
+                href="/reviewers"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-xs font-extrabold text-[color:var(--color-gb-blue-deep)] transition-colors hover:border-[color:var(--color-gb-blue)]/25 hover:bg-[color:var(--color-gb-blue-soft)]/30 focus-ring"
+              >
+                Reviewer guidance
+              </Link>
+            </div>
           </div>
         </div>
       </section>

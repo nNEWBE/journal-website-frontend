@@ -1,26 +1,177 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  BookOpen,
   ChevronDown,
+  FileText,
   GraduationCap,
   LayoutDashboard,
+  Library,
   LogOut,
   Menu,
+  PenLine,
+  Scale,
   Search,
   Send,
+  ShieldCheck,
   User as UserIcon,
+  Users,
   X,
 } from "lucide-react";
 import { GbJournalLogo } from "@/components/gb-logo";
-import { navLinks } from "@/lib/data";
 import { getSession, clearSession, type User } from "@/lib/auth";
 
+export type NavSubItem = {
+  label: string;
+  href: string;
+  description: string;
+  icon: typeof BookOpen;
+};
+
+export type NavItem = {
+  label: string;
+  href: string;
+  dropdownHeader?: string;
+  footerHref?: string;
+  footerLabel?: string;
+  dropdown?: NavSubItem[];
+};
+
+export const mainNav: NavItem[] = [
+  {
+    label: "Home",
+    href: "/",
+  },
+  {
+    label: "About & Governance",
+    href: "/about",
+    dropdownHeader: "Learn about our institution, leadership & ethics",
+    footerHref: "/about",
+    footerLabel: "View full journal overview",
+    dropdown: [
+      {
+        label: "About the Journal",
+        href: "/about",
+        description: "Scope, open access mandate & editorial vision",
+        icon: BookOpen,
+      },
+      {
+        label: "Editorial Board",
+        href: "/editorial-board",
+        description: "Academic leadership & discipline chairs",
+        icon: Users,
+      },
+      {
+        label: "Reviewer Guidelines",
+        href: "/reviewers",
+        description: "Peer-review standards & reviewer panel",
+        icon: ShieldCheck,
+      },
+      {
+        label: "Ethics & Policies",
+        href: "/policies",
+        description: "COPE compliance, copyright & retractions",
+        icon: Scale,
+      },
+    ],
+  },
+  {
+    label: "Issues & Articles",
+    href: "/issues/current",
+    dropdownHeader: "Browse published volumes, editions & indexed papers",
+    footerHref: "/articles",
+    footerLabel: "Search all articles",
+    dropdown: [
+      {
+        label: "Current Issue",
+        href: "/issues/current",
+        description: "Explore the latest published edition (Vol 4, Issue 2)",
+        icon: BookOpen,
+      },
+      {
+        label: "All Issues & Archive",
+        href: "/issues",
+        description: "Browse complete publication record by year",
+        icon: Library,
+      },
+      {
+        label: "Search Articles",
+        href: "/articles",
+        description: "Filter indexed papers by topic, DOI & keywords",
+        icon: FileText,
+      },
+    ],
+  },
+  {
+    label: "For Authors",
+    href: "/authors",
+    dropdownHeader: "Guidelines, submission portal & ethics policies",
+    footerHref: "/dashboard/submissions/new",
+    footerLabel: "Submit your manuscript",
+    dropdown: [
+      {
+        label: "Author Guidelines",
+        href: "/authors",
+        description: "Manuscript structure, formatting & checklist",
+        icon: PenLine,
+      },
+      {
+        label: "Submit Manuscript",
+        href: "/dashboard/submissions/new",
+        description: "Online manuscript submission portal",
+        icon: Send,
+      },
+      {
+        label: "Publication Ethics",
+        href: "/policies",
+        description: "Plagiarism screening & author declarations",
+        icon: ShieldCheck,
+      },
+    ],
+  },
+  {
+    label: "Contact",
+    href: "/contact",
+  },
+];
+
+function getIsRouteActive(pathname: string, label: string): boolean {
+  if (label === "Home") return pathname === "/";
+  if (
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/policies") ||
+    pathname.startsWith("/editorial-board") ||
+    pathname.startsWith("/reviewers")
+  ) {
+    return label === "About & Governance";
+  }
+  if (pathname.startsWith("/issues") || pathname.startsWith("/articles")) {
+    return label === "Issues & Articles";
+  }
+  if (
+    pathname.startsWith("/authors") ||
+    pathname.startsWith("/submit") ||
+    pathname.startsWith("/dashboard")
+  ) {
+    return label === "For Authors";
+  }
+  if (pathname.startsWith("/contact")) {
+    return label === "Contact";
+  }
+  return false;
+}
+
 export function SiteHeader() {
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openMobileSub, setOpenMobileSub] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState<number | null>(null);
+  const [direction, setDirection] = useState<"left" | "right">("right");
 
   useEffect(() => {
     setUser(getSession());
@@ -49,6 +200,14 @@ export function SiteHeader() {
         }
         .animate-wave-flow {
           animation: waveFlow 0.8s linear infinite;
+        }
+        @keyframes slideInFromRight {
+          from { opacity: 0; transform: translateX(28px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInFromLeft {
+          from { opacity: 0; transform: translateX(-28px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
       `}</style>
       {/* Top institutional banner */}
@@ -94,25 +253,160 @@ export function SiteHeader() {
             <GbJournalLogo />
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-0.5 lg:flex">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="relative px-3 py-2 text-[13px] font-bold text-[color:var(--color-gb-blue-dark)] hover:text-[color:var(--bangla-red)] transition-colors group"
-              >
-                {item.label}
-                <span 
-                  className="absolute inset-x-3 bottom-0 h-[6px] opacity-0 translate-y-[2px] group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none animate-wave-flow"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 6' fill='none' stroke='%23e11d48' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 3Q5 0 10 3T20 3'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: "repeat-x",
-                    backgroundSize: "20px 6px"
+          {/* Desktop Navigation with Hover Dropdowns */}
+          <nav
+            className="hidden items-center gap-1 lg:flex"
+            onMouseLeave={() => setActiveTab(null)}
+          >
+            {mainNav.map((item, idx) => {
+              const hasDropdown = Boolean(item.dropdown && item.dropdown.length > 0);
+              const isActive = activeTab === idx;
+              const isRouteActive = getIsRouteActive(pathname, item.label);
+
+              const animName = direction === "right" ? "slideInFromRight" : "slideInFromLeft";
+
+              return (
+                <div
+                  key={item.label}
+                  className="relative py-1"
+                  onMouseEnter={() => {
+                    if (activeTab !== idx) {
+                      setDirection(activeTab !== null && idx > activeTab ? "right" : "left");
+                      setActiveTab(idx);
+                    }
                   }}
-                />
-              </Link>
-            ))}
+                >
+                  <Link
+                    href={item.href}
+                    className={`relative inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-bold transition-colors ${
+                      isActive
+                        ? "text-[color:var(--bangla-red)]"
+                        : isRouteActive
+                        ? "text-[color:var(--color-gb-blue)] font-black"
+                        : "text-[color:var(--color-gb-blue-dark)] hover:text-[color:var(--color-gb-blue)]"
+                    }`}
+                  >
+                    <span className="relative py-0.5">
+                      <span>{item.label}</span>
+
+                      {/* Wavy line indicator (Only under text) */}
+                      <span
+                        className={`absolute inset-x-0 -bottom-1 h-[6px] transition-all duration-300 pointer-events-none animate-wave-flow ${
+                          isActive || isRouteActive
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 translate-y-[2px]"
+                        }`}
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 6' fill='none' stroke='${
+                            isActive ? "%23e11d48" : "%231f2f82"
+                          }' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 3Q5 0 10 3T20 3'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: "repeat-x",
+                          backgroundSize: "20px 6px",
+                        }}
+                      />
+                    </span>
+                    {hasDropdown && (
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 opacity-60 transition-transform duration-250 ${
+                          isActive
+                            ? "rotate-180 opacity-100 text-[color:var(--bangla-red)]"
+                            : isRouteActive
+                            ? "opacity-100 text-[color:var(--color-gb-blue)]"
+                            : ""
+                        }`}
+                      />
+                    )}
+                  </Link>
+
+                  {/* Dropdown Menu */}
+                  {hasDropdown && (
+                    <div
+                      className={`absolute left-0 top-full pt-2 z-50 min-w-[300px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                        isActive
+                          ? "opacity-100 visible translate-y-0 scale-100 pointer-events-auto"
+                          : "opacity-0 invisible translate-y-2 scale-[0.97] pointer-events-none"
+                      }`}
+                    >
+                      <div className="rounded-xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(11,18,61,0.12)] overflow-hidden">
+                        {/* Section label */}
+                        <div className="px-4 pt-3 pb-1.5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#1f2f82]/50">{item.label}</p>
+                        </div>
+
+                        {/* Items */}
+                        <div key={activeTab} className="grid gap-0.5 px-2 pb-2">
+                          {item.dropdown!.map((sub, idxSub) => {
+                            const SubIcon = sub.icon;
+                            const isSubActive =
+                              pathname === sub.href ||
+                              (sub.href !== "/" && pathname.startsWith(sub.href));
+
+                            return (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                style={{
+                                  animation: isActive
+                                    ? `${animName} 380ms cubic-bezier(0.16,1,0.3,1) both`
+                                    : "none",
+                                  animationDelay: isActive ? `${idxSub * 50}ms` : "0ms",
+                                }}
+                                className={`group/sub flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer transition-all duration-150 ${
+                                  isSubActive
+                                    ? "bg-[#1f2f82]/6 font-bold text-[#1f2f82]"
+                                    : "hover:bg-slate-50"
+                                }`}
+                              >
+                                <div
+                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ${
+                                    isSubActive
+                                      ? "bg-[#1f2f82] text-white shadow-xs"
+                                      : "bg-slate-100 text-slate-500 group-hover/sub:bg-[#1f2f82] group-hover/sub:text-white"
+                                  }`}
+                                >
+                                  <SubIcon className="h-3.5 w-3.5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <p
+                                      className={`text-[12px] font-semibold transition-colors duration-150 ${
+                                        isSubActive
+                                          ? "text-[#1f2f82] font-extrabold"
+                                          : "text-slate-700 group-hover/sub:text-slate-900"
+                                      }`}
+                                    >
+                                      {sub.label}
+                                    </p>
+                                    {isSubActive && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-[#1f2f82] shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] leading-4 text-slate-400 font-medium">
+                                    {sub.description}
+                                  </p>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+
+                        {/* Footer link */}
+                        {item.footerHref && (
+                          <div className="border-t border-slate-100 px-4 py-2">
+                            <Link
+                              href={item.footerHref}
+                              className="text-[11px] font-semibold text-[#1f2f82]/70 hover:text-[#1f2f82] transition-colors duration-150"
+                            >
+                              {item.footerLabel}
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
           {/* Right actions */}
@@ -177,16 +471,65 @@ export function SiteHeader() {
         {menuOpen && (
           <div className="container-x border-t border-[color:var(--border)] py-4 lg:hidden animate-fade">
             <nav className="grid gap-1">
-              {navLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center rounded-lg px-4 py-2.5 text-sm font-bold text-[color:var(--color-gb-blue-dark)] hover:bg-[color:var(--color-gb-blue-soft)] transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {mainNav.map((item) => {
+                const hasSub = Boolean(item.dropdown && item.dropdown.length > 0);
+                const isOpen = openMobileSub === item.label;
+                const isMobileRouteActive = getIsRouteActive(pathname, item.label);
+
+                return (
+                  <div key={item.label} className="grid gap-1">
+                    <div
+                      className={`flex items-center justify-between rounded-lg px-4 py-2.5 text-sm font-bold transition-colors ${
+                        isMobileRouteActive
+                          ? "bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] font-black"
+                          : "text-[color:var(--color-gb-blue-dark)] hover:bg-slate-50"
+                      }`}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => setMenuOpen(false)}
+                        className="flex-1"
+                      >
+                        {item.label}
+                      </Link>
+                      {hasSub && (
+                        <button
+                          onClick={() => setOpenMobileSub(isOpen ? null : item.label)}
+                          className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                        </button>
+                      )}
+                    </div>
+
+                    {hasSub && isOpen && (
+                      <div className="ml-4 grid gap-1 border-l-2 border-[color:var(--color-gb-blue-soft)] pl-3 my-1">
+                        {item.dropdown!.map((sub) => {
+                          const SubIcon = sub.icon;
+                          const isSubActive = pathname === sub.href;
+
+                          return (
+                            <Link
+                              key={sub.href + sub.label}
+                              href={sub.href}
+                              onClick={() => setMenuOpen(false)}
+                              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                                isSubActive
+                                  ? "bg-[color:var(--color-gb-blue)] text-white font-extrabold"
+                                  : "text-slate-700 hover:bg-slate-100"
+                              }`}
+                            >
+                              <SubIcon className={`h-3.5 w-3.5 ${isSubActive ? "text-amber-300" : "text-[color:var(--color-gb-blue)]"}`} />
+                              <span>{sub.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
               {user ? (
                 <div className="border-t border-[color:var(--border)] mt-2 pt-2 grid gap-1">
                   <Link

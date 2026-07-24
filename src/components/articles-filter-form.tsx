@@ -38,43 +38,45 @@ export function ArticlesFilterForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative z-30 rounded-2xl border border-white/15 bg-white/[0.06] p-1.5 backdrop-blur-md shadow-[0_28px_70px_rgba(0,0,0,0.24)]"
+      className="rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-[0_12px_36px_rgba(11,18,61,0.06)]"
     >
-      <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_175px_175px_auto] md:items-center">
-        <label className="flex min-h-[42px] items-center gap-2.5 rounded-xl border border-white/10 bg-white/10 px-3.5 transition-all focus-within:bg-white/15 focus-within:border-white/25">
-          <Search className="h-3.5 w-3.5 shrink-0 text-white/60" />
+      <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_185px_185px_auto] md:items-center">
+        {/* Search input field */}
+        <label className="flex min-h-[44px] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 transition-all focus-within:border-slate-300 focus-within:bg-white">
+          <Search className="h-4 w-4 shrink-0 text-slate-400" />
           <span className="sr-only">Search the research archive</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Title, author, DOI, or keyword"
-            className="w-full border-none bg-transparent text-xs font-semibold text-white outline-none focus:outline-none focus:ring-0 focus:border-none hover:border-none placeholder:font-medium placeholder:text-white/50"
+            className="w-full border-none bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:font-medium placeholder:text-slate-400 focus:outline-none focus:ring-0"
           />
         </label>
 
+        {/* Article type dropdown */}
         <label>
           <span className="sr-only">Article type</span>
           <CustomSelect
-            variant="dark"
             options={["All Types", ...articleTypes]}
             value={type || "All Types"}
             onChange={(value) => setType(value === "All Types" ? "" : value)}
           />
         </label>
 
+        {/* Topic dropdown */}
         <label>
           <span className="sr-only">Subject area</span>
           <CustomSelect
-            variant="dark"
             options={["All Topics", ...topics]}
             value={topic || "All Topics"}
             onChange={(value) => setTopic(value === "All Topics" ? "" : value)}
           />
         </label>
 
+        {/* Filter Action Button */}
         <button
           type="submit"
-          className="inline-flex min-h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 text-xs font-bold text-slate-950 shadow-md transition-all hover:bg-sky-400 focus:outline-none"
+          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-6 text-xs font-extrabold text-white shadow-xs transition-colors cursor-pointer focus:outline-none"
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
           <span>Apply filters</span>
