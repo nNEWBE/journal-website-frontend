@@ -362,17 +362,17 @@ export function HomeJournalShowcase({
 
           <motion.div
             variants={stagger}
-            className="mt-7 grid gap-5 md:grid-cols-2 lg:grid-cols-3"
+            className="mt-7 grid gap-6 md:grid-cols-2 lg:grid-cols-3"
           >
             {currentIssue.articles.map((article, index) => (
               <motion.article
                 key={article.id}
                 variants={reveal}
-                className="issue-paper-card group flex min-h-full flex-col overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_14px_40px_rgba(17,27,82,0.06)]"
+                className="group flex flex-col overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_14px_40px_rgba(11,18,61,0.07)] transition-all duration-500 hover:-translate-y-1.5 hover:border-[color:var(--color-gb-blue)]/30 hover:shadow-[0_22px_50px_rgba(11,18,61,0.12)]"
               >
                 <Link
                   href={`/articles/${article.slug}`}
-                  className="relative block aspect-[16/10] overflow-hidden bg-slate-900 focus-ring"
+                  className="relative block aspect-[16/10] overflow-hidden bg-slate-950 focus-ring"
                 >
                   <Image
                     src={article.image || "/covers/medical.png"}
@@ -381,39 +381,47 @@ export function HomeJournalShowcase({
                     sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
                   />
-                  <span className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-gb-blue-deep)]/75 via-transparent to-transparent" />
-                  <span className="absolute left-4 top-4 rounded-full border border-white/20 bg-slate-950/50 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.13em] text-white backdrop-blur-md">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-gb-blue-deep)]/85 via-[color:var(--color-gb-blue-deep)]/20 to-transparent" />
+                  <span className="absolute left-3.5 top-3.5 flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/60 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-amber-300 backdrop-blur-md shadow-xs">
                     Paper {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className="absolute bottom-4 left-4 right-4 text-[10px] font-black uppercase tracking-[0.14em] text-white/80">
+                  <span className="absolute bottom-3.5 left-3.5 text-[10px] font-extrabold uppercase tracking-wider text-white/90">
                     {article.topic}
                   </span>
                 </Link>
+
                 <div className="flex flex-1 flex-col p-5">
-                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-gold-dark)]">
-                    {article.type}
-                  </p>
-                  <Link
-                    href={`/articles/${article.slug}`}
-                    className="mt-2 block rounded-sm focus-ring"
-                  >
-                    <h3 className="font-academic text-lg font-bold leading-snug text-[color:var(--color-gb-blue-deep)] transition-colors duration-300 group-hover:text-[color:var(--color-gb-blue)]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-[color:var(--color-gb-blue-soft)] px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue)]">
+                      <FileText className="h-3 w-3" />
+                      {article.type}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {article.publishedAt}
+                    </span>
+                  </div>
+
+                  <Link href={`/articles/${article.slug}`} className="mt-3 block rounded-sm focus-ring">
+                    <h3 className="font-academic text-[1.05rem] font-bold leading-snug text-[color:var(--color-gb-blue-deep)] transition-colors duration-300 group-hover:text-[color:var(--color-gb-blue)] line-clamp-2">
                       {article.title}
                     </h3>
                   </Link>
-                  <p className="mt-2 line-clamp-1 text-[10px] font-semibold text-slate-400">
+
+                  <p className="mt-2.5 line-clamp-1 text-xs font-semibold text-slate-600">
+                    <span className="font-normal text-slate-400">By </span>
                     {article.authors.join(", ")}
                   </p>
+
                   <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                    <span className="truncate font-mono text-[8px] text-slate-400">
+                    <span className="truncate font-mono text-[10px] font-bold text-slate-500">
                       {article.doi}
                     </span>
                     <Link
                       href={`/articles/${article.slug}`}
                       aria-label={`Read ${article.title}`}
-                      className="paper-arrow flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] focus-ring"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs transition-all group-hover:bg-[color:var(--color-gb-blue)] group-hover:scale-105 focus-ring"
                     >
-                      <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                      <ArrowUpRight className="h-4 w-4" />
                     </Link>
                   </div>
                 </div>
