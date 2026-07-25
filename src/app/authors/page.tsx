@@ -1,14 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  ChevronRight,
   ClipboardCheck,
   Eye,
   FileCheck2,
   FileText,
   FlaskConical,
   Globe2,
+  Layers,
   Library,
   Mail,
   MessageSquareText,
@@ -20,6 +24,9 @@ import {
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { ProcessSteps } from "@/components/ui/process-steps";
+import type { ProcessStep } from "@/components/ui/process-steps";
+import { PublishingCharterSection } from "@/components/ui/publishing-charter-section";
 import { articleTypes, policies } from "@/lib/data";
 
 const articleTypeDetails = {
@@ -41,11 +48,37 @@ const preparationItems = [
   { icon: Eye,         title: "Blinded review copy",    text: "Remove author identities and institutional clues from the review version."        },
 ];
 
-const submissionSteps = [
-  { num: "01", icon: FileCheck2,    title: "Prepare",     text: "Choose the article type and complete every required file and declaration." },
-  { num: "02", icon: Send,          title: "Submit",      text: "Enter manuscript metadata, upload files, and confirm the submission."       },
-  { num: "03", icon: ClipboardCheck,title: "Peer review", text: "Track screening, reviewer assessment, decisions, and requested revisions."  },
-  { num: "04", icon: Globe2,        title: "Publish",     text: "Approved work is prepared as the version of record and made discoverable."  },
+const authorProcessSteps: ProcessStep[] = [
+  {
+    number: "01",
+    icon: "file",
+    title: "Prepare",
+    description: "Choose the article type and complete every required file and declaration.",
+  },
+  {
+    number: "02",
+    icon: "search",
+    title: "Submit",
+    description: "Enter manuscript metadata, upload files, and confirm the submission.",
+  },
+  {
+    number: "03",
+    icon: "users",
+    title: "Peer review",
+    description: "Track screening, double-blind peer assessment, and reviewer evaluation.",
+  },
+  {
+    number: "04",
+    icon: "clipboard",
+    title: "Revision",
+    description: "Address reviewer recommendations and upload revised manuscript files.",
+  },
+  {
+    number: "05",
+    icon: "book",
+    title: "Publish",
+    description: "Approved work receives a DOI, final proofing, and global open-access publication.",
+  },
 ];
 
 const stepColors = [
@@ -238,37 +271,16 @@ export default function AuthorsPage() {
       </section>
 
       {/* ── Publication Workflow ─────────────────── */}
-      <section className="container-x py-14 md:py-18">
-        <div className="mb-12">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
-            Publication workflow
-          </p>
-          <h2 className="mt-1.5 font-academic text-2xl font-bold tracking-tight text-[color:var(--color-gb-blue-deep)] md:text-3xl">
-            From manuscript to publication
-          </h2>
-        </div>
-
-        <div className="relative grid gap-6 md:grid-cols-4 md:gap-4">
-          {/* connector */}
-          <div className="pointer-events-none absolute left-[8%] right-[8%] top-[22px] hidden h-px bg-gradient-to-r from-[color:var(--color-gb-blue)]/30 via-amber-400/30 to-emerald-500/30 md:block" />
-
-          {submissionSteps.map(({ num, icon: Icon, title, text }, i) => {
-            const c = stepColors[i];
-            return (
-              <div key={num} className="relative group">
-                <div className="flex items-center gap-3">
-                  <div className={`relative flex h-11 w-11 items-center justify-center rounded-xl ${c.bg} ring-2 ${c.ring} shadow-xs z-10 transition-all group-hover:scale-110`}>
-                    <Icon className={`h-5 w-5 ${c.text}`} />
-                  </div>
-                  <span className="font-mono text-[9px] font-black text-slate-300">{num}</span>
-                </div>
-                <h3 className="mt-5 text-sm font-black text-[color:var(--color-gb-blue-deep)]">{title}</h3>
-                <p className="mt-2 text-[11px] leading-5 text-slate-500">{text}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <ProcessSteps
+        sectionNumber="04"
+        sectionLabel="Publication workflow"
+        heading="From manuscript to publication"
+        description="A transparent 4-stage process guiding your research from initial submission to global indexing."
+        steps={authorProcessSteps}
+        bannerTitle="Documented editorial pathway"
+        footerNote="A traceable route from initial files to the published record."
+        badgeText="COPE-Aligned Practice"
+      />
 
       {/* ── Policy CTA ───────────────────────────── */}
       <section className="container-x pb-16 md:pb-20">

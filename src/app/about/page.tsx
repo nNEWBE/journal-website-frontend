@@ -30,7 +30,6 @@ export default function AboutPage() {
               href="/issues/current"
               variant="primary"
               hasArrow
-              arrowRotateDeg={0}
             >
               Read the current issue
             </HeroActionButton>

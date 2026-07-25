@@ -17,6 +17,7 @@ import { PageShell } from "@/components/page-shell";
 import { issues } from "@/lib/data";
 
 import { PageHeroBanner } from "@/components/page-hero-banner";
+import { HeroActionButton } from "@/components/ui/hero-action-button";
 
 export default function CurrentIssuePage() {
   const issue = issues[0];
@@ -31,9 +32,9 @@ export default function CurrentIssuePage() {
 
   const standards = [
     { icon: ShieldCheck, label: "Double-blind peer reviewed" },
-    { icon: Globe2,       label: "Open-access publication"  },
+    { icon: Globe2, label: "Open-access publication" },
     { icon: CheckCircle2, label: "DOI and citation metadata" },
-    { icon: Download,     label: "Free PDF download"        },
+    { icon: Download, label: "Free PDF download" },
   ];
 
   return (
@@ -47,21 +48,21 @@ export default function CurrentIssuePage() {
         description="A peer-reviewed collection examining how research, public institutions, and local practice can strengthen healthier and more resilient communities."
         actions={
           <>
-            <a
+            <HeroActionButton
               href="#contents"
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-5 text-xs font-black text-[color:var(--color-gb-blue-deep)] shadow-xs transition-all hover:bg-amber-50 hover:-translate-y-0.5"
+              variant="white"
+              hasArrow
             >
               Browse this issue
-              <ArrowRight className="h-3.5 w-3.5" />
-            </a>
+            </HeroActionButton>
             {leadArticle && (
-              <Link
+              <HeroActionButton
                 href={`/articles/${leadArticle.slug}`}
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/[0.07] px-5 text-xs font-bold text-white backdrop-blur-sm transition-all hover:bg-white/[0.14] hover:-translate-y-0.5"
+                variant="secondary"
+                icon={BookOpen}
               >
                 Start reading
-                <BookOpen className="h-3.5 w-3.5 text-amber-300" />
-              </Link>
+              </HeroActionButton>
             )}
           </>
         }
@@ -104,69 +105,74 @@ export default function CurrentIssuePage() {
               {issue.articles.map((article, index) => (
                 <article
                   key={article.id}
-                  className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_12px_rgba(11,18,61,0.04)] transition-all duration-300 hover:border-[color:var(--color-gb-blue)]/25 hover:shadow-[0_12px_36px_rgba(11,18,61,0.09)] hover:-translate-y-0.5"
+                  className="group overflow-hidden rounded-[22px] border border-slate-200/90 bg-white shadow-[0_12px_36px_rgba(11,18,61,0.06)] transition-all duration-300 hover:border-[color:var(--color-gb-blue)]/30 hover:shadow-[0_20px_48px_rgba(11,18,61,0.11)] hover:-translate-y-1"
                 >
-                  <div className="grid gap-0 sm:grid-cols-[160px_minmax(0,1fr)]">
+                  <div className="grid gap-0 p-2.5 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4">
                     {/* thumbnail */}
                     <Link
                       href={`/articles/${article.slug}`}
-                      className="relative block overflow-hidden bg-slate-900 sm:rounded-l-2xl"
+                      className="relative block overflow-hidden rounded-xl bg-slate-950"
                     >
-                      <div className="relative aspect-[4/3] sm:aspect-auto sm:h-full sm:min-h-[160px]">
+                      <div className="relative aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[170px]">
                         <Image
                           src={article.image || "/covers/medical.png"}
                           alt=""
                           fill
-                          sizes="(max-width: 639px) 100vw, 160px"
+                          sizes="(max-width: 639px) 100vw, 190px"
                           className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/70 via-transparent to-transparent" />
-                        <span className="absolute bottom-2.5 left-2.5 flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-slate-950/50 font-mono text-[9px] font-black text-white backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-gb-blue-deep)]/80 via-transparent to-transparent" />
+                        <span className="absolute bottom-2.5 left-2.5 flex h-7 items-center justify-center rounded-lg border border-amber-400/40 bg-slate-950/75 px-2.5 font-mono text-[10px] font-black text-amber-300 backdrop-blur-md shadow-xs">
                           {String(index + 1).padStart(2, "0")}
                         </span>
                       </div>
                     </Link>
 
                     {/* content */}
-                    <div className="flex flex-col justify-between p-5">
+                    <div className="flex flex-col justify-between py-1.5 pr-2 pl-1 sm:pl-0">
                       <div>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                          <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-blue)]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-[color:var(--color-gb-blue-soft)] px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-blue)]">
                             <FileText className="h-3 w-3" />
                             {article.type}
                           </span>
-                          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                          <span className="inline-flex items-center rounded-md border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-500">
                             {article.topic}
                           </span>
                         </div>
 
                         <Link href={`/articles/${article.slug}`}>
-                          <h3 className="mt-2.5 font-academic text-lg font-bold leading-snug text-[color:var(--color-gb-blue-deep)] transition-colors group-hover:text-[color:var(--color-gb-blue)] md:text-xl">
+                          <h3 className="mt-3 font-academic text-[1.15rem] font-bold leading-snug text-[color:var(--color-gb-blue-deep)] transition-colors group-hover:text-[color:var(--color-gb-blue)] md:text-[1.25rem]">
                             {article.title}
                           </h3>
                         </Link>
-                        <p className="mt-2 text-[11px] leading-5 text-slate-500 line-clamp-2">
+                        <p className="mt-2 text-xs leading-relaxed text-slate-600 line-clamp-2">
                           {article.abstract}
                         </p>
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-slate-400">
-                          <span>{article.authors.slice(0, 2).join(", ")}{article.authors.length > 2 ? " et al." : ""}</span>
-                          <span className="flex items-center gap-1">
-                            <Hash className="h-2.5 w-2.5" />Pages {article.pages}
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="truncate text-xs font-semibold text-slate-700">
+                            <span className="font-normal text-slate-400">By </span>
+                            {article.authors.slice(0, 2).join(", ")}
+                            {article.authors.length > 2 ? " et al." : ""}
+                          </p>
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                            <Hash className="h-3 w-3 text-[color:var(--color-gb-blue)]" />
+                            Pages {article.pages}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="h-2.5 w-2.5" />
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                            <Eye className="h-3 w-3 text-[color:var(--color-gb-blue)]" />
                             {article.metrics.views.toLocaleString()} views
                           </span>
                         </div>
                         <Link
                           href={`/articles/${article.slug}`}
                           aria-label={`Read ${article.title}`}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[color:var(--color-gb-blue)] shadow-xs transition-all hover:border-[color:var(--color-gb-blue)]/30 hover:bg-[color:var(--color-gb-blue-soft)] hover:shadow-md"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs transition-all group-hover:bg-[color:var(--color-gb-blue)] group-hover:scale-105"
                         >
-                          <ArrowRight className="h-3.5 w-3.5" />
+                          <ArrowRight className="h-4 w-4" />
                         </Link>
                       </div>
                     </div>
@@ -217,13 +223,15 @@ export default function CurrentIssuePage() {
               <p className="mt-2 text-xs font-bold text-white/80 leading-5">
                 Accepting submissions for the January 2027 edition.
               </p>
-              <Link
-                href="/submit"
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-4 py-2 text-xs font-black text-[color:var(--color-gb-blue-deep)] transition-all hover:bg-amber-300"
-              >
-                Submit a manuscript
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
+              <div className="mt-4">
+                <HeroActionButton
+                  href="/dashboard/submissions/new"
+                  variant="primary"
+                  hasArrow
+                >
+                  Submit a manuscript
+                </HeroActionButton>
+              </div>
             </div>
           </aside>
         </div>

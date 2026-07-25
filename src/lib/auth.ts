@@ -6,6 +6,7 @@ export interface User {
   role: Role;
   title: string;
   department?: string;
+  avatar?: string;
 }
 
 export const DEMO_USERS: User[] = [
@@ -15,6 +16,7 @@ export const DEMO_USERS: User[] = [
     role: "super-admin",
     title: "Editor-in-Chief & Administrator",
     department: "Faculty of Health Sciences",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
   },
   {
     email: "admin@gonouniversity.edu.bd",
@@ -22,6 +24,7 @@ export const DEMO_USERS: User[] = [
     role: "admin",
     title: "System Administrator",
     department: "Journal Operations",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
   },
   {
     email: "editor@gonouniversity.edu.bd",
@@ -29,6 +32,7 @@ export const DEMO_USERS: User[] = [
     role: "editor",
     title: "Managing Editor",
     department: "Department of Pharmacy",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
   },
   {
     email: "reviewer@gonouniversity.edu.bd",
@@ -36,6 +40,7 @@ export const DEMO_USERS: User[] = [
     role: "reviewer",
     title: "Peer Reviewer",
     department: "Department of Microbiology",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80",
   },
   {
     email: "author@gonouniversity.edu.bd",
@@ -43,6 +48,7 @@ export const DEMO_USERS: User[] = [
     role: "author",
     title: "Researcher",
     department: "Department of Public Health",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
   },
 ];
 

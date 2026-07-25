@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
   AlertCircle,
   Archive,
+  BarChart2,
   Bell,
   BookOpen,
   CalendarClock,
@@ -16,7 +17,9 @@ import {
   ClipboardCheck,
   Clock,
   Crown,
+  Eye,
   FileCheck2,
+  FileText,
   Filter,
   Layers,
   LayoutDashboard,
@@ -24,6 +27,7 @@ import {
   Mail,
   Menu,
   MessageSquare,
+  MoreVertical,
   PenLine,
   Plus,
   RefreshCw,
@@ -44,6 +48,7 @@ import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomModal } from "@/components/ui/modal";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionHeader } from "@/components/ui/section-header";
+import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { cn } from "@/lib/utils";
 import {
   roles,
@@ -220,11 +225,155 @@ function ToolboxAction({
   );
 }
 
+function RowActionsDropdown({
+  sub,
+  canAdvance,
+  activeRole,
+  advanceSubmission,
+  assignReviewer,
+  handleUploadRevision,
+  triggerSubmitReview,
+}: {
+  sub: Submission;
+  canAdvance: boolean;
+  activeRole: Role;
+  advanceSubmission: (id: string) => void;
+  assignReviewer: (id: string) => void;
+  handleUploadRevision: () => void;
+  triggerSubmitReview: (id: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 220) {
+        setOpenDirection("up");
+      } else {
+        setOpenDirection("down");
+      }
+    }
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div className={cn("relative inline-block text-left", isOpen && "z-[9999]")} ref={dropdownRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--color-gb-border)] bg-white text-[color:var(--color-gb-ink)] shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+        title="Actions options"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+
+      {isOpen && (
+        <div
+          className={`absolute right-0 z-[9999] w-48 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 ${
+            openDirection === "up" ? "bottom-full mb-1.5 origin-bottom-right" : "top-full mt-1.5 origin-top-right"
+          }`}
+        >
+          <p className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+            Manuscript Actions
+          </p>
+
+          {canAdvance && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  advanceSubmission(sub.id);
+                  setIsOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                Advance Workflow
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  assignReviewer(sub.id);
+                  setIsOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
+              >
+                <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                Assign Reviewer
+              </button>
+            </>
+          )}
+
+          {activeRole === "author" && sub.status === "Revision Requested" && (
+            <button
+              type="button"
+              onClick={() => {
+                handleUploadRevision();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+            >
+              <Send className="h-3.5 w-3.5 shrink-0" />
+              Upload Revision
+            </button>
+          )}
+
+          {activeRole === "reviewer" && sub.status === "Under Review" && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerSubmitReview(sub.id);
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              Submit Review
+            </button>
+          )}
+
+          <div className="my-1 border-t border-slate-100" />
+
+          <button
+            type="button"
+            onClick={() => {
+              toast.info(`Viewing details for manuscript ${sub.id}`);
+              setIsOpen(false);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <Eye className="h-3.5 w-3.5 shrink-0" />
+            View Manuscript Info
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export function DashboardWorkspace() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeRole, setActiveRole] = useState<Role>("author");
+  const [activeView, setActiveView] = useState<"workspace" | "analytics">("workspace");
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [decisionLog, setDecisionLog] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -455,45 +604,68 @@ export function DashboardWorkspace() {
 
       {/* User card */}
       {currentUser && (
-        <div className={cn(
-          "mt-3 transition-all duration-300 overflow-hidden shrink-0",
-          isCollapsed ? "mx-0 bg-transparent border-transparent" : "mx-2 rounded-xl bg-white/6 border border-white/8 p-2"
-        )}>
-          <div className="flex items-center">
-            <div className={cn(
-              "flex items-center justify-center shrink-0 transition-all duration-300",
-              isCollapsed ? "w-16" : "w-12"
-            )}>
-              <div
-                className="h-8 w-8 rounded-lg bg-gradient-to-br from-[color:var(--color-gb-gold)] to-amber-500 flex items-center justify-center text-white font-black text-sm shrink-0 cursor-help relative group"
-                title={isCollapsed ? `${currentUser.name} (${currentUser.role})` : undefined}
-              >
-                {currentUser.name.charAt(0)}
+        <div
+          className={cn(
+            "mt-3 transition-all duration-300 overflow-hidden shrink-0",
+            isCollapsed ? "mx-0 bg-transparent border-transparent" : "mx-2.5 rounded-2xl bg-white/8 border border-white/10 p-2.5 shadow-xs"
+          )}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className={cn(
+                "flex items-center justify-center shrink-0 transition-all duration-300",
+                isCollapsed ? "w-16" : "w-10"
+              )}
+            >
+              <div className="relative group cursor-pointer">
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="h-9 w-9 rounded-xl object-cover border border-amber-400/40 shadow-sm shrink-0"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black text-sm shrink-0 border border-amber-300/30">
+                    {currentUser.name.charAt(0)}
+                  </div>
+                )}
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-[color:var(--color-gb-blue-dark)]" />
+
                 {isCollapsed && (
                   /* Tooltip on hover */
-                  <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 p-2.5 rounded-lg shadow-xl text-left min-w-[160px] animate-fade">
+                  <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 p-2.5 rounded-xl shadow-xl text-left min-w-[170px] animate-fade">
                     <p className="text-[11px] font-bold text-white leading-tight">{currentUser.name}</p>
-                    <p className="text-[9px] text-white/45 truncate font-mono mt-0.5">{currentUser.email}</p>
-                    <p className="text-[9px] text-[color:var(--color-gb-gold)] font-bold uppercase mt-1.5">{currentUser.role}</p>
+                    <p className="text-[9px] text-white/50 truncate font-mono mt-0.5">{currentUser.email}</p>
+                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 text-[8.5px] font-black uppercase tracking-wider text-amber-300">
+                      {currentUser.role}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
-            <div className={cn(
-              "transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden flex-1 min-w-0",
-              isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0 ml-2"
-            )}>
+
+            <div
+              className={cn(
+                "transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden flex-1 min-w-0",
+                isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0"
+              )}
+            >
               <p className="text-[12px] font-bold text-white truncate leading-tight">{currentUser.name}</p>
-              <p className="text-[10px] text-white/45 truncate font-mono mt-0.5">{currentUser.email}</p>
+              <p className="text-[9.5px] text-white/50 truncate font-mono mt-0.5">{currentUser.email}</p>
             </div>
           </div>
+
           {!isCollapsed && (
-            <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-2 animate-fade">
-              <span className="inline-flex items-center gap-1 rounded-md bg-white/8 border border-white/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white/70">
-                <ShieldCheck className="h-2.5 w-2.5 text-emerald-300" />
+            <div className="mt-2.5 flex items-center justify-between gap-1.5 border-t border-white/10 pt-2 animate-fade">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 text-[8.5px] font-black uppercase tracking-wider text-amber-300 whitespace-nowrap">
+                <ShieldCheck className="h-2.5 w-2.5 text-amber-400 shrink-0" />
                 {currentUser.role}
               </span>
-              <span className="text-[10px] text-white/35 truncate max-w-[100px] text-right">{currentUser.department}</span>
+              {currentUser.department && (
+                <span className="text-[9.5px] font-medium text-white/50 truncate text-right min-w-0 flex-1" title={currentUser.department}>
+                  {currentUser.department}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -501,11 +673,41 @@ export function DashboardWorkspace() {
 
       {/* Navigation */}
       <div className="mt-4 flex-1 overflow-y-auto scrollbar-none">
+        {/* Analytics nav item at top */}
+        <div className="mb-3">
+          {!isCollapsed && <p className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-widest text-white/30 animate-fade">Insights</p>}
+          <button
+            onClick={() => { setActiveView("analytics"); setIsMobileSidebarOpen(false); }}
+            className={cn(
+              "flex items-center rounded-lg text-left text-[12px] font-semibold transition-all duration-150 cursor-pointer relative group mx-2 w-[calc(100%-16px)] h-10 px-0",
+              activeView === "analytics"
+                ? "bg-white text-[color:var(--color-gb-blue-dark)] shadow-sm font-bold"
+                : "text-white/70 hover:bg-white/8 hover:text-white"
+            )}
+            title={isCollapsed ? "Analytics" : undefined}
+          >
+            <div className="w-12 h-10 flex items-center justify-center shrink-0">
+              <BarChart2 className={cn("h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-105", activeView === "analytics" ? "text-[color:var(--color-gb-blue)]" : "")} />
+            </div>
+            <div className={cn(
+              "flex-1 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden pr-3",
+              isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0"
+            )}>
+              Analytics
+            </div>
+            {isCollapsed && (
+              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 px-2.5 py-1.5 rounded-md shadow-md text-white whitespace-nowrap text-[10px] font-bold tracking-wide animate-fade">
+                Analytics
+              </div>
+            )}
+          </button>
+        </div>
+
         {!isCollapsed && <p className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-widest text-white/30 animate-fade">Workspaces</p>}
         <div className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeRole === item.id;
+            const isActive = activeRole === item.id && activeView === "workspace";
             const hasAccess = currentUser?.role === item.id || currentUser?.role === "super-admin";
             return (
               <button
@@ -513,6 +715,7 @@ export function DashboardWorkspace() {
                 onClick={() => {
                   if (!hasAccess) return;
                   setActiveRole(item.id);
+                  setActiveView("workspace");
                   setIsMobileSidebarOpen(false);
                 }}
                 disabled={!hasAccess}
@@ -526,25 +729,18 @@ export function DashboardWorkspace() {
                 )}
                 title={isCollapsed ? item.label : undefined}
               >
-                {/* Centered icon container */}
                 <div className="w-12 h-10 flex items-center justify-center shrink-0">
                   <Icon className={cn("h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-105", isActive ? "text-[color:var(--color-gb-blue)]" : "")} />
                 </div>
-
-                {/* Text and right status badge, hidden when collapsed */}
                 <div className={cn(
                   "flex items-center justify-between flex-1 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden pr-3",
                   isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0"
                 )}>
                   <span className="flex-1">{item.label}</span>
                   {!hasAccess && (
-                    <span className="text-[8px] uppercase font-black text-white/15 bg-white/5 px-1.5 py-0.5 rounded">
-                      Restricted
-                    </span>
+                    <span className="text-[8px] uppercase font-black text-white/15 bg-white/5 px-1.5 py-0.5 rounded">Restricted</span>
                   )}
                 </div>
-
-                {/* Collapsed Tooltip */}
                 {isCollapsed && (
                   <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 px-2.5 py-1.5 rounded-md shadow-md text-white whitespace-nowrap text-[10px] font-bold tracking-wide animate-fade">
                     {item.label} {!hasAccess && "(Restricted)"}
@@ -738,7 +934,11 @@ export function DashboardWorkspace() {
             <nav className="flex items-center gap-1.5 text-[11px] text-[color:var(--color-gb-muted)] ml-1.5">
               <span className="font-medium">Dashboard</span>
               <ChevronRight className="h-3 w-3" />
-              <span className={`font-bold ${roleAccent.color}`}>{roleAccent.label}</span>
+              {activeView === "analytics" ? (
+                <span className="font-bold text-[color:var(--color-gb-blue)]">Analytics</span>
+              ) : (
+                <span className={`font-bold ${roleAccent.color}`}>{roleAccent.label}</span>
+              )}
             </nav>
           </div>
 
@@ -770,6 +970,14 @@ export function DashboardWorkspace() {
 
         {/* ── Scrollable body ─────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
+
+          {/* ── Analytics View ──────────────────────────────────────────────── */}
+          {activeView === "analytics" && (
+            <AnalyticsPanel submissions={submissions} />
+          )}
+
+          {/* ── Workspace View ──────────────────────────────────────────────── */}
+          {activeView === "workspace" && (<>
 
           {/* Workspace banner */}
           <AnimatePresence mode="wait">
@@ -830,7 +1038,7 @@ export function DashboardWorkspace() {
           </div>
 
           {/* Main content grid */}
-          <div className="grid gap-4 px-4 pb-6 xl:grid-cols-[1fr_280px]">
+          <div className="grid gap-4 px-4 pb-6 xl:grid-cols-[1fr_280px] items-start">
 
             {/* ── LEFT: Manuscript Table ──────────────────────────────────── */}
             <AnimatePresence mode="wait">
@@ -840,7 +1048,7 @@ export function DashboardWorkspace() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm overflow-hidden"
+                className="h-fit rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm overflow-hidden"
               >
                 {/* Table header */}
                 <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-gb-border)] px-4 py-3">
@@ -880,10 +1088,31 @@ export function DashboardWorkspace() {
                 {/* Mobile cards */}
                 <div className="md:hidden divide-y divide-[color:var(--color-gb-border)]">
                   {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <ClipboardCheck className="h-10 w-10 text-[color:var(--color-gb-border)] mb-3" />
-                      <p className="text-[12px] font-bold text-[color:var(--color-gb-muted)]">No manuscripts found</p>
-                      <p className="text-[11px] text-[color:var(--color-gb-muted)] mt-1">Try adjusting your search query</p>
+                    <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                      <div className="relative flex h-13 w-13 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50 text-slate-400 shadow-inner">
+                        <FileText className="h-6 w-6 text-slate-400" />
+                        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 border border-amber-200 text-amber-700">
+                          <Search className="h-3 w-3" />
+                        </span>
+                      </div>
+                      <h3 className="mt-3 text-xs font-bold text-slate-800">
+                        No Matching Manuscripts Found
+                      </h3>
+                      <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-slate-500">
+                        {searchQuery
+                          ? `No records match "${searchQuery}". Check for typos or clear search filter.`
+                          : "There are currently no manuscripts in this queue."}
+                      </p>
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery("")}
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+                        >
+                          <X className="h-3 w-3 text-slate-400" />
+                          Clear Search
+                        </button>
+                      )}
                     </div>
                   ) : filtered.map((sub) => (
                     <motion.div
@@ -904,16 +1133,15 @@ export function DashboardWorkspace() {
                           <span>Editor: <strong className="text-[color:var(--color-gb-ink)]">{sub.editor}</strong></span>
                           <span>Score: <strong className="text-[color:var(--color-gb-blue)]">{sub.score}</strong></span>
                         </div>
-                        <div className="flex gap-1.5">
-                          {canAdvance && <IconBtn icon={CheckCircle2} label="Advance" onClick={() => advanceSubmission(sub.id)} variant="success" />}
-                          {canAdvance && <IconBtn icon={UserCheck}    label="Assign"  onClick={() => assignReviewer(sub.id)}  variant="warning" />}
-                          {activeRole === "author" && sub.status === "Revision Requested" && (
-                            <IconBtn icon={Send} label="Upload Revision" onClick={handleUploadRevision} variant="success" />
-                          )}
-                          {activeRole === "reviewer" && sub.status === "Under Review" && (
-                            <IconBtn icon={CheckCircle2} label="Submit Review" onClick={() => triggerSubmitReview(sub.id)} variant="success" />
-                          )}
-                        </div>
+                        <RowActionsDropdown
+                          sub={sub}
+                          canAdvance={canAdvance}
+                          activeRole={activeRole}
+                          advanceSubmission={advanceSubmission}
+                          assignReviewer={assignReviewer}
+                          handleUploadRevision={handleUploadRevision}
+                          triggerSubmitReview={triggerSubmitReview}
+                        />
                       </div>
                     </motion.div>
                   ))}
@@ -922,10 +1150,31 @@ export function DashboardWorkspace() {
                 {/* Desktop table */}
                 <div className="hidden md:block overflow-x-auto">
                   {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <ClipboardCheck className="h-10 w-10 text-[color:var(--color-gb-border)] mb-3" />
-                      <p className="text-[12px] font-bold text-[color:var(--color-gb-muted)]">No manuscripts found</p>
-                      <p className="text-[11px] text-[color:var(--color-gb-muted)] mt-1">Try adjusting your search query</p>
+                    <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                      <div className="relative flex h-13 w-13 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50 text-slate-400 shadow-inner">
+                        <FileText className="h-6 w-6 text-slate-400" />
+                        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 border border-amber-200 text-amber-700">
+                          <Search className="h-3 w-3" />
+                        </span>
+                      </div>
+                      <h3 className="mt-3 text-xs font-bold text-slate-800">
+                        No Matching Manuscripts Found
+                      </h3>
+                      <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-slate-500">
+                        {searchQuery
+                          ? `No records match "${searchQuery}". Check for typos or clear search filter.`
+                          : "There are currently no manuscripts in this queue."}
+                      </p>
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery("")}
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+                        >
+                          <X className="h-3 w-3 text-slate-400" />
+                          Clear Search
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <table className="w-full min-w-[780px] border-collapse text-left">
@@ -999,20 +1248,15 @@ export function DashboardWorkspace() {
 
                             {/* Actions */}
                             <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-1.5">
-                                {canAdvance && (
-                                  <>
-                                    <IconBtn icon={CheckCircle2} label="Advance" onClick={() => advanceSubmission(sub.id)} variant="success" />
-                                    <IconBtn icon={UserCheck}    label="Assign"  onClick={() => assignReviewer(sub.id)}  variant="warning" />
-                                  </>
-                                )}
-                                {activeRole === "author" && sub.status === "Revision Requested" && (
-                                  <IconBtn icon={Send} label="Upload Revision" onClick={handleUploadRevision} variant="success" />
-                                )}
-                                {activeRole === "reviewer" && sub.status === "Under Review" && (
-                                  <IconBtn icon={CheckCircle2} label="Submit Review" onClick={() => triggerSubmitReview(sub.id)} variant="success" />
-                                )}
-                              </div>
+                              <RowActionsDropdown
+                                sub={sub}
+                                canAdvance={canAdvance}
+                                activeRole={activeRole}
+                                advanceSubmission={advanceSubmission}
+                                assignReviewer={assignReviewer}
+                                handleUploadRevision={handleUploadRevision}
+                                triggerSubmitReview={triggerSubmitReview}
+                              />
                             </td>
                           </tr>
                         ))}
@@ -1082,6 +1326,8 @@ export function DashboardWorkspace() {
 
             </div>
           </div>
+          {/* ── End Workspace View ──────────────────────────────────────────── */}
+          </>)}
         </div>
       </div>
 

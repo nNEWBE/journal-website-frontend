@@ -76,6 +76,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* Reserve scrollbar gutter — prevents page shake when portal opens */
+  scrollbar-gutter: stable;
 }
 
 body {
