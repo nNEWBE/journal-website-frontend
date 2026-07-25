@@ -9,11 +9,11 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { AboutJournalStory } from "@/components/about-journal-story";
-import { EditorialPageHeader } from "@/components/editorial-page-header";
+import { AboutJournalStory } from "@/components/about/about-journal-story";
+import { EditorialPageHeader } from "@/components/editorial/editorial-page-header";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
 import { SupportingTag } from "@/components/ui/badge";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { topics } from "@/lib/data";
 
 export default function AboutPage() {

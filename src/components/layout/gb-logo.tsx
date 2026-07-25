@@ -14,7 +14,7 @@ export function GbJournalLogo({
       <div
         className={cn(
           "relative shrink-0 overflow-hidden rounded-[6px] bg-white shadow-sm ring-1 ring-[color:var(--color-gb-border)]",
-          compact ? "h-[42px] w-[42px]" : "h-[58px] w-[58px]",
+          compact ? "h-[42px] w-[42px]" : "h-[58px] w-[58px]"
         )}
       >
         <img

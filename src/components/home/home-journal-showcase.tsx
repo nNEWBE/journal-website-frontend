@@ -5,19 +5,16 @@ import Image from "next/image";
 import {
   ArrowRight,
   ArrowUpRight,
-  BookmarkCheck,
   BookOpen,
   CalendarDays,
   Check,
-  Download,
-  Eye,
   FileText,
   Globe2,
   Info,
-  Quote,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Article } from "@/lib/data";
+import { FeaturedArticleCard } from "@/components/home/featured-article-card";
 
 type CurrentIssue = {
   id: string;
@@ -79,147 +76,9 @@ export function HomeJournalShowcase({
           variants={stagger}
           className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.48fr)_minmax(310px,0.52fr)]"
         >
-          <motion.article
-            variants={reveal}
-            className="editorial-card relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 lg:p-8 shadow-sm"
-          >
-            <div className="relative mb-6 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs">
-                  <BookmarkCheck className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
-                    Editor&apos;s selection
-                  </p>
-                  <p className="mt-0.5 text-xs font-semibold text-slate-500">
-                    Featured research
-                  </p>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-emerald-800">
-                <Globe2 className="h-3.5 w-3.5" />
-                Open access
-              </span>
-            </div>
-
-            <div className="relative grid gap-7 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[230px_minmax(0,1fr)]">
-              <Link
-                href={`/articles/${featuredArticle.slug}`}
-                className="relative mx-auto block aspect-[4/5] w-full max-w-[230px] overflow-hidden rounded-xl bg-slate-900 shadow-md focus-ring md:mx-0"
-              >
-                <Image
-                  src={featuredArticle.image || "/covers/medical.png"}
-                  alt=""
-                  fill
-                  sizes="(max-width: 767px) 230px, 230px"
-                  className="object-cover"
-                />
-                <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/80 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white">
-                  <FileText className="h-3 w-3" />
-                  {featuredArticle.type}
-                </span>
-              </Link>
-
-              <div className="flex min-w-0 flex-col justify-center">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-800">
-                    {featuredArticle.topic}
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-400">
-                    {featuredArticle.publishedAt}
-                  </span>
-                </div>
-
-                <Link
-                  href={`/articles/${featuredArticle.slug}`}
-                  className="focus-ring rounded-sm"
-                >
-                  <h2 className="font-academic text-[1.65rem] font-bold leading-[1.17] tracking-[-0.025em] text-[color:var(--color-gb-blue-deep)] transition-colors duration-200 hover:text-[color:var(--color-gb-blue)] sm:text-3xl">
-                    {featuredArticle.title}
-                  </h2>
-                </Link>
-
-                <div className="mt-3.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-600">
-                  <span className="font-extrabold text-slate-400 uppercase text-[9.5px] tracking-widest shrink-0">Authors:</span>
-                  <span className="text-slate-700 font-semibold">{featuredArticle.authors.join(", ")}</span>
-                </div>
-
-                <div className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 sm:p-4 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[9.5px] font-black uppercase tracking-wider text-[color:var(--color-gb-blue)]">
-                    <Quote className="h-3.5 w-3.5 rotate-180" />
-                    Abstract Summary
-                  </div>
-                  <p className="line-clamp-3 text-[12.5px] leading-relaxed text-slate-600 font-normal italic">
-                    &ldquo;{featuredArticle.abstract}&rdquo;
-                  </p>
-                </div>
-
-                <div className="mt-6 grid grid-cols-3 gap-2">
-                  {[
-                    {
-                      icon: Eye,
-                      value: featuredArticle.metrics.views.toLocaleString(),
-                      label: "Views",
-                    },
-                    {
-                      icon: Download,
-                      value: featuredArticle.metrics.downloads.toLocaleString(),
-                      label: "Downloads",
-                    },
-                    {
-                      icon: BookOpen,
-                      value: featuredArticle.metrics.citations.toLocaleString(),
-                      label: "Citations",
-                    },
-                  ].map((metric) => {
-                    const Icon = metric.icon;
-                    return (
-                      <div
-                        key={metric.label}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Icon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-                          <span className="text-sm font-black text-[color:var(--color-gb-blue-deep)]">
-                            {metric.value}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                          {metric.label}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="truncate font-mono text-[9px] font-medium text-slate-400">
-                    DOI: {featuredArticle.doi}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {featuredArticle.pdf && (
-                      <a
-                        href={featuredArticle.pdf}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-[11px] font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-xs hover:border-slate-300 transition-colors focus-ring"
-                        download
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        PDF
-                      </a>
-                    )}
-                    <Link
-                      href={`/articles/${featuredArticle.slug}`}
-                      className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[color:var(--color-gb-blue-deep)] px-5 text-[11px] font-extrabold text-white shadow-xs hover:bg-[color:var(--color-gb-blue)] transition-colors focus-ring"
-                    >
-                      Read article
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.article>
+          <motion.div variants={reveal}>
+            <FeaturedArticleCard featuredArticle={featuredArticle} />
+          </motion.div>
 
           <motion.aside variants={stagger} className="space-y-5 lg:sticky lg:top-24">
             <motion.div
@@ -305,6 +164,7 @@ export function HomeJournalShowcase({
           </motion.aside>
         </motion.div>
 
+        {/* Current Issue Grid */}
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -366,7 +226,7 @@ export function HomeJournalShowcase({
                 variants={reveal}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-[0_10px_32px_rgba(11,18,61,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-[color:var(--color-gb-blue)]/30 hover:shadow-[0_18px_44px_rgba(11,18,61,0.1)]"
               >
-                <div className="relative">
+                <div className="relative p-1.5 pb-0">
                   <Link
                     href={`/articles/${article.slug}`}
                     className="relative block aspect-[16/10] overflow-hidden rounded-xl bg-slate-950 focus-ring"

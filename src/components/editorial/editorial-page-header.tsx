@@ -37,7 +37,6 @@ export function EditorialPageHeader({
 
   return (
     <section className={`relative overflow-hidden bg-[color:var(--color-gb-blue-deep)] text-white ${className}`}>
-      {/* Background Ornaments */}
       <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />
       <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-[color:var(--color-gb-blue)] opacity-[0.13] blur-[90px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 h-[280px] w-[280px] rounded-full bg-[color:var(--color-gb-gold)] opacity-[0.07] blur-[80px]" />
@@ -49,7 +48,6 @@ export function EditorialPageHeader({
             : ""
         }`}
       >
-        {/* Main Content (Left or Centered) */}
         <div className={asideContent ? "max-w-2xl" : "mx-auto max-w-3xl text-center"}>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
             <Icon className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
@@ -95,7 +93,6 @@ export function EditorialPageHeader({
           )}
         </div>
 
-        {/* Aside Content (Right Bento Card) */}
         {asideContent && <div className="w-full">{asideContent}</div>}
       </div>
     </section>

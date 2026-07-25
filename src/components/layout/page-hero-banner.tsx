@@ -55,14 +55,14 @@ export function PageHeroBanner({
 
       <div className="container-x relative">
         <div
-          className={`grid gap-8 ${hasRightCol
+          className={`grid gap-8 ${
+            hasRightCol
               ? coverCard
                 ? "lg:grid-cols-[1fr_380px] lg:items-center"
                 : "lg:grid-cols-[1fr_auto] lg:items-center"
               : ""
-            }`}
+          }`}
         >
-          {/* Left column */}
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/15 px-3.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur-md shadow-2xs">
@@ -83,10 +83,8 @@ export function PageHeroBanner({
               {description}
             </p>
 
-            {/* Action buttons if provided */}
             {actions && <div className="mt-6 flex flex-wrap items-center gap-3">{actions}</div>}
 
-            {/* Tags row */}
             {tags && tags.length > 0 && (
               <div className="mt-6 flex flex-wrap items-center gap-4 border-t border-white/10 pt-4 text-[10px] font-bold text-white/60">
                 {tags.map((t) => {
@@ -104,7 +102,6 @@ export function PageHeroBanner({
             {children}
           </div>
 
-          {/* Right column: Cover card & Stats bar */}
           {coverCard ? (
             <div className="mx-auto w-full max-w-sm lg:max-w-none space-y-3">
               <div className="group/cover relative overflow-hidden rounded-[24px] border border-white/25 bg-white/[0.08] p-2.5 shadow-[0_24px_60px_rgba(11,18,61,0.25)] backdrop-blur-xl transition-all hover:border-amber-400/40 hover:bg-white/[0.12]">
@@ -117,7 +114,6 @@ export function PageHeroBanner({
                     sizes="(max-width: 1023px) 100vw, 380px"
                     className="object-cover transition-transform duration-700 ease-out group-hover/cover:scale-[1.05]"
                   />
-                  {/* Spine effect */}
                   <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-3.5 bg-gradient-to-r from-[#060b2f]/90 via-black/40 to-transparent border-r border-white/15" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0b1448]/90 via-[#0b1448]/30 to-transparent z-10" />
 

@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { BookOpen, Mail, MapPin, ExternalLink } from "lucide-react";
-import { GbJournalLogo } from "@/components/gb-logo";
+import { GbJournalLogo } from "@/components/layout/gb-logo";
 
 export function SiteFooter() {
   return (
     <footer className="relative border-t border-white/10">
-      {/* Top accent strip */}
       <div className="h-[2px] bg-gradient-to-r from-[color:var(--color-gb-blue)] via-[color:var(--color-gb-gold)] to-[color:var(--color-gb-red)]" />
 
-      {/* Main footer */}
       <div className="bg-[color:var(--color-gb-blue-deep)] text-white">
         <div className="container-x grid gap-10 py-12 md:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr]">
-          {/* Brand column */}
           <div>
             <div className="[&_p]:text-white">
               <GbJournalLogo />
@@ -27,7 +24,6 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Journal column */}
           <div>
             <p className="text-xs font-black uppercase tracking-wider text-white/40">Journal</p>
             <div className="mt-4 grid gap-2.5 text-sm text-white/60">
@@ -39,7 +35,6 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Management column */}
           <div>
             <p className="text-xs font-black uppercase tracking-wider text-white/40">Management</p>
             <div className="mt-4 grid gap-2.5 text-sm text-white/60">
@@ -52,7 +47,6 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Contact column */}
           <div>
             <p className="text-xs font-black uppercase tracking-wider text-white/40">Contact</p>
             <div className="mt-4 grid gap-3 text-sm text-white/60">
@@ -79,7 +73,6 @@ export function SiteFooter() {
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className="border-t border-white/[0.06] py-4">
           <div className="container-x flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-white/35">
             <span>© {new Date().getFullYear()} Gono Bishwabidyalay Journal of Research. All rights reserved.</span>

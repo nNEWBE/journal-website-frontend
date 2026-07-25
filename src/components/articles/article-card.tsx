@@ -21,23 +21,25 @@ export function ArticleCard({
   if (variant === "editorial") {
     return (
       <article className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition-all duration-300 hover:border-slate-300 hover:shadow-[0_20px_48px_rgba(11,18,61,0.08)]">
-        <div className="grid h-full sm:grid-cols-[160px_minmax(0,1fr)]">
-          <Link
-            href={`/articles/${article.slug}`}
-            className="relative min-h-[190px] overflow-hidden bg-slate-900 focus-ring sm:min-h-full"
-          >
-            <Image
-              src={imageUrl}
-              alt=""
-              fill
-              sizes="(max-width: 639px) 100vw, 160px"
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/80 via-transparent to-transparent" />
-            <span className="absolute bottom-3 left-3 right-3 inline-block rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-center text-[8px] font-extrabold uppercase tracking-[0.1em] text-white/90 backdrop-blur-xs truncate">
-              {article.topic}
-            </span>
-          </Link>
+        <div className="grid h-full sm:grid-cols-[172px_minmax(0,1fr)]">
+          <div className="p-2.5 pr-0">
+            <Link
+              href={`/articles/${article.slug}`}
+              className="relative block h-full min-h-[180px] overflow-hidden rounded-xl bg-slate-900 focus-ring sm:min-h-full"
+            >
+              <Image
+                src={imageUrl}
+                alt=""
+                fill
+                sizes="(max-width: 639px) 100vw, 160px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060b2f]/80 via-transparent to-transparent" />
+              <span className="absolute bottom-3 left-3 right-3 inline-block rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-center text-[8px] font-extrabold uppercase tracking-[0.1em] text-white/90 backdrop-blur-xs truncate">
+                {article.topic}
+              </span>
+            </Link>
+          </div>
 
           <div className="flex min-w-0 flex-col p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -94,7 +96,7 @@ export function ArticleCard({
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-[0_10px_32px_rgba(11,18,61,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-[color:var(--color-gb-blue)]/30 hover:shadow-[0_18px_44px_rgba(11,18,61,0.1)]">
-      <div className="relative">
+      <div className="relative p-1.5 pb-0">
         <Link
           href={`/articles/${article.slug}`}
           className="relative block aspect-[16/10] overflow-hidden rounded-xl bg-slate-950 focus-ring"

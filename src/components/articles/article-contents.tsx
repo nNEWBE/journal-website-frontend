@@ -87,7 +87,7 @@ export function ArticleContents({ sections }: { sections: Article["sections"] })
                     : "font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                {/* Active Position Indicator Dot/Bar */}
+                {/* Active indicator bar */}
                 {isActive && (
                   <span
                     className="absolute left-1.5 top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-[color:var(--color-gb-blue)]"

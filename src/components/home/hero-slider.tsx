@@ -65,7 +65,7 @@ export function HeroSlider() {
 
   const handlePrevious = useCallback(() => {
     setCurrent(
-      (previous) => (previous - 1 + slides.length) % slides.length,
+      (previous) => (previous - 1 + slides.length) % slides.length
     );
     setProgress(0);
   }, []);
@@ -107,7 +107,7 @@ export function HeroSlider() {
                 "absolute inset-0 transition-all duration-[1000ms] ease-out",
                 isActive
                   ? "z-10 scale-100 opacity-100"
-                  : "z-0 scale-[1.045] opacity-0",
+                  : "z-0 scale-[1.045] opacity-0"
               )}
             >
               <Image
@@ -131,7 +131,7 @@ export function HeroSlider() {
                 "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] backdrop-blur-md",
                 slide.isCurrent
                   ? "border-emerald-300/25 bg-emerald-400/15 text-emerald-100"
-                  : "border-white/15 bg-slate-950/30 text-white/65",
+                  : "border-white/15 bg-slate-950/30 text-white/65"
               )}
             >
               {slide.isCurrent ? (
@@ -194,7 +194,7 @@ export function HeroSlider() {
               aria-label={`Show ${item.volume}, ${item.issue}`}
               className={cn(
                 "relative h-1 overflow-hidden rounded-full bg-white/20 transition-all",
-                index === current ? "w-10" : "w-2.5 hover:bg-white/40",
+                index === current ? "w-10" : "w-2.5 hover:bg-white/40"
               )}
             >
               {index === current && (

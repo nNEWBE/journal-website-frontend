@@ -13,10 +13,10 @@ import {
   Library,
   ShieldCheck,
 } from "lucide-react";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { issues } from "@/lib/data";
 
-import { PageHeroBanner } from "@/components/page-hero-banner";
+import { PageHeroBanner } from "@/components/layout/page-hero-banner";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
 
 export default function CurrentIssuePage() {

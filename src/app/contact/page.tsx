@@ -13,7 +13,7 @@ import {
   ExternalLink,
   MessageSquare,
 } from "lucide-react";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { CustomSelect } from "@/components/ui/custom-select";
 
 const roleOptions = [

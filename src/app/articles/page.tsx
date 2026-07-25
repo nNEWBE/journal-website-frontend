@@ -9,9 +9,9 @@ import {
   ShieldCheck,
   Tag,
 } from "lucide-react";
-import { ArticleCard } from "@/components/article-card";
-import { ArticlesFilterForm } from "@/components/articles-filter-form";
-import { PageShell } from "@/components/page-shell";
+import { ArticleCard } from "@/components/articles/article-card";
+import { ArticlesFilterForm } from "@/components/articles/articles-filter-form";
+import { PageShell } from "@/components/layout/page-shell";
 import {
   articles,
   articleTypes,
@@ -19,7 +19,7 @@ import {
   topics,
 } from "@/lib/data";
 
-import { PageHeroBanner } from "@/components/page-hero-banner";
+import { PageHeroBanner } from "@/components/layout/page-hero-banner";
 
 export default async function ArticlesPage({
   searchParams,

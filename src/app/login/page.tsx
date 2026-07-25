@@ -19,10 +19,10 @@ import {
   UserCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { authenticate, DEMO_USERS, getSession } from "@/lib/auth";
-import { GbJournalLogo } from "@/components/gb-logo";
+import { GbJournalLogo } from "@/components/layout/gb-logo";
 
 const ROLE_OPTIONS = [
   "Super Admin — Prof. Dr. Laila Rahman",

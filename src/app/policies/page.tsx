@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
 import { SupportingTag } from "@/components/ui/badge";
-import { EditorialPageHeader } from "@/components/editorial-page-header";
+import { EditorialPageHeader } from "@/components/editorial/editorial-page-header";
 import { PolicyFrameworkCard } from "@/components/ui/policy-framework-card";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { ProcessSteps } from "@/components/ui/process-steps";
 import type { ProcessStep } from "@/components/ui/process-steps";
 import { policies } from "@/lib/data";

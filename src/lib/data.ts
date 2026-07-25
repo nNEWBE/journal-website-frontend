@@ -369,7 +369,19 @@ export const dashboardStats = [
   { label: "Published issues", value: "22", icon: BookOpen },
 ];
 
-export const boardMembers = [
+export type BoardMember = {
+  id?: string;
+  name: string;
+  role: string;
+  unit: string;
+  title?: string;
+  institution?: string;
+  expertise?: string;
+  bio?: string;
+  image?: string;
+};
+
+export const boardMembers: BoardMember[] = [
   {
     name: "Prof. Dr. Laila Rahman",
     role: "Editor-in-Chief",

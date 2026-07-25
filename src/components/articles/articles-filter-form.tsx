@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 
 interface ArticlesFilterFormProps {
@@ -41,7 +41,6 @@ export function ArticlesFilterForm({
       className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_14px_38px_rgba(11,18,61,0.07)]"
     >
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_190px_190px_auto] md:items-center">
-        {/* Search input field */}
         <label className="flex min-h-[46px] items-center gap-3.5 rounded-xl border border-slate-200 bg-slate-50/70 px-4 transition-all focus-within:border-[color:var(--color-gb-blue)]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[color:var(--color-gb-blue)]/15">
           <Search className="h-4.5 w-4.5 shrink-0 text-[color:var(--color-gb-blue)]" />
           <span className="sr-only">Search the research archive</span>
@@ -53,7 +52,6 @@ export function ArticlesFilterForm({
           />
         </label>
 
-        {/* Article type dropdown */}
         <label>
           <span className="sr-only">Article type</span>
           <CustomSelect
@@ -63,7 +61,6 @@ export function ArticlesFilterForm({
           />
         </label>
 
-        {/* Topic dropdown */}
         <label>
           <span className="sr-only">Subject area</span>
           <CustomSelect
@@ -73,7 +70,6 @@ export function ArticlesFilterForm({
           />
         </label>
 
-        {/* Filter Action Button */}
         <button
           type="submit"
           className="inline-flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-6 text-xs font-extrabold text-white shadow-xs transition-colors cursor-pointer focus:outline-none"

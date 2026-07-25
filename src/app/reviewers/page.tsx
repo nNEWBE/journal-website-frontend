@@ -13,7 +13,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
 import { CommitmentGridSection } from "@/components/ui/commitment-grid-section";
 
@@ -172,7 +172,7 @@ const timeline = [
   },
 ];
 
-import { PageHeroBanner } from "@/components/page-hero-banner";
+import { PageHeroBanner } from "@/components/layout/page-hero-banner";
 
 export default function ReviewersPage() {
   return (

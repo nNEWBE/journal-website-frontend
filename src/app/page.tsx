@@ -11,10 +11,10 @@ import {
   Unlock,
   Users,
 } from "lucide-react";
-import { HeroSlider } from "@/components/hero-slider";
-import { HomeJournalShowcase } from "@/components/home-journal-showcase";
-import { HomeJournalStory } from "@/components/home-journal-story";
-import { PageShell } from "@/components/page-shell";
+import { HeroSlider } from "@/components/home/hero-slider";
+import { HomeJournalShowcase } from "@/components/home/home-journal-showcase";
+import { HomeJournalStory } from "@/components/home/home-journal-story";
+import { PageShell } from "@/components/layout/page-shell";
 import { issues, topics } from "@/lib/data";
 
 export default function Home() {

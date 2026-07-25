@@ -23,7 +23,7 @@ import {
   UploadCloud,
   Users,
 } from "lucide-react";
-import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { ProcessSteps } from "@/components/ui/process-steps";
 import type { ProcessStep } from "@/components/ui/process-steps";
 import { PublishingCharterSection } from "@/components/ui/publishing-charter-section";

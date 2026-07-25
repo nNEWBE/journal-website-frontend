@@ -18,9 +18,9 @@ import {
   ShieldCheck,
   Tag,
 } from "lucide-react";
-import { PageShell } from "@/components/page-shell";
-import { ArticleActions } from "@/components/article-actions";
-import { ArticleContents } from "@/components/article-contents";
+import { PageShell } from "@/components/layout/page-shell";
+import { ArticleActions } from "@/components/articles/article-actions";
+import { ArticleContents } from "@/components/articles/article-contents";
 import { articles, findArticle } from "@/lib/data";
 import type { Article } from "@/lib/data";
 
@@ -152,8 +152,6 @@ function sectionId(heading: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
-
-
 
 function ArticleRecord({ article }: { article: Article }) {
   const recordItems = [
@@ -314,7 +312,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         }}
       />
 
-      {/* ── HERO HEADER ─────────────────────────────── */}
+      {/* —— HERO HEADER ——————————————————————————————— */}
       <section
         className="relative overflow-hidden bg-[color:var(--color-gb-blue-deep)] text-white"
         aria-labelledby="article-title"
@@ -358,7 +356,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               <span className="text-xs font-semibold text-white/85">{article.authors.join(" · ")}</span>
             </div>
 
-            {/* Publication meta row — subtle dividers */}
+            {/* Publication meta row */}
             <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-y border-white/10 py-5">
               {[
                 { Icon: BookOpen, label: "Publication", val: `${article.volume}, ${article.issue}, pp. ${article.pages}` },
@@ -418,7 +416,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
       </section>
 
-      {/* ── BODY CONTENT ────────────────────────────── */}
+      {/* —— BODY CONTENT —————————————————————————————— */}
       <div className="bg-[#f5f7fc] pb-20">
         <div className="container-x">
 
@@ -432,14 +430,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 { label: "Pages", val: article.pages, Icon: FileText },
               ] as const).map(({ label, val, Icon }, index) => (
                 <div key={label} className="relative flex items-center justify-center gap-3.5 p-3.5 md:p-4">
-                  {/* Mobile divider for odd columns */}
                   {index % 2 !== 0 && (
                     <span
                       className="absolute left-0 top-1/2 h-8 w-px -translate-y-1/2 bg-slate-200/70 sm:hidden"
                       aria-hidden="true"
                     />
                   )}
-                  {/* Desktop divider for all items except first */}
                   {index > 0 && (
                     <span
                       className="absolute left-0 top-1/2 hidden h-8 w-px -translate-y-1/2 bg-slate-200/70 sm:block"
@@ -635,7 +631,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </aside>
           </div>
 
-          {/* Related articles section below 2-column grid */}
+          {/* Related articles section */}
           {recommended.length > 0 && (
             <section className="mt-12" aria-labelledby="recommended-heading">
               <div className="mb-5 flex items-end justify-between gap-4">
@@ -654,7 +650,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 </div>
                 <Link
                   href="/articles"
-                  className="hidden shrink-0 items-center gap-1.5 text-xs font-bold text-[color:var(--color-gb-blue)] hover:underline sm:inline-flex"
+                  className="hidden shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[color:var(--color-gb-blue)]/30 hover:shadow-md sm:inline-flex"
                 >
                   Browse all
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -698,4 +694,3 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     </PageShell>
   );
 }
-
