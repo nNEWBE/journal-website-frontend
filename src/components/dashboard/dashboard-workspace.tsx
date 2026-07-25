@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -56,9 +57,9 @@ import {
   type Role,
   type Submission,
 } from "@/lib/data";
-import { getSession, clearSession, type User } from "@/lib/auth";
+import { getSession, clearSession, DEMO_USERS, type User } from "@/lib/auth";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// --- Constants ────────────────────────────────────────────────────────────────
 
 const roleNotes: Record<Role, string> = {
   author:
@@ -129,14 +130,14 @@ function getStatusConfig(status: string) {
 }
 
 const navItems = [
-  { id: "author" as Role,       label: "Author Suite",      icon: PenLine },
-  { id: "reviewer" as Role,     label: "Reviewer Suite",    icon: UserCheck },
-  { id: "editor" as Role,       label: "Editor Suite",      icon: ClipboardCheck },
-  { id: "admin" as Role,        label: "Admin Suite",       icon: ShieldCheck },
-  { id: "super-admin" as Role,  label: "Super Admin",       icon: Crown },
+  { id: "author" as Role,       label: "Author Suite",      icon: PenLine,       href: "/dashboard/author" },
+  { id: "reviewer" as Role,     label: "Reviewer Suite",    icon: UserCheck,     href: "/dashboard/reviewer" },
+  { id: "editor" as Role,       label: "Editor Suite",      icon: ClipboardCheck, href: "/dashboard/editor" },
+  { id: "admin" as Role,        label: "Admin Suite",       icon: ShieldCheck,   href: "/dashboard/admin" },
+  { id: "super-admin" as Role,  label: "Super Admin",       icon: Crown,         href: "/dashboard/super-admin" },
 ];
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// --- Sub-components ───────────────────────────────────────────────────────────
 
 function StatusPill({ status }: { status: string }) {
   const cfg = getStatusConfig(status);
@@ -368,14 +369,46 @@ function RowActionsDropdown({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// --- Main Component ────────────────────────────────────────────────────────────
 
-export function DashboardWorkspace() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeRole, setActiveRole] = useState<Role>("author");
-  const [activeView, setActiveView] = useState<"workspace" | "analytics">("workspace");
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [decisionLog, setDecisionLog] = useState<string[]>([]);
+export function DashboardWorkspace({
+  initialRole = "author",
+  initialView = "analytics",
+  children,
+}: {
+  initialRole?: Role;
+  initialView?: "workspace" | "analytics";
+  children?: React.ReactNode;
+} = {}) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const defaultUser = DEMO_USERS.find((u) => u.role === "author") || DEMO_USERS[4];
+
+  const [currentUser, setCurrentUser] = useState<User | null>(defaultUser);
+
+  // Derive active view and role directly from URL route
+  const isAnalyticsPage = pathname.includes("/analytics");
+  const activeRole: Role = pathname.includes("/super-admin")
+    ? "super-admin"
+    : pathname.includes("/admin")
+    ? "admin"
+    : pathname.includes("/editor")
+    ? "editor"
+    : pathname.includes("/reviewer")
+    ? "reviewer"
+    : pathname.includes("/author")
+    ? "author"
+    : initialRole;
+
+  const activeView = isAnalyticsPage ? "analytics" : "workspace";
+
+  const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
+  const [decisionLog, setDecisionLog] = useState<string[]>([
+    "GBJ-2026-101 scheduled for Volume 4, Issue 2",
+    "Reviewer certificate batch generated for Dr. Salma Khatun",
+  ]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -393,28 +426,35 @@ export function DashboardWorkspace() {
     const session = getSession();
     if (session) {
       setCurrentUser(session);
-      setActiveRole(session.role);
     }
     const localSubs = localStorage.getItem("gb_journal_submissions");
-    if (localSubs) setSubmissions(JSON.parse(localSubs));
-    else {
+    if (localSubs) {
+      try {
+        setSubmissions(JSON.parse(localSubs));
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
       localStorage.setItem("gb_journal_submissions", JSON.stringify(seedSubmissions));
-      setSubmissions(seedSubmissions);
     }
     const localLogs = localStorage.getItem("gb_journal_decision_log");
-    if (localLogs) setDecisionLog(JSON.parse(localLogs));
-    else {
+    if (localLogs) {
+      try {
+        setDecisionLog(JSON.parse(localLogs));
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
       const initialLogs = [
         "GBJ-2026-101 scheduled for Volume 4, Issue 2",
         "Reviewer certificate batch generated for Dr. Salma Khatun",
       ];
       localStorage.setItem("gb_journal_decision_log", JSON.stringify(initialLogs));
-      setDecisionLog(initialLogs);
     }
-
-    // Load sidebar collapse preference
     const collapsed = localStorage.getItem("gb_sidebar_collapsed") === "true";
-    setIsSidebarCollapsed(collapsed);
+    if (collapsed) {
+      setIsSidebarCollapsed(true);
+    }
   }, []);
 
   const toggleSidebar = () => {
@@ -569,7 +609,7 @@ export function DashboardWorkspace() {
   function handleOverrideRoleChange(label: string) {
     const matched = navItems.find((r) => r.label === label);
     if (matched) {
-      setActiveRole(matched.id);
+      router.push(matched.href);
       toast.info(`Viewing as ${matched.label}.`);
     }
   }
@@ -578,9 +618,30 @@ export function DashboardWorkspace() {
   const canAdvance   = ["editor", "admin", "super-admin"].includes(activeRole);
   const roleAccent   = roleAccentMap[activeRole];
 
-  // ─── Sidebar ────────────────────────────────────────────────────────────────
-
-  const SidebarContent = ({ isCollapsed = false }: { isCollapsed?: boolean }) => (
+function SidebarContent({
+  isCollapsed = false,
+  currentUser,
+  activeView,
+  activeRole,
+  overrideRoleOptions,
+  activeRoleLabel,
+  handleOverrideRoleChange,
+  setIsMobileSidebarOpen,
+  handleLogout,
+  router,
+}: {
+  isCollapsed?: boolean;
+  currentUser: User | null;
+  activeView: string;
+  activeRole: Role;
+  overrideRoleOptions: string[];
+  activeRoleLabel: string;
+  handleOverrideRoleChange: (label: string) => void;
+  setIsMobileSidebarOpen: (open: boolean) => void;
+  handleLogout: () => void;
+  router: ReturnType<typeof useRouter>;
+}) {
+  return (
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="h-16 flex items-center border-b border-white/8 overflow-hidden shrink-0">
@@ -677,7 +738,10 @@ export function DashboardWorkspace() {
         <div className="mb-3">
           {!isCollapsed && <p className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-widest text-white/30 animate-fade">Insights</p>}
           <button
-            onClick={() => { setActiveView("analytics"); setIsMobileSidebarOpen(false); }}
+            onClick={() => {
+              setIsMobileSidebarOpen(false);
+              router.push("/dashboard/analytics");
+            }}
             className={cn(
               "flex items-center rounded-lg text-left text-[12px] font-semibold transition-all duration-150 cursor-pointer relative group mx-2 w-[calc(100%-16px)] h-10 px-0",
               activeView === "analytics"
@@ -705,50 +769,43 @@ export function DashboardWorkspace() {
 
         {!isCollapsed && <p className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-widest text-white/30 animate-fade">Workspaces</p>}
         <div className="space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeRole === item.id && activeView === "workspace";
-            const hasAccess = currentUser?.role === item.id || currentUser?.role === "super-admin";
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (!hasAccess) return;
-                  setActiveRole(item.id);
-                  setActiveView("workspace");
-                  setIsMobileSidebarOpen(false);
-                }}
-                disabled={!hasAccess}
-                className={cn(
-                  "flex items-center rounded-lg text-left text-[12px] font-semibold transition-all duration-150 cursor-pointer relative group mx-2 w-[calc(100%-16px)] h-10 px-0",
-                  isActive
-                    ? "bg-white text-[color:var(--color-gb-blue-dark)] shadow-sm font-bold"
-                    : hasAccess
-                    ? "text-white/70 hover:bg-white/8 hover:text-white"
-                    : "text-white/20 cursor-not-allowed pointer-events-none"
-                )}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <div className="w-12 h-10 flex items-center justify-center shrink-0">
-                  <Icon className={cn("h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-105", isActive ? "text-[color:var(--color-gb-blue)]" : "")} />
-                </div>
-                <div className={cn(
-                  "flex items-center justify-between flex-1 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden pr-3",
-                  isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0"
-                )}>
-                  <span className="flex-1">{item.label}</span>
-                  {!hasAccess && (
-                    <span className="text-[8px] uppercase font-black text-white/15 bg-white/5 px-1.5 py-0.5 rounded">Restricted</span>
+          {navItems
+            .filter((item) => currentUser?.role === item.id || currentUser?.role === "super-admin")
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = activeRole === item.id && activeView === "workspace";
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setIsMobileSidebarOpen(false);
+                    router.push(item.href);
+                  }}
+                  className={cn(
+                    "flex items-center rounded-lg text-left text-[12px] font-semibold transition-all duration-150 cursor-pointer relative group mx-2 w-[calc(100%-16px)] h-10 px-0",
+                    isActive
+                      ? "bg-white text-[color:var(--color-gb-blue-dark)] shadow-sm font-bold"
+                      : "text-white/70 hover:bg-white/8 hover:text-white"
                   )}
-                </div>
-                {isCollapsed && (
-                  <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 px-2.5 py-1.5 rounded-md shadow-md text-white whitespace-nowrap text-[10px] font-bold tracking-wide animate-fade">
-                    {item.label} {!hasAccess && "(Restricted)"}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <div className="w-12 h-10 flex items-center justify-center shrink-0">
+                    <Icon className={cn("h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-105", isActive ? "text-[color:var(--color-gb-blue)]" : "")} />
                   </div>
-                )}
-              </button>
-            );
-          })}
+                  <div className={cn(
+                    "flex items-center justify-between flex-1 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden pr-3",
+                    isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0"
+                  )}>
+                    <span className="flex-1">{item.label}</span>
+                  </div>
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 px-2.5 py-1.5 rounded-md shadow-md text-white whitespace-nowrap text-[10px] font-bold tracking-wide animate-fade">
+                      {item.label}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
         </div>
       </div>
 
@@ -757,50 +814,52 @@ export function DashboardWorkspace() {
         "mt-auto pb-4 space-y-2 border-t border-white/8 pt-3 shrink-0",
         isCollapsed ? "overflow-hidden" : ""
       )}>
-        {/* Demo switcher */}
-        <div className={cn(
-          "transition-all duration-300 shrink-0",
-          isCollapsed ? "mx-0 bg-transparent border-transparent overflow-hidden" : "mx-2 rounded-xl border border-amber-500/20 bg-amber-500/8 p-2"
-        )}>
-          {isCollapsed ? (
-            <div className="relative group flex justify-center w-full">
-              <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/25 transition-colors cursor-pointer">
-                <Zap className="h-4.5 w-4.5" />
-              </button>
-              {/* Hover override selection dropdown */}
-              <div className="absolute left-full ml-3 bottom-0 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 p-2 rounded-lg shadow-xl min-w-[160px] animate-fade">
-                <p className="text-[9px] font-black uppercase text-amber-400 mb-1.5 px-2">Override view</p>
-                <div className="space-y-0.5">
-                  {overrideRoleOptions.map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => handleOverrideRoleChange(opt)}
-                      className={cn(
-                        "w-full text-left text-[10px] font-bold px-2 py-1.5 rounded transition-colors cursor-pointer",
-                        activeRoleLabel === opt ? "bg-amber-50 text-slate-900" : "text-white/70 hover:bg-white/8 hover:text-white"
-                      )}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+        {/* Demo switcher (Super Admin only) */}
+        {currentUser?.role === "super-admin" && (
+          <div className={cn(
+            "transition-all duration-300 shrink-0",
+            isCollapsed ? "mx-0 bg-transparent border-transparent overflow-hidden" : "mx-2 rounded-xl border border-amber-500/20 bg-amber-500/8 p-2"
+          )}>
+            {isCollapsed ? (
+              <div className="relative group flex justify-center w-full">
+                <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/25 transition-colors cursor-pointer">
+                  <Zap className="h-4.5 w-4.5" />
+                </button>
+                {/* Hover override selection dropdown */}
+                <div className="absolute left-full ml-3 bottom-0 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 p-2 rounded-lg shadow-xl min-w-[160px] animate-fade">
+                  <p className="text-[9px] font-black uppercase text-amber-400 mb-1.5 px-2">Override view</p>
+                  <div className="space-y-0.5">
+                    {overrideRoleOptions.map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => handleOverrideRoleChange(opt)}
+                        className={cn(
+                          "w-full text-left text-[10px] font-bold px-2 py-1.5 rounded transition-colors cursor-pointer",
+                          activeRoleLabel === opt ? "bg-amber-50 text-slate-900" : "text-white/70 hover:bg-white/8 hover:text-white"
+                        )}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-400">
-                <Zap className="h-3 w-3" />
-                Demo Override
-              </p>
-              <CustomSelect
-                options={overrideRoleOptions}
-                value={activeRoleLabel}
-                onChange={handleOverrideRoleChange}
-                className="w-full [&_.select-trigger]:bg-white/8 [&_.select-trigger]:text-white [&_.select-trigger]:border-white/10 [&_.select-trigger_span]:text-[11px] [&_.select-trigger_span]:font-semibold"
-              />
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-400">
+                  <Zap className="h-3 w-3" />
+                  Demo Override
+                </p>
+                <CustomSelect
+                  options={overrideRoleOptions}
+                  value={activeRoleLabel}
+                  onChange={handleOverrideRoleChange}
+                  className="w-full [&_.select-trigger]:bg-white/8 [&_.select-trigger]:text-white [&_.select-trigger]:border-white/10 [&_.select-trigger_span]:text-[11px] [&_.select-trigger_span]:font-semibold"
+                />
+              </>
+            )}
+          </div>
+        )}
 
         <button
           onClick={handleLogout}
@@ -829,8 +888,9 @@ export function DashboardWorkspace() {
       </div>
     </div>
   );
+}
 
-  // ─── Toolbox actions by role ─────────────────────────────────────────────
+  // --- Toolbox actions by role ─────────────────────────────────────────────
 
   const toolboxActions: Record<Role, React.ReactNode> = {
     author: (
@@ -873,7 +933,7 @@ export function DashboardWorkspace() {
     ),
   };
 
-  // ─── Render ──────────────────────────────────────────────────────────────
+  // --- Render ──────────────────────────────────────────────────────────────
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f5f7fb]">
@@ -885,7 +945,18 @@ export function DashboardWorkspace() {
           isSidebarCollapsed ? "w-[64px]" : "w-[240px]"
         )}
       >
-        <SidebarContent isCollapsed={isSidebarCollapsed} />
+        <SidebarContent
+          isCollapsed={isSidebarCollapsed}
+          currentUser={currentUser}
+          activeView={activeView}
+          activeRole={activeRole}
+          overrideRoleOptions={overrideRoleOptions}
+          activeRoleLabel={activeRoleLabel}
+          handleOverrideRoleChange={handleOverrideRoleChange}
+          setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+          handleLogout={handleLogout}
+          router={router}
+        />
       </aside>
 
       {/* ── Mobile Sidebar Overlay ──────────────────────────────────────── */}
@@ -902,7 +973,18 @@ export function DashboardWorkspace() {
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
               className="fixed inset-y-0 left-0 z-50 w-[240px] bg-[color:var(--color-gb-blue-dark)] lg:hidden overflow-y-auto"
             >
-              <SidebarContent isCollapsed={false} />
+              <SidebarContent
+                isCollapsed={false}
+                currentUser={currentUser}
+                activeView={activeView}
+                activeRole={activeRole}
+                overrideRoleOptions={overrideRoleOptions}
+                activeRoleLabel={activeRoleLabel}
+                handleOverrideRoleChange={handleOverrideRoleChange}
+                setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                handleLogout={handleLogout}
+                router={router}
+              />
             </motion.aside>
           </>
         )}
@@ -944,7 +1026,7 @@ export function DashboardWorkspace() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
-            {currentUser?.role !== activeRole && (
+            {currentUser?.role === "super-admin" && currentUser?.role !== activeRole && (
               <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">
                 <Zap className="h-2.5 w-2.5" />
                 Override: {roleAccent.label}
@@ -971,13 +1053,17 @@ export function DashboardWorkspace() {
         {/* ── Scrollable body ─────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
 
-          {/* ── Analytics View ──────────────────────────────────────────────── */}
-          {activeView === "analytics" && (
-            <AnalyticsPanel submissions={submissions} />
-          )}
+          {pathname.includes("/submissions/new") ? (
+            children
+          ) : (
+            <>
+              {/* ── Analytics View ──────────────────────────────────────────────── */}
+              {activeView === "analytics" && (
+                <AnalyticsPanel submissions={submissions} user={currentUser} />
+              )}
 
-          {/* ── Workspace View ──────────────────────────────────────────────── */}
-          {activeView === "workspace" && (<>
+              {/* ── Workspace View ──────────────────────────────────────────────── */}
+              {activeView === "workspace" && (<>
 
           {/* Workspace banner */}
           <AnimatePresence mode="wait">
@@ -1327,6 +1413,7 @@ export function DashboardWorkspace() {
             </div>
           </div>
           {/* ── End Workspace View ──────────────────────────────────────────── */}
+          </>)}
           </>)}
         </div>
       </div>

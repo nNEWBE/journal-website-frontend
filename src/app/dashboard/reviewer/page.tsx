@@ -3,19 +3,18 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { PremiumLoader } from "@/components/ui/loader";
 
-export default function DashboardIndexPage() {
+export default function ReviewerDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
     const user = getSession();
     if (!user) {
-      router.push("/login?redirect=/dashboard/analytics");
-    } else {
+      router.push("/login?redirect=/dashboard/reviewer");
+    } else if (user.role !== "reviewer" && user.role !== "super-admin") {
       router.replace("/dashboard/analytics");
     }
   }, [router]);
 
-  return <PremiumLoader text="Redirecting to Analytics..." />;
+  return null;
 }

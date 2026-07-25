@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DashboardWorkspace } from "@/components/dashboard/dashboard-workspace";
 
 export const metadata: Metadata = {
   title: "Dashboard — GB Journal Workspace",
@@ -6,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <DashboardWorkspace>{children}</DashboardWorkspace>;
 }
