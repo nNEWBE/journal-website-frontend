@@ -571,20 +571,7 @@ select:focus-visible,
 }
 
 .editorial-card::before {
-  position: absolute;
-  z-index: 20;
-  top: 0;
-  left: 12%;
-  width: 38%;
-  height: 2px;
-  content: "";
-  background: linear-gradient(90deg, transparent, var(--color-gb-gold), transparent);
-  transform: translateX(-130%);
-  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.editorial-card:hover::before {
-  transform: translateX(230%);
+  display: none;
 }
 
 .feature-kicker-icon {

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
+  ArrowUpRight,
   BookOpen,
   ChevronDown,
   FileText,
@@ -23,6 +25,7 @@ import {
 } from "lucide-react";
 import { GbJournalLogo } from "@/components/gb-logo";
 import { getSession, clearSession, type User } from "@/lib/auth";
+import { articles } from "@/lib/data";
 
 export type NavSubItem = {
   label: string;
@@ -160,6 +163,41 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [direction, setDirection] = useState<"left" | "right">("right");
+
+  // Search Modal State
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+      if (e.key === "Escape") {
+        setIsSearchOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const filteredArticles = useMemo(() => {
+    if (!searchQuery.trim() && selectedCategory === "All") return [];
+    return articles.filter((art) => {
+      const matchesCat = selectedCategory === "All" || art.topic.toLowerCase() === selectedCategory.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return matchesCat;
+      const matchesText =
+        art.title.toLowerCase().includes(q) ||
+        art.authors.some((a) => a.toLowerCase().includes(q)) ||
+        art.topic.toLowerCase().includes(q) ||
+        art.doi.toLowerCase().includes(q) ||
+        art.type.toLowerCase().includes(q);
+      return matchesCat && matchesText;
+    });
+  }, [searchQuery, selectedCategory]);
 
   useEffect(() => {
     const sessionTimer = window.setTimeout(() => {
@@ -403,13 +441,13 @@ export function SiteHeader() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/articles"
-              className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] text-[color:var(--ink-muted)] hover:bg-slate-50 hover:text-[color:var(--color-gb-blue)] transition-colors"
-              title="Search articles"
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] text-[color:var(--ink-muted)] hover:bg-slate-50 hover:text-[color:var(--color-gb-blue)] transition-colors cursor-pointer"
+              title="Search manuscripts (Ctrl+K)"
             >
               <Search className="h-4 w-4" />
-            </Link>
+            </button>
 
             <Link
               href={user ? "/dashboard/submissions/new" : "/login"}

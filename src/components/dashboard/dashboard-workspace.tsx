@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { createPortal } from "react-dom";
 import {
   Activity,
   AlertCircle,
@@ -231,49 +232,75 @@ function RowActionsDropdown({
   canAdvance,
   activeRole,
   advanceSubmission,
-  assignReviewer,
-  handleUploadRevision,
+  triggerAssignReviewer,
+  triggerUploadRevision,
   triggerSubmitReview,
+  triggerViewInfo,
 }: {
   sub: Submission;
   canAdvance: boolean;
   activeRole: Role;
   advanceSubmission: (id: string) => void;
-  assignReviewer: (id: string) => void;
-  handleUploadRevision: () => void;
-  triggerSubmitReview: (id: string) => void;
+  triggerAssignReviewer: (sub: Submission) => void;
+  triggerUploadRevision: (sub: Submission) => void;
+  triggerSubmitReview: (subId: string) => void;
+  triggerViewInfo: (sub: Submission) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number; openUp: boolean }>({ top: 0, left: 0, openUp: false });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  const updateCoords = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < 220;
+      const top = openUp ? rect.top : rect.bottom + 6;
+      const left = rect.right - 208; // 208px = w-52
+      setMenuCoords({ top, left: Math.max(16, left), openUp });
+    }
+  };
+
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
+
+    function handleScrollOrResize() {
+      setIsOpen(false);
+    }
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [isOpen]);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      if (spaceBelow < 220) {
-        setOpenDirection("up");
-      } else {
-        setOpenDirection("down");
-      }
+    if (!isOpen) {
+      updateCoords();
     }
     setIsOpen(!isOpen);
   };
 
   return (
-    <div className={cn("relative inline-block text-left", isOpen && "z-[9999]")} ref={dropdownRef}>
+    <div className="inline-block text-left">
       <button
         ref={buttonRef}
         type="button"
@@ -284,11 +311,17 @@ function RowActionsDropdown({
         <MoreVertical className="h-4 w-4" />
       </button>
 
-      {isOpen && (
+      {isOpen && typeof window !== "undefined" && createPortal(
         <div
-          className={`absolute right-0 z-[9999] w-48 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 ${
-            openDirection === "up" ? "bottom-full mb-1.5 origin-bottom-right" : "top-full mt-1.5 origin-top-right"
-          }`}
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: menuCoords.openUp ? "auto" : `${menuCoords.top}px`,
+            bottom: menuCoords.openUp ? `${window.innerHeight - menuCoords.top + 6}px` : "auto",
+            left: `${menuCoords.left}px`,
+            zIndex: 999999,
+          }}
+          className="w-52 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95"
         >
           <p className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
             Manuscript Actions
@@ -304,39 +337,39 @@ function RowActionsDropdown({
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
               >
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                Advance Workflow
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                Advance Stage
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  assignReviewer(sub.id);
+                  triggerAssignReviewer(sub);
                   setIsOpen(false);
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
               >
-                <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                <UserCheck className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                 Assign Reviewer
               </button>
             </>
           )}
 
-          {activeRole === "author" && sub.status === "Revision Requested" && (
+          {(activeRole === "author" || sub.status === "Revision Requested") && (
             <button
               type="button"
               onClick={() => {
-                handleUploadRevision();
+                triggerUploadRevision(sub);
                 setIsOpen(false);
               }}
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
             >
-              <Send className="h-3.5 w-3.5 shrink-0" />
+              <Send className="h-3.5 w-3.5 shrink-0 text-blue-600" />
               Upload Revision
             </button>
           )}
 
-          {activeRole === "reviewer" && sub.status === "Under Review" && (
+          {(activeRole === "reviewer" || sub.status === "Under Review" || activeRole === "editor" || activeRole === "super-admin") && (
             <button
               type="button"
               onClick={() => {
@@ -345,7 +378,7 @@ function RowActionsDropdown({
               }}
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
             >
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
               Submit Review
             </button>
           )}
@@ -355,15 +388,16 @@ function RowActionsDropdown({
           <button
             type="button"
             onClick={() => {
-              toast.info(`Viewing details for manuscript ${sub.id}`);
+              triggerViewInfo(sub);
               setIsOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <Eye className="h-3.5 w-3.5 shrink-0" />
+            <Eye className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             View Manuscript Info
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -421,6 +455,14 @@ export function DashboardWorkspace({
   const [reviewScore, setReviewScore] = useState("85");
   const [reviewRec, setReviewRec] = useState("Accept");
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  // Additional Interactive Modals state
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+  const [assignedReviewerName, setAssignedReviewerName] = useState("Dr. Salma Khatun");
+  const [revisionNotes, setRevisionNotes] = useState("");
 
   useEffect(() => {
     const session = getSession();
@@ -568,7 +610,56 @@ export function DashboardWorkspace({
     toast.success(`Invitation accepted for ${target.id}.`);
   }
 
+  function triggerViewInfo(sub: Submission) {
+    setSelectedSubmission(sub);
+    setIsInfoModalOpen(true);
+  }
+
+  function triggerAssignReviewer(sub: Submission) {
+    setSelectedSubmission(sub);
+    setIsAssignModalOpen(true);
+  }
+
+  function triggerUploadRevisionModal(sub?: Submission) {
+    const target = sub || submissions.find((s) => s.status === "Revision Requested") || submissions[0];
+    if (target) {
+      setSelectedSubmission(target);
+      setIsRevisionModalOpen(true);
+    }
+  }
+
+  function handleAssignReviewerSubmit() {
+    if (!selectedSubmission) return;
+    const newSubs = submissions.map((s) => {
+      if (s.id !== selectedSubmission.id) return s;
+      const reviewers = Array.from(new Set([...s.reviewers, assignedReviewerName]));
+      const status = s.status === "Awaiting Editor" ? "Under Review" : s.status;
+      return { ...s, reviewers, status, updated: "Just now" };
+    });
+    updateSubmissionsState(newSubs, `[${selectedSubmission.id}] Assigned reviewer "${assignedReviewerName}"`);
+    setIsAssignModalOpen(false);
+    toast.success(`Assigned ${assignedReviewerName} to ${selectedSubmission.id}.`);
+  }
+
+  function handleRevisionModalSubmit() {
+    if (!selectedSubmission) return;
+    const newSubs = submissions.map((s) =>
+      s.id === selectedSubmission.id
+        ? { ...s, status: "Revised Manuscript Submitted", updated: "Just now" }
+        : s
+    );
+    updateSubmissionsState(
+      newSubs,
+      `[${selectedSubmission.id}] Revised manuscript uploaded by ${currentUser?.name ?? "Author"}`
+    );
+    setIsRevisionModalOpen(false);
+    setRevisionNotes("");
+    toast.success(`Revision uploaded for ${selectedSubmission.id}.`);
+  }
+
   function triggerSubmitReview(subId: string) {
+    const sub = submissions.find((s) => s.id === subId);
+    if (sub) setSelectedSubmission(sub);
     setReviewSubId(subId);
     setIsReviewModalOpen(true);
   }
@@ -811,19 +902,19 @@ function SidebarContent({
 
       {/* Footer */}
       <div className={cn(
-        "mt-auto pb-4 space-y-2 border-t border-white/8 pt-3 shrink-0",
+        "mt-auto pb-4 space-y-2 border-t border-white/10 pt-3 shrink-0",
         isCollapsed ? "overflow-hidden" : ""
       )}>
         {/* Demo switcher (Super Admin only) */}
-        {currentUser?.role === "super-admin" && (
+        {currentUser?.role === "super-admin" ? (
           <div className={cn(
             "transition-all duration-300 shrink-0",
-            isCollapsed ? "mx-0 bg-transparent border-transparent overflow-hidden" : "mx-2 rounded-xl border border-amber-500/20 bg-amber-500/8 p-2"
+            isCollapsed ? "mx-0 bg-transparent border-transparent overflow-hidden" : "mx-2.5 rounded-xl border border-amber-500/20 bg-amber-500/8 p-2.5"
           )}>
             {isCollapsed ? (
               <div className="relative group flex justify-center w-full">
-                <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/25 transition-colors cursor-pointer">
-                  <Zap className="h-4.5 w-4.5" />
+                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/25 transition-colors cursor-pointer">
+                  <Zap className="h-4 w-4" />
                 </button>
                 {/* Hover override selection dropdown */}
                 <div className="absolute left-full ml-3 bottom-0 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 p-2 rounded-lg shadow-xl min-w-[160px] animate-fade">
@@ -859,15 +950,44 @@ function SidebarContent({
               </>
             )}
           </div>
+        ) : (
+          /* Institutional Portal Badge for non-super-admins */
+          isCollapsed ? (
+            <div className="relative group flex justify-center w-full py-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              </div>
+              <div className="absolute left-full ml-3 bottom-0 hidden group-hover:block z-50 bg-slate-900 border border-slate-700/50 px-2.5 py-1.5 rounded-md shadow-xl text-white whitespace-nowrap text-[10px] font-bold animate-fade">
+                Portal Status: Online • ISSN 2709-1422
+              </div>
+            </div>
+          ) : (
+            <div className="mx-2.5 rounded-xl border border-white/10 bg-white/5 p-2.5 shadow-2xs animate-fade">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[9.5px] font-bold text-white/80 uppercase tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  Portal Status
+                </span>
+                <span className="text-[9px] font-mono text-emerald-300 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Online</span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-white/8 flex items-center justify-between text-[9.5px] font-medium text-white/50">
+                <span>ISSN: 2709-1422</span>
+                <span className="font-mono text-[9px]">v4.2.0</span>
+              </div>
+            </div>
+          )
         )}
 
         <button
           onClick={handleLogout}
-          className="flex items-center rounded-lg text-left text-[12px] font-semibold text-white/50 hover:bg-red-950/30 hover:text-red-300 transition-all duration-150 cursor-pointer relative group h-10 px-0 mx-2 w-[calc(100%-16px)]"
+          className={cn(
+            "flex items-center rounded-xl text-left text-[12px] font-semibold text-white/60 hover:text-rose-200 hover:bg-rose-500/15 border border-transparent hover:border-rose-500/25 transition-all duration-200 cursor-pointer relative group h-10 px-0 mx-2.5 w-[calc(100%-20px)]",
+            isCollapsed ? "mx-0 w-full justify-center" : ""
+          )}
         >
           {/* Centered icon container */}
           <div className="w-12 h-10 flex items-center justify-center shrink-0">
-            <LogOut className="h-4 w-4 shrink-0" />
+            <LogOut className="h-4 w-4 shrink-0 text-white/60 group-hover:text-rose-300 group-hover:scale-110 transition-all" />
           </div>
 
           {/* Text, hidden when collapsed */}
@@ -875,7 +995,7 @@ function SidebarContent({
             "flex-1 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden",
             isCollapsed ? "opacity-0 w-0 translate-x-4 pointer-events-none" : "opacity-100 w-auto translate-x-0"
           )}>
-            <span>Sign Out</span>
+            <span className="font-bold tracking-wide">Sign Out</span>
           </div>
 
           {/* Collapsed Tooltip */}
@@ -1224,9 +1344,10 @@ function SidebarContent({
                           canAdvance={canAdvance}
                           activeRole={activeRole}
                           advanceSubmission={advanceSubmission}
-                          assignReviewer={assignReviewer}
-                          handleUploadRevision={handleUploadRevision}
+                          triggerAssignReviewer={triggerAssignReviewer}
+                          triggerUploadRevision={triggerUploadRevisionModal}
                           triggerSubmitReview={triggerSubmitReview}
+                          triggerViewInfo={triggerViewInfo}
                         />
                       </div>
                     </motion.div>
@@ -1339,9 +1460,10 @@ function SidebarContent({
                                 canAdvance={canAdvance}
                                 activeRole={activeRole}
                                 advanceSubmission={advanceSubmission}
-                                assignReviewer={assignReviewer}
-                                handleUploadRevision={handleUploadRevision}
+                                triggerAssignReviewer={triggerAssignReviewer}
+                                triggerUploadRevision={triggerUploadRevisionModal}
                                 triggerSubmitReview={triggerSubmitReview}
+                                triggerViewInfo={triggerViewInfo}
                               />
                             </td>
                           </tr>
@@ -1499,6 +1621,171 @@ function SidebarContent({
             <button onClick={handleResetDatabaseSubmit} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-600 px-4 text-[12px] font-bold text-white shadow-sm hover:bg-amber-700 transition-colors cursor-pointer">
               <RefreshCw className="h-3.5 w-3.5" />
               Reset Database
+            </button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* View Manuscript Info Modal */}
+      <CustomModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        title={`Manuscript Info — ${selectedSubmission?.id || ""}`}
+      >
+        {selectedSubmission && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[11px] font-black text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
+                  {selectedSubmission.id}
+                </span>
+                <StatusPill status={selectedSubmission.status} />
+              </div>
+              <h3 className="text-xs font-extrabold text-slate-900 leading-snug">
+                {selectedSubmission.title}
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                <p><strong className="text-slate-700">Author:</strong> {selectedSubmission.author}</p>
+                <p><strong className="text-slate-700">Type:</strong> {selectedSubmission.type}</p>
+                <p><strong className="text-slate-700">Updated:</strong> {selectedSubmission.updated}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-[11px]">
+              <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+                <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Assigned Reviewers</p>
+                <div className="mt-1 space-y-0.5">
+                  {selectedSubmission.reviewers.length > 0 ? (
+                    selectedSubmission.reviewers.map((r) => (
+                      <p key={r} className="font-semibold text-slate-800">• {r}</p>
+                    ))
+                  ) : (
+                    <p className="italic text-slate-400">Unassigned</p>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+                <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Quality & Due</p>
+                <p className="mt-1 font-semibold text-slate-800">
+                  Score: <strong className="text-blue-600">{selectedSubmission.score}/100</strong>
+                </p>
+                <p className="text-[10px] text-slate-500 font-mono mt-0.5">Due: {selectedSubmission.due}</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Abstract Summary</p>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                This manuscript documents empirical field data, methodology, and peer-reviewed analysis conducted under Gono Bishwabidyalay institutional research framework.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-200 pt-3">
+              <button
+                onClick={() => setIsInfoModalOpen(false)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              {canAdvance && (
+                <button
+                  onClick={() => {
+                    advanceSubmission(selectedSubmission.id);
+                    setIsInfoModalOpen(false);
+                  }}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[12px] font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors cursor-pointer"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Advance Stage
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </CustomModal>
+
+      {/* Assign Reviewer Modal */}
+      <CustomModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        title={`Assign Reviewer — ${selectedSubmission?.id || ""}`}
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Manuscript</p>
+            <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{selectedSubmission?.title}</p>
+          </div>
+          <label className="grid gap-1.5">
+            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Select Peer Reviewer</span>
+            <CustomSelect
+              options={[
+                "Dr. Salma Khatun",
+                "Prof. Saiful Islam",
+                "Dr. Monirul Hossain",
+                "Dr. Nusrat Jahan",
+              ]}
+              value={assignedReviewerName}
+              onChange={setAssignedReviewerName}
+              className="w-full"
+            />
+          </label>
+          <div className="flex justify-end gap-2 border-t border-slate-200 pt-3">
+            <button
+              onClick={() => setIsAssignModalOpen(false)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAssignReviewerSubmit}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-600 px-4 text-[12px] font-bold text-white shadow-sm hover:bg-amber-700 transition-colors cursor-pointer"
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              Assign Reviewer
+            </button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* Upload Revision Modal */}
+      <CustomModal
+        isOpen={isRevisionModalOpen}
+        onClose={() => setIsRevisionModalOpen(false)}
+        title={`Upload Manuscript Revision — ${selectedSubmission?.id || ""}`}
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700">Manuscript</p>
+            <p className="text-xs font-bold text-blue-950 mt-0.5 truncate">{selectedSubmission?.title}</p>
+          </div>
+          <label className="grid gap-1.5">
+            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Revision Response Notes</span>
+            <textarea
+              value={revisionNotes}
+              onChange={(e) => setRevisionNotes(e.target.value)}
+              placeholder="Add response to reviewer comments and summary of manuscript changes…"
+              rows={3}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px] outline-none focus:border-blue-500 focus:bg-white resize-none transition-colors"
+            />
+          </label>
+          <div className="rounded-lg border border-dashed border-slate-300 p-4 text-center bg-slate-50/50">
+            <FileText className="mx-auto h-6 w-6 text-slate-400 mb-1" />
+            <p className="text-[11px] font-bold text-slate-700">Revised Manuscript (PDF/DOCX)</p>
+            <p className="text-[9.5px] text-slate-400">Drag & drop or click to replace file</p>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-slate-200 pt-3">
+            <button
+              onClick={() => setIsRevisionModalOpen(false)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRevisionModalSubmit}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-[12px] font-bold text-white shadow-sm hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Submit Revision
             </button>
           </div>
         </div>
