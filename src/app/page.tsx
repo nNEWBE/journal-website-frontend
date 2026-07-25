@@ -59,7 +59,8 @@ export default function Home() {
                 </p>
 
                 <form
-                  action="/search"
+                  action="/articles"
+                  method="get"
                   className="hero-search-card mt-7 flex max-w-2xl flex-col gap-2 rounded-2xl border border-white/15 bg-white/[0.06] p-1.5 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all sm:flex-row sm:items-center sm:gap-1.5"
                 >
                   <div className="flex min-h-[44px] flex-1 items-center gap-3 pl-3.5 pr-2">

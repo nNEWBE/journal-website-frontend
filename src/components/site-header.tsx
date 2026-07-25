@@ -404,9 +404,9 @@ export function SiteHeader() {
           {/* Right actions */}
           <div className="flex items-center gap-2">
             <Link
-              href="/search"
+              href="/articles"
               className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] text-[color:var(--ink-muted)] hover:bg-slate-50 hover:text-[color:var(--color-gb-blue)] transition-colors"
-              title="Search"
+              title="Search articles"
             >
               <Search className="h-4 w-4" />
             </Link>

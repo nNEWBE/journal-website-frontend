@@ -38,17 +38,17 @@ export function ArticlesFilterForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-[0_12px_36px_rgba(11,18,61,0.06)]"
+      className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_14px_38px_rgba(11,18,61,0.07)]"
     >
-      <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_185px_185px_auto] md:items-center">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_190px_190px_auto] md:items-center">
         {/* Search input field */}
-        <label className="flex min-h-[44px] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 transition-all focus-within:border-slate-300 focus-within:bg-white">
-          <Search className="h-4 w-4 shrink-0 text-slate-400" />
+        <label className="flex min-h-[46px] items-center gap-3.5 rounded-xl border border-slate-200 bg-slate-50/70 px-4 transition-all focus-within:border-[color:var(--color-gb-blue)]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[color:var(--color-gb-blue)]/15">
+          <Search className="h-4.5 w-4.5 shrink-0 text-[color:var(--color-gb-blue)]" />
           <span className="sr-only">Search the research archive</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Title, author, DOI, or keyword"
+            placeholder="Search by title, author surname, DOI, or keyword..."
             className="w-full border-none bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:font-medium placeholder:text-slate-400 focus:outline-none focus:ring-0"
           />
         </label>
@@ -76,10 +76,10 @@ export function ArticlesFilterForm({
         {/* Filter Action Button */}
         <button
           type="submit"
-          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-6 text-xs font-extrabold text-white shadow-xs transition-colors cursor-pointer focus:outline-none"
+          className="inline-flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-6 text-xs font-extrabold text-white shadow-xs transition-colors cursor-pointer focus:outline-none"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span>Apply filters</span>
+          <Search className="h-3.5 w-3.5" />
+          <span>Search articles</span>
         </button>
       </div>
     </form>
