@@ -44,7 +44,7 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
       <div className="relative grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
         <Link
           href={`/articles/${featuredArticle.slug}`}
-          className="group/cover relative block h-full min-h-[300px] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-950 shadow-md focus-ring md:min-h-full"
+          className="group/cover relative block h-full min-h-[340px] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-950 shadow-md focus-ring md:min-h-full"
         >
           <Image
             src={featuredArticle.image || "/covers/medical.png"}

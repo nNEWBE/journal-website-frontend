@@ -229,7 +229,7 @@ export function HomeJournalShowcase({
                 <div className="relative p-1.5 pb-0">
                   <Link
                     href={`/articles/${article.slug}`}
-                    className="relative block aspect-[16/10] overflow-hidden rounded-xl bg-slate-950 focus-ring"
+                    className="relative block aspect-[4/5] overflow-hidden rounded-xl bg-slate-950 focus-ring"
                   >
                     <Image
                       src={article.image || "/covers/medical.png"}

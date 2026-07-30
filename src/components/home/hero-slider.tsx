@@ -87,8 +87,8 @@ export function HeroSlider() {
   const slide = slides[current];
 
   return (
-    <div className="hero-publication-card relative overflow-hidden rounded-[22px] border border-white/15 bg-white/[0.06] p-3 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/[0.08]">
-      <div className="flex items-center justify-between gap-4 px-2.5 py-2">
+    <div className="hero-publication-card relative overflow-hidden rounded-[22px] border border-white/15 bg-white/[0.06] p-2 sm:p-2.5 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/[0.08]">
+      <div className="flex items-center justify-between gap-4 px-2 py-1">
         <span className="text-[8px] font-black uppercase tracking-[0.16em] text-white/90">
           GB Journal · Issue record
         </span>
@@ -181,7 +181,7 @@ export function HeroSlider() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-3 py-3">
+      <div className="flex items-center gap-3 px-2 py-1.5 sm:px-2.5 sm:py-2">
         <div className="flex items-center gap-1.5">
           {slides.map((item, index) => (
             <button
