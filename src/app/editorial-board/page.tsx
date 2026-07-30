@@ -7,6 +7,7 @@ import {
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { EditorialPageHeader } from "@/components/editorial/editorial-page-header";
 import { SupportingTag } from "@/components/ui/badge";
 import { boardMembers } from "@/lib/data";
@@ -96,35 +97,41 @@ export default function EditorialBoardPage() {
       <div className="bg-[#fbfcff] py-12 md:py-16">
         <div className="container-x space-y-16">
           {/* Executive Leadership */}
-          <EditorInChiefCard chief={chief} managing={managing} />
+          <FadeIn delay={0.1}>
+            <EditorInChiefCard chief={chief} managing={managing} />
+          </FadeIn>
 
           {/* Section Editors */}
-          <SectionEditorsGrid editors={sectionEditors} />
+          <FadeIn delay={0.15}>
+            <SectionEditorsGrid editors={sectionEditors} />
+          </FadeIn>
 
           {/* Governance Principles */}
-          <section className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-xs">
-            <h2 className="text-lg font-extrabold text-slate-900">
-              Editorial Governance & Publication Ethics
-            </h2>
-            <div className="mt-6 grid gap-6 md:grid-cols-3">
-              {governancePrinciples.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.title} className="space-y-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                      <Icon className="h-4.5 w-4.5" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          <FadeIn delay={0.2}>
+            <section className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-xs hover-glow transition-all">
+              <h2 className="text-lg font-extrabold text-slate-900">
+                Editorial Governance & Publication Ethics
+              </h2>
+              <StaggerContainer className="mt-6 grid gap-6 md:grid-cols-3">
+                {governancePrinciples.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <StaggerItem key={item.title} className="space-y-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                        <Icon className="h-4.5 w-4.5" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </StaggerItem>
+                  );
+                })}
+              </StaggerContainer>
+            </section>
+          </FadeIn>
         </div>
       </div>
     </PageShell>

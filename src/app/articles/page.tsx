@@ -12,6 +12,7 @@ import {
 import { ArticleCard } from "@/components/articles/article-card";
 import { ArticlesFilterForm } from "@/components/articles/articles-filter-form";
 import { PageShell } from "@/components/layout/page-shell";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import {
   articles,
   articleTypes,
@@ -35,7 +36,7 @@ export default async function ArticlesPage({
 
   return (
     <PageShell>
-      {/* ── Hero ─────────────────────────────────── */}
+      {/* Hero */}
       <PageHeroBanner
         badgeLabel="Research archive"
         badgeIcon={Library}
@@ -61,17 +62,19 @@ export default async function ArticlesPage({
         ]}
       />
 
-      {/* ── Content ─────────────────────────────── */}
+      {/* Content */}
       <section className="bg-[#f5f7fb] py-6 md:py-8">
         <div className="container-x">
           {/* Filter form */}
-          <ArticlesFilterForm
-            initialQ={q}
-            initialType={type}
-            initialTopic={topic}
-            articleTypes={articleTypes}
-            topics={topics}
-          />
+          <FadeIn delay={0.1}>
+            <ArticlesFilterForm
+              initialQ={q}
+              initialType={type}
+              initialTopic={topic}
+              articleTypes={articleTypes}
+              topics={topics}
+            />
+          </FadeIn>
 
           <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
             {/* Results */}
@@ -111,7 +114,7 @@ export default async function ArticlesPage({
               </div>
 
               {results.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-16 text-center">
+                <FadeIn className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-16 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                     <FileSearch className="h-6 w-6 text-slate-300" />
                   </div>
@@ -127,57 +130,59 @@ export default async function ArticlesPage({
                   >
                     View all articles
                   </Link>
-                </div>
+                </FadeIn>
               ) : (
-                <div className="flex flex-col gap-4">
+                <StaggerContainer className="flex flex-col gap-4">
                   {results.map((article) => (
-                    <ArticleCard
-                      key={article.id}
-                      article={article}
-                      variant="editorial"
-                    />
+                    <StaggerItem key={article.id}>
+                      <ArticleCard
+                        article={article}
+                        variant="editorial"
+                      />
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerContainer>
               )}
             </div>
 
             {/* Sidebar */}
             <aside className="space-y-5 lg:sticky lg:top-24">
-              {/* Browse by subject */}
-              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-                <div className="border-b border-slate-100 bg-[color:var(--color-gb-blue-deep)] px-5 py-4">
-                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-amber-300">
-                    <Tag className="h-3.5 w-3.5" />
-                    Browse by Subject
-                  </p>
+              <FadeIn delay={0.25} direction="left">
+                {/* Browse by subject */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+                  <div className="border-b border-slate-100 bg-[color:var(--color-gb-blue-deep)] px-5 py-4">
+                    <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-amber-300">
+                      <Tag className="h-3.5 w-3.5" />
+                      Browse by Subject
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 p-4">
+                    {topics.map((t) => {
+                      const isActive = topic === t;
+                      return (
+                        <Link
+                          key={t}
+                          href={`/articles?topic=${encodeURIComponent(t)}`}
+                          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                            isActive
+                              ? "bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                          }`}
+                        >
+                          {t}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 p-4">
-                  {topics.map((t) => {
-                    const isActive = topic === t;
-                    return (
-                      <Link
-                        key={t}
-                        href={`/articles?topic=${encodeURIComponent(t)}`}
-                        className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                          isActive
-                            ? "bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-                        }`}
-                      >
-                        {t}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* CTA */}
-              <div className="relative overflow-hidden rounded-2xl bg-[color:var(--color-gb-blue-deep)] p-5 text-white">
-                <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-400 opacity-10 blur-2xl" />
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-amber-400">
-                  <Send className="h-3 w-3" />
-                  Call for Manuscripts
-                </span>
+                {/* CTA */}
+                <div className="mt-5 relative overflow-hidden rounded-2xl bg-[color:var(--color-gb-blue-deep)] p-5 text-white">
+                  <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-400 opacity-10 blur-2xl" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-amber-400">
+                    <Send className="h-3 w-3" />
+                    Call for Manuscripts
+                  </span>
                 <h4 className="mt-3 font-academic text-base font-bold text-white">
                   Publish your research with GBJR
                 </h4>
@@ -215,8 +220,9 @@ export default async function ArticlesPage({
                   ))}
                 </dl>
               </div>
-            </aside>
-          </div>
+            </FadeIn>
+          </aside>
+        </div>
 
           {/* Bottom trust banner */}
           <div className="mt-12 grid gap-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:grid-cols-3 md:p-6">

@@ -24,6 +24,8 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { authenticate, DEMO_USERS, getSession } from "@/lib/auth";
 import { GbJournalLogo } from "@/components/layout/gb-logo";
 
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+
 const ROLE_OPTIONS = [
   "Super Admin — Prof. Dr. Laila Rahman",
   "System Administrator — Md. Jamil Hossain",
@@ -81,7 +83,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl w-full overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_70px_rgba(11,18,61,0.14)]">
+    <FadeIn delay={0.1} className="mx-auto max-w-4xl w-full overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_70px_rgba(11,18,61,0.14)]">
       <div className="grid lg:grid-cols-12 items-stretch">
         
         {/* Left Column: Institutional Brand Showcase */}
@@ -241,7 +243,7 @@ function LoginForm() {
         </div>
 
       </div>
-    </div>
+    </FadeIn>
   );
 }
 

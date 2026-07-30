@@ -14,6 +14,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { CustomSelect } from "@/components/ui/custom-select";
 
 const roleOptions = [
@@ -69,7 +70,7 @@ export default function ContactPage() {
       <section className="hero-masthead relative z-20 bg-gradient-to-br from-[#0b123d] via-[#111b52] to-[#0b123d] text-white">
         <div className="pointer-events-none absolute inset-0 overflow-hidden hero-pattern" />
         <div className="container-x relative py-10 md:py-14">
-          <div className="max-w-2xl">
+          <FadeIn delay={0.1} className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/70 backdrop-blur-md">
               <Mail className="h-3.5 w-3.5 text-white/60" />
               <span>Editorial Desk</span>
@@ -80,7 +81,7 @@ export default function ContactPage() {
             <p className="mt-3.5 max-w-xl text-xs leading-6 text-white/60 md:text-sm">
               Get in touch with the Gono Bishwabidyalay Journal of Research. We welcome manuscript inquiries, reviewer applications, and institutional feedback.
             </p>
-          </div>
+          </FadeIn>
         </div>
       </section>
 
@@ -88,8 +89,8 @@ export default function ContactPage() {
         <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] items-start">
           
           {/* Column 1: Info Cards */}
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 space-y-6 shadow-xs">
+          <FadeIn delay={0.15} className="space-y-6">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 space-y-6 shadow-xs hover-glow transition-all">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h2 className="text-base font-bold font-academic text-[color:var(--color-gb-blue-deep)]">
                   Office Directory
@@ -171,7 +172,7 @@ export default function ContactPage() {
                 All communications sent to the editorial office are logged for administrative transparency. When inquiring about a submission under review, please include your unique <strong>Manuscript ID</strong>.
               </p>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Column 2: Inquiry Form */}
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-xs">

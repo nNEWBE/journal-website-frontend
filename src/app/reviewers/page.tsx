@@ -17,6 +17,8 @@ import { PageShell } from "@/components/layout/page-shell";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
 import { CommitmentGridSection } from "@/components/ui/commitment-grid-section";
 
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+
 const stats = [
   { value: "14", unit: "Days", label: "Review window" },
   { value: "5", unit: "Criteria", label: "Evaluation dimensions" },
@@ -177,7 +179,7 @@ import { PageHeroBanner } from "@/components/layout/page-hero-banner";
 export default function ReviewersPage() {
   return (
     <PageShell>
-      {/* ── Hero ───────────────────────────────────── */}
+      {/* Hero */}
       <PageHeroBanner
         badgeLabel="Peer Review Guidance"
         badgeIcon={Eye}
@@ -202,7 +204,7 @@ export default function ReviewersPage() {
         }))}
       />
 
-      {/* ── Core Principles ────────────────────────── */}
+      {/* Core Principles */}
       <CommitmentGridSection
         eyebrow="Reviewer Covenant"
         title="Six commitments behind every independent review"
@@ -228,7 +230,7 @@ export default function ReviewersPage() {
         }
       />
 
-      {/* ── Review Timeline ────────────────────────── */}
+      {/* Review Timeline */}
       <section className="bg-white border-t border-slate-100 py-14 md:py-18">
         <div className="container-x grid gap-10 lg:grid-cols-[0.68fr_1.32fr] lg:items-start">
           <div className="lg:sticky lg:top-24">
@@ -352,7 +354,7 @@ export default function ReviewersPage() {
         </div>
       </section>
 
-      {/* ── Evaluation Rubric ────────────────────────── */}
+      {/* Evaluation Rubric */}
       <section className="bg-white py-12 md:py-16 border-t border-slate-100">
         <div className="container-x">
           <div>
@@ -482,7 +484,7 @@ export default function ReviewersPage() {
         </div>
       </section>
 
-      {/* ── Join CTA ───────────────────────────────── */}
+      {/* Join CTA */}
       <section className="container-x pb-16 md:pb-20">
         <div className="relative overflow-hidden rounded-3xl bg-[color:var(--color-gb-blue-deep)] p-8 md:p-12">
           <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.04]" />

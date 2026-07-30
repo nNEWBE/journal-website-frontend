@@ -39,7 +39,7 @@ export default function CurrentIssuePage() {
 
   return (
     <PageShell>
-      {/* ── Hero ───────────────────────────────────── */}
+      {/* Hero */}
       <PageHeroBanner
         badgeLabel="Current Issue"
         badgeIcon={BookOpen}
@@ -80,7 +80,7 @@ export default function CurrentIssuePage() {
         }}
       />
 
-      {/* ── Contents + Sidebar ─────────────────────── */}
+      {/* Contents + Sidebar */}
       <section id="contents" className="scroll-mt-20 bg-[#f5f7fb] py-14 md:py-18">
         <div className="container-x grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
 

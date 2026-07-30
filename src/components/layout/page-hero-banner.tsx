@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { CalendarDays, LucideIcon } from "lucide-react";
+import { FadeIn } from "@/components/layout/page-transition";
 
 export type HeroStat = {
   val: string;
@@ -63,7 +64,7 @@ export function PageHeroBanner({
               : ""
           }`}
         >
-          <div className="max-w-2xl">
+          <FadeIn delay={0.1} className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/15 px-3.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-300 backdrop-blur-md shadow-2xs">
                 {BadgeIcon && <BadgeIcon className="h-3.5 w-3.5 text-amber-300" />}
@@ -100,10 +101,10 @@ export function PageHeroBanner({
             )}
 
             {children}
-          </div>
+          </FadeIn>
 
           {coverCard ? (
-            <div className="mx-auto w-full max-w-sm lg:max-w-none space-y-3">
+            <FadeIn delay={0.2} direction="left" className="mx-auto w-full max-w-sm lg:max-w-none space-y-3">
               <div className="group/cover relative overflow-hidden rounded-[24px] border border-white/25 bg-white/[0.08] p-2.5 shadow-[0_24px_60px_rgba(11,18,61,0.25)] backdrop-blur-xl transition-all hover:border-amber-400/40 hover:bg-white/[0.12]">
                 <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-[color:var(--color-gb-blue-deep)]">
                   <Image
@@ -147,18 +148,18 @@ export function PageHeroBanner({
                   ))}
                 </div>
               )}
-            </div>
+            </FadeIn>
           ) : (
             stats &&
             stats.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 backdrop-blur-sm sm:grid-cols-4 lg:grid-cols-2 lg:w-[320px]">
+              <FadeIn delay={0.2} direction="left" className="grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 backdrop-blur-sm sm:grid-cols-4 lg:grid-cols-2 lg:w-[320px]">
                 {stats.map((s) => (
-                  <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                  <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 transition-all hover:bg-white/[0.08]">
                     <p className="font-academic text-lg font-black text-white">{s.val}</p>
                     <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-white/40">{s.label}</p>
                   </div>
                 ))}
-              </div>
+              </FadeIn>
             )
           )}
         </div>

@@ -2,6 +2,7 @@ import React, { ElementType, ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
 import { PolicyFrameworkCard, PolicyFrameworkCardProps } from "@/components/ui/policy-framework-card";
 import { SupportingTag } from "@/components/ui/badge";
+import { FadeIn } from "@/components/layout/page-transition";
 
 export type SupportingItem = {
   label: string;
@@ -48,7 +49,10 @@ export function EditorialPageHeader({
             : ""
         }`}
       >
-        <div className={asideContent ? "max-w-2xl" : "mx-auto max-w-3xl text-center"}>
+        <FadeIn
+          delay={0.1}
+          className={asideContent ? "max-w-2xl" : "mx-auto max-w-3xl text-center"}
+        >
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
             <Icon className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
             {eyebrow}
@@ -91,9 +95,13 @@ export function EditorialPageHeader({
                 : supporting}
             </div>
           )}
-        </div>
+        </FadeIn>
 
-        {asideContent && <div className="w-full">{asideContent}</div>}
+        {asideContent && (
+          <FadeIn delay={0.2} direction="left" className="w-full">
+            {asideContent}
+          </FadeIn>
+        )}
       </div>
     </section>
   );

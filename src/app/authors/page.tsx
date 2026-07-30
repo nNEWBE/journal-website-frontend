@@ -88,10 +88,12 @@ const stepColors = [
   { ring: "ring-emerald-500",                      bg: "bg-emerald-50",                            text: "text-emerald-600"                        },
 ];
 
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+
 export default function AuthorsPage() {
   return (
     <PageShell>
-      {/* ── Hero ─────────────────────────────────── */}
+      {/* Hero */}
       <section className="relative overflow-hidden bg-[color:var(--color-gb-blue-deep)]">
         <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.035]" />
         <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-[color:var(--color-gb-blue)] opacity-[0.13] blur-[90px]" />
@@ -99,7 +101,7 @@ export default function AuthorsPage() {
 
         <div className="container-x relative grid gap-12 py-16 md:py-20 lg:grid-cols-[1fr_380px] lg:items-center lg:py-24">
           {/* Left */}
-          <div className="max-w-2xl">
+          <FadeIn delay={0.1} className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/60 backdrop-blur-sm">
               <PenLine className="h-3.5 w-3.5 text-amber-300" />
               For Authors
@@ -146,10 +148,10 @@ export default function AuthorsPage() {
                 Trackable workflow
               </span>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Right: checklist card */}
-          <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.05] shadow-[0_28px_70px_rgba(0,0,0,0.28)] backdrop-blur-md">
+          <FadeIn delay={0.2} direction="left" className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.05] shadow-[0_28px_70px_rgba(0,0,0,0.28)] backdrop-blur-md">
             <div className="border-b border-white/10 px-6 py-4">
               <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-300">Submission brief</p>
               <h2 className="mt-1 text-sm font-black text-white">Four essentials before upload</h2>
@@ -176,11 +178,11 @@ export default function AuthorsPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          </div>
+          </FadeIn>
         </div>
       </section>
 
-      {/* ── Article Types ────────────────────────── */}
+      {/* Article Types */}
       <section className="container-x py-14 md:py-18">
         <div className="mb-10 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -226,7 +228,7 @@ export default function AuthorsPage() {
         </div>
       </section>
 
-      {/* ── Submission Checklist ─────────────────── */}
+      {/* Submission Checklist */}
       <section className="border-y border-slate-200 bg-[#f5f7fb] py-14 md:py-18">
         <div className="container-x grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-start">
           <div className="lg:sticky lg:top-24">
@@ -270,7 +272,7 @@ export default function AuthorsPage() {
         </div>
       </section>
 
-      {/* ── Publication Workflow ─────────────────── */}
+      {/* Publication Workflow */}
       <ProcessSteps
         sectionNumber="04"
         sectionLabel="Publication workflow"
@@ -282,7 +284,7 @@ export default function AuthorsPage() {
         badgeText="COPE-Aligned Practice"
       />
 
-      {/* ── Policy CTA ───────────────────────────── */}
+      {/* Policy CTA */}
       <section className="container-x pb-16 md:pb-20">
         <div className="relative overflow-hidden rounded-3xl bg-[color:var(--color-gb-blue-deep)] p-8 md:p-12">
           <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.04]" />

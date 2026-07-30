@@ -15,6 +15,7 @@ import { HeroSlider } from "@/components/home/hero-slider";
 import { HomeJournalShowcase } from "@/components/home/home-journal-showcase";
 import { HomeJournalStory } from "@/components/home/home-journal-story";
 import { PageShell } from "@/components/layout/page-shell";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { issues, topics } from "@/lib/data";
 
 export default function Home() {
@@ -29,7 +30,7 @@ export default function Home() {
 
           <div className="container-x relative z-10 py-12 md:py-16">
             <div className="grid items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
-              <div className="animate-rise">
+              <FadeIn direction="up" delay={0.1}>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/70 backdrop-blur-md transition-all hover:bg-white/10 hover:border-white/25 hover:text-white">
                     <Unlock className="h-3 w-3 text-white/60 shrink-0" />
@@ -61,7 +62,7 @@ export default function Home() {
                 <form
                   action="/articles"
                   method="get"
-                  className="hero-search-card mt-7 flex max-w-2xl flex-col gap-2 rounded-2xl border border-white/15 bg-white/[0.06] p-1.5 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all sm:flex-row sm:items-center sm:gap-1.5"
+                  className="hero-search-card mt-7 flex max-w-2xl flex-col gap-2 rounded-2xl border border-white/15 bg-white/[0.06] p-1.5 shadow-[0_28px_70px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all hover:border-white/25 focus-within:border-white/40 sm:flex-row sm:items-center sm:gap-1.5"
                 >
                   <div className="flex min-h-[44px] flex-1 items-center gap-3 pl-3.5 pr-2">
                     <Search className="h-4 w-4 shrink-0 text-white/60" />
@@ -97,18 +98,18 @@ export default function Home() {
                     <span>Read current issue</span>
                   </Link>
                 </div>
-              </div>
+              </FadeIn>
 
-              <div className="mx-auto w-full max-w-xl lg:mx-0">
+              <FadeIn direction="left" delay={0.25} className="mx-auto w-full max-w-xl lg:mx-0">
                 <HeroSlider />
-              </div>
+              </FadeIn>
             </div>
           </div>
         </div>
 
         <div className="hero-stats-strip border-b border-slate-200/80 bg-white shadow-xs">
           <div className="container-x">
-            <div className="grid grid-cols-2 md:grid-cols-4">
+            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4">
               {[
                 { value: "286", label: "Published articles", icon: FileText },
                 { value: "74", label: "Active reviewers", icon: Users },
@@ -117,13 +118,13 @@ export default function Home() {
               ].map((stat, index) => {
                 const Icon = stat.icon;
                 return (
-                  <div
+                  <StaggerItem
                     key={stat.label}
                     className={`hero-stat-item flex items-center gap-3.5 py-5 md:py-6 ${
                       index % 2 === 0 ? "pr-4" : "pl-4"
                     } md:px-6 md:first:pl-0 md:last:pr-0 border-r border-slate-100 last:border-r-0`}
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] shadow-xs">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] shadow-xs transition-transform hover:scale-105">
                       <Icon className="h-4 w-4" />
                     </span>
                     <div>
@@ -134,22 +135,26 @@ export default function Home() {
                         {stat.label}
                       </p>
                     </div>
-                  </div>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerContainer>
           </div>
         </div>
       </section>
 
       {featuredArticle && (
-        <HomeJournalShowcase
-          featuredArticle={featuredArticle}
-          currentIssue={currentIssue}
-        />
+        <FadeIn delay={0.15}>
+          <HomeJournalShowcase
+            featuredArticle={featuredArticle}
+            currentIssue={currentIssue}
+          />
+        </FadeIn>
       )}
 
-      <HomeJournalStory topics={topics} />
+      <FadeIn delay={0.2}>
+        <HomeJournalStory topics={topics} />
+      </FadeIn>
     </PageShell>
   );
 }

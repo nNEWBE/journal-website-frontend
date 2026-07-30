@@ -130,6 +130,8 @@ const recordActions = [
   },
 ];
 
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+
 export default function PoliciesPage() {
   return (
     <PageShell>

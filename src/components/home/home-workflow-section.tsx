@@ -376,27 +376,27 @@ export function HomeWorkflowSection() {
   const workflowRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: workflowRef,
-    offset: ["start 72%", "end 68%"],
+    offset: ["start 80%", "end 70%"],
   });
   const workflowProgress = useSpring(scrollYProgress, {
-    stiffness: 90,
-    damping: 24,
-    mass: 0.35,
+    stiffness: 110,
+    damping: 28,
+    restDelta: 0.001,
   });
 
   return (
     <section
       ref={workflowRef}
-      className="workflow-section relative overflow-hidden bg-[#fbfcff] py-20 md:py-28"
+      className="workflow-section relative overflow-hidden bg-[#fbfcff] py-16 sm:py-20 md:py-28 touch-pan-y"
     >
       <div className="workflow-paper-grid pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute -left-40 top-1/3 h-80 w-80 rounded-full bg-[color:var(--color-gb-blue)]/[0.06] blur-3xl" />
-      <div className="pointer-events-none absolute -right-40 bottom-20 h-80 w-80 rounded-full bg-[color:var(--color-gb-gold)]/[0.09] blur-3xl" />
+      <div className="pointer-events-none absolute -left-40 top-1/3 h-80 w-80 rounded-full bg-[color:var(--color-gb-blue)]/[0.05] blur-2xl sm:blur-3xl" />
+      <div className="pointer-events-none absolute -right-40 bottom-20 h-80 w-80 rounded-full bg-[color:var(--color-gb-gold)]/[0.07] blur-2xl sm:blur-3xl" />
       <div className="container-x relative">
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.12 }}
+          viewport={{ once: true, amount: 0.08, margin: "0px 0px -20px 0px" }}
           variants={stagger}
           className="mx-auto max-w-2xl text-center"
         >
@@ -407,13 +407,13 @@ export function HomeWorkflowSection() {
                 How it works
               </span>
             </div>
-            <h2 className="mt-5 font-academic text-4xl font-bold leading-[1.06] tracking-[-0.04em] text-[color:var(--color-gb-blue-deep)] md:text-5xl">
+            <h2 className="mt-4 font-academic text-3xl sm:text-4xl font-bold leading-[1.08] tracking-[-0.04em] text-[color:var(--color-gb-blue-deep)] md:text-5xl">
               From manuscript to
               <span className="block font-medium italic text-[color:var(--color-gb-gold-dark)]">
                 published research
               </span>
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-slate-500">
+            <p className="mx-auto mt-4 max-w-xl text-xs sm:text-sm leading-6 sm:leading-7 text-slate-500">
               Follow a transparent editorial pathway designed to protect
               independent review, keep authors informed, and produce a trusted
               scholarly record.
@@ -421,15 +421,15 @@ export function HomeWorkflowSection() {
           </motion.div>
         </motion.div>
 
-        <div className="workflow-timeline relative mx-auto mt-16 max-w-5xl">
+        <div className="workflow-timeline relative mx-auto mt-12 sm:mt-16 max-w-5xl">
           <div className="absolute bottom-4 left-[15px] top-4 w-px bg-slate-200 lg:left-1/2 lg:-translate-x-1/2" />
           <motion.div
             aria-hidden="true"
             style={{ scaleY: workflowProgress }}
-            className="absolute bottom-4 left-[15px] top-4 w-0.5 origin-top bg-gradient-to-b from-[color:var(--color-gb-blue-deep)] via-[color:var(--color-gb-blue)] to-amber-400 lg:left-1/2 lg:-translate-x-1/2"
+            className="absolute bottom-4 left-[15px] top-4 w-0.5 origin-top bg-gradient-to-b from-[color:var(--color-gb-blue-deep)] via-[color:var(--color-gb-blue)] to-amber-400 lg:left-1/2 lg:-translate-x-1/2 transform-gpu"
           />
 
-          <div className="space-y-16 md:space-y-20">
+          <div className="space-y-12 sm:space-y-16 md:space-y-20">
             {workflowStages.map((stage, index) => {
               const Icon = stage.icon;
               const textOnLeft = index % 2 === 0;
@@ -457,11 +457,11 @@ export function HomeWorkflowSection() {
                   <p className="mt-3 text-[9px] font-black uppercase tracking-[0.16em] text-[color:var(--color-gb-gold-dark)]">
                     {stage.eyebrow}
                   </p>
-                  <h3 className="mt-2 font-academic text-2xl font-bold text-[color:var(--color-gb-blue-deep)]">
+                  <h3 className="mt-2 font-academic text-xl sm:text-2xl font-bold text-[color:var(--color-gb-blue-deep)]">
                     {stage.title}
                   </h3>
                   <p
-                    className={`mt-3 text-xs leading-6 text-slate-500 ${
+                    className={`mt-2.5 text-xs leading-6 text-slate-500 ${
                       textOnLeft ? "lg:ml-auto" : ""
                     } max-w-sm`}
                   >
@@ -487,8 +487,8 @@ export function HomeWorkflowSection() {
                   key={stage.number}
                   initial="hidden"
                   whileInView="visible"
-                  viewport={{ once: true, amount: 0.35 }}
-                  className="workflow-row relative grid items-center gap-8 pl-12 lg:grid-cols-[1fr_72px_1fr] lg:gap-8 lg:pl-0"
+                  viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
+                  className="workflow-row relative grid items-center gap-6 pl-10 sm:gap-8 sm:pl-12 lg:grid-cols-[1fr_72px_1fr] lg:gap-8 lg:pl-0 transform-gpu overflow-x-hidden"
                 >
                   {/* Left side element */}
                   <motion.div
@@ -497,7 +497,10 @@ export function HomeWorkflowSection() {
                       visible: { opacity: 1, x: 0 },
                     }}
                     transition={{ duration: 0.55, delay: 0.12, ease: easing }}
-                    className={textOnLeft ? "lg:col-start-1 lg:row-start-1" : "lg:col-start-1 lg:row-start-1"}
+                    style={{ willChange: "transform, opacity" }}
+                    className={`transform-gpu will-change-transform ${
+                      textOnLeft ? "lg:col-start-1 lg:row-start-1" : "lg:col-start-1 lg:row-start-1"
+                    }`}
                   >
                     {textOnLeft ? leftElement : rightElement}
                   </motion.div>
@@ -510,7 +513,8 @@ export function HomeWorkflowSection() {
                         visible: { scale: 1, opacity: 1 },
                       }}
                       transition={{ duration: 0.4, ease: "backOut" }}
-                      className="workflow-node flex h-full w-full items-center justify-center rounded-full border-2 border-white bg-[color:var(--color-gb-blue)] text-white shadow-[0_0_0_5px_rgba(31,47,130,0.10)]"
+                      style={{ willChange: "transform, opacity" }}
+                      className="workflow-node flex h-full w-full items-center justify-center rounded-full border-2 border-white bg-[color:var(--color-gb-blue)] text-white shadow-[0_0_0_5px_rgba(31,47,130,0.10)] transform-gpu will-change-transform"
                     >
                       <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                     </motion.span>
@@ -523,7 +527,10 @@ export function HomeWorkflowSection() {
                       visible: { opacity: 1, x: 0 },
                     }}
                     transition={{ duration: 0.55, delay: 0.12, ease: easing }}
-                    className={textOnLeft ? "lg:col-start-3 lg:row-start-1" : "lg:col-start-3 lg:row-start-1"}
+                    style={{ willChange: "transform, opacity" }}
+                    className={`transform-gpu will-change-transform ${
+                      textOnLeft ? "lg:col-start-3 lg:row-start-1" : "lg:col-start-3 lg:row-start-1"
+                    }`}
                   >
                     {textOnLeft ? rightElement : leftElement}
                   </motion.div>

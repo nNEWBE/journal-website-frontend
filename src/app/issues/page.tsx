@@ -25,6 +25,7 @@ import {
   Check,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { issues } from "@/lib/data";
 import { PageHeroBanner } from "@/components/layout/page-hero-banner";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
@@ -67,7 +68,7 @@ export default function IssuesPage() {
 
   return (
     <PageShell>
-      {/* ── Hero ──────────────────────────────────── */}
+      {/* Hero */}
       <PageHeroBanner
         badgeLabel="Journal Archive"
         badgeIcon={Library}
@@ -86,28 +87,30 @@ export default function IssuesPage() {
         ]}
       />
 
-      {/* ── Featured Edition (Current Issue Highlight) ─────────────────── */}
+      {/* Featured Edition (Current Issue Highlight) */}
       <section className="container-x py-12 md:py-16">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
-              <BookOpen className="h-3.5 w-3.5" />
-              Featured Edition
-            </p>
-            <h2 className="mt-1.5 font-academic text-2xl font-bold tracking-tight text-[color:var(--color-gb-blue-deep)] md:text-3xl">
-              Latest published issue
-            </h2>
+        <FadeIn delay={0.1}>
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
+                <BookOpen className="h-3.5 w-3.5" />
+                Featured Edition
+              </p>
+              <h2 className="mt-1.5 font-academic text-2xl font-bold tracking-tight text-[color:var(--color-gb-blue-deep)] md:text-3xl">
+                Latest published issue
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-slate-200/90 bg-white px-3.5 py-1.5 shadow-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              <span className="font-mono text-xs font-bold text-slate-700">
+                {currentIssue.volume} · {currentIssue.issue} ({currentIssue.month})
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-slate-200/90 bg-white px-3.5 py-1.5 shadow-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-            </span>
-            <span className="font-mono text-xs font-bold text-slate-700">
-              {currentIssue.volume} · {currentIssue.issue} ({currentIssue.month})
-            </span>
-          </div>
-        </div>
+        </FadeIn>
 
         <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all duration-300 hover:border-slate-300 hover:shadow-md md:p-6">
           <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-stretch">
@@ -222,7 +225,7 @@ export default function IssuesPage() {
         </div>
       </section>
 
-      {/* ── Archive by Year Section ───────────────────────── */}
+      {/* Archive by Year Section */}
       <section className="border-t border-slate-200/80 bg-slate-50/70 py-12 md:py-16">
         <div className="container-x">
           {/* Section Header */}
@@ -518,7 +521,7 @@ export default function IssuesPage() {
         </div>
       </section>
 
-      {/* ── Archival Standards & Open Access Banner ───────────────────── */}
+      {/* Archival Standards & Open Access Banner */}
       <section className="container-x py-12">
         <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-500/10 via-slate-50 to-blue-500/10 p-6 md:p-8 shadow-xs">
           <div className="grid gap-6 md:grid-cols-3">

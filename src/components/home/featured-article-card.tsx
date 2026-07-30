@@ -41,25 +41,25 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
         </span>
       </div>
 
-      <div className="relative grid gap-7 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[230px_minmax(0,1fr)]">
-        <div className="rounded-xl bg-slate-100 p-3 md:p-2.5">
-          <Link
-            href={`/articles/${featuredArticle.slug}`}
-            className="relative mx-auto block aspect-[4/5] w-full max-w-[230px] overflow-hidden rounded-lg bg-slate-900 shadow-md focus-ring md:mx-0"
-          >
-            <Image
-              src={featuredArticle.image || "/covers/medical.png"}
-              alt=""
-              fill
-              sizes="(max-width: 767px) 230px, 230px"
-              className="object-cover"
-            />
-            <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/80 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white">
-              <FileText className="h-3 w-3" />
-              {featuredArticle.type}
-            </span>
-          </Link>
-        </div>
+      <div className="relative grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+        <Link
+          href={`/articles/${featuredArticle.slug}`}
+          className="group/cover relative block h-full min-h-[300px] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-950 shadow-md focus-ring md:min-h-full"
+        >
+          <Image
+            src={featuredArticle.image || "/covers/medical.png"}
+            alt={featuredArticle.title}
+            fill
+            priority
+            sizes="(max-width: 767px) 100vw, 240px"
+            className="object-cover transition-transform duration-700 ease-out group-hover/cover:scale-[1.05]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+          <span className="absolute bottom-3.5 left-3.5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/80 px-3 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-md shadow-md">
+            <FileText className="h-3 w-3 text-amber-300" />
+            {featuredArticle.type}
+          </span>
+        </Link>
 
         <div className="flex min-w-0 flex-col justify-center">
           <div className="mb-3 flex flex-wrap items-center gap-2">

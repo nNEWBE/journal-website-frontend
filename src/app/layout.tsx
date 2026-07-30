@@ -6,6 +6,7 @@ import {
   Plus_Jakarta_Sans,
 } from "next/font/google";
 import { Toaster } from "sonner";
+import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -57,6 +58,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <SmoothScroll />
         {children}
         <Toaster position="top-right" richColors closeButton theme="light" />
       </body>
