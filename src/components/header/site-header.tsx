@@ -63,7 +63,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className="sticky top-0 z-50 w-full transition-all duration-300">
       <style>{`
         @keyframes waveFlow {
           from { background-position-x: 0; }
@@ -126,8 +126,8 @@ export function SiteHeader() {
 
       {/* Main Navigation Bar */}
       <div
-        className={`border-b border-[color:var(--border)] bg-white/95 backdrop-blur-xl transition-shadow duration-200 ${
-          scrolled ? "shadow-md" : ""
+        className={`border-b border-[color:var(--border)] bg-white/95 backdrop-blur-xl transition-all duration-200 ${
+          scrolled ? "shadow-lg shadow-slate-900/10" : ""
         }`}
       >
         <div className="container-x flex min-h-16 items-center justify-between gap-4 py-2.5">

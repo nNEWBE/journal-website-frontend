@@ -79,7 +79,7 @@ html {
   scroll-behavior: smooth !important;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -90,7 +90,7 @@ body {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth !important;
   text-rendering: optimizeSpeed;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Promote key layout containers to dedicated GPU compositor layers without memory bloat */
