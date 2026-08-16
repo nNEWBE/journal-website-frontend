@@ -33,6 +33,17 @@
 }
 
 @theme inline {
+  --radius-none: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  --radius-full: 0px;
+  --radius: 0px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-gb-blue: var(--color-gb-blue);
@@ -45,9 +56,34 @@
   --color-gb-cream: var(--color-gb-cream);
   --font-sans: var(--font-body), var(--font-body-fallback);
   --font-display: var(--font-display), var(--font-display-fallback);
+  --font-academic: var(--font-display), var(--font-display-fallback);
   --font-bangla: var(--font-bangla), var(--font-bangla-fallback);
   --font-mono: var(--font-code), var(--font-code-fallback);
 }
+
+.font-academic,
+.font-display {
+  font-family: var(--font-display), "Playfair Display", "Cormorant Garamond", Georgia, serif !important;
+  font-feature-settings: "liga", "clig", "calt";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Zero corner radius universally across cards, images, buttons, inputs, badges and all UI elements */
+*,
+*::before,
+*::after,
+button,
+a,
+input,
+select,
+textarea,
+img,
+[class*="rounded"] {
+  border-radius: 0px !important;
+}
+
+
+
 
 * {
   box-sizing: border-box;
@@ -146,9 +182,16 @@ button {
 }
 
 .container-x {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1280px, calc(100% - 32px));
   margin-inline: auto;
 }
+
+.container-wide {
+  width: min(1320px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+
 
 .glass-panel {
   border: 1px solid rgba(255, 255, 255, 0.62);

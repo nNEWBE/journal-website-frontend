@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import {
   JetBrains_Mono,
-  Lora,
   Noto_Sans_Bengali,
+  Playfair_Display,
   Plus_Jakarta_Sans,
 } from "next/font/google";
 import { Toaster } from "sonner";
@@ -15,10 +15,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const lora = Lora({
+const playfairDisplay = Playfair_Display({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -54,7 +55,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${lora.variable} ${notoBangla.variable} ${jetBrainsMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${playfairDisplay.variable} ${notoBangla.variable} ${jetBrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
@@ -65,3 +66,4 @@ export default function RootLayout({
     </html>
   );
 }
+
