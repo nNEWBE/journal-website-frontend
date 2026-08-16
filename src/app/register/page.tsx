@@ -29,7 +29,8 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { registerWithApi, type User } from "@/lib/auth";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { registerUser, clearError } from "@/redux/features/auth/authSlice";
 import { FadeIn } from "@/components/layout/page-transition";
 
 const ACCOUNT_ROLE_OPTIONS = [
@@ -40,6 +41,8 @@ const ACCOUNT_ROLE_OPTIONS = [
 
 function RegisterForm() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isLoading, error: reduxError } = useAppSelector((state) => state.auth);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,20 +56,20 @@ function RegisterForm() {
   const [agreeEthics, setAgreeEthics] = useState(true);
   const [agreeOpenAccess, setAgreeOpenAccess] = useState(true);
 
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setLocalError(null);
+    dispatch(clearError());
 
     if (!fullName.trim() || !email.trim() || !password.trim()) {
-      setError("Please fill out all mandatory registration fields.");
+      setLocalError("Please fill out all mandatory registration fields.");
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters in length.");
+      setLocalError("Password must be at least 8 characters in length.");
       return;
     }
 
@@ -74,23 +77,21 @@ function RegisterForm() {
     const hasLower = /[a-z]/.test(password);
     const hasDigit = /\d/.test(password);
     if (!hasUpper || !hasLower || !hasDigit) {
-      setError(
+      setLocalError(
         "Password must contain at least one uppercase letter, one lowercase letter, and one number."
       );
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match. Please verify your entries.");
+      setLocalError("Passwords do not match. Please verify your entries.");
       return;
     }
 
     if (!agreeEthics || !agreeOpenAccess) {
-      setError("Please agree to the editorial ethics and open-access declarations to proceed.");
+      setLocalError("Please agree to the editorial ethics and open-access declarations to proceed.");
       return;
     }
-
-    setIsLoading(true);
 
     const roleMapping: Record<string, "author" | "reviewer" | "editor" | "admin" | "super-admin"> = {
       "Author / Submitter": "author",
@@ -100,24 +101,23 @@ function RegisterForm() {
 
     const targetRole = roleMapping[accountRole] || "author";
 
-    try {
-      const createdUser = await registerWithApi({
+    const resultAction = await dispatch(
+      registerUser({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
         password,
         institution: institution.trim(),
         department: department.trim(),
-        orcid: orcid.trim() || undefined,
-      });
+        role: targetRole,
+      })
+    );
 
-      router.push(`/dashboard/${createdUser.role || targetRole}`);
-    } catch (err: any) {
-      setIsLoading(false);
-      setError(
-        err.message || "Registration failed. Please check your details or try a different email address."
-      );
+    if (registerUser.fulfilled.match(resultAction)) {
+      router.push(`/dashboard/${resultAction.payload.role || targetRole}`);
     }
   }
+
+  const displayError = localError || reduxError;
 
   return (
     <FadeIn delay={0.1} className="mx-auto max-w-5xl w-full border border-slate-300 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.12)]">
@@ -240,10 +240,10 @@ function RegisterForm() {
             Register your verified scholarly credentials to access manuscript submission, referee dashboards, and publication tools.
           </p>
 
-          {error && (
+          {displayError && (
             <div className="mt-5 flex items-start gap-2.5 bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-900 leading-relaxed animate-fade">
               <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span>{displayError}</span>
             </div>
           )}
 

@@ -1,6 +1,6 @@
 /**
- * GB Journal Portal - Live Backend API Client
- * Connects Next.js frontend directly to Spring Boot backend (/api/v1)
+ * GB Journal Portal - Secure Backend API Client
+ * Uses secure, HttpOnly SameSite cookies via Next.js Route Handlers (Zero credentials in localStorage)
  */
 
 import { type Role, type Article, type Submission, type BoardMember } from "./data";
@@ -8,44 +8,56 @@ import { type Role, type Article, type Submission, type BoardMember } from "./da
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-const ACCESS_TOKEN_KEY = "gb_journal_access_token";
-const REFRESH_TOKEN_KEY = "gb_journal_refresh_token";
-
-export function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+// Purge any legacy localStorage tokens for security
+export function clearTokens(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("gb_journal_access_token");
+    localStorage.removeItem("gb_journal_refresh_token");
+    localStorage.removeItem("gb_journal_user_session");
+  } catch (e) {
+    // Ignore
+  }
 }
 
 export function setTokens(access: string, refresh?: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(ACCESS_TOKEN_KEY, access);
-  if (refresh) localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+  // Legacy stub - tokens are now strictly managed via secure HttpOnly cookies
+  clearTokens();
 }
 
-export function clearTokens(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+export function getAccessToken(): string | null {
+  // Tokens are now stored exclusively in secure HttpOnly cookies
+  return null;
 }
 
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getAccessToken();
+  const isBrowser = typeof window !== "undefined";
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
-
-  if (token && !headers["Authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // When in browser, route through secure Next.js backend proxy which automatically injects HttpOnly cookie
+  // When in server-side, call Spring Boot directly
+  let targetUrl: string;
+  if (isBrowser) {
+    const cleanEndpoint = endpoint.startsWith("/api/v1")
+      ? endpoint.substring("/api/v1".length)
+      : endpoint.startsWith("/")
+      ? endpoint
+      : `/${endpoint}`;
+    targetUrl = `/api/backend${cleanEndpoint}`;
+  } else {
+    targetUrl = `${API_BASE_URL}${endpoint}`;
+  }
+
+  const res = await fetch(targetUrl, {
     ...options,
     headers,
   });
@@ -71,7 +83,7 @@ async function request<T>(
 }
 
 // ==========================================
-// 1. AUTH API
+// 1. AUTH API (SECURE HTTPONLY ENDPOINTS)
 // ==========================================
 
 export interface LoginPayload {
@@ -90,10 +102,10 @@ export interface RegisterPayload {
 }
 
 export interface AuthResponseData {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresIn?: number;
   user: {
     id: number;
     fullName: string;
@@ -111,42 +123,53 @@ export interface AuthResponseData {
 
 export const authApi = {
   login: async (data: LoginPayload): Promise<AuthResponseData> => {
-    const res = await request<AuthResponseData>("/api/v1/auth/login", {
+    clearTokens();
+    const res = await fetch("/api/auth/login", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.accessToken) {
-      setTokens(res.accessToken, res.refreshToken);
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Invalid credentials");
     }
-    return res;
+    return json;
   },
 
   register: async (data: RegisterPayload): Promise<AuthResponseData> => {
-    const res = await request<AuthResponseData>("/api/v1/auth/register", {
+    clearTokens();
+    const res = await fetch("/api/auth/register", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.accessToken) {
-      setTokens(res.accessToken, res.refreshToken);
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Registration failed");
     }
-    return res;
+    return json;
   },
 
   getMe: async (): Promise<AuthResponseData["user"]> => {
-    return request<AuthResponseData["user"]>("/api/v1/auth/me");
+    const res = await fetch("/api/auth/me", {
+      method: "GET",
+    });
+
+    if (!res.ok) {
+      throw new Error("Unauthorized");
+    }
+
+    const json = await res.json();
+    return json.user;
   },
 
-  logout: async (): Promise<{ message: string }> => {
-    try {
-      const res = await request<{ message: string }>("/api/v1/auth/logout", {
-        method: "POST",
-      });
-      clearTokens();
-      return res;
-    } catch (e) {
-      clearTokens();
-      return { message: "Logged out locally" };
-    }
+  logout: async (): Promise<void> => {
+    clearTokens();
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
   },
 
   updateProfile: async (

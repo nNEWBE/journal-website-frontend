@@ -25,77 +25,48 @@ import {
   UserCheck,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
-import { CustomSelect } from "@/components/ui/custom-select";
-import { loginWithApi, getSession } from "@/lib/auth";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { loginUser, clearError } from "@/redux/features/auth/authSlice";
 import { FadeIn } from "@/components/layout/page-transition";
 
-const ROLE_OPTIONS = [
-  "Custom / Registered Email",
-  "Super Admin (Prof. Dr. Laila Rahman)",
-  "System Administrator (Md. Jamil Hossain)",
-  "Managing Editor (Prof. Saiful Islam)",
-  "Peer Reviewer (Dr. Salma Khatun)",
-  "Author / Submitter (Ayesha Siddique)",
-];
-
-const ROLE_EMAIL_MAP: Record<string, string> = {
-  "Custom / Registered Email": "",
-  "Super Admin (Prof. Dr. Laila Rahman)": "superadmin@gonouniversity.edu.bd",
-  "System Administrator (Md. Jamil Hossain)": "admin@gonouniversity.edu.bd",
-  "Managing Editor (Prof. Saiful Islam)": "editor@gonouniversity.edu.bd",
-  "Peer Reviewer (Dr. Salma Khatun)": "reviewer@gonouniversity.edu.bd",
-  "Author / Submitter (Ayesha Siddique)": "author@gonouniversity.edu.bd",
-};
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
 
-  const [selectedRole, setSelectedRole] = useState(ROLE_OPTIONS[0]);
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, isLoading, error: reduxError } = useAppSelector(
+    (state) => state.auth
+  );
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   // If already logged in, redirect straight to dashboard
   useEffect(() => {
-    if (getSession()) {
+    if (isAuthenticated) {
       router.push(redirect);
     }
-  }, [router, redirect]);
-
-  function handleRoleChange(role: string) {
-    setSelectedRole(role);
-    const mappedEmail = ROLE_EMAIL_MAP[role];
-    if (mappedEmail) {
-      setEmail(mappedEmail);
-      setPassword("demopass");
-    } else {
-      setEmail("");
-      setPassword("");
-    }
-    setError(null);
-  }
+  }, [isAuthenticated, router, redirect]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+    setLocalError(null);
+    dispatch(clearError());
 
-    try {
-      const userSession = await loginWithApi(email.trim(), password);
-      if (userSession) {
-        window.location.href = redirect;
-      }
-    } catch (err: any) {
-      setIsLoading(false);
-      setError(
-        err.message || "Invalid credentials. Please verify your email and password."
-      );
+    const resultAction = await dispatch(
+      loginUser({ email: email.trim(), password })
+    );
+
+    if (loginUser.fulfilled.match(resultAction)) {
+      window.location.href = redirect;
     }
   }
+
+  const displayError = localError || reduxError;
 
   return (
     <FadeIn delay={0.1} className="mx-auto max-w-4xl w-full border border-slate-300 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.12)]">
@@ -215,29 +186,17 @@ function LoginForm() {
             Sign In to Workspace
           </h1>
           <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
-            Select an academic role to auto-populate test credentials, or enter your registered university email.
+            Enter your registered institutional email address and password to access your workspace.
           </p>
 
-          {error && (
+          {displayError && (
             <div className="mt-5 flex items-start gap-2.5 bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-900 leading-relaxed animate-fade">
               <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span>{displayError}</span>
             </div>
           )}
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            {/* Academic Role Selector */}
-            <div>
-              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                Quick Role Auto-Fill
-              </label>
-              <CustomSelect
-                options={ROLE_OPTIONS}
-                value={selectedRole}
-                onChange={handleRoleChange}
-                className="w-full"
-              />
-            </div>
 
             {/* Email Field */}
             <div>
