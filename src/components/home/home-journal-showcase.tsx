@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowUpRight,
-  ArrowUpRight,
   BookOpen,
   CalendarDays,
   Check,

@@ -77,6 +77,16 @@
   border-radius: 0px !important;
 }
 
+/* Toast close button and loading spinner circular overrides */
+[data-sonner-toast] [data-close-button],
+[data-sonner-toaster] [data-close-button],
+[data-close-button],
+.animate-spin,
+.loading-spinner,
+[data-spinner] {
+  border-radius: 9999px !important;
+}
+
 /* ── Lenis Smooth Scrolling Styles ── */
 html.lenis,
 html.lenis body {

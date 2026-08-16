@@ -38,11 +38,11 @@ export function ArticlesFilterForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_14px_38px_rgba(11,18,61,0.07)]"
+      className="bg-white border border-slate-200/90 p-3 sm:p-4 shadow-2xs"
     >
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_190px_190px_auto] md:items-center">
-        <label className="flex min-h-[46px] items-center gap-3.5 rounded-xl border border-slate-200 bg-slate-50/70 px-4 transition-all focus-within:border-[color:var(--color-gb-blue)]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[color:var(--color-gb-blue)]/15">
-          <Search className="h-4.5 w-4.5 shrink-0 text-[color:var(--color-gb-blue)]" />
+        <label className="flex min-h-[46px] items-center gap-3 bg-slate-50 border border-slate-200 px-4 focus-within:border-[#1e40af] focus-within:bg-white transition-all">
+          <Search className="h-4 w-4 shrink-0 text-slate-400" />
           <span className="sr-only">Search the research archive</span>
           <input
             value={q}
@@ -72,10 +72,10 @@ export function ArticlesFilterForm({
 
         <button
           type="submit"
-          className="inline-flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] px-6 text-xs font-extrabold text-white shadow-xs transition-colors cursor-pointer focus:outline-none"
+          className="inline-flex min-h-[46px] shrink-0 items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] px-6 text-xs font-bold uppercase tracking-wider text-white shadow-2xs transition-colors cursor-pointer focus:outline-none"
         >
           <Search className="h-3.5 w-3.5" />
-          <span>Search articles</span>
+          <span>Search</span>
         </button>
       </div>
     </form>

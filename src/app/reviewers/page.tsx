@@ -1,11 +1,22 @@
+import { Metadata } from "next";
+import Link from "next/link";
 import {
+  ArrowUpRight,
+  Award,
   BadgeCheck,
   BookOpen,
+  CheckCircle2,
   ClipboardList,
+  Clock,
   Eye,
+  FileCheck2,
+  FileText,
   FlaskConical,
+  GraduationCap,
+  Landmark,
   Lock,
   Mail,
+  MapPin,
   Scale,
   ShieldCheck,
   Star,
@@ -14,447 +25,450 @@ import {
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
-import { HeroActionButton } from "@/components/ui/hero-action-button";
-import { CommitmentGridSection } from "@/components/ui/commitment-grid-section";
+import { FadeIn } from "@/components/layout/page-transition";
+import { ReviewersHero } from "@/components/reviewers/reviewers-hero";
 
-import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+export const metadata: Metadata = {
+  title: "Reviewer Guidelines & Evaluation Rubric — GB Journal of Research",
+  description:
+    "Explore reviewer expectations, evaluation rubric, confidentiality protocols, and COPE-aligned standards for peer reviewers at the Gono Bishwabidyalay Journal of Research.",
+};
 
-const stats = [
-  { value: "14", unit: "Days", label: "Review window" },
-  { value: "5", unit: "Criteria", label: "Evaluation dimensions" },
-  { value: "100%", unit: "Blind", label: "Double-blind process" },
-  { value: "COPE", unit: "Aligned", label: "Ethics framework" },
-];
-
-const principles = [
+const COVENANT_PRINCIPLES = [
   {
     number: "01",
     icon: UserCheck,
-    soft: "bg-blue-50",
-    text: "text-blue-700",
     title: "Availability & Conflict Check",
+    subtitle: "Pre-Review Declaration",
     description:
-      "Reviewers confirm subject expertise, absence of financial or personal conflict of interest, and full availability before manuscript files are unlocked.",
+      "Reviewers must confirm subject-matter expertise, absence of institutional or personal conflicts of interest, and availability to complete review within 14 days before manuscript files are unlocked.",
   },
   {
     number: "02",
     icon: FlaskConical,
-    soft: "bg-violet-50",
-    text: "text-violet-700",
-    title: "Scientific Rigor & Methodology",
+    title: "Methodological Soundness",
+    subtitle: "Scientific Rigor",
     description:
-      "Evaluate scientific soundness, experiment design, data integrity, statistical validity, and clarity of research findings against field standards.",
+      "Evaluate research hypotheses, experimental controls, data reproducibility, sampling validity, and statistical analysis against discipline-specific international standards.",
   },
   {
     number: "03",
     icon: Lock,
-    soft: "bg-slate-100",
-    text: "text-slate-700",
-    title: "Strict Confidentiality",
+    title: "Absolute Confidentiality",
+    subtitle: "Privileged Information",
     description:
-      "Manuscripts are confidential academic assets. Reviewers must not share, cite, or use any unpublished content from submitted manuscripts.",
+      "Manuscripts under review are privileged academic property. Reviewers must never distribute, quote, upload to generative AI, or appropriate unpublished concepts or data.",
   },
   {
     number: "04",
     icon: Scale,
-    soft: "bg-amber-50",
-    text: "text-amber-700",
-    title: "Conflict of Interest Disclosure",
+    title: "Objective Conflict Disclosure",
+    subtitle: "Unbiased Appraisal",
     description:
-      "Any personal, institutional, or financial relationship with the authors must be disclosed before a review assignment can proceed.",
+      "If a reviewer discovers the identity of the author during assessment or realizes a competing professional connection, they must immediately notify the editor and recuse themselves.",
   },
   {
     number: "05",
     icon: BookOpen,
-    soft: "bg-emerald-50",
-    text: "text-emerald-700",
-    title: "Constructive Feedback",
+    title: "Constructive & Actionable Feedback",
+    subtitle: "Scholarly Mentorship",
     description:
-      "Reports must provide clear, respectful, and actionable recommendations to help authors improve the manuscript—regardless of decision.",
+      "Review reports must be clear, respectful, and evidence-supported. Critique should pinpoint specific deficiencies and offer actionable suggestions to strengthen the work.",
   },
   {
     number: "06",
-    icon: BadgeCheck,
-    soft: "bg-rose-50",
-    text: "text-rose-700",
+    icon: ShieldCheck,
     title: "COPE Ethical Alignment",
+    subtitle: "Integrity Compliance",
     description:
-      "All reviews must align with Committee on Publication Ethics (COPE) guidelines for reviewer responsibilities and best-practice standards.",
+      "Assessments strictly comply with Committee on Publication Ethics (COPE) Ethical Guidelines for Peer Reviewers, upholding transparency, rigor, and mutual respect.",
   },
 ];
 
-const criteria = [
+const REVIEW_LIFECYCLE = [
+  {
+    step: "01",
+    stage: "Initial Invitation",
+    timeframe: "Day 0",
+    icon: Mail,
+    title: "Invitation & Abstract Assessment",
+    description:
+      "The Section Editor sends an invitation with the anonymized title, abstract, and review deadline. The reviewer decides whether the topic fits their core expertise.",
+  },
+  {
+    step: "02",
+    stage: "Formal Acceptance",
+    timeframe: "Within 48 Hours",
+    icon: UserCheck,
+    title: "Conflict & Commitment Declaration",
+    description:
+      "The reviewer accepts the invitation online, certifying zero conflict of interest and committing to the 14-day turnaround.",
+  },
+  {
+    step: "03",
+    stage: "Secure Examination",
+    timeframe: "Days 1–10",
+    icon: Eye,
+    title: "Double-Blind Manuscript Appraisal",
+    description:
+      "The full anonymized manuscript and supplementary datasets become accessible through the secure portal for thorough analysis.",
+  },
+  {
+    step: "04",
+    stage: "Rubric Submission",
+    timeframe: "By Day 14",
+    icon: ClipboardList,
+    title: "Structured Rubric & Recommendations",
+    description:
+      "The reviewer scores the 5 criteria, provides confidential comments to the editor, and submits itemized constructive feedback for the authors.",
+  },
+  {
+    step: "05",
+    stage: "Editorial Determination",
+    timeframe: "Post-Review",
+    icon: ShieldCheck,
+    title: "Editorial Synthesis & Certificate",
+    description:
+      "The Editor-in-Chief synthesizes referee reports to render the editorial verdict (Accept, Minor/Major Revision, or Reject) and issues an official Reviewer Certificate.",
+  },
+];
+
+const RUBRIC_CRITERIA = [
   {
     num: "01",
     icon: Star,
-    tone: "bg-amber-50 text-amber-700",
-    domain: "Originality & Contribution",
+    domain: "Originality & Scholarly Contribution",
     focus:
-      "Does the manuscript present novel research findings or a valuable synthesis of the field?",
-    scale: "1 – 5",
-    anchor: "Unoriginal → Outstanding",
+      "Does the manuscript present novel empirical findings, innovative theoretical insights, or a valuable critical synthesis that significantly advances the field?",
+    scale: "1 – 5 Scale",
+    anchor: "Marginal → Exceptional Impact",
   },
   {
     num: "02",
     icon: FlaskConical,
-    tone: "bg-violet-50 text-violet-700",
-    domain: "Methodological Rigor",
+    domain: "Methodological Rigor & Data Validity",
     focus:
-      "Are study protocols, sampling methods, and analytical tools sound and reproducible?",
-    scale: "1 – 5",
-    anchor: "Flawed → Exemplary",
+      "Are experimental protocols, sampling criteria, statistical analyses, and reproducibility documentation sound, robust, and appropriately controlled?",
+    scale: "1 – 5 Scale",
+    anchor: "Flawed → Highly Replicable",
   },
   {
     num: "03",
-    icon: BadgeCheck,
-    tone: "bg-emerald-50 text-emerald-700",
-    domain: "Ethical Compliance",
+    icon: ShieldCheck,
+    domain: "Ethical Compliance & Biosafety",
     focus:
-      "Are human/animal subject approvals, consent forms, and declarations provided?",
+      "Are institutional ethical approvals (IRB/Animal Welfare), informed consent, conflict of interest declarations, and funding disclosures verified and documented?",
     scale: "Pass / Fail",
-    anchor: "Flag for Editor",
+    anchor: "Mandatory Clearance",
   },
   {
     num: "04",
     icon: BookOpen,
-    tone: "bg-sky-50 text-sky-700",
-    domain: "Literature Context",
+    domain: "Literature Context & Critical Grounding",
     focus:
-      "Is prior research accurately cited, integrated, and adequately contextualized?",
-    scale: "1 – 5",
-    anchor: "Inadequate → Exhaustive",
+      "Is contemporary peer-reviewed literature comprehensively integrated, accurately cited, and fairly synthesized without selective omissions?",
+    scale: "1 – 5 Scale",
+    anchor: "Deficient → Masterfully Integrated",
   },
   {
     num: "05",
     icon: ClipboardList,
-    tone: "bg-slate-100 text-slate-700",
-    domain: "Structure & Readability",
+    domain: "Structure, Clarity & Data Presentation",
     focus:
-      "Are tables, figures, abstract, discussion, and conclusions logically formatted?",
-    scale: "1 – 5",
-    anchor: "Poor → Exceptional",
+      "Are figures, tables, supplementary data, and analytical arguments formatted clearly, logically organized, and written in precise academic language?",
+    scale: "1 – 5 Scale",
+    anchor: "Unclear → Exemplary Presentation",
   },
 ];
 
-const timeline = [
+const RECOGNITION_BENEFITS = [
   {
-    icon: Mail,
-    step: "01",
-    stage: "Invitation only",
-    title: "Invitation",
-    desc: "The editor shares the manuscript title and abstract before any review files are released.",
+    icon: Award,
+    title: "Official Reviewer Certificate",
+    description:
+      "Every completed peer review is authenticated with an official, verifiable digital certificate issued by the Gono Bishwabidyalay Editorial Secretariat.",
   },
   {
-    icon: UserCheck,
-    step: "02",
-    stage: "Within 48 hours",
-    title: "Acceptance",
-    desc: "The reviewer confirms subject expertise, availability, and the absence of a competing interest.",
+    icon: Users,
+    title: "Editorial Board Progression",
+    description:
+      "Outstanding and consistently punctual reviewers are given first consideration for appointment as Section Editors and Editorial Board members.",
   },
   {
-    icon: Eye,
-    step: "03",
-    stage: "After acceptance",
-    title: "Secure access",
-    desc: "The anonymized manuscript and supporting files become available to the confirmed reviewer.",
+    icon: FileText,
+    title: "Annual Index Acknowledgement",
+    description:
+      "Reviewers are publicly acknowledged in the annual journal index volume and on the journal’s permanent academic registry portal.",
   },
   {
-    icon: ClipboardList,
-    step: "04",
-    stage: "Within 14 days",
-    title: "Structured review",
-    desc: "The reviewer evaluates the work across five defined scholarly criteria and submits a recommendation.",
-  },
-  {
-    icon: ShieldCheck,
-    step: "05",
-    stage: "Editor-led",
-    title: "Editorial decision",
-    desc: "The Editor-in-Chief considers the reports, evidence, and revisions before recording the final outcome.",
+    icon: ArrowUpRight,
+    title: "Fast-Track Author Priority",
+    description:
+      "Active reviewers receive priority processing and fee waivers on their own subsequent research submissions to the journal.",
   },
 ];
-
-import { PageHeroBanner } from "@/components/layout/page-hero-banner";
 
 export default function ReviewersPage() {
   return (
     <PageShell>
-      {/* Hero */}
-      <PageHeroBanner
-        badgeLabel="Peer Review Guidance"
-        badgeIcon={Eye}
-        title={
-          <>
-            Reviewer responsibilities{" "}
-            <span className="bg-gradient-to-r from-amber-300 to-amber-400 bg-clip-text text-transparent">
-              &amp; evaluation standards
-            </span>
-          </>
-        }
-        description="Guidance, assessment criteria, confidentiality expectations, and ethical responsibilities for invited peer reviewers at the Gono Bishwabidyalay Journal of Research."
-        tags={[
-          { label: "Confidential review", icon: ShieldCheck },
-          { label: "Structured evaluation", icon: ClipboardList },
-          { label: "Conflict disclosure", icon: Scale },
-          { label: "COPE-aligned ethics", icon: BadgeCheck },
-        ]}
-        stats={stats.map((s) => ({
-          val: `${s.value}${s.unit || ""}`,
-          label: s.label,
-        }))}
-      />
+      {/* ── 1. Hero Section ── */}
+      <FadeIn delay={0.05}>
+        <ReviewersHero />
+      </FadeIn>
 
-      {/* Core Principles */}
-      <CommitmentGridSection
-        eyebrow="Reviewer Covenant"
-        title="Six commitments behind every independent review"
-        description="Reviewers protect unpublished work, assess evidence impartially, disclose competing interests, and give authors clear, constructive guidance."
-        items={principles}
-        columns={3}
-        bgClass="bg-white"
-        footer={
-          <>
-            <p className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
-              <ShieldCheck
-                className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]"
-                aria-hidden="true"
-              />
-              Access to a manuscript is granted solely for confidential
-              scholarly evaluation.
+      {/* ── 2. The Six Reviewer Commitments (Covenant) ── */}
+      <section
+        aria-label="Reviewer Covenant"
+        className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
+      >
+        <div className="container-x">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+                REVIEWER COVENANT
+              </p>
+              <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
+                Six Commitments Behind Every Peer Appraisal
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md">
+              Reviewers safeguard unpublished science, assess evidence objectively, and deliver constructive feedback to advance scholarly discovery.
             </p>
-            <span className="inline-flex w-fit items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--color-gb-blue)]">
-              <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              COPE-aligned practice
-            </span>
-          </>
-        }
-      />
-
-      {/* Review Timeline */}
-      <section className="bg-white border-t border-slate-100 py-14 md:py-18">
-        <div className="container-x grid gap-10 lg:grid-cols-[0.68fr_1.32fr] lg:items-start">
-          <div className="lg:sticky lg:top-24">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[color:var(--color-gb-blue)]">
-              Review process
-            </p>
-            <h2 className="mt-2 max-w-md font-academic text-3xl font-bold leading-tight tracking-[-0.03em] text-[color:var(--color-gb-blue-deep)] md:text-4xl">
-              The peer review lifecycle
-            </h2>
-            <p className="mt-4 max-w-md text-sm leading-7 text-slate-500">
-              A controlled pathway protects reviewer independence while keeping
-              assessment timely, confidential, and accountable.
-            </p>
-
-            <dl className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              {[
-                {
-                  icon: UserCheck,
-                  value: "48 hours",
-                  label: "Invitation response",
-                },
-                {
-                  icon: Timer,
-                  value: "14 days",
-                  label: "Standard review window",
-                },
-                {
-                  icon: ClipboardList,
-                  value: "5 criteria",
-                  label: "Structured evaluation",
-                },
-              ].map(({ icon: Icon, value, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <dt className="text-xs font-black text-[color:var(--color-gb-blue-deep)]">
-                      {value}
-                    </dt>
-                    <dd className="mt-0.5 text-[10px] font-semibold text-slate-400">
-                      {label}
-                    </dd>
-                  </div>
-                </div>
-              ))}
-            </dl>
           </div>
 
-          <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(17,27,82,0.06)]">
-            <div className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-gb-gold-dark)]">
-                  Reviewer pathway
-                </p>
-                <h3 className="mt-1 text-sm font-black text-[color:var(--color-gb-blue-deep)]">
-                  From invitation to editorial outcome
-                </h3>
-              </div>
-              <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-[color:var(--color-gb-blue)]/10 bg-[color:var(--color-gb-blue-soft)] px-3 py-2 text-[10px] font-extrabold text-[color:var(--color-gb-blue)]">
-                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                Double-blind review
-              </span>
-            </div>
-
-            <ol className="divide-y divide-slate-100">
-              {timeline.map((step) => {
-                const Icon = step.icon;
-                return (
-                  <li
-                    key={step.step}
-                    className="group grid gap-4 p-5 transition-colors hover:bg-[#f9faff] sm:grid-cols-[44px_minmax(0,1fr)_auto] sm:items-center md:px-6"
-                  >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-[color:var(--color-gb-blue)] shadow-sm transition-colors group-hover:border-[color:var(--color-gb-blue)]/20 group-hover:bg-[color:var(--color-gb-blue-soft)]">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[9px] font-black text-[color:var(--color-gb-blue)]">
-                          {step.step}
-                        </span>
-                        <span className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 sm:hidden">
-                          {step.stage}
-                        </span>
-                      </div>
-                      <h3 className="mt-1 text-sm font-black text-[color:var(--color-gb-blue-deep)]">
-                        {step.title}
-                      </h3>
-                      <p className="mt-1.5 max-w-xl text-xs leading-6 text-slate-500">
-                        {step.desc}
-                      </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+            {COVENANT_PRINCIPLES.map((covenant) => {
+              const Icon = covenant.icon;
+              return (
+                <div
+                  key={covenant.number}
+                  className="bg-white border border-slate-200/90 p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
+                >
+                  <div>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <span className="font-mono text-xs font-bold text-[#1e40af]">
+                        {covenant.number}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {covenant.subtitle}
+                      </span>
                     </div>
-                    <span className="hidden rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 sm:inline-flex">
-                      {step.stage}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
 
-            <div className="grid gap-3 border-t border-slate-200 bg-slate-50/70 px-5 py-4 text-xs font-semibold text-slate-500 sm:grid-cols-2 md:px-6">
-              <span className="inline-flex items-center gap-2">
-                <ShieldCheck
-                  className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]"
-                  aria-hidden="true"
-                />
-                Confidentiality applies at every stage
-              </span>
-              <span className="inline-flex items-center gap-2 sm:justify-self-end">
-                <Timer
-                  className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]"
-                  aria-hidden="true"
-                />
-                Standard review window: 14 days
-              </span>
-            </div>
+                    <div className="mt-4 flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-slate-100 text-[#1e40af]">
+                        <Icon className="h-4.5 w-4.5" />
+                      </span>
+                      <h3 className="font-academic text-base sm:text-lg font-medium text-slate-950 leading-snug">
+                        {covenant.title}
+                      </h3>
+                    </div>
+
+                    <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                      {covenant.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>COPE Compliance Enforced</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Evaluation Rubric */}
-      <section className="bg-white py-12 md:py-16 border-t border-slate-100">
-        <div className="container-x">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-gb-gold-dark)] border border-amber-400/20">
-              Evaluation Framework
-            </span>
-            <h2 className="mt-3 font-academic text-2xl font-bold tracking-[-0.025em] text-[color:var(--color-gb-blue-deep)] md:text-3xl">
-              A formal rubric for scholarly quality
-            </h2>
-          </div>
+      {/* ── 3. The 5-Stage Peer Review Lifecycle ── */}
+      <section
+        aria-label="Peer Review Lifecycle"
+        className="py-14 sm:py-20 bg-white border-b border-slate-200/80"
+      >
+        <div className="container-x grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-10 lg:gap-14 items-start">
+          {/* Left Column: Timeline Overview & Metrics */}
+          <div className="lg:sticky lg:top-24 space-y-6">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+                REVIEW WORKFLOW
+              </p>
+              <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.25rem] font-medium tracking-[-0.02em] text-slate-950">
+                The 5-Stage Review Lifecycle
+              </h2>
+              <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                A structured, timed workflow ensures unbiased peer appraisal while maintaining predictable turnaround times for authors and editors.
+              </p>
+            </div>
 
-          <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
-            {/* Top Navy Header Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[color:var(--color-gb-blue-deep)] p-5 md:p-6 text-white">
-              <div className="flex items-center gap-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-amber-300">
-                  <ClipboardList className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-amber-300">
-                    Evaluation Rubric
-                  </p>
-                  <h3 className="mt-0.5 font-academic text-base font-bold text-white">
-                    Five criteria, one accountable recommendation
-                  </h3>
+            <div className="bg-slate-50/80 border border-slate-200/90 divide-y divide-slate-200/80 text-xs">
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className="h-4 w-4 text-[#1e40af]" />
+                  <span className="font-medium text-slate-700">Invitation Response</span>
                 </div>
+                <span className="font-mono font-bold text-slate-900">Within 48h</span>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3 md:border-t-0 md:pt-0">
-                {[
-                  { value: "1", label: "Limited" },
-                  { value: "3", label: "Sound" },
-                  { value: "5", label: "Exemplary" },
-                  { value: "P/F", label: "Ethics" },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1.5 text-center"
-                  >
-                    <span className="font-mono text-xs font-bold text-amber-300">
-                      {item.value}
-                    </span>
-                    <span className="text-[10px] font-medium text-white/70">
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Timer className="h-4 w-4 text-[#1e40af]" />
+                  <span className="font-medium text-slate-700">Standard Review Window</span>
+                </div>
+                <span className="font-mono font-bold text-[#1e40af]">14 Days</span>
+              </div>
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <ClipboardList className="h-4 w-4 text-[#1e40af]" />
+                  <span className="font-medium text-slate-700">Evaluation Criteria</span>
+                </div>
+                <span className="font-mono font-bold text-slate-900">5 Dimensions</span>
               </div>
             </div>
 
-            {/* Criteria Table */}
+            <div className="p-4 bg-blue-50/60 border border-blue-100 text-xs text-[#1e40af] leading-relaxed">
+              <span className="font-bold block mb-1">Double-Blind Guarantee:</span>
+              Reviewers never see author names, affiliations, or acknowledgements. Author copy excludes all reviewer identities.
+            </div>
+          </div>
+
+          {/* Right Column: 5 Sequential Timeline Cards */}
+          <div className="space-y-4">
+            {REVIEW_LIFECYCLE.map((phase) => {
+              const Icon = phase.icon;
+              return (
+                <div
+                  key={phase.step}
+                  className="bg-white border border-slate-200/90 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-start gap-5 shadow-2xs hover:border-slate-300 transition-all"
+                >
+                  <div className="flex sm:flex-col items-center sm:items-center justify-between sm:justify-start gap-2 shrink-0">
+                    <span className="flex h-11 w-11 items-center justify-center bg-[#0b1b3d] text-white">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="font-mono text-xs font-bold text-slate-400">
+                      Step {phase.step}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                      <h3 className="font-academic text-base sm:text-lg font-medium text-slate-950">
+                        {phase.title}
+                      </h3>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10.5px] font-mono font-semibold border border-slate-200/80">
+                        {phase.timeframe}
+                      </span>
+                    </div>
+                    <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {phase.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. Formal 5-Dimension Evaluation Rubric ── */}
+      <section
+        id="rubric"
+        aria-label="Evaluation Rubric"
+        className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
+      >
+        <div className="container-x">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+                EVALUATION RUBRIC
+              </p>
+              <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
+                Five Structured Assessment Dimensions
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md">
+              Each manuscript is rated across five standardized criteria accompanied by itemized written feedback and recommendations.
+            </p>
+          </div>
+
+          {/* Rubric Table Container */}
+          <div className="mt-10 bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
+            <div className="bg-[#0b1b3d] text-white p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 bg-white/10 flex items-center justify-center text-amber-300">
+                  <ClipboardList className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                    STANDARDIZED SCORING
+                  </p>
+                  <p className="font-academic text-base font-medium text-white">
+                    Objective Peer Review Scorecard
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 bg-white/10 text-white text-xs font-mono">
+                  Score 1: Limited
+                </span>
+                <span className="px-3 py-1 bg-white/10 text-white text-xs font-mono">
+                  Score 3: Sound
+                </span>
+                <span className="px-3 py-1 bg-white/10 text-amber-300 text-xs font-mono font-bold">
+                  Score 5: Exemplary
+                </span>
+                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold">
+                  Ethics: Pass / Fail
+                </span>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-xs">
+              <table className="w-full min-w-[700px] text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                    <th className="px-6 py-3.5">Evaluation Criterion</th>
-                    <th className="px-5 py-3.5">Key Assessment Focus</th>
-                    <th className="px-6 py-3.5 text-right">Rating Standard</th>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-6 py-4 w-72">Evaluation Dimension</th>
+                    <th className="px-6 py-4">Assessment Focus & Guidelines</th>
+                    <th className="px-6 py-4 text-right w-44">Rating Scale</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {criteria.map((row) => {
-                    const Icon = row.icon;
-                    const isEthics = row.scale === "Pass / Fail";
-
+                  {RUBRIC_CRITERIA.map((criterion) => {
+                    const Icon = criterion.icon;
+                    const isEthics = criterion.scale === "Pass / Fail";
                     return (
                       <tr
-                        key={row.num}
-                        className="group transition-colors hover:bg-slate-50/60"
+                        key={criterion.num}
+                        className="hover:bg-slate-50/70 transition-colors"
                       >
-                        <td className="px-6 py-4.5">
-                          <div className="flex items-center gap-3.5">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition-colors group-hover:bg-[color:var(--color-gb-blue-soft)] group-hover:text-[color:var(--color-gb-blue)]">
-                              <Icon className="h-4 w-4" aria-hidden="true" />
+                        <td className="px-6 py-5 align-top">
+                          <div className="flex items-start gap-3">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-slate-100 text-[#1e40af]">
+                              <Icon className="h-4 w-4" />
                             </span>
                             <div>
-                              <span className="font-mono text-[10px] font-extrabold text-slate-400">
-                                {row.num}
+                              <span className="font-mono text-[10px] font-bold text-slate-400">
+                                Criterion {criterion.num}
                               </span>
-                              <h4 className="font-academic text-xs font-bold text-[color:var(--color-gb-blue-deep)]">
-                                {row.domain}
+                              <h4 className="font-academic text-sm font-medium text-slate-950 mt-0.5">
+                                {criterion.domain}
                               </h4>
                             </div>
                           </div>
                         </td>
-                        <td className="max-w-xl px-5 py-4.5 text-xs leading-relaxed text-slate-600">
-                          {row.focus}
+                        <td className="px-6 py-5 align-top text-xs leading-relaxed text-slate-600">
+                          {criterion.focus}
                         </td>
-                        <td className="px-6 py-4.5 text-right whitespace-nowrap">
+                        <td className="px-6 py-5 align-top text-right whitespace-nowrap">
                           <span
-                            className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${
+                            className={`inline-block px-2.5 py-1 text-[11px] font-bold font-mono ${
                               isEthics
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
-                                : "bg-slate-100 text-slate-700 border border-slate-200/60"
+                                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                : "bg-blue-50 text-[#1e40af] border border-blue-200"
                             }`}
                           >
-                            {row.scale}
+                            {criterion.scale}
                           </span>
-                          <p className="mt-1 text-[10px] font-medium text-slate-400">
-                            {row.anchor}
+                          <p className="mt-1 text-[10.5px] font-medium text-slate-500">
+                            {criterion.anchor}
                           </p>
                         </td>
                       </tr>
@@ -464,67 +478,185 @@ export default function ReviewersPage() {
               </table>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-5 flex flex-col gap-2.5 text-xs font-medium text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-            <span className="inline-flex items-center gap-2">
-              <ShieldCheck
-                className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]"
-                aria-hidden="true"
-              />
-              Evidence is assessed independently of author identity
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <ClipboardList
-                className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]"
-                aria-hidden="true"
-              />
-              Written analysis accompanies every rating
-            </span>
+      {/* ── 5. Reviewer Recognition & Accreditation Benefits ── */}
+      <section
+        aria-label="Reviewer Recognition and Benefits"
+        className="py-14 sm:py-20 bg-white border-b border-slate-200/80"
+      >
+        <div className="container-x">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+                SCHOLARLY RECOGNITION
+              </p>
+              <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
+                Reviewer Accreditation & Community Benefits
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md">
+              We value the time and expertise of our reviewers with authenticated credentials, annual public recognition, and priority consideration.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+            {RECOGNITION_BENEFITS.map((benefit) => {
+              const Icon = benefit.icon;
+              return (
+                <div
+                  key={benefit.title}
+                  className="bg-slate-50/70 border border-slate-200/90 p-6 flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="flex h-11 w-11 items-center justify-center bg-[#0b1b3d] text-white mb-5">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="font-academic text-base font-medium text-slate-950 leading-snug">
+                      {benefit.title}
+                    </h3>
+                    <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                      {benefit.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Join CTA */}
-      <section className="container-x pb-16 md:pb-20">
-        <div className="relative overflow-hidden rounded-3xl bg-[color:var(--color-gb-blue-deep)] p-8 md:p-12">
-          <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.04]" />
-          <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[color:var(--color-gb-gold)] opacity-[0.12] blur-[80px]" />
-          <div className="pointer-events-none absolute -bottom-10 -left-10 h-60 w-60 rounded-full bg-[color:var(--color-gb-blue)] opacity-[0.2] blur-[60px]" />
+      {/* ── 6. Join the Expert Reviewer Panel & Secretariat CTA ── */}
+      <section
+        aria-label="Join Reviewer Panel and Contact"
+        className="py-14 sm:py-20 bg-white"
+      >
+        <div className="container-x">
+          <div className="relative overflow-hidden bg-[#060e22] text-white border border-slate-800 shadow-[0_20px_50px_rgba(3,8,22,0.45)] p-8 sm:p-12 lg:p-14">
+            {/* Top gold-to-blue accent line */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-blue-500 to-transparent" />
 
-          <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-xl">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-400">
-                <Users className="h-3 w-3" />
-                Reviewer Network
-              </span>
-              <h3 className="mt-4 font-academic text-2xl font-bold text-white md:text-3xl">
-                Join our Expert<br />Peer Review Panel
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-white/55">
-                We invite qualified researchers holding a PhD or senior academic rank to join our reviewer panel across
-                public health, pharmacy, law, agriculture, and technology disciplines.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                {["PhD or above", "Domain expertise", "Active researcher", "COPE commitment"].map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-bold text-white/60">
-                    <Star className="h-2.5 w-2.5 text-amber-400" />
-                    {tag}
+            {/* Ambient background glow */}
+            <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
+            <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-amber-500/10 blur-[90px]" />
+
+            <div className="relative grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-14 items-center">
+              {/* Left Column: Reviewer Recruitment */}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/10 border border-amber-400/25 text-amber-300 text-[10.5px] font-bold uppercase tracking-[0.18em]">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>JOIN THE REVIEWER PANEL</span>
+                </div>
+
+                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.025em] text-white leading-[1.15]">
+                  Apply to Join Our Expert Referee Network
+                </h2>
+
+                <p className="mt-4 text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
+                  We welcome qualified researchers holding a doctoral degree (PhD), clinical fellowship, or senior academic rank with an active publication record in health, pharmacy, agriculture, law, computing, or social sciences.
+                </p>
+
+                {/* Eligibility Badges */}
+                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
+                    <GraduationCap className="h-3.5 w-3.5 text-amber-300" />
+                    PhD / Senior Academic Rank
                   </span>
-                ))}
-              </div>
-            </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
+                    <FileCheck2 className="h-3.5 w-3.5 text-blue-400" />
+                    Active Publishing Record
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    COPE Ethics Commitment
+                  </span>
+                </div>
 
-            <div className="flex flex-col items-start gap-3 md:items-end md:text-right">
-              <HeroActionButton
-                href="mailto:journal@gonouniversity.edu.bd?subject=Reviewer%20Application"
-                variant="primary"
-                icon={Mail}
-              >
-                Apply to Review
-              </HeroActionButton>
-              <p className="text-[10px] font-semibold text-white/35">
-                Responses within 3 business days
-              </p>
+                {/* Primary Actions */}
+                <div className="mt-8 flex flex-wrap items-center gap-3.5">
+                  <a
+                    href="mailto:editorial@gonobishwabidyalay.edu.bd?subject=Reviewer%20Application%20GB%20Journal"
+                    className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                  >
+                    <span>Submit Reviewer Application</span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </a>
+                  <Link
+                    href="/editorial-board"
+                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors"
+                  >
+                    <span>Editorial Board</span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right Column: Editorial Secretariat Contact Card */}
+              <div className="bg-white/[0.05] border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
+                <div>
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">
+                      EDITORIAL SECRETARIAT
+                    </p>
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                      Reviewer Desk
+                    </span>
+                  </div>
+
+                  <h3 className="mt-3 font-academic text-xl font-medium text-white">
+                    Reviewer Inquiries & Support
+                  </h3>
+                  <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                    Need assistance with manuscript access, rubric scoring, or timeline extension requests? Reach our editorial team directly.
+                  </p>
+
+                  <div className="mt-5 space-y-3.5 border-t border-white/10 pt-4 text-xs text-slate-200">
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Direct Email</p>
+                        <a
+                          href="mailto:editorial@gonobishwabidyalay.edu.bd"
+                          className="text-xs text-white hover:text-amber-300 underline mt-0.5 block transition-colors"
+                        >
+                          editorial@gonobishwabidyalay.edu.bd
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Secretariat Office</p>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          Gono Bishwabidyalay, Nolam, Savar, Dhaka 1344, Bangladesh
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Turnaround Standard</p>
+                        <p className="text-xs text-emerald-300 mt-0.5">
+                          Reviewer support desk responds within 24–48 hours
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/10">
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 uppercase tracking-wider transition-colors"
+                  >
+                    <span>Contact Editorial Secretariat</span>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

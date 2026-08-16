@@ -827,11 +827,11 @@ export function DashboardWorkspace({
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f5f7fb]">
+    <div className="flex min-h-screen bg-[#f5f7fb] w-full">
       {/* Sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex shrink-0 flex-col bg-[color:var(--color-gb-blue-dark)] overflow-y-auto scrollbar-none transition-all duration-300 ease-in-out",
+          "hidden lg:flex shrink-0 flex-col bg-[color:var(--color-gb-blue-dark)] sticky top-0 h-screen overflow-y-auto scrollbar-none transition-all duration-300 ease-in-out z-30",
           isSidebarCollapsed ? "w-[64px]" : "w-[240px]"
         )}
       >
@@ -1057,8 +1057,8 @@ export function DashboardWorkspace({
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        <header className="flex h-12 shrink-0 items-center justify-between border-b border-[color:var(--color-gb-border)] bg-white px-4 shadow-sm">
+      <div className="flex flex-1 flex-col min-w-0 min-h-screen">
+        <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center justify-between border-b border-[color:var(--color-gb-border)] bg-white/95 backdrop-blur-md px-4 shadow-xs">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -1113,7 +1113,7 @@ export function DashboardWorkspace({
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {pathname.includes("/submissions/new") ? (
             children
           ) : (

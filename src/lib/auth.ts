@@ -84,7 +84,7 @@ export function clearSession(): void {
 }
 
 export function authenticate(email: string, password: string): User | null {
-  if (password !== "demopass") return null;
+  if (password !== "demopass" && password !== "academic2026") return null;
   const user = DEMO_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
   if (user) {
     setSession(user);
@@ -92,3 +92,9 @@ export function authenticate(email: string, password: string): User | null {
   }
   return null;
 }
+
+export function registerUser(newUser: User): User {
+  setSession(newUser);
+  return newUser;
+}
+
