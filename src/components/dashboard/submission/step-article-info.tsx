@@ -2,7 +2,7 @@
 
 import { CustomSelect } from "@/components/ui/custom-select";
 import { articleTypes, topics } from "@/lib/data";
-import { ClipboardCheck, Eye, FileText, FlaskConical, Library, Mail, MessageSquareText, PenLine } from "lucide-react";
+import { ClipboardCheck, Eye, FileText, FlaskConical, Library, Mail, MessageSquareText, PenLine, Scale } from "lucide-react";
 
 interface StepArticleInfoProps {
   form: {
@@ -23,6 +23,7 @@ const formatIcons: Record<string, any> = {
   Perspective: Eye,
   Editorial: PenLine,
   Letter: Mail,
+  "Policy Brief": Scale,
 };
 
 const formatDescriptions: Record<string, string> = {
@@ -40,6 +41,8 @@ const formatDescriptions: Record<string, string> = {
     "Authoritative editorial commentary commissioned or written on scholarly directions. (1,000–2,500 words)",
   Letter:
     "Focused scholarly correspondence responding to recently published articles or debates. (800–1,500 words)",
+  "Policy Brief":
+    "Action-oriented analysis translating academic research into policy recommendations. (2,000–4,000 words)",
 };
 
 export function StepArticleInfo({ form, onChange }: StepArticleInfoProps) {

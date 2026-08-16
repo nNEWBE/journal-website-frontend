@@ -82,6 +82,7 @@ export const articleTypes = [
   "Perspective",
   "Editorial",
   "Letter",
+  "Policy Brief",
 ];
 
 export const articles: Article[] = [
@@ -383,30 +384,42 @@ export type BoardMember = {
 
 export const boardMembers: BoardMember[] = [
   {
+    id: "board-1",
     name: "Prof. Dr. Laila Rahman",
     role: "Editor-in-Chief",
     unit: "Gono Bishwabidyalay",
     expertise: "Public health, community medicine",
+    institution: "Gono Bishwabidyalay",
+    title: "Professor of Community Medicine",
     image: "/images/editor_chief.png",
   },
   {
+    id: "board-2",
     name: "Prof. Saiful Islam",
     role: "Managing Editor",
     unit: "Department of Pharmacy",
     expertise: "Pharmacy education, stewardship",
+    institution: "Gono Bishwabidyalay",
+    title: "Professor of Pharmacy",
     image: "/images/managing_editor.png",
   },
   {
+    id: "board-3",
     name: "Dr. Rehana Akter",
     role: "Section Editor",
     unit: "Department of Law",
     expertise: "Governance, access to justice",
+    institution: "Gono Bishwabidyalay",
+    title: "Associate Professor of Law",
   },
   {
+    id: "board-4",
     name: "Dr. Mahbub Alam",
     role: "Section Editor",
     unit: "Faculty of Agriculture",
     expertise: "Climate adaptation, rural systems",
+    institution: "Gono Bishwabidyalay",
+    title: "Associate Professor of Agriculture",
   },
 ];
 

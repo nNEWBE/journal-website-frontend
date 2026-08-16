@@ -24,8 +24,8 @@ import {
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
-import { ProcessSteps } from "@/components/ui/process-steps";
-import type { ProcessStep } from "@/components/ui/process-steps";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { ProcessSteps, type ProcessStep } from "@/components/ui/process-steps";
 import { PublishingCharterSection } from "@/components/ui/publishing-charter-section";
 import { articleTypes, policies } from "@/lib/data";
 
@@ -37,6 +37,7 @@ const articleTypeDetails = {
   Perspective:          { icon: Eye,                 description: "Evidence-informed interpretation of an important academic question."            },
   Editorial:            { icon: PenLine,             description: "Authoritative commentary on policy, practice, or scholarly direction."         },
   Letter:               { icon: Mail,                description: "Focused correspondence responding to published research or debate."             },
+  "Policy Brief":       { icon: Scale,               description: "Actionable analysis translating academic research into policy recommendations." },
 } as const;
 
 const preparationItems = [
@@ -52,43 +53,28 @@ const authorProcessSteps: ProcessStep[] = [
   {
     number: "01",
     icon: "file",
-    title: "Prepare",
-    description: "Choose the article type and complete every required file and declaration.",
+    title: "Manuscript Preparation & Submission",
+    description: "Prepare your manuscript according to guidelines and submit all files and declarations online.",
   },
   {
     number: "02",
-    icon: "search",
-    title: "Submit",
-    description: "Enter manuscript metadata, upload files, and confirm the submission.",
+    icon: "shield",
+    title: "Editorial Screening & Pre-Check",
+    description: "The editorial office conducts plagiarism checks, scope verification, and ethics compliance audits.",
   },
   {
     number: "03",
     icon: "users",
-    title: "Peer review",
-    description: "Track screening, double-blind peer assessment, and reviewer evaluation.",
+    title: "Double-Blind Peer Review",
+    description: "Independent peer reviewers evaluate scholarly rigor, methodologies, and original contributions.",
   },
   {
     number: "04",
-    icon: "clipboard",
-    title: "Revision",
-    description: "Address reviewer recommendations and upload revised manuscript files.",
-  },
-  {
-    number: "05",
     icon: "book",
-    title: "Publish",
-    description: "Approved work receives a DOI, final proofing, and global open-access publication.",
+    title: "Final Decision & Publication",
+    description: "Accepted manuscripts undergo copyediting, proofing, DOI assignment, and open-access publication.",
   },
 ];
-
-const stepColors = [
-  { ring: "ring-[color:var(--color-gb-blue)]",    bg: "bg-[color:var(--color-gb-blue-soft)]",     text: "text-[color:var(--color-gb-blue)]"      },
-  { ring: "ring-amber-400",                        bg: "bg-amber-50",                              text: "text-amber-600"                          },
-  { ring: "ring-violet-500",                       bg: "bg-violet-50",                             text: "text-violet-600"                         },
-  { ring: "ring-emerald-500",                      bg: "bg-emerald-50",                            text: "text-emerald-600"                        },
-];
-
-import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 
 export default function AuthorsPage() {
   return (
@@ -99,90 +85,79 @@ export default function AuthorsPage() {
         <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-[color:var(--color-gb-blue)] opacity-[0.13] blur-[90px]" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-[280px] w-[280px] rounded-full bg-[color:var(--color-gb-gold)] opacity-[0.07] blur-[80px]" />
 
-        <div className="container-x relative grid gap-12 py-16 md:py-20 lg:grid-cols-[1fr_380px] lg:items-center lg:py-24">
-          {/* Left */}
-          <FadeIn delay={0.1} className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/60 backdrop-blur-sm">
-              <PenLine className="h-3.5 w-3.5 text-amber-300" />
-              For Authors
+        <div className="container-x relative py-14 md:py-20">
+          <FadeIn>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
+              <Send className="h-3 w-3" />
+              Author guidelines & submission
             </span>
-            <h1 className="mt-5 font-academic text-4xl font-bold leading-[1.07] tracking-[-0.03em] text-white md:text-5xl lg:text-[3.4rem]">
-              Prepare your manuscript<br />
-              <span className="bg-gradient-to-r from-amber-300 to-amber-400 bg-clip-text text-transparent">
-                with confidence
-              </span>
+            <h1 className="mt-3.5 max-w-2xl font-academic text-3xl font-bold tracking-tight text-white md:text-5xl">
+              Publish your research with Gono Bishwabidyalay
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-white/55">
-              Follow clear requirements for manuscript structure, ethical declarations, supporting files,
-              and double-blind peer review before beginning your submission.
+            <p className="mt-3 max-w-xl text-xs leading-6 text-white/65 md:text-sm md:leading-7">
+              A transparent, peer-reviewed, open-access home for research across sciences, health, social studies, and humanities.
             </p>
+          </FadeIn>
 
+          <FadeIn delay={0.15}>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/dashboard/submissions/new"
-                className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-white px-6 text-sm font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-sm transition-all hover:bg-amber-50 hover:-translate-y-0.5 hover:shadow-md"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-lg transition-all hover:bg-amber-50 hover:shadow-xl active:scale-[0.98]"
               >
-                Start a submission
-                <Send className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/policies"
-                className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-white/20 bg-white/[0.07] px-6 text-sm font-extrabold text-white backdrop-blur-sm transition-all hover:bg-white/[0.12] hover:-translate-y-0.5"
-              >
-                Review journal policies
-                <Scale className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center gap-5 border-t border-white/10 pt-6 text-[11px] font-bold text-white/50">
-              <span className="inline-flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-300" />
-                Double-blind review
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <Globe2 className="h-3.5 w-3.5 text-amber-300" />
-                Open-access publishing
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <ClipboardCheck className="h-3.5 w-3.5 text-amber-300" />
-                Trackable workflow
-              </span>
-            </div>
-          </FadeIn>
-
-          {/* Right: checklist card */}
-          <FadeIn delay={0.2} direction="left" className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.05] shadow-[0_28px_70px_rgba(0,0,0,0.28)] backdrop-blur-md">
-            <div className="border-b border-white/10 px-6 py-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-300">Submission brief</p>
-              <h2 className="mt-1 text-sm font-black text-white">Four essentials before upload</h2>
-            </div>
-            <div className="divide-y divide-white/[0.07] px-6">
-              {[
-                "Select the correct manuscript type",
-                "Prepare a blinded review document",
-                "Confirm authorship and contribution roles",
-                "Complete ethics and funding declarations",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-3 py-4 text-[11px] font-semibold text-white/65">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                  {item}
-                </div>
-              ))}
-            </div>
-            <div className="px-6 pb-6 pt-4">
-              <Link
-                href="/dashboard/submissions/new"
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-extrabold text-[color:var(--color-gb-blue-deep)] transition-all hover:bg-amber-50"
-              >
-                Open submission form
+                Submit your manuscript
                 <ArrowRight className="h-4 w-4" />
               </Link>
+              <a
+                href="#guidelines"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 text-sm font-bold text-white backdrop-blur-xs transition-all hover:bg-white/20"
+              >
+                Read author guidelines
+              </a>
             </div>
           </FadeIn>
         </div>
       </section>
 
-      {/* Article Types */}
+      {/* Quick overview grid */}
+      <section className="border-b border-slate-200/80 bg-slate-50/60 py-10">
+        <div className="container-x grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: Globe2,
+              title: "Open access",
+              desc: "Immediate, free access to all published articles worldwide under CC BY 4.0 license.",
+            },
+            {
+              icon: Users,
+              title: "Double-blind review",
+              desc: "Independent peer assessment ensuring rigor, fairness, and constructive editorial feedback.",
+            },
+            {
+              icon: ShieldCheck,
+              title: "COPE-aligned ethics",
+              desc: "Rigorous research integrity standards covering authorship, consent, and conflict disclosures.",
+            },
+            {
+              icon: Library,
+              title: "Indexing & DOIs",
+              desc: "Every article is assigned a Crossref DOI and submitted to leading academic databases.",
+            },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex gap-3.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
+                <Icon className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black text-[color:var(--color-gb-blue-deep)]">{title}</h3>
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Accepted Manuscript Formats (Article Types) */}
       <section className="container-x py-14 md:py-18">
         <div className="mb-10 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -209,9 +184,9 @@ export default function AuthorsPage() {
                   key={t}
                   className={`group flex items-start gap-4 border-b border-slate-100 p-5 transition-colors hover:bg-[color:var(--color-gb-blue-soft)]/30 ${
                     i % 2 === 0 ? "lg:border-r lg:border-slate-100" : ""
-                  } ${isLast ? "lg:col-span-2 lg:border-r-0" : ""}`}
+                  } ${isLast && articleTypes.length % 2 !== 0 ? "lg:col-span-2 lg:border-r-0" : ""}`}
                 >
-                  <span className="font-mono text-[9px] font-black text-slate-200 pt-0.5 w-5 shrink-0">
+                  <span className="font-mono text-xs font-bold text-slate-400 group-hover:text-[color:var(--color-gb-blue)] transition-colors pt-0.5 w-6 shrink-0">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover:bg-[color:var(--color-gb-blue-deep)] group-hover:text-white">
@@ -229,7 +204,7 @@ export default function AuthorsPage() {
       </section>
 
       {/* Submission Checklist */}
-      <section className="border-y border-slate-200 bg-[#f5f7fb] py-14 md:py-18">
+      <section className="border-y border-slate-200 bg-[#f5f7fb] py-14 md:py-18" id="guidelines">
         <div className="container-x grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-start">
           <div className="lg:sticky lg:top-24">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
@@ -256,7 +231,7 @@ export default function AuthorsPage() {
                 key={title}
                 className="group grid grid-cols-[28px_40px_minmax(0,1fr)] gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 transition-colors hover:bg-[color:var(--color-gb-blue-soft)]/20"
               >
-                <span className="pt-1 font-mono text-[9px] font-black text-slate-300">
+                <span className="pt-1 font-mono text-xs font-bold text-slate-400 group-hover:text-[color:var(--color-gb-blue)] transition-colors">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover:bg-[color:var(--color-gb-blue-deep)] group-hover:text-white">
