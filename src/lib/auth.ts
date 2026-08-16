@@ -1,4 +1,5 @@
 import { type Role } from "./data";
+import { authApi, setTokens, clearTokens } from "./api";
 
 export interface User {
   email: string;
@@ -6,6 +7,7 @@ export interface User {
   role: Role;
   title: string;
   department?: string;
+  institution?: string;
   avatar?: string;
 }
 
@@ -78,8 +80,31 @@ export function clearSession(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(SESSION_KEY);
+    clearTokens();
   } catch (e) {
     console.error("Failed to clear auth session", e);
+  }
+}
+
+export async function loginWithApi(email: string, password: string): Promise<User> {
+  try {
+    const res = await authApi.login({ email, password });
+    const user: User = {
+      email: res.user.email,
+      name: res.user.name || res.user.fullName,
+      role: res.user.role,
+      title: res.user.title || "Academic User",
+      department: res.user.department,
+      institution: res.user.institution,
+      avatar: res.user.avatar || res.user.avatarUrl,
+    };
+    setSession(user);
+    return user;
+  } catch (e) {
+    // If backend unreachable in offline test, fallback to demo user check
+    const demo = authenticate(email, password);
+    if (demo) return demo;
+    throw e;
   }
 }
 
@@ -97,4 +122,5 @@ export function registerUser(newUser: User): User {
   setSession(newUser);
   return newUser;
 }
+
 

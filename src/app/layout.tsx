@@ -5,6 +5,7 @@ import {
   Playfair_Display,
   Plus_Jakarta_Sans,
 } from "next/font/google";
+import { StoreProvider } from "@/redux/provider";
 import { Toaster } from "sonner";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import "./globals.css";
@@ -59,9 +60,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <SmoothScroll />
-        {children}
-        <Toaster position="top-right" richColors closeButton theme="light" />
+        <StoreProvider>
+          <SmoothScroll />
+          {children}
+          <Toaster position="top-right" richColors closeButton theme="light" />
+        </StoreProvider>
       </body>
     </html>
   );
