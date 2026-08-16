@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerUser, clearError } from "@/redux/features/auth/authSlice";
 import { FadeIn } from "@/components/layout/page-transition";
@@ -398,43 +399,33 @@ function RegisterForm() {
 
             {/* Declarations Checkboxes */}
             <div className="space-y-3 pt-2 text-xs text-slate-600">
-              <button
-                type="button"
-                onClick={() => setAgreeEthics(!agreeEthics)}
-                className="flex items-start gap-3 text-left group cursor-pointer"
-              >
-                <div
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border transition-all ${
-                    agreeEthics
-                      ? "bg-[#0b1b3d] border-[#0b1b3d] text-white shadow-2xs"
-                      : "bg-white border-slate-300 group-hover:border-slate-400"
-                  }`}
-                >
-                  {agreeEthics && <Check className="h-3 w-3 stroke-[3]" />}
-                </div>
-                <span className="leading-snug">
-                  I agree to abide by the <strong className="text-slate-900 font-semibold">COPE Publishing Ethics</strong>, author transparency standards, and double-blind peer-review guidelines.
-                </span>
-              </button>
+              <CustomCheckbox
+                checked={agreeEthics}
+                onChange={setAgreeEthics}
+                label={
+                  <span>
+                    I agree to abide by the{" "}
+                    <strong className="text-slate-900 font-semibold">
+                      COPE Publishing Ethics
+                    </strong>
+                    , author transparency standards, and double-blind peer-review guidelines.
+                  </span>
+                }
+              />
 
-              <button
-                type="button"
-                onClick={() => setAgreeOpenAccess(!agreeOpenAccess)}
-                className="flex items-start gap-3 text-left group cursor-pointer"
-              >
-                <div
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border transition-all ${
-                    agreeOpenAccess
-                      ? "bg-[#0b1b3d] border-[#0b1b3d] text-white shadow-2xs"
-                      : "bg-white border-slate-300 group-hover:border-slate-400"
-                  }`}
-                >
-                  {agreeOpenAccess && <Check className="h-3 w-3 stroke-[3]" />}
-                </div>
-                <span className="leading-snug">
-                  I consent to open-access dissemination under the <strong className="text-slate-900 font-semibold">Creative Commons CC BY 4.0</strong> license with author copyright retention.
-                </span>
-              </button>
+              <CustomCheckbox
+                checked={agreeOpenAccess}
+                onChange={setAgreeOpenAccess}
+                label={
+                  <span>
+                    I consent to open-access dissemination under the{" "}
+                    <strong className="text-slate-900 font-semibold">
+                      Creative Commons CC BY 4.0
+                    </strong>{" "}
+                    license with author copyright retention.
+                  </span>
+                }
+              />
             </div>
 
             <button

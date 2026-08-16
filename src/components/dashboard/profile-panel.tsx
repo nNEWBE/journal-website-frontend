@@ -37,10 +37,24 @@ import { setUser } from "@/redux/features/auth/authSlice";
 import { userApi } from "@/lib/api";
 import { type User } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 
 interface ProfilePanelProps {
   user: User | null;
 }
+
+const ACADEMIC_TITLE_OPTIONS = [
+  "Associate Professor",
+  "Professor",
+  "Assistant Professor",
+  "Dr.",
+  "Senior Lecturer",
+  "Research Fellow",
+  "Graduate Researcher",
+  "Mr.",
+  "Ms.",
+];
 
 const PRESET_AVATARS = [
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
@@ -450,21 +464,13 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Academic Title / Prefix *
                 </label>
-                <select
+                <CustomSelect
+                  options={ACADEMIC_TITLE_OPTIONS}
                   value={academicTitle}
-                  onChange={(e) => setAcademicTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-all"
-                >
-                  <option value="Professor">Professor (Prof.)</option>
-                  <option value="Associate Professor">Associate Professor (Assoc. Prof.)</option>
-                  <option value="Assistant Professor">Assistant Professor (Asst. Prof.)</option>
-                  <option value="Dr.">Doctor (Dr.)</option>
-                  <option value="Senior Lecturer">Senior Lecturer</option>
-                  <option value="Research Fellow">Research Fellow</option>
-                  <option value="Graduate Researcher">Graduate Researcher</option>
-                  <option value="Mr.">Mr.</option>
-                  <option value="Ms.">Ms.</option>
-                </select>
+                  onChange={(val) => setAcademicTitle(val)}
+                  placeholder="Select Academic Title"
+                  className="w-full"
+                />
               </div>
 
               <div>
@@ -989,56 +995,32 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             </div>
 
             <div className="space-y-3 pt-2">
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/80 transition-colors">
-                <input
-                  type="checkbox"
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/70 transition-colors">
+                <CustomCheckbox
                   checked={notifDecisions}
-                  onChange={(e) => setNotifDecisions(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  onChange={setNotifDecisions}
+                  label="Editorial Decisions & Manuscript Status"
+                  description="Receive instant notifications when your manuscript moves between review, revision, and publication phases."
                 />
-                <div>
-                  <p className="text-xs font-bold text-slate-900">
-                    Editorial Decisions & Manuscript Status
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Receive instant notifications when your manuscript moves between review, revision, and publication phases.
-                  </p>
-                </div>
-              </label>
+              </div>
 
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/80 transition-colors">
-                <input
-                  type="checkbox"
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/70 transition-colors">
+                <CustomCheckbox
                   checked={notifInvitations}
-                  onChange={(e) => setNotifInvitations(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  onChange={setNotifInvitations}
+                  label="Peer Review Invitations"
+                  description="Get alerted when a managing editor requests your evaluation on a submitted manuscript."
                 />
-                <div>
-                  <p className="text-xs font-bold text-slate-900">
-                    Peer Review Invitations
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Get alerted when a managing editor requests your evaluation on a submitted manuscript.
-                  </p>
-                </div>
-              </label>
+              </div>
 
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/80 transition-colors">
-                <input
-                  type="checkbox"
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/70 transition-colors">
+                <CustomCheckbox
                   checked={notifPublications}
-                  onChange={(e) => setNotifPublications(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  onChange={setNotifPublications}
+                  label="New Issue Releases & Citations"
+                  description="Stay informed whenever a new GB Journal issue or volume is archived and indexed with CrossRef DOIs."
                 />
-                <div>
-                  <p className="text-xs font-bold text-slate-900">
-                    New Issue Releases & Citations
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Stay informed whenever a new GB Journal issue or volume is archived and indexed with CrossRef DOIs.
-                  </p>
-                </div>
-              </label>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-end">

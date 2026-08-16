@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronsUpDown,
   ClipboardCheck,
   Clock,
   Crown,
@@ -111,18 +112,16 @@ function ToolboxAction({
   return (
     <button
       onClick={onClick}
-      className={`group flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all duration-150 active:scale-[0.99] cursor-pointer ${
-        variant === "danger"
+      className={`group flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all duration-150 active:scale-[0.99] cursor-pointer ${variant === "danger"
           ? "border-red-100 bg-red-50/60 hover:bg-red-50"
           : "border-[color:var(--color-gb-border)] bg-[#fafbff] hover:bg-[color:var(--color-gb-blue-soft)] hover:border-[color:var(--color-gb-blue)]/30"
-      }`}
+        }`}
     >
       <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-          variant === "danger"
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${variant === "danger"
             ? "bg-red-100 text-red-600"
             : "bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] group-hover:bg-[color:var(--color-gb-blue)] group-hover:text-white"
-        }`}
+          }`}
       >
         <Icon className="h-3.5 w-3.5" />
       </div>
@@ -295,18 +294,18 @@ function RowActionsDropdown({
               sub.status === "Under Review" ||
               activeRole === "editor" ||
               activeRole === "super-admin") && (
-              <button
-                type="button"
-                onClick={() => {
-                  triggerSubmitReview(sub.id);
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                Submit Review
-              </button>
-            )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerSubmitReview(sub.id);
+                    setIsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  Submit Review
+                </button>
+              )}
 
             <div className="my-1 border-t border-slate-100" />
 
@@ -364,6 +363,26 @@ export function DashboardWorkspace({
     }
   }, [reduxUser, dispatch]);
 
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    if (isUserMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
+
   const handleLogout = async () => {
     toast.success("Logged out successfully", {
       description: "You have been signed out of your account.",
@@ -378,14 +397,14 @@ export function DashboardWorkspace({
   const activeRole: Role = pathname.includes("/super-admin")
     ? "super-admin"
     : pathname.includes("/admin")
-    ? "admin"
-    : pathname.includes("/editor")
-    ? "editor"
-    : pathname.includes("/reviewer")
-    ? "reviewer"
-    : pathname.includes("/author")
-    ? "author"
-    : initialRole;
+      ? "admin"
+      : pathname.includes("/editor")
+        ? "editor"
+        : pathname.includes("/reviewer")
+          ? "reviewer"
+          : pathname.includes("/author")
+            ? "author"
+            : initialRole;
 
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
@@ -581,8 +600,7 @@ export function DashboardWorkspace({
       return;
     }
     const updatedLogs = [
-      `[Reviewer] ${currentUser?.name ?? "Reviewer"} accepted invitation for ${
-        target.id
+      `[Reviewer] ${currentUser?.name ?? "Reviewer"} accepted invitation for ${target.id
       }`,
       ...decisionLog,
     ];
@@ -624,8 +642,7 @@ export function DashboardWorkspace({
     );
     updateSubmissionsState(
       newSubs,
-      `[${selectedSubmission.id}] Revised manuscript uploaded by ${
-        currentUser?.name ?? "Author"
+      `[${selectedSubmission.id}] Revised manuscript uploaded by ${currentUser?.name ?? "Author"
       }`
     );
     setIsRevisionModalOpen(false);
@@ -645,11 +662,11 @@ export function DashboardWorkspace({
     const newSubs = submissions.map((s) =>
       s.id === reviewSubId
         ? {
-            ...s,
-            status: "Reviews Complete",
-            score: scoreVal,
-            updated: "Just now",
-          }
+          ...s,
+          status: "Reviews Complete",
+          score: scoreVal,
+          updated: "Just now",
+        }
         : s
     );
     updateSubmissionsState(
@@ -898,100 +915,9 @@ export function DashboardWorkspace({
             </Link>
           </div>
 
-          {/* User Profile Card */}
-          {mounted && currentUser && (
-            <div className={cn(
-              "shrink-0 transition-all duration-300",
-              isSidebarCollapsed ? "px-0 pt-3 flex justify-center" : "px-3 pt-3.5"
-            )}>
-              {isSidebarCollapsed ? (
-                <Link
-                  href="/dashboard/profile"
-                  className={cn(
-                    "h-10 w-10 rounded-xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border flex items-center justify-center shadow-xs cursor-pointer hover:border-amber-400/80 transition-all group",
-                    pathname.includes("/profile") ? "border-amber-400 ring-2 ring-amber-400/30" : "border-white/10"
-                  )}
-                  title={`${currentUser.name} (${currentUser.role}) — Academic Profile`}
-                >
-                  {currentUser.avatar ? (
-                    <img
-                      src={currentUser.avatar}
-                      alt={currentUser.name}
-                      className="h-8 w-8 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs border border-white/15">
-                      {currentUser.name.charAt(0)}
-                    </div>
-                  )}
-                </Link>
-              ) : (
-                <Link
-                  href="/dashboard/profile"
-                  className={cn(
-                    "block rounded-xl bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent border p-3 shadow-sm hover:border-white/30 transition-all duration-200 group cursor-pointer",
-                    pathname.includes("/profile") ? "border-amber-400/70 ring-1 ring-amber-400/40" : "border-white/[0.1]"
-                  )}
-                  title="Click to view & edit your academic profile"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative shrink-0">
-                      {currentUser.avatar ? (
-                        <img
-                          src={currentUser.avatar}
-                          alt={currentUser.name}
-                          className="h-10 w-10 rounded-lg object-cover ring-1 ring-white/20 shadow-xs group-hover:ring-amber-400/60 transition-all"
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-sm ring-1 ring-white/15 shadow-inner group-hover:ring-amber-400/60 transition-all">
-                          {currentUser.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-white truncate leading-tight tracking-tight group-hover:text-amber-200 transition-colors">
-                        {currentUser.name}
-                      </p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal">
-                        {currentUser.email}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-white/[0.08] flex items-center justify-between gap-2">
-                    <span className={cn(
-                      "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider border",
-                      currentUser.role === "super-admin"
-                        ? "bg-amber-400/10 text-amber-300 border-amber-400/25"
-                        : currentUser.role === "admin"
-                        ? "bg-blue-400/10 text-blue-300 border-blue-400/25"
-                        : currentUser.role === "editor"
-                        ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/25"
-                        : currentUser.role === "reviewer"
-                        ? "bg-purple-400/10 text-purple-300 border-purple-400/25"
-                        : "bg-sky-400/10 text-sky-300 border-sky-400/25"
-                    )}>
-                      <ShieldCheck className="h-3 w-3 shrink-0" />
-                      {currentUser.role.replace("-", " ")}
-                    </span>
-                    {currentUser.department && (
-                      <span
-                        className="text-[9.5px] text-slate-400 truncate text-right flex-1 font-normal"
-                        title={currentUser.department}
-                      >
-                        {currentUser.department}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              )}
-            </div>
-          )}
-
           {/* Navigation Links */}
           <div className={cn(
-            "mt-4 flex-1 overflow-hidden space-y-4",
+            "mt-3 flex-1 overflow-hidden space-y-4",
             isSidebarCollapsed ? "px-2" : "px-3"
           )}>
             {/* Core Section */}
@@ -1016,13 +942,13 @@ export function DashboardWorkspace({
                           router.push(item.href);
                         }}
                         className={cn(
-                          "flex items-center rounded-xl text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group",
+                          "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
                           isSidebarCollapsed
-                            ? "w-10 h-10 mx-auto justify-center"
-                            : "w-full px-3 gap-3",
+                            ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
+                            : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
                           isActive
-                            ? "bg-gradient-to-r from-blue-600/35 to-blue-600/15 text-white font-bold border border-blue-500/40 shadow-xs"
-                            : "text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent"
+                            ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                            : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
                         )}
                         title={item.label}
                       >
@@ -1048,13 +974,13 @@ export function DashboardWorkspace({
                     router.push("/dashboard/analytics");
                   }}
                   className={cn(
-                    "flex items-center rounded-xl text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group",
+                    "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
                     isSidebarCollapsed
-                      ? "w-10 h-10 mx-auto justify-center"
-                      : "w-full px-3 gap-3",
+                      ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
+                      : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
                     activeView === "analytics" && !pathname.includes("/profile")
-                      ? "bg-gradient-to-r from-blue-600/35 to-blue-600/15 text-white font-bold border border-blue-500/40 shadow-xs"
-                      : "text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent"
+                      ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                      : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
                   )}
                   title="Journal Analytics"
                 >
@@ -1065,36 +991,6 @@ export function DashboardWorkspace({
                         Journal Analytics
                       </span>
                       {activeView === "analytics" && !pathname.includes("/profile") && (
-                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                      )}
-                    </>
-                  )}
-                </button>
-
-                {/* Academic Profile */}
-                <button
-                  onClick={() => {
-                    setIsMobileSidebarOpen(false);
-                    router.push("/dashboard/profile");
-                  }}
-                  className={cn(
-                    "flex items-center rounded-xl text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group",
-                    isSidebarCollapsed
-                      ? "w-10 h-10 mx-auto justify-center"
-                      : "w-full px-3 gap-3",
-                    pathname.includes("/profile")
-                      ? "bg-gradient-to-r from-blue-600/35 to-blue-600/15 text-white font-bold border border-blue-500/40 shadow-xs"
-                      : "text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent"
-                  )}
-                  title="Academic Profile"
-                >
-                  <UserIcon className={cn("h-4 w-4 shrink-0 transition-colors", pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                  {!isSidebarCollapsed && (
-                    <>
-                      <span className="flex-1 font-medium text-slate-200 group-hover:text-white">
-                        Academic Profile
-                      </span>
-                      {pathname.includes("/profile") && (
                         <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
                       )}
                     </>
@@ -1126,13 +1022,13 @@ export function DashboardWorkspace({
                             router.push(item.href);
                           }}
                           className={cn(
-                            "flex items-center rounded-xl text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group",
+                            "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group border-y-0 border-r-0 border-l-[3px]",
                             isSidebarCollapsed
-                              ? "w-10 h-9 mx-auto justify-center"
-                              : "w-full px-3 gap-3",
+                              ? "w-10 h-9 mx-auto justify-center rounded-xl border-l-0"
+                              : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
                             isActive
-                              ? "bg-white/15 text-white font-semibold border border-amber-400/40 shadow-xs"
-                              : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border border-transparent"
+                              ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
+                              : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
                           )}
                           title={item.label}
                         >
@@ -1195,36 +1091,156 @@ export function DashboardWorkspace({
             </div>
           </div>
 
-          {/* Footer Controls */}
-          <div className={cn(
-            "mt-auto p-3 border-t border-white/[0.08] space-y-2.5 shrink-0 bg-[#050b1d]",
-            isSidebarCollapsed ? "px-2" : "px-3"
-          )}>
-            {!isSidebarCollapsed && (
-              <div className="px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-between text-[10px] text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="font-medium text-slate-300">Journal Portal Online</span>
-                </div>
-                <span className="font-mono text-[9px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                  SSL Encrypted
-                </span>
-              </div>
+          {/* Footer Controls: User Card Trigger with Profile & Sign Out Popover */}
+          <div
+            ref={userMenuRef}
+            className={cn(
+              "mt-auto border-t border-white/[0.08] relative shrink-0 bg-[#050b1d] transition-all duration-300",
+              isSidebarCollapsed ? "p-2 flex justify-center" : "p-2.5"
             )}
+          >
+            {/* Popover Menu */}
+            <AnimatePresence>
+              {isUserMenuOpen && mounted && currentUser && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className={cn(
+                    "absolute z-50 rounded-2xl bg-[#08122d] border border-white/15 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-white backdrop-blur-xl",
+                    isSidebarCollapsed
+                      ? "left-full bottom-2 ml-2 w-64"
+                      : "bottom-full left-2.5 right-2.5 mb-2"
+                  )}
+                >
+                  {/* User info snippet */}
+                  <div className="p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-white truncate flex-1">
+                        {currentUser.name}
+                      </p>
+                      <span className={cn(
+                        "inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider border shrink-0",
+                        currentUser.role === "super-admin"
+                          ? "bg-amber-400/20 text-amber-300 border-amber-400/30"
+                          : currentUser.role === "admin"
+                            ? "bg-blue-400/20 text-blue-300 border-blue-400/30"
+                            : currentUser.role === "editor"
+                              ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/30"
+                              : currentUser.role === "reviewer"
+                                ? "bg-purple-400/20 text-purple-300 border-purple-400/30"
+                                : "bg-sky-400/20 text-sky-300 border-sky-400/30"
+                      )}>
+                        {currentUser.role.replace("-", " ")}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal">
+                      {currentUser.email}
+                    </p>
+                    {currentUser.department && (
+                      <p className="text-[9.5px] text-slate-400/90 truncate mt-1">
+                        {currentUser.department}
+                      </p>
+                    )}
+                  </div>
 
-            <button
-              onClick={handleLogout}
-              className={cn(
-                "flex items-center rounded-xl text-left text-xs font-semibold text-slate-300 hover:text-rose-200 hover:bg-rose-500/15 border border-transparent hover:border-rose-500/25 transition-all duration-150 h-10 cursor-pointer group",
-                isSidebarCollapsed
-                  ? "w-10 h-10 mx-auto justify-center"
-                  : "w-full px-3 gap-3"
+                  {/* Action items */}
+                  <div className="space-y-1">
+                    <Link
+                      href="/dashboard/profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer",
+                        pathname.includes("/profile")
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-200 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <UserIcon className="h-4 w-4 shrink-0 text-blue-400" />
+                      <span>Academic Profile</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 hover:bg-rose-500/15 hover:text-rose-200 transition-colors cursor-pointer text-left"
+                    >
+                      <LogOut className="h-4 w-4 shrink-0 text-rose-400" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </motion.div>
               )}
-              title="Sign Out"
-            >
-              <LogOut className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-rose-400 transition-colors" />
-              {!isSidebarCollapsed && <span>Sign Out</span>}
-            </button>
+            </AnimatePresence>
+
+            {/* Trigger Button showing user image, name, and role */}
+            {mounted && currentUser && (
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className={cn(
+                  "flex items-center rounded-xl transition-all duration-150 cursor-pointer border group",
+                  isUserMenuOpen
+                    ? "bg-white/15 border-white/25 shadow-md ring-1 ring-white/20"
+                    : "bg-white/[0.04] border-white/10 hover:bg-white/[0.08] hover:border-white/20",
+                  isSidebarCollapsed
+                    ? "h-10 w-10 justify-center p-0"
+                    : "w-full p-2 gap-2.5"
+                )}
+                title={`${currentUser.name} (${currentUser.role}) — Click for options`}
+              >
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  {currentUser.avatar ? (
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/20 shadow-xs group-hover:ring-amber-400/60 transition-all"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15 shadow-inner group-hover:ring-amber-400/60 transition-all">
+                      {currentUser.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Name & Role (expanded only) */}
+                {!isSidebarCollapsed && (
+                  <>
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="text-xs font-bold text-white truncate leading-tight group-hover:text-amber-200 transition-colors">
+                        {currentUser.name}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={cn(
+                          "inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase tracking-wider border",
+                          currentUser.role === "super-admin"
+                            ? "bg-amber-400/20 text-amber-300 border-amber-400/30"
+                            : currentUser.role === "admin"
+                              ? "bg-blue-400/20 text-blue-300 border-blue-400/30"
+                              : currentUser.role === "editor"
+                                ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/30"
+                                : currentUser.role === "reviewer"
+                                  ? "bg-purple-400/20 text-purple-300 border-purple-400/30"
+                                  : "bg-sky-400/20 text-sky-300 border-sky-400/30"
+                        )}>
+                          {currentUser.role.replace("-", " ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <ChevronsUpDown className={cn(
+                      "h-3.5 w-3.5 shrink-0 transition-all",
+                      isUserMenuOpen ? "text-amber-300 rotate-180" : "text-slate-400 group-hover:text-white"
+                    )} />
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -1427,9 +1443,8 @@ export function DashboardWorkspace({
                                 ].map((h) => (
                                   <th
                                     key={h}
-                                    className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--color-gb-muted)] ${
-                                      h === "Actions" ? "text-right" : ""
-                                    }`}
+                                    className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--color-gb-muted)] ${h === "Actions" ? "text-right" : ""
+                                      }`}
                                   >
                                     {h}
                                   </th>
@@ -1482,13 +1497,12 @@ export function DashboardWorkspace({
                                     <div className="flex items-center gap-2">
                                       <div className="h-1.5 w-12 rounded-full bg-slate-100 overflow-hidden">
                                         <div
-                                          className={`h-full rounded-full transition-all ${
-                                            sub.score >= 80
+                                          className={`h-full rounded-full transition-all ${sub.score >= 80
                                               ? "bg-emerald-500"
                                               : sub.score >= 60
-                                              ? "bg-amber-500"
-                                              : "bg-red-500"
-                                          }`}
+                                                ? "bg-amber-500"
+                                                : "bg-red-500"
+                                            }`}
                                           style={{ width: `${sub.score}%` }}
                                         />
                                       </div>
