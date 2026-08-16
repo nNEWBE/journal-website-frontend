@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowUpRight, Play } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 
 export interface CommunityArticle {
@@ -125,7 +125,7 @@ export function HomeResearchCommunity() {
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1e40af] hover:underline group/link"
                 >
                   <span>{article.actionText}</span>
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-1" />
+                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-1" />
                 </Link>
               </div>
             </StaggerItem>

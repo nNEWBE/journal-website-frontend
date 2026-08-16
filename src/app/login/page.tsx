@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   CheckCircle2,
   Eye,
@@ -219,7 +219,7 @@ function LoginForm() {
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] hover:bg-[color:var(--color-gb-blue)] py-3.5 text-xs font-extrabold text-white shadow-xs transition-all cursor-pointer mt-3"
             >
               <span>Sign In to Workspace</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
           </form>
 

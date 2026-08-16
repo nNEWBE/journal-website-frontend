@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   CalendarDays,
   Download,
@@ -653,7 +653,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   className="hidden shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[color:var(--color-gb-blue)]/30 hover:shadow-md sm:inline-flex"
                 >
                   Browse all
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               </div>
 

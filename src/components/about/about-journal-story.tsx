@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Archive,
-  ArrowRight,
+  ArrowUpRight,
   Award,
   BookOpen,
   Calendar,
@@ -260,7 +260,7 @@ export function AboutJournalStory({ topics }: { topics?: string[] }) {
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
             >
               <span>Explore Published Research</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
 
@@ -451,7 +451,7 @@ export function AboutJournalStory({ topics }: { topics?: string[] }) {
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1e40af] hover:underline"
                     >
                       <span>View Subject Articles</span>
-                      <ArrowRight className="h-3 w-3" />
+                      <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   </div>
                 </div>
@@ -481,7 +481,7 @@ export function AboutJournalStory({ topics }: { topics?: string[] }) {
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
             >
               <span>Meet Full Editorial Board</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
 
@@ -534,7 +534,7 @@ export function AboutJournalStory({ topics }: { topics?: string[] }) {
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1e40af] hover:underline"
                   >
                     <span>View Profile</span>
-                    <ArrowRight className="h-3 w-3" />
+                    <ArrowUpRight className="h-3 w-3" />
                   </Link>
                 </div>
               </div>
@@ -618,7 +618,7 @@ export function AboutJournalStory({ topics }: { topics?: string[] }) {
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
             >
               <span>View Full Journal Policies</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
 
@@ -730,7 +730,7 @@ export function AboutJournalStory({ topics }: { topics?: string[] }) {
                     className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors"
                   >
                     <span>Submit Your Manuscript</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" />
                   </Link>
                   <Link
                     href="/editorial-board"

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   CalendarDays,
   FileArchive,
@@ -217,7 +217,7 @@ export default function IssuesPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue-deep)] px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-[color:var(--color-gb-blue)] hover:shadow-lg hover:gap-3"
                 >
                   <span>Explore current issue</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
@@ -453,7 +453,7 @@ export default function IssuesPage() {
 
                                 <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white transition-all group-hover:bg-[color:var(--color-gb-blue)] group-hover:gap-2">
                                   <span>Read issue</span>
-                                  <ArrowRight className="h-3 w-3" />
+                                  <ArrowUpRight className="h-3 w-3" />
                                 </span>
                               </div>
                             </div>

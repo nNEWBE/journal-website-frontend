@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   CheckCircle2,
   ChevronRight,
@@ -108,7 +108,7 @@ export default function AuthorsPage() {
                 className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-lg transition-all hover:bg-amber-50 hover:shadow-xl active:scale-[0.98]"
               >
                 Submit your manuscript
-                <ArrowRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" />
               </Link>
               <a
                 href="#guidelines"

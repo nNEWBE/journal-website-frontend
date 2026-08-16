@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -172,7 +172,7 @@ export default function CurrentIssuePage() {
                           aria-label={`Read ${article.title}`}
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs transition-all group-hover:bg-[color:var(--color-gb-blue)] group-hover:scale-105"
                         >
-                          <ArrowRight className="h-4 w-4" />
+                          <ArrowUpRight className="h-4 w-4" />
                         </Link>
                       </div>
                     </div>

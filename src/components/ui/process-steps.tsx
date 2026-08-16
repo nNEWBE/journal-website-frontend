@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import {
   Archive,
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   ClipboardCheck,
   FileCheck2,
@@ -216,7 +216,7 @@ export function ProcessSteps({
                               className="absolute -right-6 top-1/2 z-20 flex h-5 w-5 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-amber-300/80 bg-white text-[color:var(--color-gb-gold-dark)] shadow-xs"
                               aria-hidden="true"
                             >
-                              <ArrowRight className="h-3 w-3" />
+                              <ArrowUpRight className="h-3 w-3" />
                             </span>
                           )}
                         </div>

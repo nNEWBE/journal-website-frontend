@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   Calendar,
   Clock,
@@ -69,14 +69,14 @@ export function AboutJournalHero() {
                 className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
               >
                 <span>Submit Manuscript</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/issues/current"
                 className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
               >
                 <span>Read Current Issue</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/editorial-board"

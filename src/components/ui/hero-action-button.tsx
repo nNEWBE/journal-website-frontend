@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, LucideIcon } from "lucide-react";
+import { ArrowUpRight, LucideIcon } from "lucide-react";
 
 export type HeroActionButtonProps = {
   href?: string;
@@ -24,7 +24,7 @@ export function HeroActionButton({
   variant = "primary",
   children,
   hasArrow = false,
-  arrowRotateDeg = -45,
+  arrowRotateDeg = 0,
   icon: Icon,
   onClick,
   className = "",
@@ -52,9 +52,9 @@ export function HeroActionButton({
       {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
       <span>{children}</span>
       {hasArrow && (
-        <ArrowRight
+        <ArrowUpRight
           className="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
-          style={{ transform: `rotate(${arrowRotateDeg}deg)` }}
+          style={arrowRotateDeg ? { transform: `rotate(${arrowRotateDeg}deg)` } : undefined}
           aria-hidden="true"
         />
       )}

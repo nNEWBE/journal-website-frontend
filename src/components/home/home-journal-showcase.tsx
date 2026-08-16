@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowRight,
+  ArrowUpRight,
   ArrowUpRight,
   BookOpen,
   CalendarDays,
@@ -211,7 +211,7 @@ export function HomeJournalShowcase({
             >
               Explore full issue
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] transition-colors group-hover/issue:bg-[color:var(--color-gb-blue)] group-hover/issue:text-white">
-                <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover/issue:translate-x-0.5" />
+                <ArrowUpRight className="h-3 w-3 transition-transform duration-300 group-hover/issue:translate-x-0.5" />
               </span>
             </Link>
           </motion.div>

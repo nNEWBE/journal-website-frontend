@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   FileSearch,
   Globe2,
@@ -108,7 +108,7 @@ export default async function ArticlesPage({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-[color:var(--color-gb-blue)] shadow-xs transition-all hover:border-[color:var(--color-gb-blue)]/25 hover:shadow-md"
                   >
                     Browse by issue
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   </Link>
                 )}
               </div>
@@ -195,7 +195,7 @@ export default async function ArticlesPage({
                 >
                   <Send className="h-3.5 w-3.5" />
                   Submit manuscript
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
 

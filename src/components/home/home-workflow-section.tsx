@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
 import {
-  ArrowRight,
+  ArrowUpRight,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
@@ -194,7 +194,7 @@ function WorkflowPreview({
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-3 py-1.5 text-[9.5px] font-black text-white shadow-xs transition-all group-hover:bg-[color:var(--color-gb-blue)]">
               Submit
-              <ArrowRight className="h-3 w-3" />
+              <ArrowUpRight className="h-3 w-3" />
             </span>
           </div>
         </div>

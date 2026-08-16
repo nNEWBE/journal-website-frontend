@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { mainNav, getIsRouteActive } from "./nav-data";
 
 export function SiteHeaderNav() {
@@ -13,7 +13,7 @@ export function SiteHeaderNav() {
 
   return (
     <nav
-      className="hidden items-center gap-1 lg:flex"
+      className="hidden items-center gap-1.5 lg:flex"
       onMouseLeave={() => setActiveTab(null)}
     >
       {mainNav.map((item, idx) => {
@@ -25,7 +25,7 @@ export function SiteHeaderNav() {
         return (
           <div
             key={item.label}
-            className="relative py-1"
+            className="relative py-1.5"
             onMouseEnter={() => {
               if (activeTab !== idx) {
                 setDirection(activeTab !== null && idx > activeTab ? "right" : "left");
@@ -35,16 +35,17 @@ export function SiteHeaderNav() {
           >
             <Link
               href={item.href}
-              className={`relative inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-bold transition-colors ${
+              className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-bold tracking-tight transition-colors cursor-pointer ${
                 isActive
                   ? "text-[color:var(--bangla-red)]"
                   : isRouteActive
-                  ? "text-[color:var(--color-gb-blue)] font-black"
-                  : "text-[color:var(--color-gb-blue-dark)] hover:text-[color:var(--color-gb-blue)]"
+                  ? "text-[color:var(--color-gb-blue)] font-extrabold"
+                  : "text-slate-800 hover:text-[color:var(--color-gb-blue)]"
               }`}
             >
               <span className="relative py-0.5">
                 <span>{item.label}</span>
+                {/* Wavy active underline animation preserved */}
                 <span
                   className={`absolute inset-x-0 -bottom-1 h-[6px] transition-all duration-300 pointer-events-none animate-wave-flow ${
                     isActive || isRouteActive
@@ -60,14 +61,15 @@ export function SiteHeaderNav() {
                   }}
                 />
               </span>
+
               {hasDropdown && (
                 <ChevronDown
-                  className={`h-3.5 w-3.5 opacity-60 transition-transform duration-250 ${
+                  className={`h-3.5 w-3.5 transition-transform duration-250 ${
                     isActive
-                      ? "rotate-180 opacity-100 text-[color:var(--bangla-red)]"
+                      ? "rotate-180 text-[color:var(--bangla-red)] opacity-100"
                       : isRouteActive
-                      ? "opacity-100 text-[color:var(--color-gb-blue)]"
-                      : ""
+                      ? "text-[color:var(--color-gb-blue)] opacity-90"
+                      : "text-slate-400 opacity-75"
                   }`}
                 />
               )}
@@ -75,20 +77,29 @@ export function SiteHeaderNav() {
 
             {hasDropdown && (
               <div
-                className={`absolute left-0 top-full pt-2 z-50 min-w-[300px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                className={`absolute left-0 top-full pt-2 z-50 min-w-[340px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   isActive
                     ? "opacity-100 visible translate-y-0 scale-100 pointer-events-auto"
-                    : "opacity-0 invisible translate-y-2 scale-[0.97] pointer-events-none"
+                    : "opacity-0 invisible translate-y-2 scale-[0.98] pointer-events-none"
                 }`}
               >
-                <div className="rounded-xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(11,18,61,0.12)] overflow-hidden">
-                  <div className="px-4 pt-3 pb-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#1f2f82]/50">
+                {/* Dropdown Container: Zero-radius, crisp academic border & top accent line */}
+                <div className="bg-white border border-slate-300/90 shadow-[0_16px_40px_rgba(11,18,61,0.14)] overflow-hidden">
+                  {/* Top Navy Accent Bar */}
+                  <div className="h-[2.5px] w-full bg-[#0b1b3d]" />
+
+                  {/* Header / Category Kicker */}
+                  <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
                       {item.label}
                     </p>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                      GB Journal
+                    </span>
                   </div>
 
-                  <div key={activeTab} className="grid gap-0.5 px-2 pb-2">
+                  {/* Sub-items List with staggered slide animation */}
+                  <div key={activeTab} className="p-1.5 flex flex-col gap-1">
                     {item.dropdown!.map((sub, idxSub) => {
                       const SubIcon = sub.icon;
                       const isSubActive =
@@ -101,41 +112,38 @@ export function SiteHeaderNav() {
                           href={sub.href}
                           style={{
                             animation: isActive
-                              ? `${animName} 380ms cubic-bezier(0.16,1,0.3,1) both`
+                              ? `${animName} 340ms cubic-bezier(0.16,1,0.3,1) both`
                               : "none",
-                            animationDelay: isActive ? `${idxSub * 50}ms` : "0ms",
+                            animationDelay: isActive ? `${idxSub * 40}ms` : "0ms",
                           }}
-                          className={`group/sub flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer transition-all duration-150 ${
+                          className={`group/sub flex items-start gap-3 p-3 transition-all duration-150 cursor-pointer border-l-3 ${
                             isSubActive
-                              ? "bg-[#1f2f82]/6 font-bold text-[#1f2f82]"
-                              : "hover:bg-slate-50"
+                              ? "bg-blue-50/70 border-[#1e40af]"
+                              : "border-transparent hover:bg-slate-50/90 hover:border-slate-400"
                           }`}
                         >
+                          {/* Square Icon Container */}
                           <div
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ${
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center border transition-all duration-150 mt-0.5 ${
                               isSubActive
-                                ? "bg-[#1f2f82] text-white shadow-xs"
-                                : "bg-slate-100 text-slate-500 group-hover/sub:bg-[#1f2f82] group-hover/sub:text-white"
+                                ? "bg-[#0b1b3d] text-white border-[#0b1b3d] shadow-2xs"
+                                : "bg-slate-50 border-slate-200 text-slate-600 group-hover/sub:bg-[#0b1b3d] group-hover/sub:text-white group-hover/sub:border-[#0b1b3d]"
                             }`}
                           >
-                            <SubIcon className="h-3.5 w-3.5" />
+                            <SubIcon className="h-4 w-4" />
                           </div>
+
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <p
-                                className={`text-[12px] font-semibold transition-colors duration-150 ${
-                                  isSubActive
-                                    ? "text-[#1f2f82] font-extrabold"
-                                    : "text-slate-700 group-hover/sub:text-slate-900"
-                                }`}
-                              >
-                                {sub.label}
-                              </p>
-                              {isSubActive && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#1f2f82] shrink-0" />
-                              )}
-                            </div>
-                            <p className="text-[10px] leading-4 text-slate-400 font-medium">
+                            <p
+                              className={`text-[13px] font-bold tracking-tight transition-colors duration-150 ${
+                                isSubActive
+                                  ? "text-[#0b1b3d]"
+                                  : "text-slate-900 group-hover/sub:text-[#1e40af]"
+                              }`}
+                            >
+                              {sub.label}
+                            </p>
+                            <p className="mt-0.5 text-[11px] leading-snug text-slate-500 font-normal">
                               {sub.description}
                             </p>
                           </div>
@@ -144,13 +152,15 @@ export function SiteHeaderNav() {
                     })}
                   </div>
 
+                  {/* Dropdown Footer Action Link */}
                   {item.footerHref && (
-                    <div className="border-t border-slate-100 px-4 py-2">
+                    <div className="border-t border-slate-200/80 bg-slate-50/80 px-4 py-2.5 flex items-center justify-between">
                       <Link
                         href={item.footerHref}
-                        className="text-[11px] font-semibold text-[#1f2f82]/70 hover:text-[#1f2f82] transition-colors duration-150"
+                        className="text-[11.5px] font-bold text-[#1e40af] hover:underline inline-flex items-center gap-1.5 group/foot"
                       >
-                        {item.footerLabel}
+                        <span>{item.footerLabel}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/foot:translate-x-0.5 group-hover/foot:-translate-y-0.5" />
                       </Link>
                     </div>
                   )}

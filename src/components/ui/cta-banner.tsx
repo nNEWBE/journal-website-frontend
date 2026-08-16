@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
   ArrowUpRight,
   BookOpen,
   CheckCircle2,
@@ -167,7 +166,7 @@ export function CtaBanner({
                   <SecondaryIcon className="h-3.5 w-3.5 shrink-0 text-amber-300" />
                 )}
                 <span>{secondaryButtonText}</span>
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover/sec:translate-x-0.5" />
+                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover/sec:translate-x-0.5" />
               </Link>
             )}
           </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   Archive,
-  ArrowRight,
+  ArrowUpRight,
   CheckCircle2,
   ClipboardCheck,
   FileText,
@@ -400,7 +400,7 @@ export default function PoliciesPage() {
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-5 text-xs font-extrabold text-white transition-colors hover:bg-[color:var(--color-gb-blue)] focus-ring"
               >
                 Contact the journal
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
               <Link
                 href="/reviewers"

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
   ChevronDown,
   FileText,
@@ -111,7 +111,7 @@ export function HomeFaqSection() {
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
           >
             <span>Contact Editorial Office</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
 
@@ -261,7 +261,7 @@ export function HomeFaqSection() {
                         className="text-[11px] text-[#1e40af] hover:underline inline-flex items-center gap-1"
                       >
                         <span>Review submission format</span>
-                        <ArrowRight className="h-3 w-3" />
+                        <ArrowUpRight className="h-3 w-3" />
                       </Link>
                     </div>
                   </div>
@@ -275,7 +275,7 @@ export function HomeFaqSection() {
                         className="text-[11px] text-[#1e40af] hover:underline inline-flex items-center gap-1"
                       >
                         <span>COPE compliance & peer review policy</span>
-                        <ArrowRight className="h-3 w-3" />
+                        <ArrowUpRight className="h-3 w-3" />
                       </Link>
                     </div>
                   </div>
@@ -288,7 +288,7 @@ export function HomeFaqSection() {
                   className="w-full inline-flex items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white py-3 text-xs font-semibold transition-colors"
                 >
                   <span>Submit Manuscript Now</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>

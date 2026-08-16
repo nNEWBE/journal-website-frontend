@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BarChart3,
   Brain,
   Briefcase,
@@ -99,7 +99,7 @@ export function HomeExploreTopics() {
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline shrink-0 group"
           >
             <span>View all topics</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ElementType, ReactNode } from "react";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
 import { SupportingTag, SectionBadge } from "@/components/ui/badge";

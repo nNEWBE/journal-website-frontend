@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   ArrowLeft,
   CheckCircle2,
   FileCheck2,
@@ -294,7 +294,7 @@ export function SubmissionWizard() {
               className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
             >
               Next Step
-              <ArrowRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4" />
             </button>
           )}
         </div>

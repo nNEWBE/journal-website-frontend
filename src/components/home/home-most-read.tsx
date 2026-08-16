@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Eye } from "lucide-react";
+import { ArrowUpRight, Eye } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 
 export interface MostReadItem {
@@ -84,7 +84,7 @@ export function HomeMostRead() {
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
           >
             <span>View all</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 
