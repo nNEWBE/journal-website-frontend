@@ -172,6 +172,16 @@ export const authApi = {
     });
   },
 
+  refreshToken: async (): Promise<{ success: boolean; accessToken: string }> => {
+    const res = await fetch("/api/auth/refresh", {
+      method: "POST",
+    });
+    if (!res.ok) {
+      throw new Error("Failed to refresh token");
+    }
+    return res.json();
+  },
+
   updateProfile: async (
     data: Partial<RegisterPayload>
   ): Promise<AuthResponseData["user"]> => {
@@ -644,6 +654,26 @@ export const filesApi = {
     }
 
     return res.json();
+  },
+};
+
+export const userApi = {
+  getProfile: async (): Promise<any> => {
+    return request<any>("/api/v1/users/profile");
+  },
+
+  updateProfile: async (dto: Record<string, any>): Promise<any> => {
+    return request<any>("/api/v1/users/profile", {
+      method: "PUT",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  changePassword: async (dto: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
+    return request<{ message: string }>("/api/v1/users/change-password", {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
   },
 };
 

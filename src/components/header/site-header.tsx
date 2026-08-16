@@ -13,14 +13,20 @@ import {
   X,
 } from "lucide-react";
 import { GbJournalLogo } from "@/components/layout/gb-logo";
-import { getSession, clearSession, type User } from "@/lib/auth";
+import { getSession, clearSession, setSession, type User } from "@/lib/auth";
+import { authApi } from "@/lib/api";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
+import { clearAuth, setUser as setReduxUser } from "@/redux/features/auth/authSlice";
 import { SiteHeaderNav } from "@/components/header/site-header-nav";
 import { HeaderSearchModal } from "@/components/header/header-search-modal";
 import { MobileNavDrawer } from "@/components/header/mobile-nav-drawer";
+import { toast } from "sonner";
 
 export { mainNav, type NavItem, type NavSubItem } from "@/components/header/nav-data";
 
 export function SiteHeader() {
+  const dispatch = useAppDispatch();
+  const reduxUser = useAppSelector((state) => state.auth.user);
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -41,12 +47,35 @@ export function SiteHeader() {
   }, []);
 
   useEffect(() => {
-    const sessionTimer = window.setTimeout(() => {
-      setUser(getSession());
-    }, 0);
-
-    return () => window.clearTimeout(sessionTimer);
-  }, []);
+    if (reduxUser) {
+      setUser(reduxUser);
+    } else {
+      const session = getSession();
+      if (session) {
+        setUser(session);
+        dispatch(setReduxUser(session));
+      } else {
+        authApi.getMe()
+          .then((me) => {
+            if (me) {
+              const u: User = {
+                email: me.email,
+                name: me.name || me.fullName,
+                role: me.role,
+                title: me.title || "Academic Member",
+                department: me.department,
+                institution: me.institution,
+                avatar: me.avatar || me.avatarUrl,
+              };
+              setUser(u);
+              setSession(u);
+              dispatch(setReduxUser(u));
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [reduxUser, dispatch]);
 
   useEffect(() => {
     function handleScroll() {
@@ -57,9 +86,15 @@ export function SiteHeader() {
   }, []);
 
   function handleLogout() {
+    toast.success("Logged out successfully", {
+      description: "You have been signed out of your account.",
+    });
     clearSession();
+    dispatch(clearAuth());
     setUser(null);
-    window.location.href = "/";
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 300);
   }
 
   return (

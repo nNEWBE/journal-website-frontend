@@ -39,6 +39,7 @@ import {
   Settings,
   ShieldCheck,
   TrendingUp,
+  User as UserIcon,
   UserCheck,
   X,
   Zap,
@@ -58,7 +59,7 @@ import {
 } from "@/lib/data";
 import { getSession, type User } from "@/lib/auth";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { logoutUser } from "@/redux/features/auth/authSlice";
+import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/authSlice";
 
 import { roleNotes, roleAccentMap, statusConfig } from "./workspace/workspace-data";
 import { DashboardStatsGrid } from "./workspace/dashboard-stats-grid";
@@ -350,13 +351,27 @@ export function DashboardWorkspace({
       setCurrentUser(reduxUser);
     } else {
       const session = getSession();
-      if (session) setCurrentUser(session);
+      if (session) {
+        setCurrentUser(session);
+        dispatch(setUser(session));
+      } else {
+        dispatch(fetchCurrentUser()).then((res: any) => {
+          if (res?.payload && typeof res.payload === "object") {
+            setCurrentUser(res.payload as User);
+          }
+        });
+      }
     }
-  }, [reduxUser]);
+  }, [reduxUser, dispatch]);
 
   const handleLogout = async () => {
+    toast.success("Logged out successfully", {
+      description: "You have been signed out of your account.",
+    });
     await dispatch(logoutUser());
-    window.location.href = "/login";
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 300);
   };
 
   const isAnalyticsPage = pathname.includes("/analytics");
@@ -890,9 +905,13 @@ export function DashboardWorkspace({
               isSidebarCollapsed ? "px-0 pt-3 flex justify-center" : "px-3 pt-3.5"
             )}>
               {isSidebarCollapsed ? (
-                <div
-                  className="h-10 w-10 rounded-xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 flex items-center justify-center shadow-xs cursor-pointer hover:border-amber-400/50 transition-colors"
-                  title={`${currentUser.name} (${currentUser.role})`}
+                <Link
+                  href="/dashboard/profile"
+                  className={cn(
+                    "h-10 w-10 rounded-xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border flex items-center justify-center shadow-xs cursor-pointer hover:border-amber-400/80 transition-all group",
+                    pathname.includes("/profile") ? "border-amber-400 ring-2 ring-amber-400/30" : "border-white/10"
+                  )}
+                  title={`${currentUser.name} (${currentUser.role}) — Academic Profile`}
                 >
                   {currentUser.avatar ? (
                     <img
@@ -905,26 +924,33 @@ export function DashboardWorkspace({
                       {currentUser.name.charAt(0)}
                     </div>
                   )}
-                </div>
+                </Link>
               ) : (
-                <div className="rounded-xl bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent border border-white/[0.1] p-3 shadow-sm hover:border-white/20 transition-all duration-200">
+                <Link
+                  href="/dashboard/profile"
+                  className={cn(
+                    "block rounded-xl bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent border p-3 shadow-sm hover:border-white/30 transition-all duration-200 group cursor-pointer",
+                    pathname.includes("/profile") ? "border-amber-400/70 ring-1 ring-amber-400/40" : "border-white/[0.1]"
+                  )}
+                  title="Click to view & edit your academic profile"
+                >
                   <div className="flex items-center gap-3">
                     <div className="relative shrink-0">
                       {currentUser.avatar ? (
                         <img
                           src={currentUser.avatar}
                           alt={currentUser.name}
-                          className="h-10 w-10 rounded-lg object-cover ring-1 ring-white/20 shadow-xs"
+                          className="h-10 w-10 rounded-lg object-cover ring-1 ring-white/20 shadow-xs group-hover:ring-amber-400/60 transition-all"
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-sm ring-1 ring-white/15 shadow-inner">
+                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-sm ring-1 ring-white/15 shadow-inner group-hover:ring-amber-400/60 transition-all">
                           {currentUser.name.charAt(0)}
                         </div>
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-white truncate leading-tight tracking-tight">
+                      <p className="text-xs font-semibold text-white truncate leading-tight tracking-tight group-hover:text-amber-200 transition-colors">
                         {currentUser.name}
                       </p>
                       <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal">
@@ -958,7 +984,7 @@ export function DashboardWorkspace({
                       </span>
                     )}
                   </div>
-                </div>
+                </Link>
               )}
             </div>
           )}
@@ -981,7 +1007,7 @@ export function DashboardWorkspace({
                   .filter((item) => currentUser?.role === item.id)
                   .map((item) => {
                     const Icon = item.icon;
-                    const isActive = activeView === "workspace";
+                    const isActive = activeView === "workspace" && !pathname.includes("/profile");
                     return (
                       <button
                         key={item.id}
@@ -1026,19 +1052,49 @@ export function DashboardWorkspace({
                     isSidebarCollapsed
                       ? "w-10 h-10 mx-auto justify-center"
                       : "w-full px-3 gap-3",
-                    activeView === "analytics"
+                    activeView === "analytics" && !pathname.includes("/profile")
                       ? "bg-gradient-to-r from-blue-600/35 to-blue-600/15 text-white font-bold border border-blue-500/40 shadow-xs"
                       : "text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent"
                   )}
                   title="Journal Analytics"
                 >
-                  <BarChart2 className={cn("h-4 w-4 shrink-0 transition-colors", activeView === "analytics" ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                  <BarChart2 className={cn("h-4 w-4 shrink-0 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
                   {!isSidebarCollapsed && (
                     <>
                       <span className="flex-1 font-medium text-slate-200 group-hover:text-white">
                         Journal Analytics
                       </span>
-                      {activeView === "analytics" && (
+                      {activeView === "analytics" && !pathname.includes("/profile") && (
+                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                      )}
+                    </>
+                  )}
+                </button>
+
+                {/* Academic Profile */}
+                <button
+                  onClick={() => {
+                    setIsMobileSidebarOpen(false);
+                    router.push("/dashboard/profile");
+                  }}
+                  className={cn(
+                    "flex items-center rounded-xl text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group",
+                    isSidebarCollapsed
+                      ? "w-10 h-10 mx-auto justify-center"
+                      : "w-full px-3 gap-3",
+                    pathname.includes("/profile")
+                      ? "bg-gradient-to-r from-blue-600/35 to-blue-600/15 text-white font-bold border border-blue-500/40 shadow-xs"
+                      : "text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent"
+                  )}
+                  title="Academic Profile"
+                >
+                  <UserIcon className={cn("h-4 w-4 shrink-0 transition-colors", pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                  {!isSidebarCollapsed && (
+                    <>
+                      <span className="flex-1 font-medium text-slate-200 group-hover:text-white">
+                        Academic Profile
+                      </span>
+                      {pathname.includes("/profile") && (
                         <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
                       )}
                     </>
@@ -1197,9 +1253,19 @@ export function DashboardWorkspace({
             </button>
 
             <nav className="flex items-center gap-1.5 text-[11px] text-[color:var(--color-gb-muted)] ml-1.5">
-              <span className="font-medium">Dashboard</span>
+              <Link href="/dashboard" className="font-medium hover:text-[color:var(--color-gb-blue)] transition-colors">
+                Dashboard
+              </Link>
               <ChevronRight className="h-3 w-3" />
-              {activeView === "analytics" ? (
+              {pathname.includes("/profile") ? (
+                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                  Academic Profile
+                </span>
+              ) : pathname.includes("/submissions/new") ? (
+                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                  New Submission
+                </span>
+              ) : activeView === "analytics" ? (
                 <span className="font-bold text-[color:var(--color-gb-blue)]">
                   Analytics
                 </span>
@@ -1218,7 +1284,7 @@ export function DashboardWorkspace({
             >
               <Bell className="h-3.5 w-3.5" />
             </button>
-            {activeRole === "author" && (
+            {activeRole === "author" && !pathname.includes("/profile") && (
               <Link
                 href="/dashboard/submissions/new"
                 className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue)] px-3 text-[11px] font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-colors"
@@ -1231,7 +1297,7 @@ export function DashboardWorkspace({
         </header>
 
         <div className="flex-1">
-          {pathname.includes("/submissions/new") ? (
+          {pathname.includes("/submissions/new") || pathname.includes("/profile") ? (
             children
           ) : (
             <>

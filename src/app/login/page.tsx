@@ -28,6 +28,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { loginUser, clearError } from "@/redux/features/auth/authSlice";
 import { FadeIn } from "@/components/layout/page-transition";
+import { toast } from "sonner";
 
 
 function LoginForm() {
@@ -62,7 +63,12 @@ function LoginForm() {
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
-      window.location.href = redirect;
+      toast.success(`Welcome back, ${resultAction.payload.name || "Scholar"}!`, {
+        description: "You have signed in successfully.",
+      });
+      setTimeout(() => {
+        window.location.href = redirect;
+      }, 400);
     }
   }
 

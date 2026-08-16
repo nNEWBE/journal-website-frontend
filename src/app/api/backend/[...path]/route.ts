@@ -47,7 +47,9 @@ export async function PATCH(
 
 async function handleProxy(req: NextRequest, endpoint: string, method: string) {
   try {
-    const accessToken = req.cookies.get("gb_access_token")?.value;
+    const accessToken =
+      req.cookies.get("access_token")?.value ||
+      req.cookies.get("gb_access_token")?.value;
     const url = new URL(req.url);
     const targetUrl = `${BACKEND_URL}/api/v1/${endpoint}${url.search}`;
 

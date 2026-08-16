@@ -32,6 +32,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { registerUser, clearError } from "@/redux/features/auth/authSlice";
 import { FadeIn } from "@/components/layout/page-transition";
+import { toast } from "sonner";
 
 const ACCOUNT_ROLE_OPTIONS = [
   "Author / Submitter",
@@ -113,7 +114,12 @@ function RegisterForm() {
     );
 
     if (registerUser.fulfilled.match(resultAction)) {
-      router.push(`/dashboard/${resultAction.payload.role || targetRole}`);
+      toast.success("Account registered successfully!", {
+        description: `Welcome to GB Journal Portal, ${resultAction.payload.name || "Scholar"}.`,
+      });
+      setTimeout(() => {
+        router.push(`/dashboard/${resultAction.payload.role || targetRole}`);
+      }, 400);
     }
   }
 

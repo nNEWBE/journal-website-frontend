@@ -18,10 +18,29 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8080";
 
+function isLikelyValidJwt(token: string): boolean {
+  if (!token || typeof token !== "string") return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    const payloadJson = Buffer.from(parts[1], "base64").toString("utf-8");
+    const payload = JSON.parse(payloadJson);
+    if (payload.exp && typeof payload.exp === "number") {
+      const now = Math.floor(Date.now() / 1000);
+      return payload.exp > now;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const accessToken = req.cookies.get("gb_access_token")?.value;
+  const accessToken =
+    req.cookies.get("access_token")?.value ||
+    req.cookies.get("gb_access_token")?.value;
 
   // Check if this is a protected route
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
@@ -42,58 +61,48 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Verify the token is still valid with the backend
+    // Verify token validity
+    let isValid = false;
+
     try {
       const verifyRes = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-        // Short timeout — edge should respond fast
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (!verifyRes.ok) {
-        // Token is expired or invalid — clear cookies and redirect
-        const loginUrl = req.nextUrl.clone();
-        loginUrl.pathname = "/login";
-        loginUrl.searchParams.set("redirect", pathname);
-        const response = NextResponse.redirect(loginUrl);
-        response.cookies.delete("gb_access_token");
-        response.cookies.delete("gb_refresh_token");
-        return response;
-      }
-    } catch {
-      // Backend is unreachable — still block access for security
-      // (avoid falling through to unprotected page)
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      loginUrl.searchParams.set("redirect", pathname);
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete("gb_access_token");
-      response.cookies.delete("gb_refresh_token");
-      return response;
-    }
-  }
-
-  if (isAuthRoute && accessToken) {
-    // Already logged in — redirect away from login/register
-    try {
-      const verifyRes = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${accessToken}` },
         signal: AbortSignal.timeout(3000),
       });
 
       if (verifyRes.ok) {
-        const dashboardUrl = req.nextUrl.clone();
-        dashboardUrl.pathname = "/dashboard";
-        dashboardUrl.search = "";
-        return NextResponse.redirect(dashboardUrl);
+        isValid = true;
       }
     } catch {
-      // Backend down — allow access to login page
+      // Backend offline fallback - verify JWT structure & expiry locally
+      if (isLikelyValidJwt(accessToken)) {
+        isValid = true;
+      }
     }
+
+    if (!isValid && !isLikelyValidJwt(accessToken)) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("redirect", pathname);
+      const response = NextResponse.redirect(loginUrl);
+      response.cookies.delete("access_token");
+      response.cookies.delete("refresh_token");
+      response.cookies.delete("gb_access_token");
+      response.cookies.delete("gb_refresh_token");
+      response.cookies.delete("gb_journal_user_session");
+      return response;
+    }
+  }
+
+  if (isAuthRoute && accessToken && isLikelyValidJwt(accessToken)) {
+    // Already logged in with valid token — redirect to dashboard
+    const dashboardUrl = req.nextUrl.clone();
+    dashboardUrl.pathname = "/dashboard";
+    dashboardUrl.search = "";
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();
