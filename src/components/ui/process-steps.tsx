@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
+import { SectionBadge } from "@/components/ui/section-badge";
+
 const easing = [0.22, 1, 0.36, 1] as const;
 
 const processStepIcons = {
@@ -94,17 +96,12 @@ export function ProcessSteps({
         <Reveal>
           <div>
             {(sectionNumber || sectionLabel) && (
-              <div className="mb-4 flex items-center gap-2">
-                {sectionNumber && (
-                  <span className="font-mono text-[11px] font-extrabold tracking-[0.08em] text-slate-400">
-                    {sectionNumber}
-                  </span>
-                )}
-                {sectionLabel && (
-                  <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
-                    {sectionLabel}
-                  </span>
-                )}
+              <div className="mb-4">
+                <SectionBadge
+                  number={sectionNumber}
+                  label={sectionLabel}
+                  variant="default"
+                />
               </div>
             )}
 

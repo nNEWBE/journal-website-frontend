@@ -4,7 +4,7 @@ import type { ElementType, ReactNode } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { HeroActionButton } from "@/components/ui/hero-action-button";
-import { SupportingTag } from "@/components/ui/badge";
+import { SupportingTag, SectionBadge } from "@/components/ui/badge";
 
 const easing = [0.22, 1, 0.36, 1] as const;
 
@@ -100,18 +100,11 @@ export function PublishingCharterSection({
 
               <div className="relative">
                 {(sectionNumber || sectionLabel) && (
-                  <div className="flex items-center gap-3.5">
-                    {sectionNumber && (
-                      <span className="font-mono text-[11px] font-extrabold tracking-[0.08em] text-white/35">
-                        {sectionNumber}
-                      </span>
-                    )}
-                    {sectionLabel && (
-                      <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-amber-300">
-                        {sectionLabel}
-                      </span>
-                    )}
-                  </div>
+                  <SectionBadge
+                    number={sectionNumber}
+                    label={sectionLabel}
+                    variant="dark"
+                  />
                 )}
 
                 <h2 className="mt-6 max-w-md font-academic text-3xl font-bold leading-[1.16] tracking-[-0.035em] text-white md:text-4xl lg:text-[2.3rem]">

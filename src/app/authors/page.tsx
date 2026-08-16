@@ -25,8 +25,10 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { CtaBanner } from "@/components/ui/cta-banner";
 import { ProcessSteps, type ProcessStep } from "@/components/ui/process-steps";
 import { PublishingCharterSection } from "@/components/ui/publishing-charter-section";
+import { SectionBadge } from "@/components/ui/section-badge";
 import { articleTypes, policies } from "@/lib/data";
 
 const articleTypeDetails = {
@@ -161,9 +163,7 @@ export default function AuthorsPage() {
       <section className="container-x py-14 md:py-18">
         <div className="mb-10 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
-              Accepted formats
-            </p>
+            <SectionBadge number="01" label="Accepted formats" className="mb-2" />
             <h2 className="mt-1.5 font-academic text-2xl font-bold tracking-tight text-[color:var(--color-gb-blue-deep)] md:text-3xl">
               Choose the right article type
             </h2>
@@ -207,9 +207,7 @@ export default function AuthorsPage() {
       <section className="border-y border-slate-200 bg-[#f5f7fb] py-14 md:py-18" id="guidelines">
         <div className="container-x grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-start">
           <div className="lg:sticky lg:top-24">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[color:var(--color-gb-gold-dark)]">
-              Manuscript preparation
-            </p>
+            <SectionBadge number="02" label="Manuscript preparation" className="mb-2" />
             <h2 className="mt-2 max-w-sm font-academic text-2xl font-bold tracking-tight text-[color:var(--color-gb-blue-deep)] md:text-3xl">
               Build a complete submission package
             </h2>
@@ -259,46 +257,18 @@ export default function AuthorsPage() {
         badgeText="COPE-Aligned Practice"
       />
 
-      {/* Policy CTA */}
+      {/* Submission CTA */}
       <section className="container-x pb-16 md:pb-20">
-        <div className="relative overflow-hidden rounded-3xl bg-[color:var(--color-gb-blue-deep)] p-8 md:p-12">
-          <div className="pointer-events-none absolute inset-0 hero-pattern opacity-[0.04]" />
-          <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[color:var(--color-gb-gold)] opacity-[0.12] blur-[80px]" />
-
-          <div className="relative grid gap-8 md:grid-cols-[minmax(0,1fr)_340px] md:items-center">
-            <div>
-              <p className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-amber-300">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Editorial requirements
-              </p>
-              <h2 className="mt-3 font-academic text-2xl font-bold text-white md:text-3xl">
-                Submit work that is complete, ethical, and ready for review
-              </h2>
-              <p className="mt-3 max-w-xl text-xs leading-6 text-white/55">
-                Every manuscript is screened for scope, completeness, originality, ethical compliance, and suitability for independent assessment.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              {policies.slice(0, 3).map((policy) => (
-                <div
-                  key={policy}
-                  className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-[10px] font-semibold leading-5 text-white/65"
-                >
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                  {policy}
-                </div>
-              ))}
-              <Link
-                href="/policies"
-                className="mt-2 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-300 hover:text-amber-200 transition-colors"
-              >
-                Read all policies
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
+        <CtaBanner
+          badgeText="Submissions are open"
+          heading="Your research deserves a rigorous path to publication."
+          description="Submit to a multidisciplinary, peer-reviewed journal committed to editorial care, open access, and meaningful scholarly reach."
+          features={["Double-blind review", "Open access", "DOI registration"]}
+          primaryButtonText="Submit manuscript"
+          primaryButtonHref="/dashboard/submissions/new"
+          secondaryButtonText="Author guidelines"
+          secondaryButtonHref="#guidelines"
+        />
       </section>
     </PageShell>
   );

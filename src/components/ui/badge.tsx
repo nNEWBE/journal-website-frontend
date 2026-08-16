@@ -68,3 +68,5 @@ export function SupportingTag({
     </span>
   );
 }
+
+export { SectionBadge, NumberedBadge, type SectionBadgeProps, type SectionBadgeVariant, type SectionBadgeSize } from "./section-badge";

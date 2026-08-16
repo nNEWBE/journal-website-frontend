@@ -125,7 +125,7 @@ function WorkflowPreview({
 
   return (
     <div
-      className={`workflow-preview relative rounded-[22px] border border-slate-200/90 bg-white p-5 shadow-[0_16px_45px_rgba(11,18,61,0.07)] transition-all duration-300 hover:shadow-[0_22px_55px_rgba(11,18,61,0.11)] ${className}`}
+      className={`workflow-preview relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_12px_36px_rgba(15,23,42,0.10)] ${className}`}
     >
       <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-3">
@@ -182,11 +182,17 @@ function WorkflowPreview({
               </p>
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-            <span className="text-[8px] font-semibold text-slate-400">
-              All required fields completed
-            </span>
-            <span className="inline-flex items-center gap-1 text-[9px] font-black text-[color:var(--color-gb-blue)]">
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-slate-50/50 to-white px-3.5 py-2.5 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+              </span>
+              <span className="text-[9px] font-bold text-slate-600">
+                All required fields completed
+              </span>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-3 py-1.5 text-[9.5px] font-black text-white shadow-xs transition-all group-hover:bg-[color:var(--color-gb-blue)]">
               Submit
               <ArrowRight className="h-3 w-3" />
             </span>
@@ -281,10 +287,16 @@ function WorkflowPreview({
               <Clock3 className="ml-auto h-3.5 w-3.5 text-amber-500" />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-            <span className="text-[8px] font-bold text-slate-500">
-              Double-blind identities protected
+          <div className="mt-3.5 flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+              <span className="text-[9px] font-bold text-slate-600">
+                Double-blind identities protected
+              </span>
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100/80 px-2 py-0.5 text-[8.5px] font-black text-emerald-700">
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              Active
             </span>
           </div>
         </div>
@@ -319,11 +331,11 @@ function WorkflowPreview({
             </div>
             <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-emerald-500" />
           </div>
-          <div className="flex items-center justify-between pt-3">
-            <span className="text-[8px] font-semibold text-slate-400">
+          <div className="mt-3.5 flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5 shadow-2xs">
+            <span className="text-[9px] font-bold text-slate-600">
               Decision letter prepared
             </span>
-            <span className="text-[8px] font-extrabold text-[color:var(--color-gb-blue)]">
+            <span className="inline-flex items-center gap-1 rounded-md bg-[color:var(--color-gb-blue-soft)] px-2.5 py-1 text-[8.5px] font-black text-[color:var(--color-gb-blue)]">
               Ready for editor
             </span>
           </div>
@@ -357,12 +369,12 @@ function WorkflowPreview({
               <p className="mt-1.5 text-[8px] font-bold text-slate-600">Indexed</p>
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-            <span className="text-[8px] font-semibold text-slate-400">
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5 shadow-2xs">
+            <span className="text-[9px] font-bold text-slate-500">
               Published July 2026
             </span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-emerald-700">
-              <CheckCircle2 className="h-3 w-3" />
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[8.5px] font-black text-emerald-700">
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
               Version of record
             </span>
           </div>
@@ -488,7 +500,7 @@ export function HomeWorkflowSection() {
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
-                  className="workflow-row relative grid items-center gap-6 pl-10 sm:gap-8 sm:pl-12 lg:grid-cols-[1fr_72px_1fr] lg:gap-8 lg:pl-0 transform-gpu overflow-x-hidden"
+                  className="workflow-row relative grid items-center gap-6 pl-10 sm:gap-8 sm:pl-12 lg:grid-cols-[1fr_72px_1fr] lg:gap-8 lg:pl-0 transform-gpu"
                 >
                   {/* Left side element */}
                   <motion.div
