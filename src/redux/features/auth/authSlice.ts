@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { authApi, type LoginPayload, type RegisterPayload, setTokens, clearTokens } from "@/lib/api";
-import { getSession, setSession, clearSession, DEMO_USERS, type User } from "@/lib/auth";
+import { getSession, setSession, clearSession, type User } from "@/lib/auth";
 
 export interface AuthState {
   user: User | null;
@@ -37,14 +37,6 @@ export const loginUser = createAsyncThunk<
     setSession(user);
     return user;
   } catch (error) {
-    // Fallback to local demo accounts if live backend is offline in testing
-    const demoUser = DEMO_USERS.find(
-      (u) => u.email.toLowerCase() === credentials.email.toLowerCase().trim()
-    );
-    if (demoUser && (credentials.password === "demopass" || credentials.password === "academic2026")) {
-      setSession(demoUser);
-      return demoUser;
-    }
     const msg = error instanceof Error ? error.message : "Authentication failed";
     return rejectWithValue(msg);
   }

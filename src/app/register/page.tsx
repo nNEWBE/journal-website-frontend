@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { registerUser, type User } from "@/lib/auth";
+import { registerWithApi, type User } from "@/lib/auth";
 import { FadeIn } from "@/components/layout/page-transition";
 
 const ACCOUNT_ROLE_OPTIONS = [
@@ -56,7 +56,7 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleRegister(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
@@ -65,8 +65,18 @@ function RegisterForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters in length.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters in length.");
+      return;
+    }
+
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    if (!hasUpper || !hasLower || !hasDigit) {
+      setError(
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number."
+      );
       return;
     }
 
@@ -90,21 +100,23 @@ function RegisterForm() {
 
     const targetRole = roleMapping[accountRole] || "author";
 
-    const newUser: User = {
-      name: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      role: targetRole,
-      title: fullName.trim(),
-      department: department.trim() || institution.trim() || "Academic Faculty",
-      avatar: targetRole === "reviewer"
-        ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80"
-        : "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-    };
+    try {
+      const createdUser = await registerWithApi({
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        institution: institution.trim(),
+        department: department.trim(),
+        orcid: orcid.trim() || undefined,
+      });
 
-    setTimeout(() => {
-      registerUser(newUser);
-      router.push(`/dashboard/${targetRole}`);
-    }, 600);
+      router.push(`/dashboard/${createdUser.role || targetRole}`);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(
+        err.message || "Registration failed. Please check your details or try a different email address."
+      );
+    }
   }
 
   return (

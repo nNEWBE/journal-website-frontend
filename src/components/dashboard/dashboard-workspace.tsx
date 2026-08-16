@@ -56,7 +56,7 @@ import {
   type Role,
   type Submission,
 } from "@/lib/data";
-import { getSession, clearSession, DEMO_USERS, type User } from "@/lib/auth";
+import { getSession, clearSession, type User } from "@/lib/auth";
 
 import { roleNotes, roleAccentMap, statusConfig } from "./workspace/workspace-data";
 import { DashboardStatsGrid } from "./workspace/dashboard-stats-grid";
@@ -337,10 +337,7 @@ export function DashboardWorkspace({
   const router = useRouter();
   const pathname = usePathname();
 
-  const defaultUser =
-    DEMO_USERS.find((u) => u.role === "author") || DEMO_USERS[4];
-
-  const [currentUser, setCurrentUser] = useState<User | null>(defaultUser);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const isAnalyticsPage = pathname.includes("/analytics");
   const activeRole: Role = pathname.includes("/super-admin")
@@ -411,6 +408,7 @@ export function DashboardWorkspace({
       ];
       localStorage.setItem("gb_journal_decision_log", JSON.stringify(initialLogs));
     }
+
     const collapsed = localStorage.getItem("gb_sidebar_collapsed") === "true";
     if (collapsed) {
       setIsSidebarCollapsed(true);

@@ -26,23 +26,25 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { authenticate, getSession } from "@/lib/auth";
+import { loginWithApi, getSession } from "@/lib/auth";
 import { FadeIn } from "@/components/layout/page-transition";
 
 const ROLE_OPTIONS = [
-  "Super Admin — Prof. Dr. Laila Rahman",
-  "System Administrator — Md. Jamil Hossain",
-  "Managing Editor — Prof. Saiful Islam",
-  "Peer Reviewer — Dr. Salma Khatun",
-  "Author / Submitter — Ayesha Siddique",
+  "Custom / Registered Email",
+  "Super Admin (Prof. Dr. Laila Rahman)",
+  "System Administrator (Md. Jamil Hossain)",
+  "Managing Editor (Prof. Saiful Islam)",
+  "Peer Reviewer (Dr. Salma Khatun)",
+  "Author / Submitter (Ayesha Siddique)",
 ];
 
 const ROLE_EMAIL_MAP: Record<string, string> = {
-  "Super Admin — Prof. Dr. Laila Rahman": "superadmin@gonouniversity.edu.bd",
-  "System Administrator — Md. Jamil Hossain": "admin@gonouniversity.edu.bd",
-  "Managing Editor — Prof. Saiful Islam": "editor@gonouniversity.edu.bd",
-  "Peer Reviewer — Dr. Salma Khatun": "reviewer@gonouniversity.edu.bd",
-  "Author / Submitter — Ayesha Siddique": "author@gonouniversity.edu.bd",
+  "Custom / Registered Email": "",
+  "Super Admin (Prof. Dr. Laila Rahman)": "superadmin@gonouniversity.edu.bd",
+  "System Administrator (Md. Jamil Hossain)": "admin@gonouniversity.edu.bd",
+  "Managing Editor (Prof. Saiful Islam)": "editor@gonouniversity.edu.bd",
+  "Peer Reviewer (Dr. Salma Khatun)": "reviewer@gonouniversity.edu.bd",
+  "Author / Submitter (Ayesha Siddique)": "author@gonouniversity.edu.bd",
 };
 
 function LoginForm() {
@@ -51,8 +53,8 @@ function LoginForm() {
   const redirect = searchParams.get("redirect") || "/dashboard";
 
   const [selectedRole, setSelectedRole] = useState(ROLE_OPTIONS[0]);
-  const [email, setEmail] = useState(ROLE_EMAIL_MAP[ROLE_OPTIONS[0]]);
-  const [password, setPassword] = useState("demopass");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,24 +72,29 @@ function LoginForm() {
     if (mappedEmail) {
       setEmail(mappedEmail);
       setPassword("demopass");
+    } else {
+      setEmail("");
+      setPassword("");
     }
     setError(null);
   }
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    setTimeout(() => {
-      const userSession = authenticate(email, password);
+    try {
+      const userSession = await loginWithApi(email.trim(), password);
       if (userSession) {
         window.location.href = redirect;
-      } else {
-        setIsLoading(false);
-        setError("Invalid credentials. Please verify your email and password.");
       }
-    }, 400);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(
+        err.message || "Invalid credentials. Please verify your email and password."
+      );
+    }
   }
 
   return (

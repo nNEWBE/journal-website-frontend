@@ -232,6 +232,7 @@ export function HeroShowcase() {
                           src={slide.image}
                           alt=""
                           fill
+                          loading="eager"
                           sizes="48px"
                           className={cn(
                             "object-cover transition-transform duration-300",

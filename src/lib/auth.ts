@@ -11,50 +11,7 @@ export interface User {
   avatar?: string;
 }
 
-export const DEMO_USERS: User[] = [
-  {
-    email: "superadmin@gonouniversity.edu.bd",
-    name: "Prof. Dr. Laila Rahman",
-    role: "super-admin",
-    title: "Editor-in-Chief & Administrator",
-    department: "Faculty of Health Sciences",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    email: "admin@gonouniversity.edu.bd",
-    name: "Md. Jamil Hossain",
-    role: "admin",
-    title: "System Administrator",
-    department: "Journal Operations",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    email: "editor@gonouniversity.edu.bd",
-    name: "Prof. Saiful Islam",
-    role: "editor",
-    title: "Managing Editor",
-    department: "Department of Pharmacy",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    email: "reviewer@gonouniversity.edu.bd",
-    name: "Dr. Salma Khatun",
-    role: "reviewer",
-    title: "Peer Reviewer",
-    department: "Department of Microbiology",
-    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    email: "author@gonouniversity.edu.bd",
-    name: "Ayesha Siddique",
-    role: "author",
-    title: "Researcher",
-    department: "Department of Public Health",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-  },
-];
-
-const SESSION_KEY = "gb_journal_user_session";
+export const SESSION_KEY = "gb_journal_user_session";
 
 export function getSession(): User | null {
   if (typeof window === "undefined") return null;
@@ -87,40 +44,49 @@ export function clearSession(): void {
 }
 
 export async function loginWithApi(email: string, password: string): Promise<User> {
-  try {
-    const res = await authApi.login({ email, password });
-    const user: User = {
-      email: res.user.email,
-      name: res.user.name || res.user.fullName,
-      role: res.user.role,
-      title: res.user.title || "Academic User",
-      department: res.user.department,
-      institution: res.user.institution,
-      avatar: res.user.avatar || res.user.avatarUrl,
-    };
-    setSession(user);
-    return user;
-  } catch (e) {
-    // If backend unreachable in offline test, fallback to demo user check
-    const demo = authenticate(email, password);
-    if (demo) return demo;
-    throw e;
-  }
+  const res = await authApi.login({ email, password });
+  const user: User = {
+    email: res.user.email,
+    name: res.user.fullName || res.user.name,
+    role: res.user.role,
+    title: res.user.title || "Academic User",
+    department: res.user.department,
+    institution: res.user.institution,
+    avatar: res.user.avatarUrl || res.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(res.user.email)}`,
+  };
+  setSession(user);
+  return user;
 }
 
-export function authenticate(email: string, password: string): User | null {
-  if (password !== "demopass" && password !== "academic2026") return null;
-  const user = DEMO_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
-  if (user) {
-    setSession(user);
-    return user;
-  }
-  return null;
-}
+export async function registerWithApi(payload: {
+  fullName: string;
+  email: string;
+  password: string;
+  institution?: string;
+  department?: string;
+  country?: string;
+  orcid?: string;
+}): Promise<User> {
+  const res = await authApi.register({
+    fullName: payload.fullName,
+    email: payload.email,
+    password: payload.password,
+    institution: payload.institution,
+    department: payload.department,
+    title: payload.fullName,
+  });
 
-export function registerUser(newUser: User): User {
-  setSession(newUser);
-  return newUser;
+  const user: User = {
+    email: res.user.email,
+    name: res.user.fullName || res.user.name,
+    role: res.user.role,
+    title: res.user.title || payload.fullName,
+    department: res.user.department,
+    institution: res.user.institution,
+    avatar: res.user.avatarUrl || res.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(res.user.email)}`,
+  };
+  setSession(user);
+  return user;
 }
 
 

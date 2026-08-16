@@ -37,6 +37,7 @@ export function HomeCurrentIssue() {
                   src="/images/hero/molecular_inhibitors.jpg"
                   alt="Nexus Journal of Molecular Sciences Cover"
                   fill
+                  priority
                   sizes="290px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
