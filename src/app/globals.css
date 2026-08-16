@@ -64,26 +64,40 @@
 .font-academic,
 .font-display {
   font-family: var(--font-display), "Playfair Display", "Cormorant Garamond", Georgia, serif !important;
-  font-feature-settings: "liga", "clig", "calt";
+  font-feature-settings: "lnum" 1, "pnum" 1, "liga" 1, "clig" 1, "calt" 1;
+  font-variant-numeric: lining-nums proportional-nums;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Zero corner radius universally across cards, images, buttons, inputs, badges and all UI elements */
+
+/* Zero corner radius universally across all UI elements */
 *,
 *::before,
-*::after,
-button,
-a,
-input,
-select,
-textarea,
-img,
-[class*="rounded"] {
+*::after {
   border-radius: 0px !important;
 }
 
+/* ── Lenis Smooth Scrolling Styles ── */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
 
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
 
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
 
 * {
   box-sizing: border-box;

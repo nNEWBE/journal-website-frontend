@@ -1,172 +1,300 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, ChevronDown, CircleHelp, MessageCircle } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  ChevronDown,
+  FileText,
+  HelpCircle,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
+import { FadeIn } from "@/components/layout/page-transition";
 
-const easing = [0.22, 1, 0.36, 1] as const;
+interface FaqItem {
+  id: string;
+  category: "all" | "scope" | "review" | "ethics" | "access";
+  question: string;
+  answer: string;
+  highlight?: string;
+}
 
-const reveal = {
-  hidden: { opacity: 0, y: 28 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.62, ease: easing },
-  },
-};
-
-const faqs = [
+const FAQ_ITEMS: FaqItem[] = [
   {
-    question: "What types of manuscripts does the journal accept?",
+    id: "faq-1",
+    category: "scope",
+    question: "What types of manuscripts does GB Journal accept?",
     answer:
-      "The journal welcomes original research articles, review articles, case studies, short communications, perspectives, editorials, and scholarly letters across its published subject areas.",
+      "GB Journal welcomes original research articles, comprehensive review papers, clinical case studies, technical notes, and scholarly commentaries across multidisciplinary fields including Medical & Health Sciences, Engineering, Biological Sciences, and Social Research. All submissions must represent unpublished, original inquiry.",
+    highlight: "Original research, reviews, case studies & perspectives accepted.",
   },
   {
-    question: "How does double-blind peer review work?",
+    id: "faq-2",
+    category: "review",
+    question: "How does the double-blind peer review process operate?",
     answer:
-      "Author and reviewer identities are concealed from one another. Independent subject experts assess the manuscript's methods, evidence, originality, clarity, and scholarly contribution.",
+      "To safeguard objectivity and academic rigor, author identities and reviewer identities are completely concealed from each other. Each manuscript is evaluated by at least two independent subject specialists who assess methodology, ethical compliance, data validity, clarity, and contribution to the discipline.",
+    highlight: "Strictly anonymous review by 2+ qualified independent experts.",
   },
   {
-    question: "How long does the review process take?",
+    id: "faq-3",
+    category: "review",
+    question: "What is the typical turnaround timeline from submission to decision?",
     answer:
-      "Review time varies by discipline, reviewer availability, and the revisions required. Authors can follow each editorial stage from their submission dashboard.",
+      "Initial editorial desk screening is conducted within 3 to 5 business days. The comprehensive peer review process generally spans 4 to 6 weeks depending on reviewer availability and required revisions. Authors receive instant milestone notifications and live tracking in their author portal.",
+    highlight: "Desk screening in 3–5 days; peer review decision within 4–6 weeks.",
   },
   {
-    question: "Are there publication or submission charges?",
+    id: "faq-4",
+    category: "ethics",
+    question: "Are there publication charges or Article Processing Charges (APCs)?",
     answer:
-      "Any applicable charges are stated in the author guidelines before submission. The journal does not introduce undisclosed fees during peer review.",
+      "GB Journal is committed to equitable open scholarship. Publication policies, institutional support, and any applicable open-access processing charges are fully disclosed before submission. Generous waiver programs are available for researchers and students without dedicated grant funding.",
+    highlight: "Transparent fee structure with institutional waiver support.",
   },
   {
-    question: "Can I track my manuscript after submission?",
+    id: "faq-5",
+    category: "access",
+    question: "How can authors track manuscript status in real time?",
     answer:
-      "Yes. The author dashboard shows the manuscript's current stage, editorial updates, revision requests, decisions, and publication progress.",
+      "Authors can log into the GB Journal Workspace at any time to monitor the exact editorial state of their submission—including desk assessment, reviewer invitation, revision requests, editorial decisions, proofreading, and final volume assignment.",
+    highlight: "Live multi-stage progress tracking via author dashboard.",
   },
   {
-    question: "Will my published article be openly accessible?",
+    id: "faq-6",
+    category: "access",
+    question: "Will published articles receive permanent DOI and open access indexing?",
     answer:
-      "Published articles are prepared for open discovery with a permanent article record, downloadable files, citation metadata, and DOI information where applicable.",
+      "Yes. All published papers are permanently indexed with a registered CrossRef DOI, citation metadata, and downloadable PDF files. Articles are distributed globally under Creative Commons licensing to maximize research dissemination and academic impact.",
+    highlight: "Instant worldwide open access with permanent CrossRef DOIs.",
   },
 ];
 
+const CATEGORIES = [
+  { key: "all", label: "All Questions" },
+  { key: "scope", label: "Scope & Submissions" },
+  { key: "review", label: "Peer Review" },
+  { key: "ethics", label: "Ethics & APCs" },
+  { key: "access", label: "Tracking & Access" },
+] as const;
+
 export function HomeFaqSection() {
-  const [openFaq, setOpenFaq] = useState(0);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [openId, setOpenId] = useState<string>("faq-1");
+
+  const filteredFaqs =
+    activeCategory === "all"
+      ? FAQ_ITEMS
+      : FAQ_ITEMS.filter((item) => item.category === activeCategory);
 
   return (
-    <div className="container-x mt-16">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.08 }}
-        variants={reveal}
-        aria-labelledby="faq-heading"
-        className="faq-section relative overflow-hidden rounded-[30px] border border-slate-200/80 bg-[linear-gradient(135deg,#f7f9ff_0%,#ffffff_58%,#fffaf0_100%)] p-6 shadow-[0_28px_75px_rgba(17,27,82,0.10)] md:p-9 lg:p-11"
-      >
-        <div className="faq-section-grid pointer-events-none absolute inset-0" />
-        <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[color:var(--color-gb-gold)]/[0.10] blur-3xl" />
-        <div className="relative grid gap-10 lg:grid-cols-[0.68fr_1.32fr] lg:gap-14">
-          <div className="lg:sticky lg:top-24 lg:self-start">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-gb-blue)]/10 bg-white px-3 py-1.5 shadow-sm">
-              <CircleHelp className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-              <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[color:var(--color-gb-blue)]">
-                Frequently asked questions
-              </span>
-            </div>
-            <h2
-              id="faq-heading"
-              className="mt-6 font-academic text-3xl font-bold leading-[1.12] tracking-[-0.035em] text-[color:var(--color-gb-blue-deep)] md:text-[2.6rem]"
-            >
-              Questions before you submit?
-            </h2>
-            <p className="mt-5 max-w-md text-xs leading-6 text-slate-500">
-              Clear answers about manuscript preparation, peer review,
-              decisions, fees, tracking, and open publication.
+    <section
+      aria-label="Frequently Asked Questions"
+      className="py-14 sm:py-20 bg-white border-b border-slate-200/80"
+    >
+      <div className="container-x">
+        {/* Section Header matching other homepage sections */}
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+              FREQUENTLY ASKED QUESTIONS
             </p>
-            <div className="mt-8 rounded-[20px] border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]">
-                <MessageCircle className="h-4 w-4" />
-              </span>
-              <h3 className="mt-4 text-xs font-black text-[color:var(--color-gb-blue-deep)]">
-                Still need guidance?
-              </h3>
-              <p className="mt-2 text-[10px] leading-5 text-slate-500">
-                The editorial office can help with scope, submission
-                requirements, and journal policies.
-              </p>
-              <Link
-                href="/contact"
-                className="group/contact mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.08em] text-[color:var(--color-gb-blue)] focus-ring"
-              >
-                Contact the editorial office
-                <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/contact:translate-x-0.5 group-hover/contact:-translate-y-0.5" />
-              </Link>
-            </div>
+            <h2 className="mt-2 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
+              Author & Reviewer Guidance
+            </h2>
           </div>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
+          >
+            <span>Contact Editorial Office</span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
 
-          <div className="space-y-3">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaq === index;
+        {/* Category Filters Bar */}
+        <div className="mt-8 flex flex-wrap items-center gap-2">
+          {CATEGORIES.map((cat) => {
+            const isActive = activeCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => setActiveCategory(cat.key)}
+                className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-all cursor-pointer border ${
+                  isActive
+                    ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
+                    : "bg-slate-50/70 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 2-Column Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_390px] gap-8 lg:gap-12 mt-8">
+          {/* Left Column: Accordion Items */}
+          <div className="space-y-3.5">
+            {filteredFaqs.map((faq, index) => {
+              const isOpen = openId === faq.id;
+              const formattedIndex = String(index + 1).padStart(2, "0");
+
               return (
-                <motion.article
-                  layout
-                  key={faq.question}
-                  className={`faq-item overflow-hidden rounded-[18px] border bg-white/85 backdrop-blur-sm ${
+                <div
+                  key={faq.id}
+                  className={`border transition-colors ${
                     isOpen
-                      ? "border-[color:var(--color-gb-blue)]/25 shadow-[0_16px_38px_rgba(17,27,82,0.09)]"
-                      : "border-slate-200/80"
+                      ? "border-slate-400/80 bg-slate-50/40 shadow-2xs"
+                      : "border-slate-200/90 bg-white hover:border-slate-300"
                   }`}
                 >
                   <button
                     type="button"
+                    onClick={() => setOpenId(isOpen ? "" : faq.id)}
                     aria-expanded={isOpen}
-                    aria-controls={`faq-answer-${index}`}
-                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
-                    className="faq-trigger flex w-full items-center gap-4 px-4 py-4 text-left sm:px-5"
+                    aria-controls={`faq-answer-${faq.id}`}
+                    className="w-full flex items-start justify-between gap-4 p-5 sm:p-6 text-left cursor-pointer"
                   >
+                    <div className="flex items-start gap-4">
+                      <span
+                        className={`font-mono text-xs font-bold shrink-0 mt-0.5 ${
+                          isOpen ? "text-[#1e40af]" : "text-slate-400"
+                        }`}
+                      >
+                        {formattedIndex}
+                      </span>
+                      <h3
+                        className={`font-ui text-sm sm:text-[15px] font-bold leading-snug tracking-tight transition-colors ${
+                          isOpen ? "text-[#0b1b3d]" : "text-slate-900"
+                        }`}
+                      >
+                        {faq.question}
+                      </h3>
+                    </div>
                     <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[9px] font-black transition-colors ${
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center border transition-transform duration-200 mt-0.5 ${
                         isOpen
-                          ? "bg-[color:var(--color-gb-blue-deep)] text-white"
-                          : "bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]"
+                          ? "rotate-180 border-[#1e40af] bg-[#1e40af]/10 text-[#1e40af]"
+                          : "border-slate-200 text-slate-400 bg-white"
                       }`}
                     >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="flex-1 text-xs font-extrabold leading-5 text-[color:var(--color-gb-blue-deep)]">
-                      {faq.question}
-                    </span>
-                    <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
-                        isOpen
-                          ? "rotate-180 border-[color:var(--color-gb-blue)]/20 bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)]"
-                          : "border-slate-200 text-slate-400"
-                      }`}
-                    >
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      <ChevronDown className="h-4 w-4" />
                     </span>
                   </button>
+
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div
-                        id={`faq-answer-${index}`}
+                        id={`faq-answer-${faq.id}`}
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: easing }}
-                        className="overflow-hidden"
+                        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden border-t border-slate-200/70"
                       >
-                        <p className="border-t border-slate-100 px-16 py-4 text-[11px] leading-6 text-slate-500 sm:pl-[4.75rem] sm:pr-14">
-                          {faq.answer}
-                        </p>
+                        <div className="px-5 sm:px-6 pb-6 pt-4 space-y-3">
+                          <p className="text-xs sm:text-[13px] leading-relaxed text-slate-600">
+                            {faq.answer}
+                          </p>
+                          {faq.highlight && (
+                            <div className="flex items-center gap-2 bg-blue-50/70 border-l-2 border-[#1e40af] px-3.5 py-2 text-[11px] font-semibold text-[#1e40af]">
+                              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                              <span>{faq.highlight}</span>
+                            </div>
+                          )}
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.article>
+                </div>
               );
             })}
           </div>
+
+          {/* Right Column: Editorial Support Card */}
+          <div className="space-y-6">
+            <div className="bg-slate-50/70 border border-slate-200/90 p-6 sm:p-7 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center bg-[#0b1b3d] text-white">
+                    <HelpCircle className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
+                      EDITORIAL DESK
+                    </p>
+                    <h3 className="font-academic text-lg font-medium text-slate-950">
+                      Need custom guidance?
+                    </h3>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-xs text-slate-600 leading-relaxed">
+                  Have specific inquiries regarding manuscript scope, special issues, or submission formatting? Our editorial staff is here to help.
+                </p>
+
+                <div className="mt-5 space-y-3 border-t border-slate-200/70 pt-5 text-xs text-slate-700">
+                  <div className="flex items-start gap-2.5">
+                    <Mail className="h-4 w-4 text-[#1e40af] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-slate-900">Email Editorial Office</p>
+                      <a
+                        href="mailto:editorial@gonobishwabidyalay.edu.bd"
+                        className="text-[11px] text-[#1e40af] hover:underline"
+                      >
+                        editorial@gonobishwabidyalay.edu.bd
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <BookOpen className="h-4 w-4 text-[#1e40af] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-slate-900">Author Guidelines</p>
+                      <Link
+                        href="/authors"
+                        className="text-[11px] text-[#1e40af] hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Review submission format</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <FileText className="h-4 w-4 text-[#1e40af] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-slate-900">Publication Ethics</p>
+                      <Link
+                        href="/policies"
+                        className="text-[11px] text-[#1e40af] hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>COPE compliance & peer review policy</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-slate-200/70">
+                <Link
+                  href="/dashboard/submissions/new"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white py-3 text-xs font-semibold transition-colors"
+                >
+                  <span>Submit Manuscript Now</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </section>
   );
 }

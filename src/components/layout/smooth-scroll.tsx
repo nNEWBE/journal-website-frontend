@@ -1,10 +1,31 @@
 "use client";
 
 import { useEffect } from "react";
+import Lenis from "lenis";
 
 export function SmoothScroll() {
   useEffect(() => {
-    // 1. Intercept internal anchor link clicks for smooth animated scrolling
+    // Initialize Lenis smooth scroll engine
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: "vertical",
+      gestureOrientation: "vertical",
+      smoothWheel: true,
+      wheelMultiplier: 0.95,
+      touchMultiplier: 1.5,
+    });
+
+    let animationFrameId: number;
+
+    function raf(time: number) {
+      lenis.raf(time);
+      animationFrameId = requestAnimationFrame(raf);
+    }
+
+    animationFrameId = requestAnimationFrame(raf);
+
+    // Smooth Anchor Link Interceptor
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       const anchor = target?.closest("a");
@@ -15,41 +36,24 @@ export function SmoothScroll() {
         anchor.origin === window.location.origin &&
         anchor.pathname === window.location.pathname
       ) {
-        const targetElement = document.querySelector(anchor.hash);
+        const targetElement = document.querySelector(anchor.hash) as HTMLElement | null;
         if (targetElement) {
           e.preventDefault();
-          targetElement.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
+          lenis.scrollTo(targetElement, {
+            offset: -30,
+            duration: 1.2,
           });
           window.history.pushState(null, "", anchor.hash);
         }
       }
     };
 
-    // 2. High-performance scroll optimization: temporarily disable hover repaint triggers during fast scrolling
-    let scrollTimer: NodeJS.Timeout | null = null;
-    const body = document.body;
-
-    const handleScroll = () => {
-      if (!body.classList.contains("is-scrolling")) {
-        body.classList.add("is-scrolling");
-      }
-      if (scrollTimer) {
-        clearTimeout(scrollTimer);
-      }
-      scrollTimer = setTimeout(() => {
-        body.classList.remove("is-scrolling");
-      }, 150);
-    };
-
     document.addEventListener("click", handleAnchorClick);
-    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
+      cancelAnimationFrame(animationFrameId);
       document.removeEventListener("click", handleAnchorClick);
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimer) clearTimeout(scrollTimer);
+      lenis.destroy();
     };
   }, []);
 
