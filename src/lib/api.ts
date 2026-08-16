@@ -593,3 +593,34 @@ export const adminApi = {
     });
   },
 };
+
+export const filesApi = {
+  uploadImage: async (
+    file: File,
+    folder: string = "gbjournal/images"
+  ): Promise<{ url: string; publicId: string; format: string; width: number; height: number }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+
+    const token = getAccessToken();
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/api/v1/files/upload-image`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: "Image upload failed" }));
+      throw new Error(error.message || `HTTP ${res.status}`);
+    }
+
+    return res.json();
+  },
+};
+
