@@ -50,6 +50,8 @@ export function BoardManagementPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingMember, setEditingMember] = useState<BoardMember | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<BoardMember | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState(false);
 
   const [name, setName] = useState("");
   const [designation, setDesignation] = useState("Professor");
@@ -199,14 +201,18 @@ export function BoardManagementPanel() {
     }
   };
 
-  const handleDelete = async (id: number | string) => {
+  const handleExecuteDeleteMember = async () => {
+    if (!memberToDelete?.id) return;
     try {
-      toast.loading("Removing member...", { id: `del-${id}` });
-      await adminApi.deleteBoardMember(id);
-      setMembers((prev) => prev.filter((m) => m.id !== id));
-      toast.success("Board member removed", { id: `del-${id}` });
+      setIsDeletingMember(true);
+      await adminApi.deleteBoardMember(memberToDelete.id);
+      setMembers((prev) => prev.filter((m) => m.id !== memberToDelete.id));
+      toast.success(`"${memberToDelete.name}" removed from editorial board.`);
+      setMemberToDelete(null);
     } catch (err: any) {
-      toast.error("Failed to remove member", { id: `del-${id}`, description: err.message });
+      toast.error("Failed to remove member", { description: err.message });
+    } finally {
+      setIsDeletingMember(false);
     }
   };
 
@@ -515,7 +521,7 @@ export function BoardManagementPanel() {
                       Edit
                     </button>
                     <button
-                      onClick={() => member.id && handleDelete(member.id)}
+                      onClick={() => setMemberToDelete(member)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Remove Member"
                     >
@@ -662,6 +668,49 @@ export function BoardManagementPanel() {
             </button>
           </div>
         </form>
+      </CustomModal>
+
+      {/* Delete Member Confirmation Modal */}
+      <CustomModal
+        isOpen={!!memberToDelete}
+        onClose={() => setMemberToDelete(null)}
+        title="Remove Editorial Board Member?"
+        className="max-w-md"
+      >
+        {memberToDelete && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200">
+              <Trash2 className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-rose-950 mb-0.5">
+                  Are you sure you want to remove &quot;{memberToDelete.name}&quot;?
+                </p>
+                <p className="text-xs text-rose-800 leading-relaxed">
+                  This member will be unlinked from the public editorial board directory.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setMemberToDelete(null)}
+                className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDeleteMember}
+                disabled={isDeletingMember}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isDeletingMember ? "Removing..." : "Delete Member"}
+              </button>
+            </div>
+          </div>
+        )}
       </CustomModal>
     </div>
   );

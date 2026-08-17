@@ -85,8 +85,12 @@ export function PageContentCMSPanel() {
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
-  // Preview Modal
+  // Preview & Confirm Modals
   const [previewSection, setPreviewSection] = useState<PageContentDTO | null>(null);
+  const [sectionToDelete, setSectionToDelete] = useState<PageContentDTO | null>(null);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   // Form fields
   const [formPageKey, setFormPageKey] = useState<string>("about");
@@ -202,17 +206,20 @@ export function PageContentCMSPanel() {
     }
   };
 
-  // Delete Section
-  const handleDeleteSection = async (section: PageContentDTO) => {
-    if (!section.id) return;
-    if (!confirm(`Are you sure you want to remove the section "${section.title}"?`)) return;
+  // Confirm and Execute Delete Section
+  const handleExecuteDeleteSection = async () => {
+    if (!sectionToDelete?.id) return;
 
     try {
-      await contentApi.deleteSection(section.id);
-      toast.success("Section removed successfully.");
+      setIsDeleting(true);
+      await contentApi.deleteSection(sectionToDelete.id);
+      toast.success(`Section "${sectionToDelete.title}" removed successfully.`);
+      setSectionToDelete(null);
       fetchSections(activeTab);
     } catch (err: any) {
       toast.error(err.message || "Failed to delete section.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -231,25 +238,20 @@ export function PageContentCMSPanel() {
     }
   };
 
-  // Reset page to defaults
-  const handleResetDefaults = async () => {
+  // Confirm and Execute Reset page to defaults
+  const handleExecuteResetDefaults = async () => {
     const currentTabObj = PAGE_TABS.find((t) => t.id === activeTab);
-    if (
-      !confirm(
-        `Are you sure you want to restore default academic text for "${currentTabObj?.label}"? Any custom edits on this page will be reset.`
-      )
-    ) {
-      return;
-    }
 
     try {
-      setLoading(true);
+      setIsResetting(true);
       await contentApi.resetDefaults(activeTab);
       toast.success(`Default academic content restored for ${currentTabObj?.label}.`);
+      setIsResetConfirmOpen(false);
       fetchSections(activeTab);
     } catch (err: any) {
       toast.error(err.message || "Failed to reset content.");
-      setLoading(false);
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -283,7 +285,7 @@ export function PageContentCMSPanel() {
           </button>
 
           <button
-            onClick={handleResetDefaults}
+            onClick={() => setIsResetConfirmOpen(true)}
             title="Restore default academic template"
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
           >
@@ -403,7 +405,7 @@ export function PageContentCMSPanel() {
               Create First Section
             </button>
             <button
-              onClick={handleResetDefaults}
+              onClick={() => setIsResetConfirmOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
@@ -471,7 +473,7 @@ export function PageContentCMSPanel() {
 
                   {section.id && (
                     <button
-                      onClick={() => handleDeleteSection(section)}
+                      onClick={() => setSectionToDelete(section)}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Remove section"
                     >
@@ -710,6 +712,85 @@ export function PageContentCMSPanel() {
                 className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-all cursor-pointer"
               >
                 Close Preview
+              </button>
+            </div>
+          </div>
+        )}
+      </CustomModal>
+
+      {/* Reset Defaults Confirmation Modal */}
+      <CustomModal
+        isOpen={isResetConfirmOpen}
+        onClose={() => setIsResetConfirmOpen(false)}
+        title="Restore Default Academic Content?"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5 p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <RotateCcw className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-900 leading-relaxed">
+              This will overwrite any custom additions or edits on the <strong>{currentTabInfo.label}</strong> page with the official Gono Bishwabidyalay peer review charter defaults.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsResetConfirmOpen(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExecuteResetDefaults}
+              disabled={isResetting}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              {isResetting ? "Restoring..." : "Yes, Restore Defaults"}
+            </button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* Delete Section Confirmation Modal */}
+      <CustomModal
+        isOpen={!!sectionToDelete}
+        onClose={() => setSectionToDelete(null)}
+        title="Delete Content Section?"
+        className="max-w-md"
+      >
+        {sectionToDelete && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200">
+              <Trash2 className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-rose-950 mb-0.5">
+                  Are you sure you want to remove &quot;{sectionToDelete.title}&quot;?
+                </p>
+                <p className="text-xs text-rose-800 leading-relaxed">
+                  Section key <code className="font-mono bg-rose-100/80 px-1 py-0.5 rounded text-[11px]">{sectionToDelete.sectionKey}</code> will be permanently removed from the public portal.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setSectionToDelete(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDeleteSection}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isDeleting ? "Deleting..." : "Delete Section"}
               </button>
             </div>
           </div>

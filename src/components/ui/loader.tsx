@@ -112,38 +112,74 @@ export function AcademicDataLoader({
 }: AcademicDataLoaderProps) {
   return (
     <div className={`py-12 sm:py-16 px-6 flex flex-col items-center justify-center text-center select-none ${className || ""}`}>
-      {/* Site Theme Academic Crest Loader */}
-      <div className="relative mb-4 flex items-center justify-center">
-        {/* Soft academic halo */}
-        <div className="absolute -inset-2 rounded-full bg-[#1e3a8a]/10 blur-md" />
+      {/* Signature Academic Journal Book Animation */}
+      <div className="relative mb-5 flex items-center justify-center scale-90">
+        <div className="academic-book">
+          <div className="academic-book__spine" />
 
-        {/* Orbit Spinner Track */}
-        <div className="relative h-14 w-14 rounded-2xl bg-white border border-slate-200/90 shadow-[0_4px_16px_rgba(11,27,61,0.08)] flex items-center justify-center">
-          {/* Animated Themed Ring */}
-          <div className="absolute inset-1 rounded-xl border-2 border-slate-100 border-t-[#0b1b3d] border-r-[#1e3a8a] animate-spin" />
+          {/* Left static page */}
+          <div className="academic-book__page academic-book__page--left">
+            <div className="academic-book__page-lines">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
 
-          {/* GB Official Academic Monogram */}
-          <div className="relative z-10 h-7 w-7 rounded-lg bg-[#0b1b3d] text-white flex items-center justify-center font-bold text-[11px] font-academic tracking-wider shadow-xs border border-white/20">
-            GB
+          {/* Right static page */}
+          <div className="academic-book__page academic-book__page--right">
+            <div className="academic-book__page-lines">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+
+          {/* Flipping pages leafing dynamically */}
+          <div className="academic-book__page academic-book__page--flipping page-1">
+            <div className="academic-book__page-lines">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+          <div className="academic-book__page academic-book__page--flipping page-2">
+            <div className="academic-book__page-lines">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+          <div className="academic-book__page academic-book__page--flipping page-3">
+            <div className="academic-book__page-lines">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Theme Academic Typography */}
-      <h4 className="font-academic text-base sm:text-[17px] font-medium text-slate-950 tracking-[-0.015em]">
+      {/* Clean Modern Typography */}
+      <h4 className="text-sm font-semibold text-slate-800 tracking-tight font-sans">
         {title}
       </h4>
 
       {subtitle && (
-        <p className="font-sans text-xs text-slate-500 mt-1 max-w-sm leading-relaxed">
+        <p className="text-xs text-slate-400 mt-1 font-normal max-w-sm leading-relaxed">
           {subtitle}
         </p>
       )}
-
-      {/* Signature Navy & Gold Progress Line */}
-      <div className="mt-4 h-1 w-28 rounded-full bg-slate-100 overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0b1b3d] via-[#1e3a8a] to-[#d97706] rounded-full animate-progress" />
-      </div>
     </div>
   );
 }
