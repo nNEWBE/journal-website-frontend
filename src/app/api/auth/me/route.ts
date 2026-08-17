@@ -17,61 +17,115 @@ function parseJwt(token: string) {
 
 export async function GET(req: NextRequest) {
   try {
-    const accessToken =
+    let accessToken =
       req.cookies.get("access_token")?.value ||
       req.cookies.get("gb_access_token")?.value;
+    const refreshToken =
+      req.cookies.get("refresh_token")?.value ||
+      req.cookies.get("gb_refresh_token")?.value;
 
-    if (!accessToken) {
-      return NextResponse.json(
-        { user: null, authenticated: false },
-        { status: 401 }
-      );
-    }
+    let refreshCookies: string[] = [];
 
-    try {
-      const backendRes = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+    const fetchMeFromBackend = async (token: string) => {
+      return fetch(`${BACKEND_URL}/api/v1/auth/me`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(3000),
       });
+    };
 
-      if (backendRes.ok) {
-        const user = await backendRes.json();
-        return NextResponse.json({
-          authenticated: true,
-          user: {
-            id: user?.id,
-            email: user?.email,
-            name: user?.fullName || user?.name,
-            role: user?.role,
-            title: user?.title,
-            department: user?.department,
-            institution: user?.institution,
-            avatar: user?.avatarUrl || user?.avatar,
-          },
-        });
+    let backendRes: Response | null = null;
+
+    if (accessToken) {
+      try {
+        backendRes = await fetchMeFromBackend(accessToken);
+      } catch {
+        // Backend offline / network issue
       }
-    } catch {
-      // Backend offline fallback
+    }
+
+    // If access token is expired (401) or absent, try refresh token
+    if ((!backendRes || backendRes.status === 401) && refreshToken) {
+      try {
+        const refreshRes = await fetch(`${BACKEND_URL}/api/v1/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+          signal: AbortSignal.timeout(4000),
+        });
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          const newToken: string | null = refreshData.accessToken ?? null;
+          const newRefreshToken: string | null = refreshData.refreshToken ?? null;
+
+          if (newToken) {
+            accessToken = newToken;
+            const isProduction = process.env.NODE_ENV === "production";
+            const opts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${isProduction ? "; Secure" : ""}`;
+            const refreshOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${isProduction ? "; Secure" : ""}`;
+            refreshCookies = [
+              `access_token=${newToken}${opts}`,
+              `gb_access_token=${newToken}${opts}`,
+            ];
+            if (newRefreshToken) {
+              refreshCookies.push(
+                `refresh_token=${newRefreshToken}${refreshOpts}`,
+                `gb_refresh_token=${newRefreshToken}${refreshOpts}`
+              );
+            }
+
+            try {
+              backendRes = await fetchMeFromBackend(newToken);
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+
+    if (backendRes && backendRes.ok) {
+      const user = await backendRes.json();
+      const response = NextResponse.json({
+        authenticated: true,
+        user: {
+          id: user?.id,
+          email: user?.email,
+          name: user?.fullName || user?.name,
+          role: user?.role,
+          title: user?.title,
+          department: user?.department,
+          institution: user?.institution,
+          avatar: user?.avatarUrl || user?.avatar,
+        },
+      });
+
+      for (const cookie of refreshCookies) {
+        response.headers.append("Set-Cookie", cookie);
+      }
+      return response;
     }
 
     // Try decoding from JWT
-    const jwtPayload = parseJwt(accessToken);
-    if (jwtPayload && jwtPayload.sub) {
-      return NextResponse.json({
-        authenticated: true,
-        user: {
-          id: jwtPayload.id || "usr_jwt",
-          email: jwtPayload.sub,
-          name: jwtPayload.name || jwtPayload.sub.split("@")[0],
-          role: jwtPayload.role || "author",
-          title: "Academic Member",
-          department: "Department of Pharmacy",
-          institution: "Gono Bishwabidyalay",
-        },
-      });
+    if (accessToken) {
+      const jwtPayload = parseJwt(accessToken);
+      if (jwtPayload && jwtPayload.sub) {
+        const response = NextResponse.json({
+          authenticated: true,
+          user: {
+            id: jwtPayload.id || "usr_jwt",
+            email: jwtPayload.sub,
+            name: jwtPayload.name || jwtPayload.sub.split("@")[0],
+            role: jwtPayload.role || "author",
+            title: "Academic Member",
+            department: "Department of Pharmacy",
+            institution: "Gono Bishwabidyalay",
+          },
+        });
+        for (const cookie of refreshCookies) {
+          response.headers.append("Set-Cookie", cookie);
+        }
+        return response;
+      }
     }
 
     return NextResponse.json(

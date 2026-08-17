@@ -20,6 +20,8 @@ import { clearAuth, setUser as setReduxUser } from "@/redux/features/auth/authSl
 import { SiteHeaderNav } from "@/components/header/site-header-nav";
 import { HeaderSearchModal } from "@/components/header/header-search-modal";
 import { MobileNavDrawer } from "@/components/header/mobile-nav-drawer";
+import { CustomModal } from "@/components/ui/modal";
+import { PremiumLoader } from "@/components/ui/loader";
 import { toast } from "sonner";
 
 export { mainNav, type NavItem, type NavSubItem } from "@/components/header/nav-data";
@@ -31,6 +33,8 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -85,16 +89,47 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Lock scrolling when logout loader overlay is active
+  useEffect(() => {
+    if (isLoggingOut) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.stop();
+      }
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || "unset";
+        document.documentElement.style.overflow = prevHtmlOverflow || "unset";
+        if (typeof window !== "undefined" && (window as any).__lenis) {
+          (window as any).__lenis.start();
+        }
+      };
+    }
+  }, [isLoggingOut]);
+
   function handleLogout() {
+    setMenuOpen(false);
+    setIsLogoutModalOpen(true);
+  }
+
+  async function handleConfirmLogout() {
+    setIsLogoutModalOpen(false);
+    setIsLoggingOut(true);
     toast.success("Logged out successfully", {
-      description: "You have been signed out of your account.",
+      description: "You have been safely signed out of your account.",
+      duration: 3500,
     });
+    try {
+      await authApi.logout().catch(() => {});
+    } catch {}
     clearSession();
     dispatch(clearAuth());
     setUser(null);
     setTimeout(() => {
       window.location.href = "/";
-    }, 300);
+    }, 700);
   }
 
   return (
@@ -248,6 +283,56 @@ export function SiteHeader() {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
       />
+
+      {/* Logout Confirmation Modal */}
+      <CustomModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        title="Confirm Sign Out"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900">
+            <div className="p-2 bg-rose-100 rounded-lg shrink-0 text-rose-600">
+              <LogOut className="h-5 w-5" />
+            </div>
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-rose-950">End your current session?</p>
+              <p className="text-rose-700 leading-relaxed">
+                You will be safely signed out from this browser session. You can sign back in anytime with your credentials.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Yes, Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* Real-time Logout Loading Overlay */}
+      {isLoggingOut && (
+        <div
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-white animate-in fade-in duration-200"
+          data-lenis-prevent="true"
+        >
+          <PremiumLoader text="Signing out & securing session..." fullScreen={false} />
+        </div>
+      )}
     </header>
   );
 }

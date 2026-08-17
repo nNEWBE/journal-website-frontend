@@ -53,13 +53,14 @@ import { CustomModal } from "@/components/ui/modal";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
+import { PremiumLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import {
   submissions as seedSubmissions,
   type Role,
   type Submission,
 } from "@/lib/data";
-import { getSession, type User } from "@/lib/auth";
+import { getSession, clearSession, type User } from "@/lib/auth";
 import { submissionsApi } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/authSlice";
@@ -343,7 +344,7 @@ export function DashboardWorkspace({
 
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector((state) => state.auth.user);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(reduxUser || null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -385,28 +386,54 @@ export function DashboardWorkspace({
     };
   }, [isUserMenuOpen]);
 
-  const handleLogout = async () => {
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Lock scrolling when logout overlay is active
+  useEffect(() => {
+    if (isLoggingOut) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.stop();
+      }
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || "unset";
+        document.documentElement.style.overflow = prevHtmlOverflow || "unset";
+        if (typeof window !== "undefined" && (window as any).__lenis) {
+          (window as any).__lenis.start();
+        }
+      };
+    }
+  }, [isLoggingOut]);
+
+  const handleConfirmLogout = async () => {
+    setIsLogoutModalOpen(false);
+    setIsLoggingOut(true);
     toast.success("Logged out successfully", {
-      description: "You have been signed out of your account.",
+      description: "You have been safely signed out of your account.",
+      duration: 3500,
     });
-    await dispatch(logoutUser());
+    try {
+      await dispatch(logoutUser());
+    } catch {}
+    clearSession();
     setTimeout(() => {
       window.location.href = "/login";
-    }, 300);
+    }, 700);
   };
 
   const isAnalyticsPage = pathname.includes("/analytics");
-  const activeRole: Role = pathname.includes("/super-admin")
-    ? "super-admin"
-    : pathname.includes("/admin")
-      ? "admin"
-      : pathname.includes("/editor")
-        ? "editor"
-        : pathname.includes("/reviewer")
-          ? "reviewer"
-          : pathname.includes("/author")
-            ? "author"
-            : initialRole;
+  const activeRole: Role = useMemo(() => {
+    if (pathname.includes("/super-admin")) return "super-admin";
+    if (pathname.includes("/admin")) return "admin";
+    if (pathname.includes("/editor")) return "editor";
+    if (pathname.includes("/reviewer")) return "reviewer";
+    if (pathname.includes("/author")) return "author";
+    return (currentUser?.role as Role) || initialRole;
+  }, [pathname, currentUser?.role, initialRole]);
 
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
@@ -862,7 +889,230 @@ export function DashboardWorkspace({
 
   return (
     <div className="flex min-h-screen bg-[#f5f7fb] w-full">
-      {/* Sidebar */}
+      {/* Mobile Drawer Sidebar */}
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs lg:hidden"
+              data-lenis-prevent="true"
+            />
+
+            {/* Slide-over Panel */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col bg-[#070e24] border-r border-white/[0.08] shadow-2xl lg:hidden text-white overflow-hidden"
+              data-lenis-prevent="true"
+            >
+              {/* Header */}
+              <div className="h-16 flex items-center justify-between border-b border-white/10 shrink-0 bg-[#050b1d] px-4">
+                <Link
+                  href="/"
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="flex items-center gap-3 group"
+                >
+                  <div className="h-9 w-9 rounded-lg bg-white border border-white/20 p-1 flex items-center justify-center shrink-0">
+                    <img
+                      src="/gb-logo-official.png"
+                      alt="Gono Bishwabidyalay emblem"
+                      className="h-7 w-7 object-contain"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-academic font-bold text-sm tracking-wide text-white leading-tight">
+                      GB JOURNAL
+                    </p>
+                    <p className="text-[8.5px] text-slate-400 uppercase tracking-wider font-mono mt-0.5">
+                      Research Workspace
+                    </p>
+                  </div>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close sidebar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Navigation Body */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                {/* Core Section */}
+                <div>
+                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
+                    Core Workspace
+                  </p>
+                  <div className="space-y-1">
+                    {navItems
+                      .filter((item) => activeRole === item.id)
+                      .map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeView === "workspace" && !pathname.includes("/profile");
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setIsMobileSidebarOpen(false);
+                              router.push(item.href);
+                            }}
+                            className={cn(
+                              "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
+                              isActive
+                                ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                            )}
+                          >
+                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
+                            <span className="truncate flex-1 font-medium">{item.label}</span>
+                            {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
+                          </button>
+                        );
+                      })}
+
+                    <button
+                      onClick={() => {
+                        setIsMobileSidebarOpen(false);
+                        router.push("/dashboard/analytics");
+                      }}
+                      className={cn(
+                        "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
+                        activeView === "analytics" && !pathname.includes("/profile")
+                          ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                          : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                      )}
+                    >
+                      <BarChart2 className={cn("h-4 w-4 shrink-0", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400")} />
+                      <span className="flex-1 font-medium">Journal Analytics</span>
+                      {activeView === "analytics" && !pathname.includes("/profile") && (
+                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Role Suites */}
+                {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
+                  <div>
+                    <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
+                      Role Suites
+                    </p>
+                    <div className="space-y-1">
+                      {navItems
+                        .filter((item) => item.id !== (currentUser?.role || activeRole))
+                        .map((item) => {
+                          const Icon = item.icon;
+                          const isActive = activeRole === item.id && activeView === "workspace";
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setIsMobileSidebarOpen(false);
+                                router.push(item.href);
+                              }}
+                              className={cn(
+                                "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
+                                isActive
+                                  ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
+                                  : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              <span className="truncate flex-1">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Journal Portal Links */}
+                <div>
+                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
+                    Journal Portal
+                  </p>
+                  <div className="space-y-1">
+                    <Link
+                      href="/"
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className="flex w-full items-center rounded-xl text-left text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white transition-all h-9 px-3 gap-3"
+                    >
+                      <BookOpen className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <span className="truncate flex-1">Public Homepage</span>
+                    </Link>
+                    <Link
+                      href="/issues"
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className="flex w-full items-center rounded-xl text-left text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white transition-all h-9 px-3 gap-3"
+                    >
+                      <Archive className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <span className="truncate flex-1">Issues Archive</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Footer with Profile & Sign Out */}
+              {mounted && currentUser && (
+                <div className="mt-auto border-t border-white/[0.08] p-3 bg-[#050b1d] space-y-2">
+                  <Link
+                    href="/dashboard/profile"
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                    className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+                  >
+                    <div className="relative shrink-0">
+                      {currentUser.avatar ? (
+                        <img
+                          src={currentUser.avatar}
+                          alt={currentUser.name}
+                          className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs">
+                          {currentUser.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-white truncate leading-tight">
+                        {currentUser.name}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5 capitalize">
+                        {currentUser.role.replace("-", " ")}
+                      </p>
+                    </div>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileSidebarOpen(false);
+                      setIsLogoutModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold transition-colors cursor-pointer border border-rose-500/20"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
       <aside
         className={cn(
           "hidden lg:flex flex-col transition-all duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-40",
@@ -918,7 +1168,7 @@ export function DashboardWorkspace({
               <div className="space-y-1">
                 {/* Active Workspace */}
                 {navItems
-                  .filter((item) => currentUser?.role === item.id)
+                  .filter((item) => activeRole === item.id)
                   .map((item) => {
                     const Icon = item.icon;
                     const isActive = activeView === "workspace" && !pathname.includes("/profile");
@@ -988,7 +1238,7 @@ export function DashboardWorkspace({
             </div>
 
             {/* Role Views Switcher (if admin or super-admin) */}
-            {(currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
+            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
               <div>
                 {!isSidebarCollapsed && (
                   <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
@@ -997,7 +1247,7 @@ export function DashboardWorkspace({
                 )}
                 <div className="space-y-1">
                   {navItems
-                    .filter((item) => item.id !== currentUser?.role)
+                    .filter((item) => item.id !== (currentUser?.role || activeRole))
                     .map((item) => {
                       const Icon = item.icon;
                       const isActive =
@@ -1171,7 +1421,7 @@ export function DashboardWorkspace({
                       type="button"
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        handleLogout();
+                        setIsLogoutModalOpen(true);
                       }}
                       className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all group cursor-pointer text-left"
                     >
@@ -1598,6 +1848,56 @@ export function DashboardWorkspace({
         submission={selectedSubmission}
         onAssign={handleAssignReviewerSubmit}
       />
+
+      {/* Logout Confirmation Modal */}
+      <CustomModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        title="Confirm Sign Out"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900">
+            <div className="p-2 bg-rose-100 rounded-lg shrink-0 text-rose-600">
+              <LogOut className="h-5 w-5" />
+            </div>
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-rose-950">End your current session?</p>
+              <p className="text-rose-700 leading-relaxed">
+                You will be securely signed out from this browser session. You will need your academic email and password to sign back in.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Yes, Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* Real-time Logout Loading Overlay */}
+      {isLoggingOut && (
+        <div
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-white animate-in fade-in duration-200"
+          data-lenis-prevent="true"
+        >
+          <PremiumLoader text="Signing out & securing session..." fullScreen={false} />
+        </div>
+      )}
     </div>
   );
 }

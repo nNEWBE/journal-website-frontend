@@ -37,11 +37,37 @@ export function getAccessToken(): string | null {
   return null;
 }
 
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function silentlyRefreshToken(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const isBrowser = typeof window !== "undefined";
+
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
@@ -64,25 +90,38 @@ async function request<T>(
     targetUrl = `${API_BASE_URL}${endpoint}`;
   }
 
-  const res = await fetch(targetUrl, {
+  let res = await fetch(targetUrl, {
     ...options,
     headers,
   });
 
+  // On 401 in browser: attempt silent refresh once and retry the request
   if (!res.ok) {
-    if (res.status === 401 && isBrowser && !endpoint.includes("/login")) {
-      handleSessionExpired();
+    if (res.status === 401 && isBrowser && !endpoint.includes("/login") && !endpoint.includes("/refresh")) {
+      const refreshed = await silentlyRefreshToken();
+      if (refreshed) {
+        res = await fetch(targetUrl, {
+          ...options,
+          headers,
+        });
+      }
     }
 
-    let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
-    try {
-      const errorJson = await res.json();
-      if (errorJson.message) errorMessage = errorJson.message;
-      else if (errorJson.error) errorMessage = errorJson.error;
-    } catch {
-      // Fallback
+    if (!res.ok) {
+      if (res.status === 401 && isBrowser && !endpoint.includes("/login") && !endpoint.includes("/refresh")) {
+        handleSessionExpired();
+      }
+
+      let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
+      try {
+        const errorJson = await res.json();
+        if (errorJson.message) errorMessage = errorJson.message;
+        else if (errorJson.error) errorMessage = errorJson.error;
+      } catch {
+        // Fallback
+      }
+      throw new Error(errorMessage);
     }
-    throw new Error(errorMessage);
   }
 
   // If response has no content (204 No Content), return empty object
@@ -707,11 +746,21 @@ export const userApi = {
     // The generic proxy at /api/backend/[...path] re-forwards multipart as
     // arrayBuffer which can corrupt the boundary — this dedicated route uses
     // req.formData() + reconstructs FormData properly.
-    const res = await fetch("/api/auth/upload-avatar", {
+    let res = await fetch("/api/auth/upload-avatar", {
       method: "POST",
       body: formData,
       // Do NOT set Content-Type — browser auto-sets multipart/form-data + boundary
     });
+
+    if (!res.ok && res.status === 401) {
+      const refreshed = await silentlyRefreshToken();
+      if (refreshed) {
+        res = await fetch("/api/auth/upload-avatar", {
+          method: "POST",
+          body: formData,
+        });
+      }
+    }
 
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {

@@ -28,6 +28,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { loginUser, clearError } from "@/redux/features/auth/authSlice";
 import { FadeIn } from "@/components/layout/page-transition";
+import { PremiumLoader } from "@/components/ui/loader";
 import { toast } from "sonner";
 
 
@@ -45,6 +46,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // If already logged in, redirect straight to dashboard
   useEffect(() => {
@@ -63,6 +65,26 @@ function LoginForm() {
     }
   }, [searchParams]);
 
+  // Lock scrolling when login loader overlay is active
+  useEffect(() => {
+    if (isRedirecting) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.stop();
+      }
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || "unset";
+        document.documentElement.style.overflow = prevHtmlOverflow || "unset";
+        if (typeof window !== "undefined" && (window as any).__lenis) {
+          (window as any).__lenis.start();
+        }
+      };
+    }
+  }, [isRedirecting]);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLocalError(null);
@@ -73,11 +95,16 @@ function LoginForm() {
     );
 
     if (loginUser.fulfilled.match(resultAction)) {
+      setIsRedirecting(true);
       toast.success(`Welcome back, ${resultAction.payload.name || "Scholar"}!`, {
-        description: "You have signed in successfully.",
+        description: "You have signed in successfully. Loading your workspace...",
+        duration: 3500,
       });
+      const target = redirect && redirect !== "/dashboard"
+        ? redirect
+        : `/dashboard/${resultAction.payload.role || "author"}`;
       setTimeout(() => {
-        window.location.href = redirect;
+        window.location.href = target;
       }, 400);
     }
   }
@@ -85,7 +112,16 @@ function LoginForm() {
   const displayError = localError || reduxError;
 
   return (
-    <FadeIn delay={0.1} className="mx-auto max-w-4xl w-full border border-slate-300 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.12)]">
+    <>
+      {isRedirecting && (
+        <div
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-white animate-in fade-in duration-200"
+          data-lenis-prevent="true"
+        >
+          <PremiumLoader text="Signing in & loading workspace..." fullScreen={false} />
+        </div>
+      )}
+      <FadeIn delay={0.1} className="mx-auto max-w-4xl w-full border border-slate-300 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.12)]">
       <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] items-stretch">
         
         {/* Left Column: Institutional Brand Showcase */}
@@ -316,6 +352,7 @@ function LoginForm() {
 
       </div>
     </FadeIn>
+    </>
   );
 }
 

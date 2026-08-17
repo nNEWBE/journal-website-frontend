@@ -1,28 +1,37 @@
-import React from "react";
+"use client";
+
+import React, { useEffect } from "react";
 
 interface LoaderProps {
-  /**
-   * The text to display underneath the loading spinner.
-   * If omitted, defaults to "Loading..."
-   */
   text?: string;
-  /**
-   * Whether the loader should occupy the full screen height (h-screen).
-   * If false, it behaves as a centered block element for cards/containers.
-   * @default true
-   */
   fullScreen?: boolean;
-  /**
-   * Optional custom container className to override the default layout wrapper.
-   */
   className?: string;
 }
 
 export function PremiumLoader({ text = "Loading...", fullScreen = true, className }: LoaderProps) {
+  useEffect(() => {
+    if (fullScreen) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.stop();
+      }
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || "unset";
+        document.documentElement.style.overflow = prevHtmlOverflow || "unset";
+        if (typeof window !== "undefined" && (window as any).__lenis) {
+          (window as any).__lenis.start();
+        }
+      };
+    }
+  }, [fullScreen]);
+
   const containerClasses = className
     ? className
     : (fullScreen
-      ? "flex h-screen w-full items-center justify-center bg-[#f5f7fb]"
+      ? "flex h-screen w-full items-center justify-center bg-white"
       : "flex items-center justify-center p-8 w-full");
 
   return (
@@ -30,7 +39,7 @@ export function PremiumLoader({ text = "Loading...", fullScreen = true, classNam
       <div className="journal-loader-container">
         <div className="academic-book">
           <div className="academic-book__spine" />
-          
+
           {/* Left static page */}
           <div className="academic-book__page academic-book__page--left">
             <div className="academic-book__page-lines">
@@ -41,7 +50,7 @@ export function PremiumLoader({ text = "Loading...", fullScreen = true, classNam
               <span />
             </div>
           </div>
-          
+
           {/* Right static page */}
           <div className="academic-book__page academic-book__page--right">
             <div className="academic-book__page-lines">
@@ -52,7 +61,7 @@ export function PremiumLoader({ text = "Loading...", fullScreen = true, classNam
               <span />
             </div>
           </div>
-          
+
           {/* Flipping pages leafing dynamically */}
           <div className="academic-book__page academic-book__page--flipping page-1">
             <div className="academic-book__page-lines">
@@ -82,7 +91,7 @@ export function PremiumLoader({ text = "Loading...", fullScreen = true, classNam
             </div>
           </div>
         </div>
-        
+
         {text && <p className="shimmer-text">{text}</p>}
       </div>
     </div>

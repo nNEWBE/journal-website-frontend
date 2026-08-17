@@ -105,10 +105,19 @@ export async function POST(req: NextRequest) {
               const opts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${
                 isProduction ? "; Secure" : ""
               }`;
+              const refreshOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${
+                isProduction ? "; Secure" : ""
+              }`;
               refreshCookies = [
                 `access_token=${newToken}${opts}`,
                 `gb_access_token=${newToken}${opts}`,
               ];
+              if (refreshData.refreshToken) {
+                refreshCookies.push(
+                  `refresh_token=${refreshData.refreshToken}${refreshOpts}`,
+                  `gb_refresh_token=${refreshData.refreshToken}${refreshOpts}`
+                );
+              }
             }
           } else {
             // Refresh token is invalid/expired — force re-login

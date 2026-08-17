@@ -72,14 +72,23 @@ async function tryRefreshToken(req: NextRequest): Promise<{
 
     const data = await refreshRes.json();
     const newToken: string | null = data.accessToken ?? null;
+    const newRefreshToken: string | null = data.refreshToken ?? null;
     if (!newToken) return { newToken: null, setCookieHeaders: [] };
 
     const isProduction = process.env.NODE_ENV === "production";
     const cookieOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${isProduction ? "; Secure" : ""}`;
+    const refreshOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${isProduction ? "; Secure" : ""}`;
     const setCookieHeaders = [
       `access_token=${newToken}${cookieOpts}`,
       `gb_access_token=${newToken}${cookieOpts}`,
     ];
+
+    if (newRefreshToken) {
+      setCookieHeaders.push(
+        `refresh_token=${newRefreshToken}${refreshOpts}`,
+        `gb_refresh_token=${newRefreshToken}${refreshOpts}`
+      );
+    }
 
     return { newToken, setCookieHeaders };
   } catch {

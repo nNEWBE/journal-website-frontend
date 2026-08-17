@@ -51,12 +51,12 @@ const accentColorMap = {
 };
 
 const sparklinePaths = [
-  "M 0 24 Q 10 9, 20 16 T 40 6 T 60 14 T 80 3",
-  "M 0 21 Q 10 3, 20 14 T 40 9 T 60 15 T 80 4",
-  "M 0 26 Q 10 16, 20 21 T 40 9 T 60 6 T 80 1",
-  "M 0 16 Q 10 14, 20 15 T 40 9 T 60 11 T 80 8",
-  "M 0 6 Q 10 16, 20 11 T 40 21 T 60 14 T 80 18",
-  "M 0 22 Q 10 14, 20 11 T 40 8 T 60 4 T 80 1",
+  "M 0 24 Q 10 12, 20 18 T 40 10 T 60 17 T 80 8",
+  "M 0 22 Q 10 8, 20 16 T 40 12 T 60 18 T 80 9",
+  "M 0 26 Q 10 18, 20 22 T 40 12 T 60 9 T 80 6",
+  "M 0 18 Q 10 16, 20 17 T 40 12 T 60 14 T 80 11",
+  "M 0 10 Q 10 18, 20 14 T 40 22 T 60 16 T 80 20",
+  "M 0 24 Q 10 16, 20 14 T 40 11 T 60 8 T 80 6",
 ];
 
 export function StatCard({
@@ -150,16 +150,16 @@ export function StatCard({
           </div>
 
           {/* Sparkline placed on bottom right (prevents any overlap) */}
-          <div className="h-7 w-16 overflow-hidden pointer-events-none select-none opacity-50 group-hover:opacity-100 transition-opacity duration-300 shrink-0">
-            <svg className="w-full h-full" viewBox="0 0 80 30" preserveAspectRatio="none">
+          <div className="h-8 w-20 pointer-events-none select-none opacity-60 group-hover:opacity-100 transition-opacity duration-300 shrink-0">
+            <svg className="w-full h-full overflow-visible" viewBox="0 0 80 32" preserveAspectRatio="none">
               <defs>
                 <linearGradient id={`gradient-${accent}-${index}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={accentColorMap[accent]} stopOpacity="0.25" />
+                  <stop offset="0%" stopColor={accentColorMap[accent]} stopOpacity="0.28" />
                   <stop offset="100%" stopColor={accentColorMap[accent]} stopOpacity="0" />
                 </linearGradient>
               </defs>
               <motion.path
-                d={`${sparklinePaths[index % 6]} L 80 30 L 0 30 Z`}
+                d={`${sparklinePaths[index % 6]} L 80 32 L 0 32 Z`}
                 fill={`url(#gradient-${accent}-${index})`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -169,8 +169,9 @@ export function StatCard({
                 d={sparklinePaths[index % 6]}
                 fill="none"
                 stroke={accentColorMap[accent]}
-                strokeWidth="1.5"
+                strokeWidth="1.8"
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 1.0, delay: index * 0.05, ease: "easeOut" }}

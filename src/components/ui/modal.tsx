@@ -90,10 +90,10 @@ export function CustomModal({
               <button
                 onClick={onClose}
                 type="button"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors cursor-pointer"
+                className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
                 title="Close dialog"
               >
-                <X className="h-4.5 w-4.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
