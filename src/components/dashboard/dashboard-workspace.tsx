@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   TrendingUp,
   User as UserIcon,
+  Users,
   UserCheck,
   X,
   Zap,
@@ -56,6 +57,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { PremiumLoader } from "@/components/ui/loader";
+import { CustomTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   submissions as seedSubmissions,
@@ -75,6 +77,7 @@ import { UserManagementPanel } from "./admin/user-management-panel";
 import { MailingCenterPanel } from "./admin/mailing-center-panel";
 import { IssueManagementPanel } from "./admin/issue-management-panel";
 import { BoardManagementPanel } from "./admin/board-management-panel";
+import { PageContentCMSPanel } from "./admin/page-content-cms-panel";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -265,9 +268,9 @@ function RowActionsDropdown({
                     advanceSubmission(sub.id);
                     setIsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                   Advance Stage
                 </button>
 
@@ -277,9 +280,9 @@ function RowActionsDropdown({
                     triggerAssignReviewer(sub);
                     setIsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <UserCheck className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <UserCheck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                   Assign Reviewer
                 </button>
               </>
@@ -292,9 +295,9 @@ function RowActionsDropdown({
                   triggerUploadRevision(sub);
                   setIsOpen(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                <Send className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+                <Send className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                 Upload Revision
               </button>
             )}
@@ -309,9 +312,9 @@ function RowActionsDropdown({
                     triggerSubmitReview(sub.id);
                     setIsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                   Submit Review
                 </button>
               )}
@@ -324,7 +327,7 @@ function RowActionsDropdown({
                 triggerViewInfo(sub);
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <Eye className="h-3.5 w-3.5 shrink-0 text-slate-500" />
               View Manuscript Info
@@ -444,7 +447,7 @@ export function DashboardWorkspace({
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
   const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
-  const [adminSubView, setAdminSubView] = useState<"pipeline" | "users" | "mailing" | "issues" | "board">("pipeline");
+  const [adminSubView, setAdminSubView] = useState<"pipeline" | "users" | "mailing" | "issues" | "board" | "content">("pipeline");
   const [decisionLog, setDecisionLog] = useState<string[]>([
     "GBJ-2026-101 scheduled for Volume 4, Issue 2",
     "Reviewer certificate batch generated for Dr. Salma Khatun",
@@ -955,38 +958,45 @@ export function DashboardWorkspace({
               </div>
 
               {/* Navigation Body */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              <div
+                data-lenis-prevent="true"
+                onWheel={(e) => e.stopPropagation()}
+                className="flex-1 min-h-0 sidebar-scroll p-3 space-y-4"
+              >
                 {/* Core Section */}
                 <div>
                   <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
                     Core Workspace
                   </p>
                   <div className="space-y-1">
-                    {navItems
-                      .filter((item) => activeRole === item.id)
-                      .map((item) => {
-                        const Icon = item.icon;
-                        const isActive = activeView === "workspace" && !pathname.includes("/profile");
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => {
-                              setIsMobileSidebarOpen(false);
-                              router.push(item.href);
-                            }}
-                            className={cn(
-                              "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
-                              isActive
-                                ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
-                            )}
-                          >
-                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
-                            <span className="truncate flex-1 font-medium">{item.label}</span>
-                            {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
-                          </button>
-                        );
-                      })}
+                    {/* Non-admin suites */}
+                    {activeRole !== "admin" && activeRole !== "super-admin" && (
+                      navItems
+                        .filter((item) => activeRole === item.id)
+                        .map((item) => {
+                          const Icon = item.icon;
+                          const isActive = activeView === "workspace" && !pathname.includes("/profile");
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setIsMobileSidebarOpen(false);
+                                router.push(item.href);
+                              }}
+                              className={cn(
+                                "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
+                                isActive
+                                  ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                              )}
+                            >
+                              <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
+                              <span className="truncate flex-1 font-medium">{item.label}</span>
+                              {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
+                            </button>
+                          );
+                        })
+                    )}
 
                     <button
                       onClick={() => {
@@ -1009,6 +1019,58 @@ export function DashboardWorkspace({
                   </div>
                 </div>
 
+                {/* Administration Management Tools */}
+                {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+                  <div>
+                    <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between">
+                      <span>Management Tools</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
+                    </p>
+                    <div className="space-y-1">
+                      {[
+                        { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
+                        { id: "users", label: "User Directory", icon: Users },
+                        { id: "mailing", label: "Mailing & Broadcast", icon: Mail },
+                        { id: "issues", label: "Issues & Volumes", icon: BookOpen },
+                        { id: "board", label: "Editorial Board", icon: Crown },
+                        { id: "content", label: "Site & Pages CMS", icon: FileText },
+                      ].map((tab) => {
+                        const Icon = tab.icon;
+                        const isTabActive =
+                          (activeRole === "admin" || activeRole === "super-admin") &&
+                          activeView === "workspace" &&
+                          !pathname.includes("/profile") &&
+                          adminSubView === tab.id;
+
+                        return (
+                          <button
+                            key={tab.id}
+                            onClick={() => {
+                              setIsMobileSidebarOpen(false);
+                              setAdminSubView(tab.id as any);
+                              if (activeRole !== "admin" && activeRole !== "super-admin") {
+                                router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                              } else if (activeView !== "workspace" || pathname.includes("/profile")) {
+                                router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                              }
+                            }}
+                            className={cn(
+                              "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
+                              isTabActive
+                                ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                            )}
+                          >
+                            <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-[#60a5fa]" : "text-slate-400")} />
+                            <span className="truncate flex-1 font-medium">{tab.label}</span>
+                            {isTabActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Role Suites */}
                 {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
                   <div>
@@ -1017,7 +1079,7 @@ export function DashboardWorkspace({
                     </p>
                     <div className="space-y-1">
                       {navItems
-                        .filter((item) => item.id !== (currentUser?.role || activeRole))
+                        .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
                         .map((item) => {
                           const Icon = item.icon;
                           const isActive = activeRole === item.id && activeView === "workspace";
@@ -1121,12 +1183,13 @@ export function DashboardWorkspace({
 
       {/* Desktop Sidebar */}
       <aside
+        data-lenis-prevent="true"
         className={cn(
           "hidden lg:flex flex-col transition-all duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-40",
           mounted && isSidebarCollapsed ? "w-[68px]" : "w-[270px]"
         )}
       >
-        <div className="flex h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
           {/* Header Brand */}
           <div className={cn(
             "h-16 flex items-center border-b border-white/10 shrink-0 bg-[#050b1d] transition-all duration-300",
@@ -1161,10 +1224,14 @@ export function DashboardWorkspace({
           </div>
 
           {/* Navigation Links */}
-          <div className={cn(
-            "mt-3 flex-1 overflow-hidden space-y-4",
-            isSidebarCollapsed ? "px-2" : "px-3"
-          )}>
+          <div
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+            className={cn(
+              "mt-3 flex-1 min-h-0 sidebar-scroll space-y-4",
+              isSidebarCollapsed ? "px-2" : "px-3"
+            )}
+          >
             {/* Core Section */}
             <div>
               {!isSidebarCollapsed && (
@@ -1173,76 +1240,159 @@ export function DashboardWorkspace({
                 </p>
               )}
               <div className="space-y-1">
-                {/* Active Workspace */}
-                {navItems
-                  .filter((item) => activeRole === item.id)
-                  .map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeView === "workspace" && !pathname.includes("/profile");
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setIsMobileSidebarOpen(false);
-                          router.push(item.href);
-                        }}
-                        className={cn(
-                          "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
-                          isSidebarCollapsed
-                            ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
-                            : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
-                          isActive
-                            ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                            : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
-                        )}
-                        title={item.label}
-                      >
-                        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                        {!isSidebarCollapsed && (
-                          <>
-                            <span className="truncate flex-1 font-medium text-slate-200 group-hover:text-white">
-                              {item.label}
-                            </span>
-                            {isActive && (
-                              <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                {/* Active Workspace for Non-Admin roles */}
+                {activeRole !== "admin" && activeRole !== "super-admin" && (
+                  navItems
+                    .filter((item) => activeRole === item.id)
+                    .map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeView === "workspace" && !pathname.includes("/profile");
+                      return (
+                        <CustomTooltip
+                          key={item.id}
+                          content={item.label}
+                          disabled={!isSidebarCollapsed}
+                          side="right"
+                        >
+                          <button
+                            onClick={() => {
+                              setIsMobileSidebarOpen(false);
+                              router.push(item.href);
+                            }}
+                            className={cn(
+                              "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
+                              isSidebarCollapsed
+                                ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
+                                : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                              isActive
+                                ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
                             )}
-                          </>
-                        )}
-                      </button>
-                    );
-                  })}
+                          >
+                            <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                            {!isSidebarCollapsed && (
+                              <>
+                                <span className="truncate flex-1 font-medium text-slate-200 group-hover:text-white">
+                                  {item.label}
+                                </span>
+                                {isActive && (
+                                  <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                                )}
+                              </>
+                            )}
+                          </button>
+                        </CustomTooltip>
+                      );
+                    })
+                )}
 
                 {/* Analytics */}
-                <button
-                  onClick={() => {
-                    setIsMobileSidebarOpen(false);
-                    router.push("/dashboard/analytics");
-                  }}
-                  className={cn(
-                    "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
-                    isSidebarCollapsed
-                      ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
-                      : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
-                    activeView === "analytics" && !pathname.includes("/profile")
-                      ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                      : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
-                  )}
-                  title="Journal Analytics"
+                <CustomTooltip
+                  content="Journal Analytics"
+                  disabled={!isSidebarCollapsed}
+                  side="right"
                 >
-                  <BarChart2 className={cn("h-4 w-4 shrink-0 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                  {!isSidebarCollapsed && (
-                    <>
-                      <span className="flex-1 font-medium text-slate-200 group-hover:text-white">
-                        Journal Analytics
-                      </span>
-                      {activeView === "analytics" && !pathname.includes("/profile") && (
-                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                      )}
-                    </>
-                  )}
-                </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileSidebarOpen(false);
+                      router.push("/dashboard/analytics");
+                    }}
+                    className={cn(
+                      "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
+                      isSidebarCollapsed
+                        ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
+                        : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                      activeView === "analytics" && !pathname.includes("/profile")
+                        ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                        : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                    )}
+                  >
+                    <BarChart2 className={cn("h-4 w-4 shrink-0 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                    {!isSidebarCollapsed && (
+                      <>
+                        <span className="flex-1 font-medium text-slate-200 group-hover:text-white">
+                          Journal Analytics
+                        </span>
+                        {activeView === "analytics" && !pathname.includes("/profile") && (
+                          <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                        )}
+                      </>
+                    )}
+                  </button>
+                </CustomTooltip>
               </div>
             </div>
+
+            {/* Administration Management Tools (Desktop) */}
+            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+              <div>
+                {!isSidebarCollapsed && (
+                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between">
+                    <span>Management Tools</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {[
+                    { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
+                    { id: "users", label: "User Directory", icon: Users },
+                    { id: "mailing", label: "Mailing & Broadcast", icon: Mail },
+                    { id: "issues", label: "Issues & Volumes", icon: BookOpen },
+                    { id: "board", label: "Editorial Board", icon: Crown },
+                    { id: "content", label: "Site & Pages CMS", icon: FileText },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isTabActive =
+                      (activeRole === "admin" || activeRole === "super-admin") &&
+                      activeView === "workspace" &&
+                      !pathname.includes("/profile") &&
+                      adminSubView === tab.id;
+
+                    return (
+                      <CustomTooltip
+                        key={tab.id}
+                        content={tab.label}
+                        disabled={!isSidebarCollapsed}
+                        side="right"
+                      >
+                        <button
+                          onClick={() => {
+                            setIsMobileSidebarOpen(false);
+                            setAdminSubView(tab.id as any);
+                            if (activeRole !== "admin" && activeRole !== "super-admin") {
+                              router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                            } else if (activeView !== "workspace" || pathname.includes("/profile")) {
+                              router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group border-y-0 border-r-0 border-l-[3px]",
+                            isSidebarCollapsed
+                              ? "w-10 h-9 mx-auto justify-center rounded-xl border-l-0"
+                              : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                            isTabActive
+                              ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                              : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                          )}
+                        >
+                          <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isTabActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                          {!isSidebarCollapsed && (
+                            <>
+                              <span className="truncate flex-1 font-medium text-slate-200 group-hover:text-white">
+                                {tab.label}
+                              </span>
+                              {isTabActive && (
+                                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                              )}
+                            </>
+                          )}
+                        </button>
+                      </CustomTooltip>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Role Views Switcher (if admin or super-admin) */}
             {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
@@ -1254,36 +1404,37 @@ export function DashboardWorkspace({
                 )}
                 <div className="space-y-1">
                   {navItems
-                    .filter((item) => item.id !== (currentUser?.role || activeRole))
+                    .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
                     .map((item) => {
                       const Icon = item.icon;
-                      const isActive =
-                        activeRole === item.id && activeView === "workspace";
                       return (
-                        <button
+                        <CustomTooltip
                           key={item.id}
-                          onClick={() => {
-                            setIsMobileSidebarOpen(false);
-                            router.push(item.href);
-                          }}
-                          className={cn(
-                            "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group border-y-0 border-r-0 border-l-[3px]",
-                            isSidebarCollapsed
-                              ? "w-10 h-9 mx-auto justify-center rounded-xl border-l-0"
-                              : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
-                            isActive
-                              ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
-                              : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
-                          )}
-                          title={item.label}
+                          content={item.label}
+                          disabled={!isSidebarCollapsed}
+                          side="right"
                         >
-                          <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-200" />
-                          {!isSidebarCollapsed && (
-                            <span className="truncate flex-1 text-slate-300 group-hover:text-white">
-                              {item.label}
-                            </span>
-                          )}
-                        </button>
+                          <button
+                            onClick={() => {
+                              setIsMobileSidebarOpen(false);
+                              router.push(item.href);
+                            }}
+                            className={cn(
+                              "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group border-y-0 border-r-0 border-l-[3px]",
+                              isSidebarCollapsed
+                                ? "w-10 h-9 mx-auto justify-center rounded-xl border-l-0"
+                                : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                              "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
+                            )}
+                          >
+                            <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-200" />
+                            {!isSidebarCollapsed && (
+                              <span className="truncate flex-1 text-slate-300 group-hover:text-white">
+                                {item.label}
+                              </span>
+                            )}
+                          </button>
+                        </CustomTooltip>
                       );
                     })}
                 </div>
@@ -1298,40 +1449,51 @@ export function DashboardWorkspace({
                 </p>
               )}
               <div className="space-y-1">
-                <Link
-                  href="/"
-                  className={cn(
-                    "flex items-center rounded-xl text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-all h-9 group",
-                    isSidebarCollapsed
-                      ? "w-10 h-9 mx-auto justify-center"
-                      : "w-full px-3 gap-3"
-                  )}
-                  title="Public Homepage"
+                <CustomTooltip
+                  content="Public Homepage"
+                  disabled={!isSidebarCollapsed}
+                  side="right"
                 >
-                  <BookOpen className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-white" />
-                  {!isSidebarCollapsed && (
-                    <span className="truncate flex-1 text-slate-300 group-hover:text-white">
-                      Public Homepage
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  href="/issues"
-                  className={cn(
-                    "flex items-center rounded-xl text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-all h-9 group",
-                    isSidebarCollapsed
-                      ? "w-10 h-9 mx-auto justify-center"
-                      : "w-full px-3 gap-3"
-                  )}
-                  title="Browse Issues"
+                  <Link
+                    href="/"
+                    className={cn(
+                      "flex items-center rounded-xl text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-all h-9 group",
+                      isSidebarCollapsed
+                        ? "w-10 h-9 mx-auto justify-center"
+                        : "w-full px-3 gap-3"
+                    )}
+                  >
+                    <BookOpen className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-white" />
+                    {!isSidebarCollapsed && (
+                      <span className="truncate flex-1 text-slate-300 group-hover:text-white">
+                        Public Homepage
+                      </span>
+                    )}
+                  </Link>
+                </CustomTooltip>
+
+                <CustomTooltip
+                  content="Issues Archive"
+                  disabled={!isSidebarCollapsed}
+                  side="right"
                 >
-                  <Archive className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-white" />
-                  {!isSidebarCollapsed && (
-                    <span className="truncate flex-1 text-slate-300 group-hover:text-white">
-                      Issues Archive
-                    </span>
-                  )}
-                </Link>
+                  <Link
+                    href="/issues"
+                    className={cn(
+                      "flex items-center rounded-xl text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-all h-9 group",
+                      isSidebarCollapsed
+                        ? "w-10 h-9 mx-auto justify-center"
+                        : "w-full px-3 gap-3"
+                    )}
+                  >
+                    <Archive className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-white" />
+                    {!isSidebarCollapsed && (
+                      <span className="truncate flex-1 text-slate-300 group-hover:text-white">
+                        Issues Archive
+                      </span>
+                    )}
+                  </Link>
+                </CustomTooltip>
               </div>
             </div>
           </div>
@@ -1692,6 +1854,18 @@ export function DashboardWorkspace({
                         <Crown className="h-3.5 w-3.5" />
                         Editorial Board
                       </button>
+                      <button
+                        onClick={() => setAdminSubView("content")}
+                        className={cn(
+                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
+                          adminSubView === "content"
+                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                            : "border-transparent text-slate-500 hover:text-slate-800"
+                        )}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Site &amp; Pages CMS
+                      </button>
                     </div>
                   )}
 
@@ -1710,6 +1884,10 @@ export function DashboardWorkspace({
                   ) : (activeRole === "admin" || activeRole === "super-admin") && adminSubView === "board" ? (
                     <div className="p-4">
                       <BoardManagementPanel />
+                    </div>
+                  ) : (activeRole === "admin" || activeRole === "super-admin") && adminSubView === "content" ? (
+                    <div className="p-4">
+                      <PageContentCMSPanel />
                     </div>
                   ) : (
                     <>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { UserCheck } from "lucide-react";
 import type { Submission } from "@/lib/data";
 
@@ -41,6 +42,7 @@ export function AssignReviewerModal({
       isOpen={isOpen}
       onClose={onClose}
       title={`Assign Peer Reviewer — ${submission.id}`}
+      className="overflow-visible"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -56,17 +58,13 @@ export function AssignReviewerModal({
           <label className="block text-xs font-extrabold text-slate-700 mb-1">
             Select Reviewer
           </label>
-          <select
+          <CustomSelect
+            size="form"
+            options={availableReviewers}
             value={selectedReviewer}
-            onChange={(e) => setSelectedReviewer(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 bg-white"
-          >
-            {availableReviewers.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedReviewer}
+            placeholder="Choose an active reviewer"
+          />
         </div>
 
         <div className="flex justify-end gap-2 pt-2">

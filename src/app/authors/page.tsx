@@ -33,6 +33,7 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { AuthorsHero } from "@/components/authors/authors-hero";
+import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 import { articleTypes } from "@/lib/data";
 
 const articleTypeDetails: Record<
@@ -575,6 +576,8 @@ export default function AuthorsPage() {
           </div>
         </div>
       </section>
+
+      <AdminPageEditBadge pageKey="authors" />
     </PageShell>
   );
 }

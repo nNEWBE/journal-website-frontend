@@ -87,7 +87,11 @@
   border-radius: 9999px !important;
 }
 
-/* ── Lenis Smooth Scrolling Styles ── */
+/* ── Scrollbar Stability & Smooth Scrolling ── */
+html {
+  scrollbar-gutter: stable;
+}
+
 html.lenis,
 html.lenis body {
   height: auto;
@@ -1576,3 +1580,98 @@ select:focus-visible,
     }
   }
 }
+
+/* Sidebar Custom Hover-Visible Scrollbar */
+.sidebar-scroll {
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none; /* Firefox default hidden */
+  -ms-overflow-style: none; /* IE/Edge default hidden */
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+  display: none; /* WebKit default hidden */
+}
+.sidebar-scroll:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+.sidebar-scroll:hover::-webkit-scrollbar {
+  display: block;
+  width: 5px;
+}
+.sidebar-scroll:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+}
+.sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Progress bar & academic loader animations */
+@keyframes progressAnim {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(15%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0.7;
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(0.94);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.75;
+  }
+}
+
+.animate-progress {
+  animation: progressAnim 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 4s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spinReverse 2.4s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+
+

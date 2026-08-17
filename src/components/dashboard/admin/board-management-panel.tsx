@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Users,
   UserPlus,
@@ -12,11 +12,24 @@ import {
   RotateCcw,
   Sparkles,
   Award,
+  Crown,
+  ShieldCheck,
+  BookOpen,
+  UserCheck,
+  Search,
+  X,
+  CheckCircle2,
+  ExternalLink,
+  UploadCloud,
+  Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { boardApi, adminApi } from "@/lib/api";
+import { boardApi, adminApi, filesApi } from "@/lib/api";
 import { type BoardMember } from "@/lib/data";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { AcademicDataLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 
 const BOARD_ROLES = [
@@ -30,6 +43,8 @@ const BOARD_ROLES = [
 export function BoardManagementPanel() {
   const [members, setMembers] = useState<BoardMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
 
   // Add/Edit modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +57,36 @@ export function BoardManagementPanel() {
   const [role, setRole] = useState("Associate Editor");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WebP).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be under 5MB.");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      const res = await filesApi.uploadImage(file, "gbjournal/board");
+      if (res.url) {
+        setAvatarUrl(res.url);
+        toast.success("Scholar photo uploaded successfully!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload photo. Please try again.");
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
 
   const loadMembers = async () => {
     try {
@@ -60,6 +105,42 @@ export function BoardManagementPanel() {
   useEffect(() => {
     loadMembers();
   }, []);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = members.length;
+    const chief = members.filter((m) => /chief|managing/i.test(m.role || "")).length;
+    const section = members.filter((m) => /section/i.test(m.role || "")).length;
+    const advisory = members.filter((m) => /advisory|reviewer|associate/i.test(m.role || "")).length;
+    return { total, chief, section, advisory };
+  }, [members]);
+
+  // Filtered members
+  const filteredMembers = useMemo(() => {
+    return members.filter((m) => {
+      const matchSearch =
+        searchQuery === "" ||
+        (m.name && m.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (m.affiliation && m.affiliation.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (m.designation && m.designation.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (m.role && m.role.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      let matchRole = true;
+      if (roleFilter !== "ALL") {
+        if (roleFilter === "CHIEF") {
+          matchRole = /chief|managing/i.test(m.role || "");
+        } else if (roleFilter === "SECTION") {
+          matchRole = /section/i.test(m.role || "");
+        } else if (roleFilter === "ADVISORY") {
+          matchRole = /advisory|associate/i.test(m.role || "");
+        } else {
+          matchRole = m.role?.toLowerCase() === roleFilter.toLowerCase();
+        }
+      }
+
+      return matchSearch && matchRole;
+    });
+  }, [members, searchQuery, roleFilter]);
 
   const openAddModal = () => {
     setEditingMember(null);
@@ -129,6 +210,50 @@ export function BoardManagementPanel() {
     }
   };
 
+  const getRoleBadge = (roleStr?: string) => {
+    const r = (roleStr || "").toUpperCase();
+    if (r.includes("CHIEF")) {
+      return {
+        label: roleStr || "Editor-in-Chief",
+        icon: Crown,
+        bg: "bg-amber-50 text-amber-900 border-amber-200/90",
+        badge: "Chief Executive",
+      };
+    }
+    if (r.includes("MANAGING")) {
+      return {
+        label: roleStr || "Managing Editor",
+        icon: ShieldCheck,
+        bg: "bg-emerald-50 text-emerald-900 border-emerald-200/90",
+        badge: "Managing Board",
+      };
+    }
+    if (r.includes("SECTION")) {
+      return {
+        label: roleStr || "Section Editor",
+        icon: BookOpen,
+        bg: "bg-indigo-50 text-indigo-900 border-indigo-200/90",
+        badge: "Specialized Section",
+      };
+    }
+    return {
+      label: roleStr || "Associate Editor",
+      icon: Award,
+      bg: "bg-blue-50 text-blue-900 border-blue-200/90",
+      badge: "Advisory Council",
+    };
+  };
+
+  // Extract initials helper
+  const getInitials = (fullName: string) => {
+    const clean = fullName.replace(/^(Prof\.|Dr\.|Mr\.|Ms\.|Mrs\.)\s*/gi, "").trim();
+    const parts = clean.split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return (parts[0]?.[0] || "E").toUpperCase();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -156,77 +281,251 @@ export function BoardManagementPanel() {
         </button>
       </div>
 
+      {/* Stats Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        {[
+          {
+            id: "ALL",
+            label: "Total Board",
+            sublabel: "Appointments",
+            value: stats.total,
+            icon: Users,
+            iconColor: "text-blue-600",
+            iconBg: "bg-blue-50/90 border-blue-200/80",
+            badgeBg: "bg-blue-50 text-blue-700 border-blue-200/80",
+            badge: "All Appointments",
+            activeClass: "ring-2 ring-[color:var(--color-gb-blue)] border-transparent bg-gradient-to-b from-blue-50/30 to-white shadow-md",
+          },
+          {
+            id: "CHIEF",
+            label: "Chief & Managing",
+            sublabel: "Executive Board",
+            value: stats.chief,
+            icon: Crown,
+            iconColor: "text-amber-600",
+            iconBg: "bg-amber-50/90 border-amber-200/80",
+            badgeBg: "bg-amber-50 text-amber-700 border-amber-200/80",
+            badge: "Executive Editors",
+            activeClass: "ring-2 ring-amber-500 border-transparent bg-gradient-to-b from-amber-50/30 to-white shadow-md",
+          },
+          {
+            id: "SECTION",
+            label: "Section Editors",
+            sublabel: "Subject Specialists",
+            value: stats.section,
+            icon: BookOpen,
+            iconColor: "text-indigo-600",
+            iconBg: "bg-indigo-50/90 border-indigo-200/80",
+            badgeBg: "bg-indigo-50 text-indigo-700 border-indigo-200/80",
+            badge: "Specialized Fields",
+            activeClass: "ring-2 ring-indigo-500 border-transparent bg-gradient-to-b from-indigo-50/30 to-white shadow-md",
+          },
+          {
+            id: "ADVISORY",
+            label: "Advisory & Associate",
+            sublabel: "Peer Oversight",
+            value: stats.advisory,
+            icon: Award,
+            iconColor: "text-emerald-600",
+            iconBg: "bg-emerald-50/90 border-emerald-200/80",
+            badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+            badge: "Peer Council",
+            activeClass: "ring-2 ring-emerald-500 border-transparent bg-gradient-to-b from-emerald-50/30 to-white shadow-md",
+          },
+        ].map((card) => {
+          const Icon = card.icon;
+          const isSelected = roleFilter === card.id;
+          return (
+            <button
+              key={card.id}
+              onClick={() => setRoleFilter(card.id)}
+              className={cn(
+                "group relative text-left rounded-2xl border bg-white p-4 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden",
+                isSelected
+                  ? card.activeClass
+                  : "border-[color:var(--color-gb-border)] hover:border-slate-300"
+              )}
+            >
+              {/* Top Row: Icon & Badge */}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className={cn("h-9 w-9 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs", card.iconBg, card.iconColor)}>
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border tracking-wide", card.badgeBg)}>
+                  {card.badge}
+                </span>
+              </div>
+
+              {/* Middle Row: Large Bold Metric */}
+              <div className="my-1.5">
+                <span className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
+                  {card.value}
+                </span>
+              </div>
+
+              {/* Bottom Row: Role Label & Sublabel */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-700 group-hover:text-slate-950 transition-colors">
+                  {card.label}
+                </p>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {card.sublabel}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[color:var(--color-gb-border)] shadow-xs">
+        <div className="flex items-center gap-2 flex-1 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] px-3 py-1.5 focus-within:border-[color:var(--color-gb-blue)] focus-within:bg-white transition-all">
+          <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by scholar name, department, institution, or role..."
+            className="w-full bg-transparent text-xs font-medium text-[color:var(--color-gb-ink)] outline-none placeholder:text-slate-400"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          {[
+            { id: "ALL", label: "All Roles" },
+            { id: "CHIEF", label: "Chief & Managing" },
+            { id: "SECTION", label: "Section Editors" },
+            { id: "ADVISORY", label: "Advisory Council" },
+          ].map((r) => (
+            <button
+              key={r.id}
+              onClick={() => setRoleFilter(r.id)}
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap",
+                roleFilter === r.id
+                  ? "bg-[color:var(--color-gb-blue)] text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Board Members Grid */}
       {loading ? (
-        <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center">
-          <RotateCcw className="h-6 w-6 animate-spin text-[color:var(--color-gb-blue)] mb-2" />
-          Loading editorial board roster...
+        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white shadow-xs">
+          <AcademicDataLoader
+            title="Loading Editorial Board"
+            subtitle="Fetching listed scholars, professors, and section editors..."
+          />
         </div>
-      ) : members.length === 0 ? (
-        <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white p-12 text-center shadow-sm">
+      ) : filteredMembers.length === 0 ? (
+        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-12 text-center shadow-sm">
           <Award className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-800">No Editorial Board Members Listed</h3>
+          <h3 className="text-sm font-bold text-slate-800">No Editorial Board Members Match</h3>
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            Click &quot;Add Board Member&quot; to list professors and section editors on the journal portal.
+            Try adjusting your search criteria or role filters above.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {members.map((member) => (
-            <div
-              key={member.id}
-              className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-5 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start gap-3.5 mb-3">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs">
-                    {member.avatarUrl ? (
-                      <img src={member.avatarUrl} alt={member.name} className="h-full w-full object-cover" />
-                    ) : (
-                      member.name?.charAt(0) || "E"
-                    )}
-                  </div>
+          {filteredMembers.map((member) => {
+            const roleBadge = getRoleBadge(member.role);
+            const RoleIcon = roleBadge.icon;
+            const initials = getInitials(member.name || "Scholar");
 
-                  <div className="min-w-0 flex-1">
-                    <span className="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200/80 mb-1">
-                      {member.role || "Editorial Board"}
+            return (
+              <div
+                key={member.id}
+                className="group relative rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between overflow-hidden"
+              >
+                <div>
+                  {/* Top Role Header */}
+                  <div className="flex items-center justify-between gap-2 mb-3.5">
+                    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border", roleBadge.bg)}>
+                      <RoleIcon className="h-3 w-3 shrink-0" />
+                      {roleBadge.label}
                     </span>
-                    <h3 className="text-xs font-bold text-slate-900 truncate">{member.name}</h3>
-                    <p className="text-[11px] text-slate-500 truncate">{member.designation}</p>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Public
+                    </span>
                   </div>
-                </div>
 
-                <div className="space-y-1 text-xs text-slate-600 border-t border-slate-100 pt-2.5">
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                    <Building className="h-3 w-3 shrink-0 text-slate-400" />
-                    <span className="truncate">{member.affiliation}</span>
+                  {/* Profile Header */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="relative shrink-0">
+                      <div className="h-13 w-13 rounded-2xl bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] text-white flex items-center justify-center font-bold text-sm overflow-hidden shadow-xs border-2 border-white">
+                        {member.avatarUrl ? (
+                          <img src={member.avatarUrl} alt={member.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="tracking-wider">{initials}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-blue-900 transition-colors">
+                        {member.name}
+                      </h3>
+                      <p className="text-xs font-semibold text-[color:var(--color-gb-blue)] mt-0.5">
+                        {member.designation || "Distinguished Academic Member"}
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Affiliation Box */}
+                  <div className="mt-3.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100/90 text-xs text-slate-600 flex items-start gap-2">
+                    <Building className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
+                    <span className="line-clamp-2 leading-relaxed text-[11.5px]">
+                      {member.affiliation || "Gono Bishwabidyalay Academic & Research Council"}
+                    </span>
+                  </div>
+
+                  {/* Bio / Specialization snippet */}
                   {member.bio && (
-                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed italic">
+                    <p className="text-[11px] text-slate-500 mt-2.5 line-clamp-2 leading-relaxed italic border-l-2 border-slate-200 pl-2.5">
                       &quot;{member.bio}&quot;
                     </p>
                   )}
                 </div>
-              </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  onClick={() => openEditModal(member)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                  title="Edit"
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => member.id && handleDelete(member.id)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                  title="Remove"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {/* Card Actions Footer */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ID #{member.id}
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => openEditModal(member)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                      title="Edit Scholar Profile"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => member.id && handleDelete(member.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Remove Member"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -244,14 +543,14 @@ export function BoardManagementPanel() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Prof. Dr. Md. Zahid Hossain"
+              placeholder="e.g. Prof. Dr. Laila Rahman"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Designation</label>
+              <label className="block font-bold text-slate-700 mb-1">Academic Designation</label>
               <input
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
@@ -262,37 +561,75 @@ export function BoardManagementPanel() {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">Board Role *</label>
-              <select
+              <CustomSelect
+                size="form"
+                options={BOARD_ROLES}
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-              >
-                {BOARD_ROLES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+                onChange={setRole}
+                placeholder="Select Role"
+              />
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Affiliation & Institution</label>
+            <label className="block font-bold text-slate-700 mb-1">Academic Affiliation / Department</label>
             <input
               value={affiliation}
               onChange={(e) => setAffiliation(e.target.value)}
-              placeholder="e.g. Department of Biochemistry, Gono Bishwabidyalay"
+              placeholder="e.g. Department of Pharmacy, Gono Bishwabidyalay"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
+          {/* Scholar Avatar Upload */}
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Avatar / Photo URL (Optional)</label>
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
-            />
+            <label className="block font-bold text-slate-700 mb-1.5">Scholar Photograph</label>
+            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+              <div className="relative shrink-0">
+                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-base overflow-hidden shadow-xs border-2 border-white">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{name ? name.slice(0, 2).toUpperCase() : "GB"}</span>
+                  )}
+                </div>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-slate-950/60 rounded-xl flex items-center justify-center">
+                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-all cursor-pointer">
+                    <UploadCloud className="h-3.5 w-3.5 text-blue-600" />
+                    <span>{avatarUrl ? "Change Photo" : "Upload Photo"}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleAvatarFileUpload}
+                      disabled={uploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl("")}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  JPG, PNG, or WebP up to 5MB. Hosted securely on Cloudinary.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -302,7 +639,9 @@ export function BoardManagementPanel() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Brief biography or research background..."
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+              data-lenis-prevent="true"
+              onWheel={(e) => e.stopPropagation()}
+              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 overflow-y-auto overscroll-contain resize-y"
             />
           </div>
 
@@ -310,16 +649,16 @@ export function BoardManagementPanel() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-4 py-1.5 rounded-lg bg-[color:var(--color-gb-blue)] text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] disabled:opacity-50 cursor-pointer"
             >
-              {isSubmitting ? "Saving..." : editingMember ? "Save Changes" : "Add Member"}
+              {isSubmitting ? "Saving..." : editingMember ? "Update Member" : "Add Member"}
             </button>
           </div>
         </form>

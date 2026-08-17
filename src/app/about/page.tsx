@@ -3,6 +3,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { AboutJournalHero } from "@/components/about/about-journal-hero";
 import { AboutJournalStory } from "@/components/about/about-journal-story";
+import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 export const metadata: Metadata = {
   title: "About the Journal — GB Journal of Research",
@@ -20,6 +21,8 @@ export default function AboutPage() {
       <FadeIn delay={0.15}>
         <AboutJournalStory />
       </FadeIn>
+
+      <AdminPageEditBadge pageKey="about" />
     </PageShell>
   );
 }

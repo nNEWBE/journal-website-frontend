@@ -31,6 +31,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ContactHero } from "@/components/contact/contact-hero";
+import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 const roleOptions = [
   "Author / Submitter",
@@ -566,6 +567,8 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+
+      <AdminPageEditBadge pageKey="contact" />
     </PageShell>
   );
 }

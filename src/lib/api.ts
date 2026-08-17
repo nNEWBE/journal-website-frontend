@@ -874,4 +874,75 @@ export const userApi = {
   },
 };
 
+// ==========================================
+// 8. PAGE CONTENT & CMS API
+// ==========================================
+
+export interface PageContentDTO {
+  id?: number;
+  pageKey: string;
+  sectionKey: string;
+  title: string;
+  subtitle?: string;
+  content?: string;
+  metaJson?: string;
+  displayOrder: number;
+  published: boolean;
+  lastUpdatedBy?: string;
+  updatedAt?: string;
+}
+
+export const contentApi = {
+  getPublished: async (pageKey: string): Promise<PageContentDTO[]> => {
+    return request<PageContentDTO[]>(`/api/v1/content/${pageKey}`);
+  },
+
+  getAllPublished: async (): Promise<Record<string, PageContentDTO[]>> => {
+    return request<Record<string, PageContentDTO[]>>("/api/v1/content/all");
+  },
+
+  getAdminContent: async (pageKey: string): Promise<PageContentDTO[]> => {
+    return request<PageContentDTO[]>(`/api/v1/admin/content/${pageKey}`);
+  },
+
+  getAdminAllContent: async (): Promise<Record<string, PageContentDTO[]>> => {
+    return request<Record<string, PageContentDTO[]>>("/api/v1/admin/content/all");
+  },
+
+  updateSection: async (
+    pageKey: string,
+    sectionKey: string,
+    payload: Partial<PageContentDTO>
+  ): Promise<PageContentDTO> => {
+    return request<PageContentDTO>(`/api/v1/admin/content/${pageKey}/${sectionKey}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  createSection: async (payload: PageContentDTO): Promise<PageContentDTO> => {
+    return request<PageContentDTO>("/api/v1/admin/content/sections", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteSection: async (id: number): Promise<{ message: string }> => {
+    return request<{ message: string }>(`/api/v1/admin/content/sections/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  resetDefaults: async (pageKey?: string): Promise<{ message: string }> => {
+    const url = pageKey
+      ? `/api/v1/admin/content/reset-defaults?pageKey=${encodeURIComponent(pageKey)}`
+      : "/api/v1/admin/content/reset-defaults";
+    return request<{ message: string }>(url, {
+      method: "POST",
+    });
+  },
+};
+
+
+
 

@@ -19,10 +19,16 @@ import {
   RotateCcw,
   Check,
   X,
+  UserCheck,
+  PenLine,
+  Crown,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminApi, AuthResponseData } from "@/lib/api";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { AcademicDataLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 
 type UserItem = AuthResponseData["user"];
@@ -234,28 +240,112 @@ export function UserManagementPanel({
         </button>
       </div>
 
-      {/* Role Stat Chips */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Scholars</p>
-          <p className="text-xl font-black text-slate-900 mt-1">{stats.total}</p>
-        </div>
-        <div className="rounded-xl border border-sky-200/80 bg-sky-50/50 p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-sky-600">Authors</p>
-          <p className="text-xl font-black text-sky-950 mt-1">{stats.authors}</p>
-        </div>
-        <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Reviewers</p>
-          <p className="text-xl font-black text-amber-950 mt-1">{stats.reviewers}</p>
-        </div>
-        <div className="rounded-xl border border-purple-200/80 bg-purple-50/50 p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Editors</p>
-          <p className="text-xl font-black text-purple-950 mt-1">{stats.editors}</p>
-        </div>
-        <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Admins</p>
-          <p className="text-xl font-black text-emerald-950 mt-1">{stats.admins}</p>
-        </div>
+      {/* Role Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        {[
+          {
+            id: "ALL",
+            label: "Total Scholars",
+            sublabel: "Directory",
+            value: stats.total,
+            icon: Users,
+            iconColor: "text-blue-600",
+            iconBg: "bg-blue-50/90 border-blue-200/80",
+            badgeBg: "bg-blue-50 text-blue-700 border-blue-200/80",
+            badge: "All Accounts",
+            activeClass: "ring-2 ring-[color:var(--color-gb-blue)] border-transparent bg-gradient-to-b from-blue-50/30 to-white shadow-md",
+          },
+          {
+            id: "author",
+            label: "Authors",
+            sublabel: "Submitters",
+            value: stats.authors,
+            icon: PenLine,
+            iconColor: "text-sky-600",
+            iconBg: "bg-sky-50/90 border-sky-200/80",
+            badgeBg: "bg-sky-50 text-sky-700 border-sky-200/80",
+            badge: `${stats.total ? Math.round((stats.authors / stats.total) * 100) : 0}% Share`,
+            activeClass: "ring-2 ring-sky-500 border-transparent bg-gradient-to-b from-sky-50/30 to-white shadow-md",
+          },
+          {
+            id: "reviewer",
+            label: "Reviewers",
+            sublabel: "Peer Panel",
+            value: stats.reviewers,
+            icon: UserCheck,
+            iconColor: "text-amber-600",
+            iconBg: "bg-amber-50/90 border-amber-200/80",
+            badgeBg: "bg-amber-50 text-amber-700 border-amber-200/80",
+            badge: "Peer Panel",
+            activeClass: "ring-2 ring-amber-500 border-transparent bg-gradient-to-b from-amber-50/30 to-white shadow-md",
+          },
+          {
+            id: "editor",
+            label: "Editors",
+            sublabel: "Decision Desk",
+            value: stats.editors,
+            icon: Shield,
+            iconColor: "text-purple-600",
+            iconBg: "bg-purple-50/90 border-purple-200/80",
+            badgeBg: "bg-purple-50 text-purple-700 border-purple-200/80",
+            badge: "Editorial Desk",
+            activeClass: "ring-2 ring-purple-500 border-transparent bg-gradient-to-b from-purple-50/30 to-white shadow-md",
+          },
+          {
+            id: "admin",
+            label: "Admins",
+            sublabel: "Governance",
+            value: stats.admins,
+            icon: Crown,
+            iconColor: "text-emerald-600",
+            iconBg: "bg-emerald-50/90 border-emerald-200/80",
+            badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+            badge: "Governance",
+            activeClass: "ring-2 ring-emerald-500 border-transparent bg-gradient-to-b from-emerald-50/30 to-white shadow-md",
+          },
+        ].map((card) => {
+          const Icon = card.icon;
+          const isSelected = roleFilter === card.id;
+          return (
+            <button
+              key={card.id}
+              onClick={() => setRoleFilter(card.id)}
+              className={cn(
+                "group relative text-left rounded-2xl border bg-white p-4 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden",
+                isSelected
+                  ? card.activeClass
+                  : "border-[color:var(--color-gb-border)] hover:border-slate-300"
+              )}
+            >
+              {/* Top Row: Icon & Badge */}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className={cn("h-9 w-9 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs", card.iconBg, card.iconColor)}>
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border tracking-wide", card.badgeBg)}>
+                  {card.badge}
+                </span>
+              </div>
+
+              {/* Middle Row: Large Bold Metric */}
+              <div className="my-1.5">
+                <span className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
+                  {card.value}
+                </span>
+              </div>
+
+              {/* Bottom Row: Role Label & Sublabel */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-700 group-hover:text-slate-950 transition-colors">
+                  {card.label}
+                </p>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {card.sublabel}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search & Filter Bar */}
@@ -299,10 +389,10 @@ export function UserManagementPanel({
       {/* Users Table */}
       <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center">
-            <RotateCcw className="h-6 w-6 animate-spin text-[color:var(--color-gb-blue)] mb-2" />
-            Loading academic user directory...
-          </div>
+          <AcademicDataLoader
+            title="Loading Scholar Directory"
+            subtitle="Fetching registered researchers, reviewers, and administrative roles..."
+          />
         ) : filteredUsers.length === 0 ? (
           <div className="py-16 text-center px-4">
             <Users className="h-10 w-10 text-slate-300 mx-auto mb-2" />
@@ -355,19 +445,21 @@ export function UserManagementPanel({
                         <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{u.institution || "Gono Bishwabidyalay"}</p>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <select
+                      <td className="px-4 py-3 min-w-[145px]">
+                        <CustomSelect
+                          size="sm"
+                          options={[
+                            { value: "author", label: "Author" },
+                            { value: "reviewer", label: "Reviewer" },
+                            { value: "editor", label: "Editor" },
+                            { value: "admin", label: "Admin" },
+                            { value: "super-admin", label: "Super Admin" },
+                          ]}
                           value={u.role || "author"}
-                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                          onChange={(newRole) => handleRoleChange(u.id, newRole)}
                           disabled={isCurrent && currentUser?.role === "super-admin"}
-                          className="text-xs font-bold rounded-lg border border-slate-200 bg-white px-2 py-1 shadow-xs outline-none focus:border-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <option value="author">Author</option>
-                          <option value="reviewer">Reviewer</option>
-                          <option value="editor">Editor</option>
-                          <option value="admin">Admin</option>
-                          <option value="super-admin">Super Admin</option>
-                        </select>
+                          direction="auto"
+                        />
                       </td>
 
                       <td className="px-4 py-3">
@@ -440,17 +532,19 @@ export function UserManagementPanel({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Role Privilege</label>
-              <select
+              <CustomSelect
+                size="form"
+                options={[
+                  { value: "author", label: "Author" },
+                  { value: "reviewer", label: "Reviewer" },
+                  { value: "editor", label: "Editor" },
+                  { value: "admin", label: "Admin" },
+                  { value: "super-admin", label: "Super Admin" },
+                ]}
                 value={formRole}
-                onChange={(e) => setFormRole(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-              >
-                <option value="author">Author</option>
-                <option value="reviewer">Reviewer</option>
-                <option value="editor">Editor</option>
-                <option value="admin">Admin</option>
-                <option value="super-admin">Super Admin</option>
-              </select>
+                onChange={setFormRole}
+                placeholder="Select Role"
+              />
             </div>
 
             <div>

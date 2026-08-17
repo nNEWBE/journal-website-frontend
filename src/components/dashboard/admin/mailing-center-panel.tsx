@@ -224,7 +224,9 @@ export function MailingCenterPanel() {
                 value={messageBody}
                 onChange={(e) => setMessageBody(e.target.value)}
                 placeholder="Compose your message..."
-                className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono leading-relaxed"
+                data-lenis-prevent="true"
+                onWheel={(e) => e.stopPropagation()}
+                className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono leading-relaxed overflow-y-auto overscroll-contain resize-y min-h-[160px]"
               />
             </div>
 

@@ -26,6 +26,7 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { PoliciesHero } from "@/components/policies/policies-hero";
+import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 export const metadata: Metadata = {
   title: "Editorial Policies & Publication Ethics — GB Journal of Research",
@@ -558,6 +559,8 @@ export default function PoliciesPage() {
           </div>
         </div>
       </section>
+
+      <AdminPageEditBadge pageKey="policies" />
     </PageShell>
   );
 }

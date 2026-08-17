@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -23,19 +24,18 @@ export function CustomModal({
   className,
 }: CustomModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Close on Escape key press and lock page scroll completely
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Close on Escape key press and pause Lenis smoothly
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
     if (isOpen) {
-      const originalBodyOverflow = document.body.style.overflow;
-      const originalHtmlOverflow = document.documentElement.style.overflow;
-
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-
       // Pause Lenis smooth scroll if active
       if (typeof window !== "undefined" && (window as any).__lenis) {
         (window as any).__lenis.stop();
@@ -44,9 +44,6 @@ export function CustomModal({
       document.addEventListener("keydown", handleKeyDown);
 
       return () => {
-        document.body.style.overflow = originalBodyOverflow || "unset";
-        document.documentElement.style.overflow = originalHtmlOverflow || "unset";
-
         if (typeof window !== "undefined" && (window as any).__lenis) {
           (window as any).__lenis.start();
         }
@@ -56,7 +53,9 @@ export function CustomModal({
     }
   }, [isOpen, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -65,33 +64,35 @@ export function CustomModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto"
           data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
           onClick={(e) => {
             if (e.target === overlayRef.current) onClose();
           }}
         >
           <motion.div
-            initial={{ scale: 0.95, y: 15, opacity: 0 }}
+            initial={{ scale: 0.96, y: 12, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.95, y: 15, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 350 }}
+            exit={{ scale: 0.96, y: 12, opacity: 0 }}
+            transition={{ type: "spring", damping: 26, stiffness: 360 }}
             className={cn(
-              "relative w-full max-w-md rounded-xl border border-[color:var(--border)] bg-white p-6 shadow-2xl focus:outline-none max-h-[90vh] overflow-y-auto",
+              "relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl focus:outline-none max-h-[90vh] overflow-y-auto my-auto overscroll-contain",
               className
             )}
             data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
             {/* Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-[color:var(--border)]">
-              <div>
-                <h3 className="font-academic text-base font-extrabold text-[color:var(--green-dark)]">
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+              <div className="pr-4">
+                <h3 className="font-academic text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                   {title}
                 </h3>
                 {description && (
-                  <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{description}</p>
                 )}
               </div>
               <button
@@ -111,6 +112,7 @@ export function CustomModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

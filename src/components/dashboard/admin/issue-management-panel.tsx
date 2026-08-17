@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { issuesApi, adminApi, IssueData } from "@/lib/api";
 import { CustomModal } from "@/components/ui/modal";
+import { AcademicDataLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 
 export function IssueManagementPanel() {
@@ -122,9 +123,11 @@ export function IssueManagementPanel() {
 
       {/* Issues Grid */}
       {loading ? (
-        <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center">
-          <RotateCcw className="h-6 w-6 animate-spin text-[color:var(--color-gb-blue)] mb-2" />
-          Loading journal issue catalog...
+        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white shadow-xs">
+          <AcademicDataLoader
+            title="Loading Journal Issues"
+            subtitle="Fetching publication volumes, releases, and article catalogues..."
+          />
         </div>
       ) : issues.length === 0 ? (
         <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white p-12 text-center shadow-sm">
@@ -256,7 +259,9 @@ export function IssueManagementPanel() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the disciplinary scope or themes in this volume issue..."
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+              data-lenis-prevent="true"
+              onWheel={(e) => e.stopPropagation()}
+              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 overflow-y-auto overscroll-contain resize-y"
             />
           </div>
 
