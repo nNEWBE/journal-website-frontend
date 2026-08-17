@@ -60,6 +60,7 @@ import {
   type Submission,
 } from "@/lib/data";
 import { getSession, type User } from "@/lib/auth";
+import { submissionsApi } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/authSlice";
 
@@ -435,38 +436,33 @@ export function DashboardWorkspace({
   const [revisionNotes, setRevisionNotes] = useState("");
 
   useEffect(() => {
+    // Purge any legacy mock data from browser localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gb_journal_submissions");
+      localStorage.removeItem("gb_journal_decision_log");
+    }
+
     if (!reduxUser) {
       const session = getSession();
       if (session) {
         setCurrentUser(session);
       }
     }
-    const localSubs = localStorage.getItem("gb_journal_submissions");
-    if (localSubs) {
-      try {
-        setSubmissions(JSON.parse(localSubs));
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      localStorage.setItem("gb_journal_submissions", JSON.stringify(seedSubmissions));
-    }
-    const localLogs = localStorage.getItem("gb_journal_decision_log");
-    if (localLogs) {
-      try {
-        setDecisionLog(JSON.parse(localLogs));
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      const initialLogs = [
-        "GBJ-2026-101 scheduled for Volume 4, Issue 2",
-        "Reviewer certificate batch generated for Dr. Salma Khatun",
-      ];
-      localStorage.setItem("gb_journal_decision_log", JSON.stringify(initialLogs));
-    }
 
-    const collapsed = localStorage.getItem("gb_sidebar_collapsed") === "true";
+    // Fetch real submissions from backend API
+    async function loadRealData() {
+      try {
+        const liveSubs = await submissionsApi.getMySubmissions();
+        if (liveSubs && Array.isArray(liveSubs) && liveSubs.length > 0) {
+          setSubmissions(liveSubs);
+        }
+      } catch (err) {
+        // Fallback to baseline in-memory data if backend is still initializing
+      }
+    }
+    loadRealData();
+
+    const collapsed = typeof window !== "undefined" && localStorage.getItem("gb_sidebar_collapsed") === "true";
     if (collapsed) {
       setIsSidebarCollapsed(true);
     }
@@ -475,7 +471,9 @@ export function DashboardWorkspace({
   const toggleSidebar = () => {
     const nextState = !isSidebarCollapsed;
     setIsSidebarCollapsed(nextState);
-    localStorage.setItem("gb_sidebar_collapsed", String(nextState));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gb_sidebar_collapsed", String(nextState));
+    }
   };
 
   const filtered = useMemo(() => {
@@ -505,14 +503,9 @@ export function DashboardWorkspace({
 
   function updateSubmissionsState(newSubs: Submission[], logMessage?: string) {
     setSubmissions(newSubs);
-    localStorage.setItem("gb_journal_submissions", JSON.stringify(newSubs));
     if (logMessage) {
       const updatedLogs = [logMessage, ...decisionLog];
       setDecisionLog(updatedLogs);
-      localStorage.setItem(
-        "gb_journal_decision_log",
-        JSON.stringify(updatedLogs)
-      );
     }
   }
 
@@ -701,22 +694,16 @@ export function DashboardWorkspace({
   }
 
   function handleResetDatabaseSubmit() {
-    localStorage.removeItem("gb_journal_submissions");
-    localStorage.removeItem("gb_journal_decision_log");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gb_journal_submissions");
+      localStorage.removeItem("gb_journal_decision_log");
+    }
     setSubmissions(seedSubmissions);
     const initialLogs = [
       "GBJ-2026-101 scheduled for Volume 4, Issue 2",
       "Reviewer certificate batch generated for Dr. Salma Khatun",
     ];
     setDecisionLog(initialLogs);
-    localStorage.setItem(
-      "gb_journal_submissions",
-      JSON.stringify(seedSubmissions)
-    );
-    localStorage.setItem(
-      "gb_journal_decision_log",
-      JSON.stringify(initialLogs)
-    );
     setIsResetModalOpen(false);
     toast.success("Database restored to seed state.");
   }

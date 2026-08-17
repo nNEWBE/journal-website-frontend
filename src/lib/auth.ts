@@ -31,9 +31,11 @@ export interface User {
 
 export const SESSION_KEY = "gb_journal_user_session";
 
-// Automatically wipe all legacy credentials and sessions from localStorage
+// Automatically wipe all legacy credentials, sessions, and demo data from localStorage
 if (typeof window !== "undefined") {
   try {
+    localStorage.removeItem("gb_journal_submissions");
+    localStorage.removeItem("gb_journal_decision_log");
     localStorage.removeItem("gb_journal_access_token");
     localStorage.removeItem("gb_journal_refresh_token");
     localStorage.removeItem("gb_journal_user_session");
@@ -130,6 +132,8 @@ export function clearSession(): void {
   inMemoryUser = null;
   if (typeof window !== "undefined") {
     try {
+      localStorage.removeItem("gb_journal_submissions");
+      localStorage.removeItem("gb_journal_decision_log");
       localStorage.removeItem("gb_journal_access_token");
       localStorage.removeItem("gb_journal_refresh_token");
       localStorage.removeItem("gb_journal_user_session");

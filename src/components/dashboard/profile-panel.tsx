@@ -205,7 +205,9 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [isChangingPass, setIsChangingPass] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -1191,19 +1193,20 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                 </label>
                 <div className="relative">
                   <input
-                    type={showPass ? "text" : "password"}
+                    type={showCurrentPass ? "text" : "password"}
                     required
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3.5 pr-10 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-colors"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                    onClick={() => setShowCurrentPass(!showCurrentPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-md transition-colors cursor-pointer"
+                    title={showCurrentPass ? "Hide password" : "Show password"}
                   >
-                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showCurrentPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -1212,28 +1215,48 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   New Password *
                 </label>
-                <input
-                  type={showPass ? "text" : "password"}
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none"
-                  placeholder="Minimum 6 characters"
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPass ? "text" : "password"}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3.5 pr-10 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-colors"
+                    placeholder="Minimum 6 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-md transition-colors cursor-pointer"
+                    title={showNewPass ? "Hide password" : "Show password"}
+                  >
+                    {showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Confirm New Password *
                 </label>
-                <input
-                  type={showPass ? "text" : "password"}
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none"
-                  placeholder="Re-enter new password"
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPass ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3.5 pr-10 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-colors"
+                    placeholder="Re-enter new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-md transition-colors cursor-pointer"
+                    title={showConfirmPass ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <button

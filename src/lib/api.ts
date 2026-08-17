@@ -4,13 +4,24 @@ import { handleSessionExpired } from "./auth";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-// Purge any legacy localStorage tokens for security
+// Purge any legacy localStorage tokens and mock data for security
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
   try {
+    localStorage.removeItem("gb_journal_submissions");
+    localStorage.removeItem("gb_journal_decision_log");
     localStorage.removeItem("gb_journal_access_token");
     localStorage.removeItem("gb_journal_refresh_token");
     localStorage.removeItem("gb_journal_user_session");
+  } catch (e) {
+    // Ignore
+  }
+}
+
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem("gb_journal_submissions");
+    localStorage.removeItem("gb_journal_decision_log");
   } catch (e) {
     // Ignore
   }
