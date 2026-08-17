@@ -9,6 +9,7 @@ interface CustomModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  description?: string;
   children: React.ReactNode;
   className?: string;
 }
@@ -17,6 +18,7 @@ export function CustomModal({
   isOpen,
   onClose,
   title,
+  description,
   children,
   className,
 }: CustomModalProps) {
@@ -83,10 +85,15 @@ export function CustomModal({
             aria-modal="true"
           >
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[color:var(--border)]">
-              <h3 className="font-academic text-base font-extrabold text-[color:var(--green-dark)]">
-                {title}
-              </h3>
+            <div className="flex items-start justify-between pb-4 border-b border-[color:var(--border)]">
+              <div>
+                <h3 className="font-academic text-base font-extrabold text-[color:var(--green-dark)]">
+                  {title}
+                </h3>
+                {description && (
+                  <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 type="button"

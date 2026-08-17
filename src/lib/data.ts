@@ -371,15 +371,18 @@ export const dashboardStats = [
 ];
 
 export type BoardMember = {
-  id?: string;
+  id?: string | number;
   name: string;
   role: string;
-  unit: string;
+  unit?: string;
   title?: string;
+  designation?: string;
+  affiliation?: string;
   institution?: string;
   expertise?: string;
   bio?: string;
   image?: string;
+  avatarUrl?: string;
 };
 
 export const boardMembers: BoardMember[] = [

@@ -309,12 +309,19 @@ export interface IssueData {
   id: number;
   issueKey: string;
   year: string;
-  volumeLabel: string;
-  issueLabel: string;
-  month: string;
-  theme: string;
+  volumeLabel?: string;
+  issueLabel?: string;
+  volume?: number;
+  number?: number;
+  title?: string;
+  description?: string;
+  status?: string;
+  month?: string;
+  theme?: string;
   articleCount: number;
+  articlesCount?: number;
   current: boolean;
+  isCurrent?: boolean;
   coverImageUrl?: string;
   editorNote?: string;
   articles?: Article[];
@@ -326,12 +333,22 @@ export const issuesApi = {
     return request<IssueData[]>("/api/v1/issues");
   },
 
+  getAll: async (): Promise<IssueData[]> => {
+    return request<IssueData[]>("/api/v1/issues");
+  },
+
   getCurrent: async (): Promise<IssueData> => {
     return request<IssueData>("/api/v1/issues/current");
   },
 
   getByKey: async (issueKey: string): Promise<IssueData> => {
     return request<IssueData>(`/api/v1/issues/${issueKey}`);
+  },
+};
+
+export const boardApi = {
+  getAll: async (): Promise<BoardMember[]> => {
+    return request<BoardMember[]>("/api/v1/editorial-board");
   },
 };
 
@@ -599,6 +616,23 @@ export interface DashboardStats {
   registeredUsers: number;
 }
 
+export interface AuditLogItem {
+  id: string;
+  eventType: string;
+  description: string;
+  actor: string;
+  target: string;
+  timestamp: string;
+  level: "INFO" | "WARN" | "SUCCESS";
+}
+
+export interface MailTemplateItem {
+  key: string;
+  name: string;
+  subject: string;
+  body: string;
+}
+
 export const adminApi = {
   getStats: async (): Promise<DashboardStats> => {
     return request<DashboardStats>("/api/v1/admin/stats");
@@ -606,6 +640,28 @@ export const adminApi = {
 
   listUsers: async (): Promise<AuthResponseData["user"][]> => {
     return request<AuthResponseData["user"][]>("/api/v1/admin/users");
+  },
+
+  createUser: async (payload: {
+    fullName: string;
+    email: string;
+    password?: string;
+    role: string;
+    title?: string;
+    department?: string;
+    institution?: string;
+    orcid?: string;
+  }): Promise<AuthResponseData["user"]> => {
+    return request<AuthResponseData["user"]>("/api/v1/admin/users", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteUser: async (userId: number | string): Promise<{ message: string }> => {
+    return request<{ message: string }>(`/api/v1/admin/users/${userId}`, {
+      method: "DELETE",
+    });
   },
 
   updateUserRole: async (
@@ -626,6 +682,41 @@ export const adminApi = {
       `/api/v1/admin/users/${userId}/status?enabled=${enabled}`,
       { method: "PUT" }
     );
+  },
+
+  getAllSubmissions: async (params?: {
+    status?: string;
+    type?: string;
+    page?: number;
+    size?: number;
+  }): Promise<{ content: any[]; totalElements: number; totalPages: number }> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.type) query.set("type", params.type);
+    if (params?.page !== undefined) query.set("page", params.page.toString());
+    if (params?.size !== undefined) query.set("size", params.size.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return request<any>(`/api/v1/admin/submissions${queryString}`);
+  },
+
+  sendMail: async (payload: {
+    audience: "INDIVIDUAL" | "ALL_AUTHORS" | "ALL_REVIEWERS" | "ALL_EDITORS" | "ALL_USERS" | string;
+    recipientEmail?: string;
+    subject: string;
+    messageBody: string;
+  }): Promise<{ success: boolean; sentCount: number; audience: string; subject: string }> => {
+    return request<any>("/api/v1/admin/mail/send", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getMailTemplates: async (): Promise<MailTemplateItem[]> => {
+    return request<MailTemplateItem[]>("/api/v1/admin/mail/templates");
+  },
+
+  getAuditLogs: async (): Promise<AuditLogItem[]> => {
+    return request<AuditLogItem[]>("/api/v1/admin/audit-logs");
   },
 
   setCurrentIssue: async (issueId: number | string): Promise<IssueData> => {
