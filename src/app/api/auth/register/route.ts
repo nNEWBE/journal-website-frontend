@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
         title: body.title || "Author",
         department: body.department || "Department of Pharmacy",
         institution: body.institution || "Gono Bishwabidyalay",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(body.email)}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+          body.email
+        )}&mouth=default,smile&eyes=default&eyebrows=defaultNatural,default&clothing=blazerAndShirt,blazerAndSweater,collarAndSweater`,
       };
 
       accessToken = generateDevJwt(

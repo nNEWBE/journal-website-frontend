@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import {
   User as UserIcon,
@@ -18,7 +18,6 @@ import {
   BookOpen,
   FileText,
   Clock,
-  Sparkles,
   ExternalLink,
   Plus,
   X,
@@ -30,15 +29,26 @@ import {
   Calendar,
   Check,
   Copy,
+  Camera,
+  Upload,
+  Trash2,
+  Image as ImageIcon,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Move,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/redux/hooks";
 import { setUser } from "@/redux/features/auth/authSlice";
-import { userApi } from "@/lib/api";
-import { type User } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { userApi, filesApi } from "@/lib/api";
+import { type User, setSession, clearSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
+import { CustomModal } from "@/components/ui/modal";
+import { CustomSlider } from "@/components/ui/custom-slider";
 
 interface ProfilePanelProps {
   user: User | null;
@@ -57,12 +67,46 @@ const ACADEMIC_TITLE_OPTIONS = [
 ];
 
 const PRESET_AVATARS = [
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Ayesha",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Salma",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Saiful",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Laila",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Jamil",
+  {
+    id: "prof_rahman",
+    label: "Prof. Rahman",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfRahman&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=262e33",
+  },
+  {
+    id: "dr_fatima",
+    label: "Dr. Fatima",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrFatima&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
+  },
+  {
+    id: "prof_tariq",
+    label: "Prof. Tariq",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfTariq&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=25557c",
+  },
+  {
+    id: "dr_nasreen",
+    label: "Dr. Nasreen",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrNasreen&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=929598",
+  },
+  {
+    id: "assoc_prof_kamal",
+    label: "Assoc. Prof. Kamal",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=AssocProfKamal&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=262e33",
+  },
+  {
+    id: "dr_ayesha",
+    label: "Dr. Ayesha",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrAyesha&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
+  },
+  {
+    id: "prof_mahmud",
+    label: "Prof. Mahmud",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfMahmud&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=5199e4",
+  },
+  {
+    id: "dr_rehana",
+    label: "Dr. Rehana",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrRehana&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=25557c",
+  },
 ];
 
 const PREDEFINED_KEYWORDS = [
@@ -78,22 +122,34 @@ const PREDEFINED_KEYWORDS = [
   "Molecular Biology",
 ];
 
+function dataURItoBlob(dataURI: string): Blob {
+  const byteString = atob(dataURI.split(",")[1]);
+  const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
+
 export function ProfilePanel({ user }: ProfilePanelProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     "general" | "scholarly" | "reviewer" | "security" | "notifications"
   >("general");
 
-  // Form State
+  // Basic Information
   const [name, setName] = useState(user?.name || "");
-  const [academicTitle, setAcademicTitle] = useState(
-    user?.academicTitle || "Associate Professor"
-  );
   const [email, setEmail] = useState(user?.email || "");
+  const [academicTitle, setAcademicTitle] = useState(
+    user?.academicTitle || user?.title || "Associate Professor"
+  );
+  const [phone, setPhone] = useState(user?.phone || "+880 1712-345678");
   const [secondaryEmail, setSecondaryEmail] = useState(
     user?.secondaryEmail || ""
   );
-  const [phone, setPhone] = useState(user?.phone || "+880 1712-345678");
   const [department, setDepartment] = useState(
     user?.department || "Department of Pharmacy"
   );
@@ -153,9 +209,232 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
   const [isChangingPass, setIsChangingPass] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [copiedOrcid, setCopiedOrcid] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Determine if form state has changed from user's current baseline
+  const isDirty = useMemo(() => {
+    if (!user) return false;
+
+    const initialName = user.name || "";
+    const initialTitle = user.academicTitle || user.title || "Associate Professor";
+    const initialDepartment = user.department || "Department of Pharmacy";
+    const initialInstitution = user.institution || "Gono Bishwabidyalay";
+    const initialCountry = user.country || "Bangladesh";
+    const initialBio =
+      user.bio ||
+      "Academic researcher specializing in community healthcare protocols, clinical pharmacotherapy, and evidence-based pharmaceutical practices across South Asian healthcare systems.";
+    const initialAvatar = user.avatar || "";
+    const initialPhone = user.phone || "";
+    const initialSecondaryEmail = user.secondaryEmail || "";
+    const initialOrcid = user.orcid || "0000-0002-1825-0097";
+    const initialGoogleScholar =
+      user.googleScholar ||
+      "https://scholar.google.com/citations?user=gbj_ayesha";
+    const initialResearchGate =
+      user.researchGate ||
+      "https://www.researchgate.net/profile/Ayesha-Siddique";
+    const initialScopusId = user.scopusId || "57218942000";
+    const initialInterests = user.researchInterests || [
+      "Antimicrobial Stewardship",
+      "Public Health Policy",
+      "Pharmacology",
+      "Community Healthcare",
+    ];
+    const initialReviewerAvailable = user.reviewerAvailable ?? true;
+    const initialMaxReviewLoad = user.maxReviewLoad || 3;
+    const initialDecisions = user.emailNotifications?.decisions ?? true;
+    const initialInvitations = user.emailNotifications?.invitations ?? true;
+    const initialPublications = user.emailNotifications?.publications ?? true;
+
+    if (name.trim() !== initialName.trim()) return true;
+    if (academicTitle !== initialTitle) return true;
+    if (department.trim() !== initialDepartment.trim()) return true;
+    if (institution.trim() !== initialInstitution.trim()) return true;
+    if (country.trim() !== initialCountry.trim()) return true;
+    if (bio.trim() !== initialBio.trim()) return true;
+    if (avatar !== initialAvatar) return true;
+    if (phone.trim() !== initialPhone.trim()) return true;
+    if (secondaryEmail.trim() !== initialSecondaryEmail.trim()) return true;
+    if (orcid.trim() !== initialOrcid.trim()) return true;
+    if (googleScholar.trim() !== initialGoogleScholar.trim()) return true;
+    if (researchGate.trim() !== initialResearchGate.trim()) return true;
+    if (scopusId.trim() !== initialScopusId.trim()) return true;
+    if (reviewerAvailable !== initialReviewerAvailable) return true;
+    if (maxReviewLoad !== initialMaxReviewLoad) return true;
+    if (notifDecisions !== initialDecisions) return true;
+    if (notifInvitations !== initialInvitations) return true;
+    if (notifPublications !== initialPublications) return true;
+
+    if (interests.length !== initialInterests.length) return true;
+    const interestSet = new Set(initialInterests);
+    for (const item of interests) {
+      if (!interestSet.has(item)) return true;
+    }
+
+    return false;
+  }, [
+    user,
+    name,
+    academicTitle,
+    department,
+    institution,
+    country,
+    bio,
+    avatar,
+    phone,
+    secondaryEmail,
+    orcid,
+    googleScholar,
+    researchGate,
+    scopusId,
+    interests,
+    reviewerAvailable,
+    maxReviewLoad,
+    notifDecisions,
+    notifInvitations,
+    notifPublications,
+  ]);
+
+  // Avatar Selection Modal State
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarModalTab, setAvatarModalTab] = useState<"preset" | "upload">("preset");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Interactive Photo Cropper / Resizer State
+  const [uploadedRawImage, setUploadedRawImage] = useState<string | null>(null);
+  const [cropZoom, setCropZoom] = useState<number>(1);
+  const [cropPan, setCropPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [cropRotation, setCropRotation] = useState<number>(0);
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
+
+  const handleImageFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (PNG, JPG, WebP).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size exceeds 10MB limit. Please choose a smaller photo.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setUploadedRawImage(reader.result);
+        setCropZoom(1);
+        setCropPan({ x: 0, y: 0 });
+        setCropRotation(0);
+        setAvatarModalTab("upload");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropMouseDown = (e: React.MouseEvent) => {
+    setIsDraggingCrop(true);
+    setDragStartPos({ x: e.clientX - cropPan.x, y: e.clientY - cropPan.y });
+  };
+
+  const handleCropMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingCrop) return;
+    setCropPan({
+      x: e.clientX - dragStartPos.x,
+      y: e.clientY - dragStartPos.y,
+    });
+  };
+
+  const handleCropMouseUp = () => {
+    setIsDraggingCrop(false);
+  };
+
+  const handleCropTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setIsDraggingCrop(true);
+      setDragStartPos({
+        x: e.touches[0].clientX - cropPan.x,
+        y: e.touches[0].clientY - cropPan.y,
+      });
+    }
+  };
+
+  const handleCropTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingCrop || e.touches.length !== 1) return;
+    setCropPan({
+      x: e.touches[0].clientX - dragStartPos.x,
+      y: e.touches[0].clientY - dragStartPos.y,
+    });
+  };
+
+  const handleApplyCrop = () => {
+    if (!uploadedRawImage) return;
+
+    setIsUploadingPhoto(true);
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setIsUploadingPhoto(false);
+      return;
+    }
+
+    const outputSize = 400;
+    canvas.width = outputSize;
+    canvas.height = outputSize;
+
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        const previewBoxSize = 260;
+        const scaleRatio = outputSize / previewBoxSize;
+
+        ctx.save();
+        ctx.translate(
+          outputSize / 2 + cropPan.x * scaleRatio,
+          outputSize / 2 + cropPan.y * scaleRatio
+        );
+        ctx.rotate((cropRotation * Math.PI) / 180);
+
+        const aspect = img.naturalWidth / img.naturalHeight;
+        let drawW: number;
+        let drawH: number;
+
+        if (aspect >= 1) {
+          drawH = outputSize * cropZoom;
+          drawW = drawH * aspect;
+        } else {
+          drawW = outputSize * cropZoom;
+          drawH = drawW / aspect;
+        }
+
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        ctx.restore();
+
+        const croppedUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+        setAvatar(croppedUrl);
+        setIsAvatarModalOpen(false);
+        toast.success("Profile photo cropped! Click 'Save All Changes' to save.");
+      } catch (err: any) {
+        toast.error("Failed to process profile image", {
+          description: err.message || "An unexpected error occurred",
+        });
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    };
+    img.src = uploadedRawImage;
+  };
 
   useEffect(() => {
+    setMounted(true);
     if (user) {
       setName(user.name || "");
       setEmail(user.email || "");
@@ -166,28 +445,27 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
       if (user.phone) setPhone(user.phone);
       if (user.secondaryEmail) setSecondaryEmail(user.secondaryEmail);
       if (user.country) setCountry(user.country);
-      if (user.bio) setBio(user.bio);
       if (user.orcid) setOrcid(user.orcid);
       if (user.googleScholar) setGoogleScholar(user.googleScholar);
       if (user.researchGate) setResearchGate(user.researchGate);
       if (user.scopusId) setScopusId(user.scopusId);
+      if (user.bio) setBio(user.bio);
       if (user.researchInterests) setInterests(user.researchInterests);
       if (user.reviewerAvailable !== undefined)
         setReviewerAvailable(user.reviewerAvailable);
-      if (user.maxReviewLoad) setMaxReviewLoad(user.maxReviewLoad);
+      if (user.maxReviewLoad !== undefined)
+        setMaxReviewLoad(user.maxReviewLoad);
       if (user.emailNotifications) {
-        setNotifDecisions(user.emailNotifications.decisions);
-        setNotifInvitations(user.emailNotifications.invitations);
-        setNotifPublications(user.emailNotifications.publications);
+        setNotifDecisions(user.emailNotifications.decisions ?? true);
+        setNotifInvitations(user.emailNotifications.invitations ?? true);
+        setNotifPublications(user.emailNotifications.publications ?? true);
       }
     }
   }, [user]);
 
-  const handleAddInterest = (tag: string) => {
-    const trimmed = tag.trim();
-    if (trimmed && !interests.includes(trimmed)) {
-      setInterests([...interests, trimmed]);
-      setNewTagInput("");
+  const handleAddInterest = (tagToAdd: string) => {
+    if (tagToAdd && !interests.includes(tagToAdd)) {
+      setInterests([...interests, tagToAdd]);
     }
   };
 
@@ -209,6 +487,36 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
 
     setIsSaving(true);
     try {
+      let finalAvatarUrl = avatar || undefined;
+      if (finalAvatarUrl && finalAvatarUrl.startsWith("data:")) {
+        try {
+          const blob = dataURItoBlob(finalAvatarUrl);
+          const uploadRes = await userApi.uploadAvatar(blob);
+          if (uploadRes?.avatarUrl) {
+            finalAvatarUrl = uploadRes.avatarUrl;
+            setAvatar(uploadRes.avatarUrl);
+          } else if (uploadRes?.avatar) {
+            finalAvatarUrl = uploadRes.avatar;
+            setAvatar(uploadRes.avatar);
+          }
+        } catch (saveErr: any) {
+          const isSessionExpired =
+            saveErr?.message?.includes("Session expired") ||
+            saveErr?.message?.includes("Please log");
+          if (isSessionExpired) {
+            toast.error("Session expired — please log in again", {
+              description: "Log out and log back in, then your avatar will upload correctly.",
+              action: {
+                label: "Log Out",
+                onClick: () => { clearSession(); router.push("/login"); },
+              },
+              duration: 8000,
+            });
+          }
+          // Continue saving other profile fields even if avatar upload failed
+        }
+      }
+
       const updatedUser: User = {
         ...user,
         name: name.trim(),
@@ -220,7 +528,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         secondaryEmail: secondaryEmail.trim(),
         country: country.trim(),
         bio: bio.trim(),
-        avatar: avatar || undefined,
+        avatar: finalAvatarUrl,
         orcid: orcid.trim(),
         googleScholar: googleScholar.trim(),
         researchGate: researchGate.trim(),
@@ -235,14 +543,29 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         },
       };
 
-      // Try backend endpoint if available
+      // Update backend endpoint
       try {
         await userApi.updateProfile(updatedUser);
-      } catch {
-        // Backend mock fallback - still persist in Redux & Session cookie
+      } catch (err: any) {
+        const isSessionExpired =
+          err?.message?.includes("Session expired") ||
+          err?.message?.includes("Authentication is required") ||
+          err?.message?.includes("Please log");
+        if (isSessionExpired) {
+          toast.error("Session expired — please log in again", {
+            description: "Your session has expired. Other profile fields were saved locally.",
+            action: {
+              label: "Log Out",
+              onClick: () => { clearSession(); router.push("/login"); },
+            },
+            duration: 8000,
+          });
+        }
+        // Profile is still saved to local session/redux below
       }
 
-      // Update Redux state and sync session cookie
+      // Sync Session cookie and Redux state
+      setSession(updatedUser);
       dispatch(setUser(updatedUser));
       toast.success("Academic Profile updated successfully!", {
         description: "Your changes are now live across your workspace.",
@@ -306,35 +629,39 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
 
         <div className="relative p-6 sm:p-8 z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            {/* Avatar with editor badge */}
-            <div className="relative group">
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[#1e40af] to-[#0f172a] p-1 border-2 border-white/20 shadow-xl overflow-hidden flex items-center justify-center">
-                {avatar ? (
+            {/* Avatar with edit photo trigger */}
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => {
+                if (avatar && !PRESET_AVATARS.some((p) => p.url === avatar)) {
+                  setUploadedRawImage(avatar);
+                  setAvatarModalTab("upload");
+                }
+                setIsAvatarModalOpen(true);
+              }}
+              title="Click to change profile picture or select avatar"
+            >
+              <div
+                className="h-20 w-20 rounded-2xl bg-slate-900 ring-2 ring-white/20 shadow-xl overflow-hidden flex items-center justify-center group-hover:ring-blue-400 transition-all relative"
+                suppressHydrationWarning
+              >
+                {mounted && avatar ? (
                   <img
                     src={avatar}
                     alt={name}
-                    className="h-full w-full object-cover rounded-xl"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full rounded-xl bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-900 flex items-center justify-center text-amber-300 font-bold text-2xl">
+                  <div className="h-full w-full bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-900 flex items-center justify-center text-amber-300 font-bold text-2xl">
                     {name.charAt(0) || "U"}
                   </div>
                 )}
+                {/* Hover overlay with edit label */}
+                <div className="absolute inset-0 bg-black/45 backdrop-blur-xs opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold transition-opacity">
+                  <Camera className="h-4 w-4 mb-0.5" />
+                  <span>Edit Photo</span>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const nextIdx =
-                    (PRESET_AVATARS.indexOf(avatar) + 1) %
-                    PRESET_AVATARS.length;
-                  setAvatar(PRESET_AVATARS[nextIdx]);
-                  toast.info("Avatar updated preview");
-                }}
-                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg bg-[#0b1b3d] border border-white/20 text-white flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md cursor-pointer"
-                title="Cycle Avatar Preset"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
             </div>
 
             {/* Profile Core Details */}
@@ -398,8 +725,8 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           <button
             type="button"
             onClick={() => handleSaveProfile()}
-            disabled={isSaving}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+            disabled={isSaving || !isDirty}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:from-blue-600 disabled:hover:to-indigo-600"
           >
             {isSaving ? (
               <>
@@ -595,8 +922,8 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="submit"
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                disabled={isSaving || !isDirty}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#0b1b3d]"
               >
                 {isSaving ? "Updating Profile..." : "Save Academic Profile"}
               </button>
@@ -779,8 +1106,8 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               <button
                 type="button"
                 onClick={() => handleSaveProfile()}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
+                disabled={isSaving || !isDirty}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#0b1b3d]"
               >
                 Save Scholarly Details
               </button>
@@ -863,8 +1190,8 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               <button
                 type="button"
                 onClick={() => handleSaveProfile()}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
+                disabled={isSaving || !isDirty}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#0b1b3d]"
               >
                 Save Reviewer Preferences
               </button>
@@ -1027,8 +1354,8 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               <button
                 type="button"
                 onClick={() => handleSaveProfile()}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
+                disabled={isSaving || !isDirty}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#0b1b3d]"
               >
                 Save Notification Settings
               </button>
@@ -1036,6 +1363,309 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           </div>
         )}
       </div>
+
+      {/* Avatar & Photo Selection Modal */}
+      <CustomModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        title="Update Profile Picture"
+        className="max-w-lg"
+      >
+        <div className="space-y-4">
+          {/* Tabs: Presets vs Upload */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setAvatarModalTab("preset")}
+              className={cn(
+                "flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                avatarModalTab === "preset"
+                  ? "bg-white text-[#0b1b3d] shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <ImageIcon className="h-3.5 w-3.5 text-blue-600" />
+              <span>Avatar Presets</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAvatarModalTab("upload")}
+              className={cn(
+                "flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                avatarModalTab === "upload"
+                  ? "bg-white text-[#0b1b3d] shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <Upload className="h-3.5 w-3.5 text-blue-600" />
+              <span>Upload Custom Photo</span>
+            </button>
+          </div>
+
+          {/* TAB 1: Avatar Presets Grid */}
+          {avatarModalTab === "preset" && (
+            <div className="space-y-3 pt-1">
+              <p className="text-xs text-slate-500">
+                Choose an illustrated academic representation for your scholar profile:
+              </p>
+              <div className="grid grid-cols-4 gap-2.5">
+                {PRESET_AVATARS.map((preset) => {
+                  const isSelected = avatar === preset.url;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setAvatar(preset.url);
+                        toast.success(`Selected ${preset.label} avatar. Click 'Save All Changes' to apply.`);
+                        setIsAvatarModalOpen(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center p-2 rounded-xl border-2 transition-all group cursor-pointer relative",
+                        isSelected
+                          ? "border-blue-600 bg-blue-50/50 shadow-xs"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+                      )}
+                    >
+                      <div className="h-13 w-13 rounded-xl overflow-hidden bg-gradient-to-br from-blue-900 to-slate-900 p-0.5 mb-1.5 shadow-xs">
+                        <img
+                          src={preset.url}
+                          alt={preset.label}
+                          className="h-full w-full object-cover rounded-lg"
+                        />
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-700 truncate w-full text-center">
+                        {preset.label}
+                      </span>
+                      {isSelected && (
+                        <span className="absolute -top-1.5 -right-1.5 h-4.5 w-4.5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                          <Check className="h-2.5 w-2.5 stroke-[3]" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: Upload & Resize Custom Photo */}
+          {avatarModalTab === "upload" && (
+            <div className="space-y-3 pt-1">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/png, image/jpeg, image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageFile(file);
+                }}
+              />
+
+              {uploadedRawImage ? (
+                /* Interactive Cropper / Resizer View */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold flex items-center gap-1.5 text-slate-800">
+                      <Move className="h-3.5 w-3.5 text-blue-600" />
+                      Drag photo to reposition
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                      {Math.round(cropZoom * 100)}% scale
+                    </span>
+                  </div>
+
+                  {/* Cropping Viewport */}
+                  <div
+                    className="relative w-[260px] h-[260px] mx-auto rounded-2xl overflow-hidden bg-slate-950 border-2 border-blue-500 shadow-inner select-none cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
+                    onMouseDown={handleCropMouseDown}
+                    onMouseMove={handleCropMouseMove}
+                    onMouseUp={handleCropMouseUp}
+                    onMouseLeave={handleCropMouseUp}
+                    onTouchStart={handleCropTouchStart}
+                    onTouchMove={handleCropTouchMove}
+                    onTouchEnd={handleCropMouseUp}
+                  >
+                    <img
+                      src={uploadedRawImage}
+                      alt="Crop preview"
+                      draggable={false}
+                      onLoad={(e) => {
+                        const { naturalWidth, naturalHeight } = e.currentTarget;
+                        if (naturalHeight > 0) {
+                          setImageAspectRatio(naturalWidth / naturalHeight);
+                        }
+                      }}
+                      style={{
+                        width: imageAspectRatio >= 1 ? `${260 * imageAspectRatio}px` : "260px",
+                        height: imageAspectRatio >= 1 ? "260px" : `${260 / imageAspectRatio}px`,
+                        maxWidth: "none",
+                        maxHeight: "none",
+                        transform: `translate(${cropPan.x}px, ${cropPan.y}px) scale(${cropZoom}) rotate(${cropRotation}deg)`,
+                        transformOrigin: "center center",
+                        userSelect: "none",
+                        pointerEvents: "none",
+                      }}
+                      className="will-change-transform"
+                    />
+
+                    {/* Circular guideline & outer vignette */}
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-blue-500/50 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]" />
+                    <div className="pointer-events-none absolute inset-3 rounded-full border border-dashed border-white/60" />
+                  </div>
+
+                  {/* Zoom & Adjustment Controls */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                    {/* Custom Zoom Slider */}
+                    <div className="px-1">
+                      <CustomSlider
+                        min={1}
+                        max={3}
+                        step={0.05}
+                        value={cropZoom}
+                        onChange={(val) => setCropZoom(val)}
+                        leftIcon={<ZoomOut className="h-4 w-4" />}
+                        rightIcon={<ZoomIn className="h-4 w-4" />}
+                        onLeftClick={() => setCropZoom(Math.max(1, cropZoom - 0.15))}
+                        onRightClick={() => setCropZoom(Math.min(3, cropZoom + 0.15))}
+                      />
+                    </div>
+
+                    {/* Quick Tools Row */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setCropRotation((prev) => (prev + 90) % 360)}
+                        className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-blue-600 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      >
+                        <RotateCw className="h-3.5 w-3.5" />
+                        <span>Rotate 90°</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCropZoom(1);
+                          setCropPan({ x: 0, y: 0 });
+                          setCropRotation(0);
+                        }}
+                        className="inline-flex items-center gap-1.5 font-semibold text-slate-600 hover:text-slate-900 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span>Reset</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        <span>Replace</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Apply Crop Button */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={handleApplyCrop}
+                      disabled={isUploadingPhoto}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      <Check className="h-4 w-4 stroke-[3]" />
+                      <span>Apply Cropped Photo</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Empty Upload Dropzone View */
+                <div className="space-y-3">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleImageFile(file);
+                    }}
+                    className="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
+                  >
+                    <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Upload className="h-5 w-5" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-800">
+                      Click to browse or drag and drop photo
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Supports PNG, JPG, or WebP (Max 10MB)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="mt-3.5 px-4 py-2 rounded-lg bg-[#0b1b3d] text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-900 transition-colors cursor-pointer shadow-xs"
+                    >
+                      Choose File
+                    </button>
+                  </div>
+
+                  {avatar && (
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-100 border border-slate-200">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={avatar}
+                          alt="Active avatar preview"
+                          className="h-10 w-10 rounded-lg object-cover border border-white shadow-xs"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">Active Profile Photo</p>
+                          <p className="text-[10px] text-slate-500">Custom photo uploaded</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadedRawImage(avatar);
+                            setCropZoom(1);
+                            setCropPan({ x: 0, y: 0 });
+                            setCropRotation(0);
+                          }}
+                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                        >
+                          <Move className="h-3.5 w-3.5" />
+                          <span>Resize</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatar("");
+                            toast.info("Custom photo cleared. Default initials will be used.");
+                          }}
+                          className="inline-flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-semibold p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CustomModal>
     </div>
   );
 }

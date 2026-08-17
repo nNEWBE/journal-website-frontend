@@ -22,19 +22,36 @@ export function CustomModal({
 }: CustomModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape key press
+  // Close on Escape key press and lock page scroll completely
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
     if (isOpen) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+
+      // Pause Lenis smooth scroll if active
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.stop();
+      }
+
       document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.body.style.overflow = originalBodyOverflow || "unset";
+        document.documentElement.style.overflow = originalHtmlOverflow || "unset";
+
+        if (typeof window !== "undefined" && (window as any).__lenis) {
+          (window as any).__lenis.start();
+        }
+
+        document.removeEventListener("keydown", handleKeyDown);
+      };
     }
-    return () => {
-      document.body.style.overflow = "unset";
-      document.removeEventListener("keydown", handleKeyDown);
-    };
   }, [isOpen, onClose]);
 
   return (
@@ -47,6 +64,7 @@ export function CustomModal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          data-lenis-prevent="true"
           onClick={(e) => {
             if (e.target === overlayRef.current) onClose();
           }}
@@ -57,9 +75,10 @@ export function CustomModal({
             exit={{ scale: 0.95, y: 15, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
             className={cn(
-              "relative w-full max-w-md rounded-xl border border-[color:var(--border)] bg-white p-6 shadow-2xl focus:outline-none",
+              "relative w-full max-w-md rounded-xl border border-[color:var(--border)] bg-white p-6 shadow-2xl focus:outline-none max-h-[90vh] overflow-y-auto",
               className
             )}
+            data-lenis-prevent="true"
             role="dialog"
             aria-modal="true"
           >

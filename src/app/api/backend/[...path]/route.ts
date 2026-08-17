@@ -45,27 +45,78 @@ export async function PATCH(
   return handleProxy(req, path.join("/"), "PATCH");
 }
 
+/**
+ * Attempt to refresh the access token using the stored refresh token cookie.
+ * Calls the Spring Boot /api/v1/auth/refresh endpoint directly.
+ * Returns the new access token string, or null if refresh failed.
+ */
+async function tryRefreshToken(req: NextRequest): Promise<{
+  newToken: string | null;
+  setCookieHeaders: string[];
+}> {
+  const refreshToken =
+    req.cookies.get("refresh_token")?.value ||
+    req.cookies.get("gb_refresh_token")?.value;
+
+  if (!refreshToken) return { newToken: null, setCookieHeaders: [] };
+
+  try {
+    const refreshRes = await fetch(`${BACKEND_URL}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+      signal: AbortSignal.timeout(4000),
+    });
+
+    if (!refreshRes.ok) return { newToken: null, setCookieHeaders: [] };
+
+    const data = await refreshRes.json();
+    const newToken: string | null = data.accessToken ?? null;
+    if (!newToken) return { newToken: null, setCookieHeaders: [] };
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${isProduction ? "; Secure" : ""}`;
+    const setCookieHeaders = [
+      `access_token=${newToken}${cookieOpts}`,
+      `gb_access_token=${newToken}${cookieOpts}`,
+    ];
+
+    return { newToken, setCookieHeaders };
+  } catch {
+    return { newToken: null, setCookieHeaders: [] };
+  }
+}
+
+async function makeBackendRequest(
+  targetUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  body: any
+): Promise<Response> {
+  return fetch(targetUrl, { method, headers, body });
+}
+
 async function handleProxy(req: NextRequest, endpoint: string, method: string) {
   try {
-    const accessToken =
+    let accessToken =
       req.cookies.get("access_token")?.value ||
       req.cookies.get("gb_access_token")?.value;
+
     const url = new URL(req.url);
     const targetUrl = `${BACKEND_URL}/api/v1/${endpoint}${url.search}`;
 
-    const headers: Record<string, string> = {};
+    const buildHeaders = (token: string | undefined): Record<string, string> => {
+      const h: Record<string, string> = {};
+      if (token) h["Authorization"] = `Bearer ${token}`;
+      const contentType = req.headers.get("content-type");
+      if (contentType) h["content-type"] = contentType;
+      return h;
+    };
 
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-
-    const contentType = req.headers.get("content-type");
-    if (contentType) {
-      headers["content-type"] = contentType;
-    }
-
+    // Read body once — body streams can only be consumed once
     let body: any = undefined;
     if (method !== "GET" && method !== "HEAD") {
+      const contentType = req.headers.get("content-type");
       if (contentType?.includes("application/json")) {
         body = JSON.stringify(await req.json());
       } else {
@@ -73,29 +124,61 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
       }
     }
 
-    const backendRes = await fetch(targetUrl, {
+    // ── First attempt ────────────────────────────────────────────────────────
+    let backendRes = await makeBackendRequest(
+      targetUrl,
       method,
-      headers,
-      body,
-    });
+      buildHeaders(accessToken),
+      body
+    );
 
-    if (backendRes.status === 204) {
-      return new NextResponse(null, { status: 204 });
+    // ── 401 → try token refresh then retry once ───────────────────────────
+    let refreshCookies: string[] = [];
+    if (backendRes.status === 401) {
+      const { newToken, setCookieHeaders } = await tryRefreshToken(req);
+      if (newToken) {
+        accessToken = newToken;
+        refreshCookies = setCookieHeaders;
+        // Retry with refreshed token
+        backendRes = await makeBackendRequest(
+          targetUrl,
+          method,
+          buildHeaders(newToken),
+          body
+        );
+      }
     }
 
-    const resContentType = backendRes.headers.get("content-type");
-    if (resContentType?.includes("application/json")) {
-      const data = await backendRes.json();
-      return NextResponse.json(data, { status: backendRes.status });
-    }
+    // ── Build response ───────────────────────────────────────────────────────
+    const buildNextResponse = async (res: Response): Promise<NextResponse> => {
+      if (res.status === 204) {
+        return new NextResponse(null, { status: 204 });
+      }
 
-    const buffer = await backendRes.arrayBuffer();
-    return new NextResponse(buffer, {
-      status: backendRes.status,
-      headers: {
-        "content-type": resContentType || "application/octet-stream",
-      },
-    });
+      const resContentType = res.headers.get("content-type");
+      let nextRes: NextResponse;
+
+      if (resContentType?.includes("application/json")) {
+        const data = await res.json();
+        nextRes = NextResponse.json(data, { status: res.status });
+      } else {
+        const buffer = await res.arrayBuffer();
+        nextRes = new NextResponse(buffer, {
+          status: res.status,
+          headers: { "content-type": resContentType || "application/octet-stream" },
+        });
+      }
+
+      // Attach refreshed token cookies to the response so the browser
+      // updates its stored HttpOnly cookies automatically
+      for (const cookieHeader of refreshCookies) {
+        nextRes.headers.append("Set-Cookie", cookieHeader);
+      }
+
+      return nextRes;
+    };
+
+    return buildNextResponse(backendRes);
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message || "Proxy request failed" },

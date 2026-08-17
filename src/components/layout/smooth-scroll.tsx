@@ -16,6 +16,10 @@ export function SmoothScroll() {
       touchMultiplier: 1.5,
     });
 
+    if (typeof window !== "undefined") {
+      (window as any).__lenis = lenis;
+    }
+
     let animationFrameId: number;
 
     function raf(time: number) {

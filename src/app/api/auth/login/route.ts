@@ -76,7 +76,9 @@ export async function POST(req: NextRequest) {
         title: "Academic Member",
         department: "Department of Pharmacy",
         institution: "Gono Bishwabidyalay",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+          email
+        )}&mouth=default,smile&eyes=default&eyebrows=defaultNatural,default&clothing=blazerAndShirt,blazerAndSweater,collarAndSweater`,
       };
 
       accessToken = generateDevJwt(

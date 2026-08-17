@@ -11,6 +11,7 @@ interface CustomSelectProps {
   className?: string;
   placeholder?: string;
   variant?: "default" | "dark";
+  direction?: "auto" | "down" | "up";
 }
 
 export function CustomSelect({
@@ -20,6 +21,7 @@ export function CustomSelect({
   className,
   placeholder = "Select option",
   variant = "default",
+  direction = "down",
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
@@ -37,13 +39,22 @@ export function CustomSelect({
 
   useEffect(() => {
     if (isOpen && containerRef.current) {
+      if (direction === "down") {
+        setOpenUpward(false);
+        return;
+      }
+      if (direction === "up") {
+        setOpenUpward(true);
+        return;
+      }
       const rect = containerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - rect.bottom;
-      // If remaining height below is less than 260px (240px max-height + 20px padding), open upward
-      setOpenUpward(spaceBelow < 260);
+      const spaceAbove = rect.top;
+      // Only open upward if space below is severely restricted and space above is abundant
+      setOpenUpward(spaceBelow < 180 && spaceAbove > 240);
     }
-  }, [isOpen]);
+  }, [isOpen, direction]);
 
   const isDark = variant === "dark";
 

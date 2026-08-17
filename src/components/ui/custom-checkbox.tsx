@@ -25,12 +25,6 @@ export function CustomCheckbox({
   return (
     <label
       htmlFor={id}
-      onClick={(e) => {
-        if (disabled) return;
-        // If clicking a link inside description, don't toggle
-        if ((e.target as HTMLElement).tagName === "A") return;
-        onChange(!checked);
-      }}
       className={cn(
         "group flex items-start gap-3.5 select-none transition-all duration-150 cursor-pointer",
         disabled && "opacity-50 cursor-not-allowed",
@@ -42,7 +36,11 @@ export function CustomCheckbox({
           type="checkbox"
           id={id}
           checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
+          onChange={(e) => {
+            if (!disabled) {
+              onChange(e.target.checked);
+            }
+          }}
           disabled={disabled}
           className="sr-only"
         />

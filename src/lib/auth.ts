@@ -154,7 +154,12 @@ export async function loginWithApi(email: string, password: string): Promise<Use
     title: res.user.title || "Academic User",
     department: res.user.department,
     institution: res.user.institution,
-    avatar: res.user.avatarUrl || res.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(res.user.email)}`,
+    avatar:
+      res.user.avatarUrl ||
+      res.user.avatar ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+        res.user.email
+      )}&mouth=default,smile&eyes=default&eyebrows=defaultNatural,default&clothing=blazerAndShirt,blazerAndSweater,collarAndSweater`,
   };
   setSession(user);
   return user;
@@ -185,7 +190,12 @@ export async function registerWithApi(payload: {
     title: res.user.title || payload.fullName,
     department: res.user.department,
     institution: res.user.institution,
-    avatar: res.user.avatarUrl || res.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(res.user.email)}`,
+    avatar:
+      res.user.avatarUrl ||
+      res.user.avatar ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+        res.user.email
+      )}&mouth=default,smile&eyes=default&eyebrows=defaultNatural,default&clothing=blazerAndShirt,blazerAndSweater,collarAndSweater`,
   };
   setSession(user);
   return user;

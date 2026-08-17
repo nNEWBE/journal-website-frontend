@@ -1,8 +1,3 @@
-/**
- * GB Journal Portal - Secure Backend API Client
- * Uses secure, HttpOnly SameSite cookies via Next.js Route Handlers (Zero credentials in localStorage)
- */
-
 import { type Role, type Article, type Submission, type BoardMember } from "./data";
 
 export const API_BASE_URL =
@@ -50,8 +45,8 @@ async function request<T>(
     const cleanEndpoint = endpoint.startsWith("/api/v1")
       ? endpoint.substring("/api/v1".length)
       : endpoint.startsWith("/")
-      ? endpoint
-      : `/${endpoint}`;
+        ? endpoint
+        : `/${endpoint}`;
     targetUrl = `/api/backend${cleanEndpoint}`;
   } else {
     targetUrl = `${API_BASE_URL}${endpoint}`;
@@ -629,22 +624,24 @@ export const adminApi = {
 
 export const filesApi = {
   uploadImage: async (
-    file: File,
+    file: File | Blob,
     folder: string = "gbjournal/images"
   ): Promise<{ url: string; publicId: string; format: string; width: number; height: number }> => {
     const formData = new FormData();
-    formData.append("file", file);
+    if (file instanceof File) {
+      formData.append("file", file);
+    } else {
+      formData.append("file", file, `image-${Date.now()}.jpg`);
+    }
     formData.append("folder", folder);
 
-    const token = getAccessToken();
-    const headers: HeadersInit = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    const isBrowser = typeof window !== "undefined";
+    const targetUrl = isBrowser
+      ? "/api/backend/files/upload-image"
+      : `${API_BASE_URL}/api/v1/files/upload-image`;
 
-    const res = await fetch(`${API_BASE_URL}/api/v1/files/upload-image`, {
+    const res = await fetch(targetUrl, {
       method: "POST",
-      headers,
       body: formData,
     });
 
@@ -659,21 +656,63 @@ export const filesApi = {
 
 export const userApi = {
   getProfile: async (): Promise<any> => {
-    return request<any>("/api/v1/users/profile");
+    return request<any>("/api/v1/auth/me");
   },
 
   updateProfile: async (dto: Record<string, any>): Promise<any> => {
-    return request<any>("/api/v1/users/profile", {
+    return request<any>("/api/v1/auth/profile", {
       method: "PUT",
-      body: JSON.stringify(dto),
+      body: JSON.stringify({
+        fullName: dto.name || dto.fullName,
+        title: dto.title || dto.academicTitle,
+        department: dto.department,
+        institution: dto.institution,
+        country: dto.country,
+        orcid: dto.orcid,
+        researchInterests: Array.isArray(dto.researchInterests)
+          ? dto.researchInterests.join(", ")
+          : dto.researchInterests,
+        avatarUrl: dto.avatar || dto.avatarUrl,
+      }),
     });
   },
 
+  uploadAvatar: async (
+    file: File | Blob
+  ): Promise<{ avatarUrl: string;[key: string]: any }> => {
+    const formData = new FormData();
+    if (file instanceof File) {
+      formData.append("file", file);
+    } else {
+      formData.append("file", file, `avatar-${Date.now()}.jpg`);
+    }
+
+    // Use the dedicated avatar upload proxy route (NOT the generic catch-all).
+    // The generic proxy at /api/backend/[...path] re-forwards multipart as
+    // arrayBuffer which can corrupt the boundary — this dedicated route uses
+    // req.formData() + reconstructs FormData properly.
+    const res = await fetch("/api/auth/upload-avatar", {
+      method: "POST",
+      body: formData,
+      // Do NOT set Content-Type — browser auto-sets multipart/form-data + boundary
+    });
+
+    if (!res.ok) {
+      const error = await res
+        .json()
+        .catch(() => ({ message: "Avatar upload failed" }));
+      throw new Error(error.message || `HTTP ${res.status}`);
+    }
+
+    return res.json();
+  },
+
   changePassword: async (dto: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
-    return request<{ message: string }>("/api/v1/users/change-password", {
+    return request<{ message: string }>("/api/v1/auth/change-password", {
       method: "POST",
       body: JSON.stringify(dto),
     });
   },
 };
+
 

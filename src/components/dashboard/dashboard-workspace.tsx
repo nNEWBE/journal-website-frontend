@@ -12,6 +12,7 @@ import {
   BarChart2,
   Bell,
   BookOpen,
+  Building2,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
@@ -1106,59 +1107,77 @@ export function DashboardWorkspace({
                   initial={{ opacity: 0, y: 8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
                   className={cn(
-                    "absolute z-50 rounded-2xl bg-[#08122d] border border-white/15 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-white backdrop-blur-xl",
+                    "absolute z-50 rounded-2xl bg-[#09122c] border border-white/[0.12] p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.7)] text-white backdrop-blur-2xl ring-1 ring-white/10",
                     isSidebarCollapsed
-                      ? "left-full bottom-2 ml-2 w-64"
-                      : "bottom-full left-2.5 right-2.5 mb-2"
+                      ? "left-full bottom-2 ml-3 w-64"
+                      : "bottom-full left-2.5 right-2.5 mb-2.5"
                   )}
                 >
-                  {/* User info snippet */}
-                  <div className="p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-white truncate flex-1">
-                        {currentUser.name}
-                      </p>
-                      <span className={cn(
-                        "inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider border shrink-0",
-                        currentUser.role === "super-admin"
-                          ? "bg-amber-400/20 text-amber-300 border-amber-400/30"
-                          : currentUser.role === "admin"
-                            ? "bg-blue-400/20 text-blue-300 border-blue-400/30"
-                            : currentUser.role === "editor"
-                              ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/30"
-                              : currentUser.role === "reviewer"
-                                ? "bg-purple-400/20 text-purple-300 border-purple-400/30"
-                                : "bg-sky-400/20 text-sky-300 border-sky-400/30"
-                      )}>
-                        {currentUser.role.replace("-", " ")}
-                      </span>
+                  {/* User info header card */}
+                  <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-1 space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative shrink-0">
+                        {currentUser.avatar ? (
+                          <img
+                            src={currentUser.avatar}
+                            alt={currentUser.name}
+                            className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/20"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15">
+                            {currentUser.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <p className="text-xs font-bold text-white truncate">
+                            {currentUser.name}
+                          </p>
+                          <span className={cn(
+                            "inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border shrink-0",
+                            currentUser.role === "super-admin"
+                              ? "bg-amber-400/15 text-amber-300 border-amber-400/25"
+                              : currentUser.role === "admin"
+                                ? "bg-blue-400/15 text-blue-300 border-blue-400/25"
+                                : currentUser.role === "editor"
+                                  ? "bg-emerald-400/15 text-emerald-300 border-emerald-400/25"
+                                  : currentUser.role === "reviewer"
+                                    ? "bg-purple-400/15 text-purple-300 border-purple-400/25"
+                                    : "bg-sky-400/15 text-sky-300 border-sky-400/25"
+                          )}>
+                            {currentUser.role.replace("-", " ")}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal">
+                          {currentUser.email}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal">
-                      {currentUser.email}
-                    </p>
+
                     {currentUser.department && (
-                      <p className="text-[9.5px] text-slate-400/90 truncate mt-1">
-                        {currentUser.department}
-                      </p>
+                      <div className="pt-1.5 border-t border-white/[0.06] flex items-center gap-1.5 text-[9.5px] text-slate-400 truncate">
+                        <Building2 className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{currentUser.department}</span>
+                      </div>
                     )}
                   </div>
 
                   {/* Action items */}
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <Link
                       href="/dashboard/profile"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer",
-                        pathname.includes("/profile")
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-200 hover:bg-white/10 hover:text-white"
-                      )}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
                     >
-                      <UserIcon className="h-4 w-4 shrink-0 text-blue-400" />
-                      <span>Academic Profile</span>
+                      <div className="flex items-center gap-2.5">
+                        <UserIcon className="h-4 w-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
+                        <span>Academic Profile</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
                     </Link>
 
                     <button
@@ -1167,10 +1186,12 @@ export function DashboardWorkspace({
                         setIsUserMenuOpen(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 hover:bg-rose-500/15 hover:text-rose-200 transition-colors cursor-pointer text-left"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all group cursor-pointer text-left"
                     >
-                      <LogOut className="h-4 w-4 shrink-0 text-rose-400" />
-                      <span>Sign Out</span>
+                      <div className="flex items-center gap-2.5">
+                        <LogOut className="h-4 w-4 text-rose-400 group-hover:text-rose-300 transition-colors" />
+                        <span>Sign Out</span>
+                      </div>
                     </button>
                   </div>
                 </motion.div>
@@ -1185,8 +1206,8 @@ export function DashboardWorkspace({
                 className={cn(
                   "flex items-center rounded-xl transition-all duration-150 cursor-pointer border group",
                   isUserMenuOpen
-                    ? "bg-white/15 border-white/25 shadow-md ring-1 ring-white/20"
-                    : "bg-white/[0.04] border-white/10 hover:bg-white/[0.08] hover:border-white/20",
+                    ? "bg-white/10 border-white/20 shadow-md ring-1 ring-white/10"
+                    : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.07] hover:border-white/15",
                   isSidebarCollapsed
                     ? "h-10 w-10 justify-center p-0"
                     : "w-full p-2 gap-2.5"
@@ -1199,10 +1220,10 @@ export function DashboardWorkspace({
                     <img
                       src={currentUser.avatar}
                       alt={currentUser.name}
-                      className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/20 shadow-xs group-hover:ring-amber-400/60 transition-all"
+                      className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15 shadow-inner group-hover:ring-amber-400/60 transition-all">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15 shadow-inner">
                       {currentUser.name.charAt(0)}
                     </div>
                   )}
@@ -1212,30 +1233,17 @@ export function DashboardWorkspace({
                 {!isSidebarCollapsed && (
                   <>
                     <div className="min-w-0 flex-1 text-left">
-                      <p className="text-xs font-bold text-white truncate leading-tight group-hover:text-amber-200 transition-colors">
+                      <p className="text-xs font-semibold text-slate-100 truncate leading-tight group-hover:text-white transition-colors">
                         {currentUser.name}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={cn(
-                          "inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase tracking-wider border",
-                          currentUser.role === "super-admin"
-                            ? "bg-amber-400/20 text-amber-300 border-amber-400/30"
-                            : currentUser.role === "admin"
-                              ? "bg-blue-400/20 text-blue-300 border-blue-400/30"
-                              : currentUser.role === "editor"
-                                ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/30"
-                                : currentUser.role === "reviewer"
-                                  ? "bg-purple-400/20 text-purple-300 border-purple-400/30"
-                                  : "bg-sky-400/20 text-sky-300 border-sky-400/30"
-                        )}>
-                          {currentUser.role.replace("-", " ")}
-                        </span>
-                      </div>
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal capitalize">
+                        {currentUser.role.replace("-", " ")}
+                      </p>
                     </div>
 
                     <ChevronsUpDown className={cn(
-                      "h-3.5 w-3.5 shrink-0 transition-all",
-                      isUserMenuOpen ? "text-amber-300 rotate-180" : "text-slate-400 group-hover:text-white"
+                      "h-3.5 w-3.5 shrink-0 transition-all text-slate-400 group-hover:text-slate-200",
+                      isUserMenuOpen && "text-slate-200 rotate-180"
                     )} />
                   </>
                 )}
