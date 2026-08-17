@@ -145,6 +145,26 @@ export function clearSession(): void {
   }
 }
 
+let isHandlingSessionExpiry = false;
+
+/**
+ * Automatically logs the user out in real time and redirects to login with an expired notice.
+ */
+export function handleSessionExpired(): void {
+  if (typeof window === "undefined" || isHandlingSessionExpiry) return;
+  isHandlingSessionExpiry = true;
+
+  clearSession();
+
+  if (window.location.pathname === "/login") {
+    isHandlingSessionExpiry = false;
+    return;
+  }
+
+  // Real-time automatic logout redirection
+  window.location.href = "/login?expired=1";
+}
+
 export async function loginWithApi(email: string, password: string): Promise<User> {
   const res = await authApi.login({ email, password });
   const user: User = {

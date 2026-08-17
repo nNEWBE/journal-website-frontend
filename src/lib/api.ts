@@ -1,4 +1,5 @@
 import { type Role, type Article, type Submission, type BoardMember } from "./data";
+import { handleSessionExpired } from "./auth";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -58,6 +59,10 @@ async function request<T>(
   });
 
   if (!res.ok) {
+    if (res.status === 401 && isBrowser && !endpoint.includes("/login")) {
+      handleSessionExpired();
+    }
+
     let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
     try {
       const errorJson = await res.json();
@@ -698,6 +703,9 @@ export const userApi = {
     });
 
     if (!res.ok) {
+      if (res.status === 401 && typeof window !== "undefined") {
+        handleSessionExpired();
+      }
       const error = await res
         .json()
         .catch(() => ({ message: "Avatar upload failed" }));

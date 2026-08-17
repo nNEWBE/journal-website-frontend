@@ -53,6 +53,16 @@ function LoginForm() {
     }
   }, [isAuthenticated, router, redirect]);
 
+  // Session expired notification
+  useEffect(() => {
+    if (searchParams.get("expired") === "1") {
+      toast.error("Session Expired", {
+        description: "Your session has expired. Please sign in again to continue.",
+        duration: 6000,
+      });
+    }
+  }, [searchParams]);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLocalError(null);

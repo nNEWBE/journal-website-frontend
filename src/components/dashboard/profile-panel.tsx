@@ -489,31 +489,14 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
     try {
       let finalAvatarUrl = avatar || undefined;
       if (finalAvatarUrl && finalAvatarUrl.startsWith("data:")) {
-        try {
-          const blob = dataURItoBlob(finalAvatarUrl);
-          const uploadRes = await userApi.uploadAvatar(blob);
-          if (uploadRes?.avatarUrl) {
-            finalAvatarUrl = uploadRes.avatarUrl;
-            setAvatar(uploadRes.avatarUrl);
-          } else if (uploadRes?.avatar) {
-            finalAvatarUrl = uploadRes.avatar;
-            setAvatar(uploadRes.avatar);
-          }
-        } catch (saveErr: any) {
-          const isSessionExpired =
-            saveErr?.message?.includes("Session expired") ||
-            saveErr?.message?.includes("Please log");
-          if (isSessionExpired) {
-            toast.error("Session expired — please log in again", {
-              description: "Log out and log back in, then your avatar will upload correctly.",
-              action: {
-                label: "Log Out",
-                onClick: () => { clearSession(); router.push("/login"); },
-              },
-              duration: 8000,
-            });
-          }
-          // Continue saving other profile fields even if avatar upload failed
+        const blob = dataURItoBlob(finalAvatarUrl);
+        const uploadRes = await userApi.uploadAvatar(blob);
+        if (uploadRes?.avatarUrl) {
+          finalAvatarUrl = uploadRes.avatarUrl;
+          setAvatar(uploadRes.avatarUrl);
+        } else if (uploadRes?.avatar) {
+          finalAvatarUrl = uploadRes.avatar;
+          setAvatar(uploadRes.avatar);
         }
       }
 
@@ -544,25 +527,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
       };
 
       // Update backend endpoint
-      try {
-        await userApi.updateProfile(updatedUser);
-      } catch (err: any) {
-        const isSessionExpired =
-          err?.message?.includes("Session expired") ||
-          err?.message?.includes("Authentication is required") ||
-          err?.message?.includes("Please log");
-        if (isSessionExpired) {
-          toast.error("Session expired — please log in again", {
-            description: "Your session has expired. Other profile fields were saved locally.",
-            action: {
-              label: "Log Out",
-              onClick: () => { clearSession(); router.push("/login"); },
-            },
-            duration: 8000,
-          });
-        }
-        // Profile is still saved to local session/redux below
-      }
+      await userApi.updateProfile(updatedUser);
 
       // Sync Session cookie and Redux state
       setSession(updatedUser);
@@ -571,9 +536,16 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         description: "Your changes are now live across your workspace.",
       });
     } catch (err: any) {
-      toast.error("Failed to update profile", {
-        description: err.message || "An unexpected error occurred",
-      });
+      // If error is session expiration, handleSessionExpired() in api.ts has already triggered logout redirect
+      const isSessionExpired =
+        err?.message?.includes("Session expired") ||
+        err?.message?.includes("Authentication is required") ||
+        err?.message?.includes("401");
+      if (!isSessionExpired) {
+        toast.error("Failed to update profile", {
+          description: err.message || "An unexpected error occurred",
+        });
+      }
     } finally {
       setIsSaving(false);
     }
