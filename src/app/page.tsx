@@ -10,10 +10,13 @@ import { HomeFaqSection } from "@/components/home/home-faq-section";
 import { HomeMetricsNewsletter } from "@/components/home/home-metrics-newsletter";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
+import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 export default function Home() {
   return (
     <PageShell>
+      <AdminPageEditBadge pageKey="home" />
+
       {/* Redesigned Academic Research Hero Showcase */}
       <FadeIn delay={0.05}>
         <HeroShowcase />

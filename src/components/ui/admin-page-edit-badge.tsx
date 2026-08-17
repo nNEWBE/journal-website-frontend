@@ -6,7 +6,7 @@ import { Edit3, Sparkles } from "lucide-react";
 import { getSession } from "@/lib/auth";
 
 interface AdminPageEditBadgeProps {
-  pageKey: "about" | "authors" | "policies" | "announcements" | "contact";
+  pageKey: "home" | "about" | "authors" | "policies" | "announcements" | "contact";
 }
 
 export function AdminPageEditBadge({ pageKey }: AdminPageEditBadgeProps) {
@@ -24,7 +24,7 @@ export function AdminPageEditBadge({ pageKey }: AdminPageEditBadgeProps) {
   return (
     <div className="fixed bottom-6 right-6 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <Link
-        href="/dashboard/admin"
+        href={`/dashboard/admin`}
         className="group flex items-center gap-2 rounded-full bg-[#070e24]/90 hover:bg-[#070e24] px-4 py-2.5 text-xs font-bold text-white shadow-2xl border border-amber-400/40 backdrop-blur-md transition-all hover:scale-105 hover:shadow-amber-500/20"
         title="Open CMS to edit this page content"
       >

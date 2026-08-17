@@ -21,6 +21,7 @@ import {
   Sparkles,
   AlertCircle,
   HelpCircle,
+  Home as HomeIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { contentApi, type PageContentDTO } from "@/lib/api";
@@ -31,6 +32,14 @@ import { CustomTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const PAGE_TABS = [
+  {
+    id: "home",
+    label: "Home Page",
+    route: "/",
+    icon: HomeIcon,
+    description: "Hero showcase, call for papers banner, turnaround metrics, and research tracks.",
+    color: "amber",
+  },
   {
     id: "about",
     label: "About Journal",
@@ -56,14 +65,6 @@ const PAGE_TABS = [
     color: "purple",
   },
   {
-    id: "announcements",
-    label: "Hero & Announcements",
-    route: "/",
-    icon: Megaphone,
-    description: "Call for papers alerts, turnaround benchmarks, and home notices.",
-    color: "amber",
-  },
-  {
     id: "contact",
     label: "Contact Office",
     route: "/contact",
@@ -74,7 +75,7 @@ const PAGE_TABS = [
 ];
 
 export function PageContentCMSPanel() {
-  const [activeTab, setActiveTab] = useState<string>("about");
+  const [activeTab, setActiveTab] = useState<string>("home");
   const [sections, setSections] = useState<PageContentDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
