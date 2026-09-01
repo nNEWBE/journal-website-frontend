@@ -638,15 +638,7 @@ export interface DashboardStats {
   registeredUsers: number;
 }
 
-export interface AuditLogItem {
-  id: string;
-  eventType: string;
-  description: string;
-  actor: string;
-  target: string;
-  timestamp: string;
-  level: "INFO" | "WARN" | "SUCCESS";
-}
+
 
 export interface MailTemplateItem {
   key: string;
@@ -756,9 +748,7 @@ export const adminApi = {
     return request<MailTemplateItem[]>("/api/v1/admin/mail/templates");
   },
 
-  getAuditLogs: async (): Promise<AuditLogItem[]> => {
-    return request<AuditLogItem[]>("/api/v1/admin/audit-logs");
-  },
+
 
   setCurrentIssue: async (issueId: number | string): Promise<IssueData> => {
     return request<IssueData>(`/api/v1/admin/issues/${issueId}/set-current`, {

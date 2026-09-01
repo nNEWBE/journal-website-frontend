@@ -21,7 +21,7 @@ export const roleNotes: Record<Role, string> = {
   admin:
     "Manage article policies, build active issues, feature articles on the homepage, and monitor journal metrics.",
   "super-admin":
-    "Audit system logs, configure role permissions, manage credentials, and restore demo database states.",
+    "Full administrative authority over scholarly user directories, editorial board appointments, issue archives, and page CMS.",
 };
 
 export const roleAccentMap: Record<

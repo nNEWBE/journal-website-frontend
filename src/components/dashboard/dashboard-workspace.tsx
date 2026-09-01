@@ -6,7 +6,6 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
-  Activity,
   AlertCircle,
   Archive,
   BarChart2,
@@ -34,7 +33,6 @@ import {
   MoreVertical,
   PenLine,
   Plus,
-  RefreshCw,
   Save,
   Search,
   SearchX,
@@ -54,7 +52,6 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomModal } from "@/components/ui/modal";
 import { StatCard } from "@/components/ui/stat-card";
-import { SectionHeader } from "@/components/ui/section-header";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { PremiumLoader } from "@/components/ui/loader";
 import { CustomTooltip } from "@/components/ui/tooltip";
@@ -83,7 +80,7 @@ function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
     label: status,
     classes: "bg-slate-50 text-slate-600 border-slate-200",
-    icon: Activity,
+    icon: FileText,
   };
 }
 
@@ -105,50 +102,6 @@ function StatusPill({ status }: { status: string }) {
       <StatusIcon className="h-3 w-3 shrink-0" />
       {cfg.label}
     </span>
-  );
-}
-
-function ToolboxAction({
-  icon: Icon,
-  label,
-  description,
-  onClick,
-  variant = "default",
-}: {
-  icon: React.ElementType;
-  label: string;
-  description?: string;
-  onClick?: () => void;
-  variant?: "default" | "danger";
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`group flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all duration-150 active:scale-[0.99] cursor-pointer ${variant === "danger"
-          ? "border-red-100 bg-red-50/60 hover:bg-red-50"
-          : "border-[color:var(--color-gb-border)] bg-[#fafbff] hover:bg-[color:var(--color-gb-blue-soft)] hover:border-[color:var(--color-gb-blue)]/30"
-        }`}
-    >
-      <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${variant === "danger"
-            ? "bg-red-100 text-red-600"
-            : "bg-[color:var(--color-gb-blue-soft)] text-[color:var(--color-gb-blue)] group-hover:bg-[color:var(--color-gb-blue)] group-hover:text-white"
-          }`}
-      >
-        <Icon className="h-3.5 w-3.5" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-bold text-[color:var(--color-gb-ink)] leading-tight">
-          {label}
-        </p>
-        {description && (
-          <p className="mt-0.5 text-[10px] text-[color:var(--color-gb-muted)] leading-snug truncate">
-            {description}
-          </p>
-        )}
-      </div>
-      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[color:var(--color-gb-muted)] opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
-    </button>
   );
 }
 
@@ -448,14 +401,40 @@ export function DashboardWorkspace({
 
   const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
   const [adminSubView, setAdminSubView] = useState<"pipeline" | "users" | "mailing" | "issues" | "board" | "content">("pipeline");
-  const [decisionLog, setDecisionLog] = useState<string[]>([
-    "GBJ-2026-101 scheduled for Volume 4, Issue 2",
-    "Reviewer certificate batch generated for Dr. Salma Khatun",
-  ]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Admin tab scroll state & ref
+  const adminTabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+
+  const updateAdminTabsScroll = () => {
+    if (!adminTabsRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = adminTabsRef.current;
+    setCanScrollTabsLeft(scrollLeft > 4);
+    setCanScrollTabsRight(scrollLeft < scrollWidth - clientWidth - 4);
+  };
+
+  const scrollAdminTabs = (direction: "left" | "right") => {
+    if (!adminTabsRef.current) return;
+    const offset = 220;
+    adminTabsRef.current.scrollBy({
+      left: direction === "left" ? -offset : offset,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(updateAdminTabsScroll, 100);
+    window.addEventListener("resize", updateAdminTabsScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", updateAdminTabsScroll);
+    };
+  }, [activeRole, adminSubView]);
 
   const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
   const [msgText, setMsgText] = useState("");
@@ -463,7 +442,6 @@ export function DashboardWorkspace({
   const [reviewSubId, setReviewSubId] = useState("");
   const [reviewScore, setReviewScore] = useState("85");
   const [reviewRec, setReviewRec] = useState("Accept");
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const [selectedSubmission, setSelectedSubmission] =
     useState<Submission | null>(null);
@@ -538,12 +516,8 @@ export function DashboardWorkspace({
     );
   }, [submissions, currentUser, activeRole, searchQuery]);
 
-  function updateSubmissionsState(newSubs: Submission[], logMessage?: string) {
+  function updateSubmissionsState(newSubs: Submission[]) {
     setSubmissions(newSubs);
-    if (logMessage) {
-      const updatedLogs = [logMessage, ...decisionLog];
-      setDecisionLog(updatedLogs);
-    }
   }
 
   function advanceSubmission(id: string) {
@@ -561,10 +535,7 @@ export function DashboardWorkspace({
     const newSubs = submissions.map((s) =>
       s.id === id ? { ...s, status: nextStatus, updated: "Just now" } : s
     );
-    updateSubmissionsState(
-      newSubs,
-      `[${id}] Status → "${nextStatus}" by ${currentUser?.name ?? "System"}`
-    );
+    updateSubmissionsState(newSubs);
     toast.success(`Status advanced to "${nextStatus}".`);
   }
 
@@ -575,10 +546,7 @@ export function DashboardWorkspace({
       const status = s.status === "Awaiting Editor" ? "Under Review" : s.status;
       return { ...s, reviewers, status, updated: "Just now" };
     });
-    updateSubmissionsState(
-      newSubs,
-      `[${subId}] Assigned reviewer "${reviewerName}"`
-    );
+    updateSubmissionsState(newSubs);
     toast.success(`Assigned ${reviewerName} to ${subId}.`);
   }
 
@@ -586,21 +554,12 @@ export function DashboardWorkspace({
     const newSubs = submissions.map((s) =>
       s.id === id ? { ...s, due: newDate, updated: "Just now" } : s
     );
-    updateSubmissionsState(newSubs, `[${id}] Due date updated to ${newDate}`);
+    updateSubmissionsState(newSubs);
     toast.success(`Due date updated to ${newDate}.`);
   }
 
   function handleSendMessageSubmit() {
     if (!msgText.trim()) return;
-    const updatedLogs = [
-      `[Author Message] ${currentUser?.name ?? "Author"}: "${msgText}"`,
-      ...decisionLog,
-    ];
-    setDecisionLog(updatedLogs);
-    localStorage.setItem(
-      "gb_journal_decision_log",
-      JSON.stringify(updatedLogs)
-    );
     setIsMsgModalOpen(false);
     setMsgText("");
     toast.success("Message dispatched to editor.");
@@ -617,10 +576,7 @@ export function DashboardWorkspace({
         ? { ...s, status: "Revised Manuscript Submitted", updated: "Just now" }
         : s
     );
-    updateSubmissionsState(
-      newSubs,
-      `[${target.id}] Revision uploaded by ${currentUser?.name ?? "Author"}`
-    );
+    updateSubmissionsState(newSubs);
     toast.success(`Revision uploaded for ${target.id}.`);
   }
 
@@ -630,16 +586,6 @@ export function DashboardWorkspace({
       toast.info("No pending review invitations.");
       return;
     }
-    const updatedLogs = [
-      `[Reviewer] ${currentUser?.name ?? "Reviewer"} accepted invitation for ${target.id
-      }`,
-      ...decisionLog,
-    ];
-    setDecisionLog(updatedLogs);
-    localStorage.setItem(
-      "gb_journal_decision_log",
-      JSON.stringify(updatedLogs)
-    );
     toast.success(`Invitation accepted for ${target.id}.`);
   }
 
@@ -671,11 +617,7 @@ export function DashboardWorkspace({
         ? { ...s, status: "Revised Manuscript Submitted", updated: "Just now" }
         : s
     );
-    updateSubmissionsState(
-      newSubs,
-      `[${selectedSubmission.id}] Revised manuscript uploaded by ${currentUser?.name ?? "Author"
-      }`
-    );
+    updateSubmissionsState(newSubs);
     setIsRevisionModalOpen(false);
     setRevisionNotes("");
     toast.success(`Revision uploaded for ${selectedSubmission.id}.`);
@@ -700,10 +642,7 @@ export function DashboardWorkspace({
         }
         : s
     );
-    updateSubmissionsState(
-      newSubs,
-      `[${reviewSubId}] Review submitted: ${reviewRec} (Score: ${scoreVal})`
-    );
+    updateSubmissionsState(newSubs);
     setIsReviewModalOpen(false);
     toast.success(
       `Review logged for ${reviewSubId}. Recommendation: ${reviewRec}.`
@@ -723,26 +662,8 @@ export function DashboardWorkspace({
         ? { ...s, status: "Published", updated: "Just now" }
         : s
     );
-    updateSubmissionsState(
-      newSubs,
-      `[Issue Builder] Compiled ${acceptedCount} manuscripts into Volume 4, Issue 3`
-    );
+    updateSubmissionsState(newSubs);
     toast.success(`Published ${acceptedCount} papers to current issue.`);
-  }
-
-  function handleResetDatabaseSubmit() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("gb_journal_submissions");
-      localStorage.removeItem("gb_journal_decision_log");
-    }
-    setSubmissions(seedSubmissions);
-    const initialLogs = [
-      "GBJ-2026-101 scheduled for Volume 4, Issue 2",
-      "Reviewer certificate batch generated for Dr. Salma Khatun",
-    ];
-    setDecisionLog(initialLogs);
-    setIsResetModalOpen(false);
-    toast.success("Database restored to seed state.");
   }
 
   const overrideRoleOptions = navItems.map((r) => `${r.label}`);
@@ -759,143 +680,6 @@ export function DashboardWorkspace({
   const canEditDates = ["editor", "admin", "super-admin"].includes(activeRole);
   const canAdvance = ["editor", "admin", "super-admin"].includes(activeRole);
   const roleAccent = roleAccentMap[activeRole];
-
-  const toolboxActions: Record<Role, React.ReactNode> = {
-    author: (
-      <>
-        <ToolboxAction
-          icon={Save}
-          label="Continue Draft"
-          description="Resume your saved manuscript draft"
-          onClick={() => toast.info("Editor opened — draft synced.")}
-        />
-        <ToolboxAction
-          icon={FileCheck2}
-          label="Upload Revision"
-          description="Submit revised manuscript files"
-          onClick={handleUploadRevision}
-        />
-        <ToolboxAction
-          icon={MessageSquare}
-          label="Message Editor"
-          description="Send confidential note to your editor"
-          onClick={() => setIsMsgModalOpen(true)}
-        />
-        <ToolboxAction
-          icon={Bell}
-          label="Track Submission"
-          description="View real-time review pipeline status"
-          onClick={() => toast.info("Pipeline tracker is active.")}
-        />
-      </>
-    ),
-    reviewer: (
-      <>
-        <ToolboxAction
-          icon={UserCheck}
-          label="Accept Invitation"
-          description="Confirm review assignment for manuscript"
-          onClick={handleAcceptInvitation}
-        />
-        <ToolboxAction
-          icon={CheckCircle2}
-          label="Submit Review"
-          description="Log structured peer review feedback"
-          onClick={() => {
-            const t = submissions.find((s) => s.status === "Under Review");
-            t
-              ? triggerSubmitReview(t.id)
-              : toast.error("No manuscripts under review.");
-          }}
-        />
-        <ToolboxAction
-          icon={FileCheck2}
-          label="Download Certificate"
-          description="Get your reviewer recognition certificate"
-          onClick={() => toast.success("Reviewer certificate PDF downloaded.")}
-        />
-      </>
-    ),
-    editor: (
-      <>
-        <ToolboxAction
-          icon={ShieldCheck}
-          label="Similarity Check"
-          description="Run Crossref plagiarism screening"
-          onClick={() => toast.success("Integrity score: 98% (GBJ-2026-104)")}
-        />
-        <ToolboxAction
-          icon={UserCheck}
-          label="Reviewer Finder"
-          description="Smart reviewer matching by expertise"
-          onClick={() => toast.info("Reviewer matching system active.")}
-        />
-        <ToolboxAction
-          icon={CalendarClock}
-          label="Build Issue"
-          description="Compile accepted papers into new issue"
-          onClick={handleBuildIssue}
-        />
-        <ToolboxAction
-          icon={Mail}
-          label="Send Decision Letter"
-          description="Dispatch editorial decision to author"
-          onClick={() => toast.info("Decision letter composer opened.")}
-        />
-      </>
-    ),
-    admin: (
-      <>
-        <ToolboxAction
-          icon={Layers}
-          label="Homepage CMS"
-          description="Feature articles on the journal homepage"
-          onClick={() => toast.info("Homepage builder opened.")}
-        />
-        <ToolboxAction
-          icon={ShieldCheck}
-          label="Editorial Policies"
-          description="Configure publication policy settings"
-          onClick={() => toast.info("Policy manager opened.")}
-        />
-        <ToolboxAction
-          icon={CalendarClock}
-          label="Compile & Publish"
-          description="Build and publish the next journal issue"
-          onClick={handleBuildIssue}
-        />
-        <ToolboxAction
-          icon={Activity}
-          label="Journal Analytics"
-          description="View metrics and performance dashboard"
-          onClick={() => toast.info("Analytics dashboard opened.")}
-        />
-      </>
-    ),
-    "super-admin": (
-      <>
-        <ToolboxAction
-          icon={Settings}
-          label="Role Permissions"
-          description="Edit system-wide role access controls"
-          onClick={() => toast.info("Credential control system opened.")}
-        />
-        <ToolboxAction
-          icon={ShieldCheck}
-          label="Audit Integrity"
-          description="Review academic integrity reports"
-          onClick={() => toast.info("Integrity audit dashboard opened.")}
-        />
-        <ToolboxAction
-          icon={RefreshCw}
-          label="Reset Database"
-          description="Restore demo data to seed state"
-          onClick={() => setIsResetModalOpen(true)}
-          variant="danger"
-        />
-      </>
-    ),
-  };
 
   return (
     <div className="flex min-h-screen bg-[#f5f7fb] w-full">
@@ -1793,79 +1577,112 @@ export function DashboardWorkspace({
                   </AnimatePresence>
 
                   {(activeRole === "admin" || activeRole === "super-admin") && (
-                    <div className="flex items-center gap-1.5 px-4 pt-3 border-b border-[color:var(--color-gb-border)] bg-slate-50/50 overflow-x-auto">
-                      <button
-                        onClick={() => setAdminSubView("pipeline")}
-                        className={cn(
-                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                          adminSubView === "pipeline"
-                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                            : "border-transparent text-slate-500 hover:text-slate-800"
-                        )}
+                    <div className="relative border-b border-[color:var(--color-gb-border)] bg-slate-50/50">
+                      {/* Left scroll arrow */}
+                      {canScrollTabsLeft && (
+                        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1.5 pr-4 bg-gradient-to-r from-slate-100 via-slate-100/90 to-transparent">
+                          <button
+                            onClick={() => scrollAdminTabs("left")}
+                            className="h-6 w-6 rounded-md bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer hover:shadow"
+                            title="Scroll left"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Scrollable Tabs without browser scrollbar */}
+                      <div
+                        ref={adminTabsRef}
+                        onScroll={updateAdminTabsScroll}
+                        className="flex items-center gap-1.5 px-4 pt-3 overflow-x-auto scrollbar-none scroll-smooth"
                       >
-                        <ClipboardCheck className="h-3.5 w-3.5" />
-                        Manuscript Pipeline
-                      </button>
-                      <button
-                        onClick={() => setAdminSubView("users")}
-                        className={cn(
-                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                          adminSubView === "users"
-                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                            : "border-transparent text-slate-500 hover:text-slate-800"
-                        )}
-                      >
-                        <UserIcon className="h-3.5 w-3.5" />
-                        User Directory
-                      </button>
-                      <button
-                        onClick={() => setAdminSubView("mailing")}
-                        className={cn(
-                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                          adminSubView === "mailing"
-                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                            : "border-transparent text-slate-500 hover:text-slate-800"
-                        )}
-                      >
-                        <Mail className="h-3.5 w-3.5" />
-                        Mailing & Broadcast
-                      </button>
-                      <button
-                        onClick={() => setAdminSubView("issues")}
-                        className={cn(
-                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                          adminSubView === "issues"
-                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                            : "border-transparent text-slate-500 hover:text-slate-800"
-                        )}
-                      >
-                        <BookOpen className="h-3.5 w-3.5" />
-                        Issues & Volumes
-                      </button>
-                      <button
-                        onClick={() => setAdminSubView("board")}
-                        className={cn(
-                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                          adminSubView === "board"
-                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                            : "border-transparent text-slate-500 hover:text-slate-800"
-                        )}
-                      >
-                        <Crown className="h-3.5 w-3.5" />
-                        Editorial Board
-                      </button>
-                      <button
-                        onClick={() => setAdminSubView("content")}
-                        className={cn(
-                          "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                          adminSubView === "content"
-                            ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                            : "border-transparent text-slate-500 hover:text-slate-800"
-                        )}
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        Site &amp; Pages CMS
-                      </button>
+                        <button
+                          onClick={() => setAdminSubView("pipeline")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "pipeline"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5" />
+                          Manuscript Pipeline
+                        </button>
+                        <button
+                          onClick={() => setAdminSubView("users")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "users"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <UserIcon className="h-3.5 w-3.5" />
+                          User Directory
+                        </button>
+                        <button
+                          onClick={() => setAdminSubView("mailing")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "mailing"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          Mailing & Broadcast
+                        </button>
+                        <button
+                          onClick={() => setAdminSubView("issues")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "issues"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <BookOpen className="h-3.5 w-3.5" />
+                          Issues & Volumes
+                        </button>
+                        <button
+                          onClick={() => setAdminSubView("board")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "board"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <Crown className="h-3.5 w-3.5" />
+                          Editorial Board
+                        </button>
+                        <button
+                          onClick={() => setAdminSubView("content")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "content"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          Site &amp; Pages CMS
+                        </button>
+                      </div>
+
+                      {/* Right scroll arrow */}
+                      {canScrollTabsRight && (
+                        <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1.5 pl-4 bg-gradient-to-l from-slate-100 via-slate-100/90 to-transparent">
+                          <button
+                            onClick={() => scrollAdminTabs("right")}
+                            className="h-6 w-6 rounded-md bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer hover:shadow"
+                            title="Scroll right"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1895,7 +1712,7 @@ export function DashboardWorkspace({
                         <DashboardStatsGrid submissions={submissions} />
                       </div>
 
-                      <div className="grid gap-4 px-4 pb-6 xl:grid-cols-[1fr_280px] items-start">
+                      <div className="px-4 pb-6 space-y-4">
                         <AnimatePresence mode="wait">
                           <motion.div
                             key={`table-${activeRole}`}
@@ -2181,42 +1998,6 @@ export function DashboardWorkspace({
                           </motion.div>
                         </AnimatePresence>
 
-                        {/* Right column */}
-                        <div className="space-y-4">
-                          <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm overflow-hidden">
-                            <SectionHeader
-                              title="Workspace Tools"
-                              description={`${roleAccent.label} quick actions`}
-                              icon={Zap}
-                              className="px-4 pt-3 pb-3"
-                            />
-                            <div className="px-3 pb-3 pt-2 space-y-1.5">
-                              {toolboxActions[activeRole]}
-                            </div>
-                          </div>
-
-                          <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm overflow-hidden">
-                            <SectionHeader
-                              title="Activity Log"
-                              description="Real-time audit trail"
-                              icon={Activity}
-                              className="px-4 pt-3 pb-3"
-                            />
-                            <div className="px-3 pb-3 pt-2 space-y-1.5 max-h-[320px] overflow-y-auto">
-                              {decisionLog.map((item, i) => (
-                                <div
-                                  key={i}
-                                  className="flex gap-2.5 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] p-2.5"
-                                >
-                                  <Activity className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--color-gb-blue)]" />
-                                  <p className="text-[10px] font-medium text-[color:var(--color-gb-muted)] leading-relaxed">
-                                    {item}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </>
                   )}
