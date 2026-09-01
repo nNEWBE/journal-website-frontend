@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/lib/backend-url";
 
-const BACKEND_URL =
-  process.env.BACKEND_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
+const BACKEND_URL = getBackendUrl();
 
 function parseJwt(token: string) {
   try {
@@ -30,7 +28,7 @@ export async function GET(req: NextRequest) {
       return fetch(`${BACKEND_URL}/api/v1/auth/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(15000),
       });
     };
 
@@ -51,7 +49,7 @@ export async function GET(req: NextRequest) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refreshToken }),
-          signal: AbortSignal.timeout(4000),
+          signal: AbortSignal.timeout(15000),
         });
 
         if (refreshRes.ok) {

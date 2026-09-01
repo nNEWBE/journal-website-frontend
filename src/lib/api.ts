@@ -1,8 +1,8 @@
 import { type Role, type Article, type Submission, type BoardMember } from "./data";
 import { handleSessionExpired } from "./auth";
+import { getBackendUrl } from "./backend-url";
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export const API_BASE_URL = getBackendUrl();
 
 // Purge any legacy localStorage tokens and mock data for security
 export function clearTokens(): void {
@@ -76,8 +76,8 @@ async function request<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  // When in browser, route through secure Next.js backend proxy which automatically injects HttpOnly cookie
-  // When in server-side, call Spring Boot directly
+  // In browser, route through secure Next.js backend proxy which automatically injects HttpOnly cookie.
+  // On the server-side (SSR), call Spring Boot directly.
   let targetUrl: string;
   if (isBrowser) {
     const cleanEndpoint = endpoint.startsWith("/api/v1")
@@ -90,25 +90,46 @@ async function request<T>(
     targetUrl = `${API_BASE_URL}${endpoint}`;
   }
 
-  let res = await fetch(targetUrl, {
-    ...options,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(targetUrl, {
+      ...options,
+      headers,
+    });
+  } catch (networkErr: any) {
+    // Network-level failure (ECONNREFUSED, DNS, offline, etc.)
+    // Do NOT trigger session expiry — this is a connectivity issue, not an auth issue.
+    throw new Error(
+      "Unable to reach the server. Please check your connection and try again."
+    );
+  }
 
   // On 401 in browser: attempt silent refresh once and retry the request
   if (!res.ok) {
     if (res.status === 401 && isBrowser && !endpoint.includes("/login") && !endpoint.includes("/refresh")) {
       const refreshed = await silentlyRefreshToken();
       if (refreshed) {
-        res = await fetch(targetUrl, {
-          ...options,
-          headers,
-        });
+        try {
+          res = await fetch(targetUrl, {
+            ...options,
+            headers,
+          });
+        } catch {
+          throw new Error(
+            "Unable to reach the server. Please check your connection and try again."
+          );
+        }
       }
     }
 
     if (!res.ok) {
-      if (res.status === 401 && isBrowser && !endpoint.includes("/login") && !endpoint.includes("/refresh")) {
+      // Only treat 401 as session expiry — NOT 503 (backend down)
+      if (
+        res.status === 401 &&
+        isBrowser &&
+        !endpoint.includes("/login") &&
+        !endpoint.includes("/refresh")
+      ) {
         handleSessionExpired();
       }
 
@@ -131,6 +152,7 @@ async function request<T>(
 
   return (await res.json()) as T;
 }
+
 
 // ==========================================
 // 1. AUTH API (SECURE HTTPONLY ENDPOINTS)

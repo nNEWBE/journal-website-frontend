@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/lib/backend-url";
 
-const BACKEND_URL =
-  process.env.BACKEND_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
+const BACKEND_URL = getBackendUrl();
 
 function base64UrlEncode(str: string): string {
   return Buffer.from(str)
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (backendRes.ok) {

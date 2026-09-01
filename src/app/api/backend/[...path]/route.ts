@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/lib/backend-url";
 
-const BACKEND_URL =
-  process.env.BACKEND_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
+const BACKEND_URL = getBackendUrl();
 
 export async function GET(
   req: NextRequest,
@@ -65,7 +63,7 @@ async function tryRefreshToken(req: NextRequest): Promise<{
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!refreshRes.ok) return { newToken: null, setCookieHeaders: [] };
@@ -96,13 +94,30 @@ async function tryRefreshToken(req: NextRequest): Promise<{
   }
 }
 
+/**
+ * Makes a request to the Spring Boot backend with a 20-second timeout.
+ * Returns null if the backend is unreachable (connection refused / timeout).
+ */
 async function makeBackendRequest(
   targetUrl: string,
   method: string,
   headers: Record<string, string>,
   body: any
-): Promise<Response> {
-  return fetch(targetUrl, { method, headers, body });
+): Promise<Response | null> {
+  try {
+    return await fetch(targetUrl, {
+      method,
+      headers,
+      body,
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (err: any) {
+    const msg = err?.message ?? "";
+    // ECONNREFUSED = backend not running locally
+    // TimeoutError / AbortError = too slow
+    console.error(`[proxy] Backend unreachable at ${targetUrl}: ${msg}`);
+    return null;
+  }
 }
 
 async function handleProxy(req: NextRequest, endpoint: string, method: string) {
@@ -141,6 +156,14 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
       body
     );
 
+    // Backend is completely unreachable (ECONNREFUSED, timeout, etc.)
+    if (backendRes === null) {
+      return NextResponse.json(
+        { message: "Backend service is temporarily unavailable. Please try again shortly." },
+        { status: 503 }
+      );
+    }
+
     // ── 401 → try token refresh then retry once ───────────────────────────
     let refreshCookies: string[] = [];
     if (backendRes.status === 401) {
@@ -149,12 +172,15 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
         accessToken = newToken;
         refreshCookies = setCookieHeaders;
         // Retry with refreshed token
-        backendRes = await makeBackendRequest(
+        const retried = await makeBackendRequest(
           targetUrl,
           method,
           buildHeaders(newToken),
           body
         );
+        if (retried !== null) {
+          backendRes = retried;
+        }
       }
     }
 
@@ -189,8 +215,9 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
 
     return buildNextResponse(backendRes);
   } catch (error: any) {
+    console.error(`[proxy] Unexpected error:`, error);
     return NextResponse.json(
-      { message: error.message || "Proxy request failed" },
+      { message: error.message || "An unexpected proxy error occurred." },
       { status: 500 }
     );
   }

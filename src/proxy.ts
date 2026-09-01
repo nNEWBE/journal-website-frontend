@@ -7,16 +7,15 @@ import { NextRequest, NextResponse } from "next/server";
  * No client-side JavaScript can bypass this — it runs entirely on the server edge.
  */
 
+import { getBackendUrl } from "./lib/backend-url";
+
 // Routes that require authentication
 const PROTECTED_PREFIXES = ["/dashboard"];
 
 // Routes only accessible when NOT logged in
 const AUTH_ONLY_ROUTES = ["/login", "/register"];
 
-const BACKEND_URL =
-  process.env.BACKEND_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
+const BACKEND_URL = getBackendUrl();
 
 function isLikelyValidJwt(token: string): boolean {
   if (!token || typeof token !== "string") return false;
@@ -70,7 +69,7 @@ export async function proxy(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (verifyRes.ok) {
