@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface TooltipProps {
@@ -18,55 +18,102 @@ export function CustomTooltip({
   side = "right",
   disabled = false,
   className,
-  delayMs = 100,
+  delayMs = 80,
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    let top = rect.top + rect.height / 2;
+    let left = rect.right + 10;
+
+    if (side === "right") {
+      top = rect.top + rect.height / 2;
+      left = rect.right + 10;
+    } else if (side === "left") {
+      top = rect.top + rect.height / 2;
+      left = rect.left - 10;
+    } else if (side === "top") {
+      top = rect.top - 10;
+      left = rect.left + rect.width / 2;
+    } else if (side === "bottom") {
+      top = rect.bottom + 10;
+      left = rect.left + rect.width / 2;
+    }
+
+    setCoords({ top, left });
+  };
+
+  const handleMouseEnter = () => {
+    if (disabled || !content) return;
+    updatePosition();
+    timeoutRef.current = setTimeout(() => {
+      updatePosition();
+      setIsVisible(true);
+    }, delayMs);
+  };
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsVisible(false);
+  };
+
+  useEffect(() => {
+    const handleScrollOrResize = () => {
+      if (isVisible) {
+        updatePosition();
+      }
+    };
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [isVisible]);
 
   if (!content || disabled) {
     return <>{children}</>;
   }
 
-  const handleMouseEnter = () => {
-    const id = setTimeout(() => {
-      setIsVisible(true);
-    }, delayMs);
-    setTimeoutId(id);
-  };
-
-  const handleMouseLeave = () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
-    }
-    setIsVisible(false);
-  };
-
-  const sideClasses = {
-    top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
-    bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
-    left: "right-full top-1/2 -translate-y-1/2 mr-2",
-    right: "left-full top-1/2 -translate-y-1/2 ml-2.5",
-  };
-
   return (
     <div
+      ref={triggerRef}
       className="relative flex w-full"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {children}
 
-      {isVisible && (
+      {isVisible && coords && (
         <div
           role="tooltip"
+          style={{
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            transform:
+              side === "right"
+                ? "translateY(-50%)"
+                : side === "left"
+                ? "translate(-100%, -50%)"
+                : side === "top"
+                ? "translate(-50%, -100%)"
+                : "translate(-50%, 0)",
+          }}
           className={cn(
-            "absolute z-50 pointer-events-none flex items-center shadow-xl animate-in fade-in zoom-in-95 duration-150",
-            sideClasses[side],
+            "fixed z-[99999] pointer-events-none flex items-center animate-in fade-in zoom-in-95 duration-150",
             className
           )}
         >
-          <div className="rounded-lg border border-white/15 bg-[#0a122c]/95 px-2.5 py-1 text-[11px] font-semibold text-white tracking-wide shadow-2xl backdrop-blur-md whitespace-nowrap">
+          <div className="rounded-lg border border-white/20 bg-[#070e24]/95 px-3 py-1.5 text-xs font-semibold text-white tracking-wide shadow-2xl backdrop-blur-md whitespace-nowrap">
             {content}
           </div>
         </div>

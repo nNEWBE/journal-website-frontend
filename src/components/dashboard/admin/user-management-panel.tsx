@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   XCircle,
   MoreVertical,
+  Pencil,
   Mail,
   Building,
   GraduationCap,
@@ -33,13 +34,13 @@ import { cn } from "@/lib/utils";
 
 type UserItem = AuthResponseData["user"];
 
-const ROLES = [
-  { id: "all", label: "All Roles" },
-  { id: "author", label: "Authors" },
-  { id: "reviewer", label: "Reviewers" },
-  { id: "editor", label: "Editors" },
-  { id: "admin", label: "Admins" },
-  { id: "super-admin", label: "Super Admins" },
+const ROLE_OPTIONS = [
+  { value: "all", label: "All Roles" },
+  { value: "author", label: "Authors" },
+  { value: "reviewer", label: "Reviewers" },
+  { value: "editor", label: "Editors" },
+  { value: "admin", label: "Admins" },
+  { value: "super-admin", label: "Super Admins" },
 ];
 
 export function UserManagementPanel({
@@ -51,6 +52,62 @@ export function UserManagementPanel({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+
+  // Action dropdown menu state
+  const [actionMenuUserId, setActionMenuUserId] = useState<string | number | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [activeUser, setActiveUser] = useState<UserItem | null>(null);
+
+  // Close action dropdown on outside click or scroll
+  useEffect(() => {
+    const handleClose = () => {
+      setActionMenuUserId(null);
+      setMenuPosition(null);
+      setActiveUser(null);
+    };
+    window.addEventListener("click", handleClose);
+    window.addEventListener("scroll", handleClose, true);
+    return () => {
+      window.removeEventListener("click", handleClose);
+      window.removeEventListener("scroll", handleClose, true);
+    };
+  }, []);
+
+  // Edit user modal state
+  const [userToEdit, setUserToEdit] = useState<UserItem | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("author");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDept, setEditDept] = useState("");
+  const [editInst, setEditInst] = useState("");
+  const [editOrcid, setEditOrcid] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [editEnabled, setEditEnabled] = useState(true);
+
+  const handleOpenMenu = (e: React.MouseEvent<HTMLButtonElement>, user: UserItem) => {
+    e.stopPropagation();
+    if (actionMenuUserId === user.id) {
+      setActionMenuUserId(null);
+      setMenuPosition(null);
+      setActiveUser(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 192;
+    const menuHeight = 145;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
+
+    const left = Math.max(12, Math.min(window.innerWidth - menuWidth - 12, rect.right - menuWidth));
+    const top = openUpward
+      ? Math.max(8, rect.top - menuHeight - 6)
+      : Math.min(window.innerHeight - menuHeight - 8, rect.bottom + 6);
+
+    setMenuPosition({ top, left });
+    setActionMenuUserId(user.id);
+    setActiveUser(user);
+  };
 
   // Create user modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -192,6 +249,59 @@ export function UserManagementPanel({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Open edit modal and populate state
+  const openEditModal = (u: UserItem) => {
+    setUserToEdit(u);
+    setEditName(u.fullName || u.name || "");
+    setEditRole(u.role || "author");
+    setEditTitle(u.title || "");
+    setEditDept(u.department || "");
+    setEditInst(u.institution || "");
+    setEditOrcid((u as any).orcid || "");
+    setEditPassword("");
+    setEditEnabled((u as any).enabled !== false);
+    setActionMenuUserId(null);
+  };
+
+  // Handle update user
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userToEdit) return;
+    if (!editName.trim()) {
+      toast.error("Please enter a valid scholar name");
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+      const updated = await adminApi.updateUser(userToEdit.id, {
+        fullName: editName.trim(),
+        role: editRole,
+        title: editTitle.trim() || undefined,
+        department: editDept.trim() || undefined,
+        institution: editInst.trim() || undefined,
+        orcid: editOrcid.trim() || undefined,
+        password: editPassword.trim() || undefined,
+        enabled: editEnabled,
+      });
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userToEdit.id ? { ...u, ...updated } : u))
+      );
+
+      toast.success("Scholar profile updated successfully", {
+        description: `Changes saved for ${editName.trim()}`,
+      });
+      setUserToEdit(null);
+    } catch (err: any) {
+      toast.error("Failed to update profile", {
+        description: err.message,
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -368,21 +478,15 @@ export function UserManagementPanel({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {ROLES.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setRoleFilter(r.id)}
-              className={cn(
-                "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap",
-                roleFilter === r.id
-                  ? "bg-[color:var(--color-gb-blue)] text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="w-full sm:w-52 shrink-0">
+          <CustomSelect
+            options={ROLE_OPTIONS}
+            value={roleFilter}
+            onChange={setRoleFilter}
+            size="sm"
+            className="w-full text-xs"
+            placeholder="Filter by Role"
+          />
         </div>
       </div>
 
@@ -445,21 +549,23 @@ export function UserManagementPanel({
                         <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{u.institution || "Gono Bishwabidyalay"}</p>
                       </td>
 
-                      <td className="px-4 py-3 min-w-[145px]">
-                        <CustomSelect
-                          size="sm"
-                          options={[
-                            { value: "author", label: "Author" },
-                            { value: "reviewer", label: "Reviewer" },
-                            { value: "editor", label: "Editor" },
-                            { value: "admin", label: "Admin" },
-                            { value: "super-admin", label: "Super Admin" },
-                          ]}
-                          value={u.role || "author"}
-                          onChange={(newRole) => handleRoleChange(u.id, newRole)}
-                          disabled={isCurrent && currentUser?.role === "super-admin"}
-                          direction="auto"
-                        />
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border",
+                            u.role === "super-admin"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : u.role === "admin"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : u.role === "editor"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : u.role === "reviewer"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-50 text-slate-700 border-slate-200"
+                          )}
+                        >
+                          {u.role ? u.role.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Author"}
+                        </span>
                       </td>
 
                       <td className="px-4 py-3">
@@ -479,15 +585,16 @@ export function UserManagementPanel({
                       </td>
 
                       <td className="px-4 py-3 text-right">
-                        {!isCurrent && (
-                          <button
-                            onClick={() => setUserToDelete(u)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="Delete User"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={(e) => handleOpenMenu(e, u)}
+                          className={cn(
+                            "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
+                            actionMenuUserId === u.id && "bg-slate-100 text-slate-700 ring-2 ring-slate-200"
+                          )}
+                          title="User Actions"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -610,6 +717,141 @@ export function UserManagementPanel({
         </form>
       </CustomModal>
 
+      {/* Edit User Modal */}
+      <CustomModal
+        isOpen={!!userToEdit}
+        onClose={() => setUserToEdit(null)}
+        title="Edit Scholar / User Profile"
+        description={`Update academic credentials, affiliation, and privilege role for ${userToEdit?.fullName}.`}
+      >
+        <form onSubmit={handleUpdateUser} className="space-y-3.5 text-xs">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
+            <input
+              required
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="e.g. Dr. Ayesha Siddique"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Academic Email</label>
+            <input
+              disabled
+              value={userToEdit?.email || ""}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 font-medium cursor-not-allowed"
+            />
+            <span className="text-[10px] text-slate-400 mt-0.5 block">Email address is permanently bound to this user record.</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Role Privilege</label>
+              <CustomSelect
+                size="form"
+                options={[
+                  { value: "author", label: "Author" },
+                  { value: "reviewer", label: "Reviewer" },
+                  { value: "editor", label: "Editor" },
+                  { value: "admin", label: "Admin" },
+                  { value: "super-admin", label: "Super Admin" },
+                ]}
+                value={editRole}
+                onChange={setEditRole}
+                placeholder="Select Role"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Academic Title</label>
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Associate Professor"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Department</label>
+              <input
+                value={editDept}
+                onChange={(e) => setEditDept(e.target.value)}
+                placeholder="Department of Pharmacy"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Institution</label>
+              <input
+                value={editInst}
+                onChange={(e) => setEditInst(e.target.value)}
+                placeholder="Gono Bishwabidyalay"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">ORCID iD</label>
+              <input
+                value={editOrcid}
+                onChange={(e) => setEditOrcid(e.target.value)}
+                placeholder="0000-0002-1825-0097"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Reset Password (Optional)</label>
+              <input
+                type="password"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                placeholder="Leave blank to keep unchanged"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              id="editEnabled"
+              checked={editEnabled}
+              onChange={(e) => setEditEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <label htmlFor="editEnabled" className="font-bold text-slate-700 cursor-pointer text-xs">
+              Account Active & Enabled
+            </label>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setUserToEdit(null)}
+              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="px-4 py-2 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              {isUpdating ? "Saving Changes..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </CustomModal>
+
       {/* Delete Confirmation Modal */}
       <CustomModal
         isOpen={!!userToDelete}
@@ -642,6 +884,69 @@ export function UserManagementPanel({
           </div>
         </div>
       </CustomModal>
+      {/* Floating Action Menu (Rendered Outside Table) */}
+      {actionMenuUserId && activeUser && menuPosition && (
+        <div
+          style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+          onClick={(e) => e.stopPropagation()}
+          className="fixed w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl z-[9999] animate-in fade-in zoom-in-95 duration-100 text-left font-sans"
+        >
+          {/* Edit User */}
+          <button
+            onClick={() => {
+              openEditModal(activeUser);
+              setActionMenuUserId(null);
+              setMenuPosition(null);
+            }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
+          >
+            <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+            <span>Edit Profile</span>
+          </button>
+
+          {/* Toggle Status */}
+          <button
+            onClick={() => {
+              const isUserActive = (activeUser as any).enabled !== false;
+              setActionMenuUserId(null);
+              setMenuPosition(null);
+              handleStatusToggle(activeUser.id, isUserActive);
+            }}
+            disabled={currentUser?.id === activeUser.id || currentUser?.email === activeUser.email}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {(activeUser as any).enabled !== false ? (
+              <>
+                <XCircle className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span>Deactivate Account</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span>Activate Account</span>
+              </>
+            )}
+          </button>
+
+          {/* Delete User */}
+          {currentUser?.id !== activeUser.id && currentUser?.email !== activeUser.email && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                onClick={() => {
+                  setActionMenuUserId(null);
+                  setMenuPosition(null);
+                  setUserToDelete(activeUser);
+                }}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span>Delete User</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

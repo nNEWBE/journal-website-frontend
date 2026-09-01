@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
 export function SmoothScroll() {
+  const pathname = usePathname();
+  const isDashboard = pathname?.startsWith("/dashboard");
+
   useEffect(() => {
-    // Initialize Lenis smooth scroll engine
+    // If on a dashboard route, do not run smooth scrolling
+    if (isDashboard) {
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.destroy();
+        (window as any).__lenis = null;
+      }
+      return;
+    }
+
+    // Initialize Lenis smooth scroll engine for public content pages
     const lenis = new Lenis({
       duration: 1.15,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -58,8 +71,12 @@ export function SmoothScroll() {
       cancelAnimationFrame(animationFrameId);
       document.removeEventListener("click", handleAnchorClick);
       lenis.destroy();
+      if (typeof window !== "undefined") {
+        (window as any).__lenis = null;
+      }
     };
-  }, []);
+  }, [isDashboard, pathname]);
 
   return null;
 }
+

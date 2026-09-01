@@ -680,6 +680,25 @@ export const adminApi = {
     });
   },
 
+  updateUser: async (
+    userId: number | string,
+    payload: {
+      fullName?: string;
+      role?: string;
+      title?: string;
+      department?: string;
+      institution?: string;
+      orcid?: string;
+      password?: string;
+      enabled?: boolean;
+    }
+  ): Promise<AuthResponseData["user"]> => {
+    return request<AuthResponseData["user"]>(`/api/v1/admin/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
   deleteUser: async (userId: number | string): Promise<{ message: string }> => {
     return request<{ message: string }>(`/api/v1/admin/users/${userId}`, {
       method: "DELETE",
