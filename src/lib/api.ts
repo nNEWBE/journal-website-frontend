@@ -960,6 +960,54 @@ export const contentApi = {
   },
 };
 
+// ==========================================
+// 9. NAVIGATION & MENU API (DATABASE BACKED)
+// ==========================================
 
+export interface NavSubItemDTO {
+  id?: number;
+  clientId?: string;
+  label: string;
+  href: string;
+  description?: string;
+  iconName?: string;
+  displayOrder?: number;
+  enabled?: boolean;
+}
 
+export interface NavItemDTO {
+  id?: number;
+  clientId?: string;
+  label: string;
+  href: string;
+  dropdownHeader?: string;
+  footerLabel?: string;
+  footerHref?: string;
+  displayOrder?: number;
+  openInNewTab?: boolean;
+  enabled?: boolean;
+  dropdown?: NavSubItemDTO[];
+}
 
+export const navigationApi = {
+  getPublished: async (): Promise<NavItemDTO[]> => {
+    return request<NavItemDTO[]>("/api/v1/navigation");
+  },
+
+  getAllAdmin: async (): Promise<NavItemDTO[]> => {
+    return request<NavItemDTO[]>("/api/v1/admin/navigation");
+  },
+
+  saveBulk: async (items: NavItemDTO[]): Promise<NavItemDTO[]> => {
+    return request<NavItemDTO[]>("/api/v1/admin/navigation/bulk", {
+      method: "PUT",
+      body: JSON.stringify(items),
+    });
+  },
+
+  resetDefaults: async (): Promise<NavItemDTO[]> => {
+    return request<NavItemDTO[]>("/api/v1/admin/navigation/reset-defaults", {
+      method: "POST",
+    });
+  },
+};

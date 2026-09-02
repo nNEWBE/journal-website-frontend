@@ -4,27 +4,33 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
-import { mainNav, getIsRouteActive } from "./nav-data";
+import { useNavigation, getNavIcon, getIsRouteActive } from "./nav-data";
 
 export function SiteHeaderNav() {
   const pathname = usePathname();
+  const { navItems } = useNavigation();
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [direction, setDirection] = useState<"left" | "right">("right");
+
+  const visibleItems = navItems.filter((item) => item.enabled !== false);
 
   return (
     <nav
       className="hidden items-center gap-1.5 lg:flex"
       onMouseLeave={() => setActiveTab(null)}
     >
-      {mainNav.map((item, idx) => {
-        const hasDropdown = Boolean(item.dropdown && item.dropdown.length > 0);
+      {visibleItems.map((item, idx) => {
+        const visibleDropdown = (item.dropdown || []).filter(
+          (sub) => sub.enabled !== false
+        );
+        const hasDropdown = visibleDropdown.length > 0;
         const isActive = activeTab === idx;
-        const isRouteActive = getIsRouteActive(pathname, item.label);
+        const isRouteActive = getIsRouteActive(pathname, item);
         const animName = direction === "right" ? "slideInFromRight" : "slideInFromLeft";
 
         return (
           <div
-            key={item.label}
+            key={item.id || item.clientId || item.label}
             className="relative py-1.5"
             onMouseEnter={() => {
               if (activeTab !== idx) {
@@ -35,6 +41,8 @@ export function SiteHeaderNav() {
           >
             <Link
               href={item.href}
+              target={item.openInNewTab ? "_blank" : undefined}
+              rel={item.openInNewTab ? "noopener noreferrer" : undefined}
               className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-bold tracking-tight transition-colors cursor-pointer ${
                 isActive
                   ? "text-[color:var(--bangla-red)]"
@@ -91,7 +99,7 @@ export function SiteHeaderNav() {
                   {/* Header / Category Kicker */}
                   <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-                      {item.label}
+                      {item.dropdownHeader || item.label}
                     </p>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                       GB Journal
@@ -100,15 +108,15 @@ export function SiteHeaderNav() {
 
                   {/* Sub-items List with staggered slide animation */}
                   <div key={activeTab} className="p-1.5 flex flex-col gap-1">
-                    {item.dropdown!.map((sub, idxSub) => {
-                      const SubIcon = sub.icon;
+                    {visibleDropdown.map((sub, idxSub) => {
+                      const SubIcon = getNavIcon(sub.iconName);
                       const isSubActive =
                         pathname === sub.href ||
                         (sub.href !== "/" && pathname.startsWith(sub.href));
 
                       return (
                         <Link
-                          key={sub.href}
+                          key={sub.id || sub.clientId || sub.href + sub.label}
                           href={sub.href}
                           style={{
                             animation: isActive
@@ -143,9 +151,11 @@ export function SiteHeaderNav() {
                             >
                               {sub.label}
                             </p>
-                            <p className="mt-0.5 text-[11px] leading-snug text-slate-500 font-normal">
-                              {sub.description}
-                            </p>
+                            {sub.description && (
+                              <p className="mt-0.5 text-[11px] leading-snug text-slate-500 font-normal">
+                                {sub.description}
+                              </p>
+                            )}
                           </div>
                         </Link>
                       );
@@ -159,7 +169,7 @@ export function SiteHeaderNav() {
                         href={item.footerHref}
                         className="text-[11.5px] font-bold text-[#1e40af] hover:underline inline-flex items-center gap-1.5 group/foot"
                       >
-                        <span>{item.footerLabel}</span>
+                        <span>{item.footerLabel || "View More"}</span>
                         <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/foot:translate-x-0.5 group-hover/foot:-translate-y-0.5" />
                       </Link>
                     </div>

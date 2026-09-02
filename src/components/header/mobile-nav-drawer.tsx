@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, LayoutDashboard, LogOut, User as UserIcon } from "lucide-react";
-import { mainNav, getIsRouteActive } from "./nav-data";
+import { useNavigation, getNavIcon, getIsRouteActive } from "./nav-data";
 import type { User } from "@/lib/auth";
 
 interface MobileNavDrawerProps {
@@ -21,20 +21,27 @@ export function MobileNavDrawer({
   onLogout,
 }: MobileNavDrawerProps) {
   const pathname = usePathname();
+  const { navItems } = useNavigation();
   const [openMobileSub, setOpenMobileSub] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
+  const visibleItems = navItems.filter((item) => item.enabled !== false);
+
   return (
     <div className="container-x border-t border-[color:var(--border)] py-4 lg:hidden animate-fade">
       <nav className="grid gap-1">
-        {mainNav.map((item) => {
-          const hasSub = Boolean(item.dropdown && item.dropdown.length > 0);
-          const isSubOpen = openMobileSub === item.label;
-          const isMobileRouteActive = getIsRouteActive(pathname, item.label);
+        {visibleItems.map((item) => {
+          const visibleDropdown = (item.dropdown || []).filter(
+            (sub) => sub.enabled !== false
+          );
+          const hasSub = visibleDropdown.length > 0;
+          const itemKey = item.id?.toString() || item.clientId || item.label;
+          const isSubOpen = openMobileSub === itemKey;
+          const isMobileRouteActive = getIsRouteActive(pathname, item);
 
           return (
-            <div key={item.label} className="grid gap-1">
+            <div key={itemKey} className="grid gap-1">
               <div
                 className={`flex items-center justify-between rounded-lg px-4 py-2.5 text-sm font-bold transition-colors ${
                   isMobileRouteActive
@@ -42,13 +49,21 @@ export function MobileNavDrawer({
                     : "text-[color:var(--color-gb-blue-dark)] hover:bg-slate-50"
                 }`}
               >
-                <Link href={item.href} onClick={onClose} className="flex-1">
+                <Link
+                  href={item.href}
+                  onClick={onClose}
+                  target={item.openInNewTab ? "_blank" : undefined}
+                  rel={item.openInNewTab ? "noopener noreferrer" : undefined}
+                  className="flex-1"
+                >
                   {item.label}
                 </Link>
                 {hasSub && (
                   <button
                     onClick={() =>
-                      setOpenMobileSub(isSubOpen ? null : item.label)
+                      setOpenMobileSub(
+                        isSubOpen ? null : itemKey
+                      )
                     }
                     className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
@@ -63,13 +78,15 @@ export function MobileNavDrawer({
 
               {hasSub && isSubOpen && (
                 <div className="ml-4 grid gap-1 border-l-2 border-[color:var(--color-gb-blue-soft)] pl-3 my-1">
-                  {item.dropdown!.map((sub) => {
-                    const SubIcon = sub.icon;
-                    const isSubActive = pathname === sub.href;
+                  {visibleDropdown.map((sub) => {
+                    const SubIcon = getNavIcon(sub.iconName);
+                    const isSubActive =
+                      pathname === sub.href ||
+                      (sub.href !== "/" && pathname.startsWith(sub.href));
 
                     return (
                       <Link
-                        key={sub.href + sub.label}
+                        key={sub.id || sub.clientId || sub.href + sub.label}
                         href={sub.href}
                         onClick={onClose}
                         className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
@@ -85,7 +102,14 @@ export function MobileNavDrawer({
                               : "text-[color:var(--color-gb-blue)]"
                           }`}
                         />
-                        <span>{sub.label}</span>
+                        <div className="flex flex-col">
+                          <span>{sub.label}</span>
+                          {sub.description && (
+                            <span className="text-[10px] text-slate-400 font-normal">
+                              {sub.description}
+                            </span>
+                          )}
+                        </div>
                       </Link>
                     );
                   })}

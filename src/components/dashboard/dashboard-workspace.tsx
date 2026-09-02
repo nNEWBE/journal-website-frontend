@@ -46,6 +46,7 @@ import {
   X,
   Zap,
   Inbox,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -83,6 +84,7 @@ import { MailingCenterPanel } from "./admin/mailing-center-panel";
 import { IssueManagementPanel } from "./admin/issue-management-panel";
 import { BoardManagementPanel } from "./admin/board-management-panel";
 import { PageContentCMSPanel } from "./admin/page-content-cms-panel";
+import { NavigationManagementPanel } from "./admin/navigation-management-panel";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -409,7 +411,7 @@ export function DashboardWorkspace({
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
   const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
-  const [adminSubView, setAdminSubView] = useState<"pipeline" | "users" | "mailing" | "issues" | "board" | "content">("pipeline");
+  const [adminSubView, setAdminSubView] = useState<"pipeline" | "users" | "mailing" | "issues" | "board" | "content" | "navigation">("pipeline");
   const [visitedAdminTabs, setVisitedAdminTabs] = useState<Set<string>>(() => new Set(["pipeline"]));
 
   useEffect(() => {
@@ -1720,6 +1722,18 @@ export function DashboardWorkspace({
                           <FileText className="h-3.5 w-3.5" />
                           Site &amp; Pages CMS
                         </button>
+                        <button
+                          onClick={() => setAdminSubView("navigation")}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
+                            adminSubView === "navigation"
+                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
+                              : "border-transparent text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          <Compass className="h-3.5 w-3.5" />
+                          Menu &amp; Nav Manager
+                        </button>
                       </div>
 
                       {/* Right scroll arrow */}
@@ -1762,6 +1776,11 @@ export function DashboardWorkspace({
                       {visitedAdminTabs.has("content") && (
                         <div className={cn("p-4", adminSubView === "content" ? "block" : "hidden")}>
                           <PageContentCMSPanel />
+                        </div>
+                      )}
+                      {visitedAdminTabs.has("navigation") && (
+                        <div className={cn("p-4", adminSubView === "navigation" ? "block" : "hidden")}>
+                          <NavigationManagementPanel />
                         </div>
                       )}
                     </>
