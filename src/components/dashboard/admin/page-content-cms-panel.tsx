@@ -107,6 +107,46 @@ export function PageContentCMSPanel() {
   const [formDisplayOrder, setFormDisplayOrder] = useState<number>(1);
   const [formPublished, setFormPublished] = useState<boolean>(true);
 
+  // Initial snapshot to track dirty form state
+  const [initForm, setInitForm] = useState<{
+    pageKey: string;
+    sectionKey: string;
+    title: string;
+    subtitle: string;
+    content: string;
+    metaJson: string;
+    displayOrder: number;
+    published: boolean;
+  } | null>(null);
+
+  const isFormDirty = useMemo(() => {
+    if (!initForm) return false;
+    if (isCreatingNew) {
+      return Boolean(formTitle.trim() && formSectionKey.trim());
+    }
+    return (
+      formPageKey !== initForm.pageKey ||
+      formSectionKey !== initForm.sectionKey ||
+      formTitle !== initForm.title ||
+      formSubtitle !== initForm.subtitle ||
+      formContent !== initForm.content ||
+      formMetaJson !== initForm.metaJson ||
+      formDisplayOrder !== initForm.displayOrder ||
+      formPublished !== initForm.published
+    );
+  }, [
+    initForm,
+    isCreatingNew,
+    formPageKey,
+    formSectionKey,
+    formTitle,
+    formSubtitle,
+    formContent,
+    formMetaJson,
+    formDisplayOrder,
+    formPublished,
+  ]);
+
   // Fetch sections for the current page
   const fetchSections = async (pageKey: string, force = false) => {
     const cached = cmsCache[pageKey];
@@ -173,6 +213,16 @@ export function PageContentCMSPanel() {
     setFormMetaJson(section.metaJson || "");
     setFormDisplayOrder(section.displayOrder || 1);
     setFormPublished(section.published);
+    setInitForm({
+      pageKey: section.pageKey,
+      sectionKey: section.sectionKey,
+      title: section.title,
+      subtitle: section.subtitle || "",
+      content: section.content || "",
+      metaJson: section.metaJson || "",
+      displayOrder: section.displayOrder || 1,
+      published: section.published,
+    });
     setIsEditModalOpen(true);
   };
 
@@ -188,6 +238,16 @@ export function PageContentCMSPanel() {
     setFormMetaJson("");
     setFormDisplayOrder(sections.length + 1);
     setFormPublished(true);
+    setInitForm({
+      pageKey: activeTab,
+      sectionKey: "",
+      title: "",
+      subtitle: "",
+      content: "",
+      metaJson: "",
+      displayOrder: sections.length + 1,
+      published: true,
+    });
     setIsEditModalOpen(true);
   };
 
@@ -686,8 +746,8 @@ export function PageContentCMSPanel() {
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-50"
+              disabled={saving || !isFormDirty}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Save className="h-4 w-4" />
               {saving ? "Saving Changes..." : "Save & Publish"}

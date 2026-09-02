@@ -83,8 +83,6 @@ import { UserManagementPanel } from "./admin/user-management-panel";
 import { MailingCenterPanel } from "./admin/mailing-center-panel";
 import { IssueManagementPanel } from "./admin/issue-management-panel";
 import { BoardManagementPanel } from "./admin/board-management-panel";
-import { PageContentCMSPanel } from "./admin/page-content-cms-panel";
-import { NavigationManagementPanel } from "./admin/navigation-management-panel";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -404,6 +402,9 @@ export function DashboardWorkspace({
     if (pathname.includes("/editor")) return "editor";
     if (pathname.includes("/reviewer")) return "reviewer";
     if (pathname.includes("/author")) return "author";
+    if (pathname.includes("/cms") || pathname.includes("/navigation")) {
+      return (currentUser?.role as Role) || "admin";
+    }
     if (!mounted) return initialRole;
     return (currentUser?.role as Role) || initialRole;
   }, [pathname, currentUser?.role, initialRole, mounted]);
@@ -846,24 +847,40 @@ export function DashboardWorkspace({
                         { id: "issues", label: "Issues & Volumes", icon: BookOpen },
                         { id: "board", label: "Editorial Board", icon: Crown },
                         { id: "content", label: "Site & Pages CMS", icon: FileText },
+                        { id: "navigation", label: "Menu & Nav Manager", icon: Compass },
                       ].map((tab) => {
                         const Icon = tab.icon;
                         const isTabActive =
-                          (activeRole === "admin" || activeRole === "super-admin") &&
-                          activeView === "workspace" &&
-                          !pathname.includes("/profile") &&
-                          adminSubView === tab.id;
+                          (tab.id === "content" && pathname.includes("/cms")) ||
+                          (tab.id === "navigation" && pathname.includes("/navigation")) ||
+                          (!pathname.includes("/cms") &&
+                            !pathname.includes("/navigation") &&
+                            !pathname.includes("/profile") &&
+                            (activeRole === "admin" || activeRole === "super-admin") &&
+                            activeView === "workspace" &&
+                            adminSubView === tab.id);
 
                         return (
                           <button
                             key={tab.id}
                             onClick={() => {
                               setIsMobileSidebarOpen(false);
-                              setAdminSubView(tab.id as any);
-                              if (activeRole !== "admin" && activeRole !== "super-admin") {
-                                router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
-                              } else if (activeView !== "workspace" || pathname.includes("/profile")) {
-                                router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                              if (tab.id === "content") {
+                                router.push("/dashboard/cms");
+                              } else if (tab.id === "navigation") {
+                                router.push("/dashboard/navigation");
+                              } else {
+                                setAdminSubView(tab.id as any);
+                                if (activeRole !== "admin" && activeRole !== "super-admin") {
+                                  router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                                } else if (
+                                  activeView !== "workspace" ||
+                                  pathname.includes("/profile") ||
+                                  pathname.includes("/cms") ||
+                                  pathname.includes("/navigation")
+                                ) {
+                                  router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                                }
                               }
                             }}
                             className={cn(
@@ -1164,13 +1181,18 @@ export function DashboardWorkspace({
                     { id: "issues", label: "Issues & Volumes", icon: BookOpen },
                     { id: "board", label: "Editorial Board", icon: Crown },
                     { id: "content", label: "Site & Pages CMS", icon: FileText },
+                    { id: "navigation", label: "Menu & Nav Manager", icon: Compass },
                   ].map((tab) => {
                     const Icon = tab.icon;
                     const isTabActive =
-                      (activeRole === "admin" || activeRole === "super-admin") &&
-                      activeView === "workspace" &&
-                      !pathname.includes("/profile") &&
-                      adminSubView === tab.id;
+                      (tab.id === "content" && pathname.includes("/cms")) ||
+                      (tab.id === "navigation" && pathname.includes("/navigation")) ||
+                      (!pathname.includes("/cms") &&
+                        !pathname.includes("/navigation") &&
+                        !pathname.includes("/profile") &&
+                        (activeRole === "admin" || activeRole === "super-admin") &&
+                        activeView === "workspace" &&
+                        adminSubView === tab.id);
 
                     return (
                       <CustomTooltip
@@ -1182,11 +1204,22 @@ export function DashboardWorkspace({
                         <button
                           onClick={() => {
                             setIsMobileSidebarOpen(false);
-                            setAdminSubView(tab.id as any);
-                            if (activeRole !== "admin" && activeRole !== "super-admin") {
-                              router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
-                            } else if (activeView !== "workspace" || pathname.includes("/profile")) {
-                              router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                            if (tab.id === "content") {
+                              router.push("/dashboard/cms");
+                            } else if (tab.id === "navigation") {
+                              router.push("/dashboard/navigation");
+                            } else {
+                              setAdminSubView(tab.id as any);
+                              if (activeRole !== "admin" && activeRole !== "super-admin") {
+                                router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                              } else if (
+                                activeView !== "workspace" ||
+                                pathname.includes("/profile") ||
+                                pathname.includes("/cms") ||
+                                pathname.includes("/navigation")
+                              ) {
+                                router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
+                              }
                             }
                           }}
                           className={cn(
@@ -1532,6 +1565,14 @@ export function DashboardWorkspace({
                 <span className="font-bold text-[color:var(--color-gb-blue)]">
                   New Submission
                 </span>
+              ) : pathname.includes("/cms") ? (
+                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                  Site &amp; Pages CMS
+                </span>
+              ) : pathname.includes("/navigation") ? (
+                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                  Menu &amp; Nav Manager
+                </span>
               ) : activeView === "analytics" ? (
                 <span className="font-bold text-[color:var(--color-gb-blue)]">
                   Analytics
@@ -1564,7 +1605,10 @@ export function DashboardWorkspace({
         </header>
 
         <main className="flex-1">
-          {pathname.includes("/submissions/new") || pathname.includes("/profile") ? (
+          {pathname.includes("/submissions/new") ||
+          pathname.includes("/profile") ||
+          pathname.includes("/cms") ||
+          pathname.includes("/navigation") ? (
             children
           ) : (
             <>
@@ -1710,30 +1754,6 @@ export function DashboardWorkspace({
                           <Crown className="h-3.5 w-3.5" />
                           Editorial Board
                         </button>
-                        <button
-                          onClick={() => setAdminSubView("content")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "content"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          Site &amp; Pages CMS
-                        </button>
-                        <button
-                          onClick={() => setAdminSubView("navigation")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "navigation"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <Compass className="h-3.5 w-3.5" />
-                          Menu &amp; Nav Manager
-                        </button>
                       </div>
 
                       {/* Right scroll arrow */}
@@ -1771,16 +1791,6 @@ export function DashboardWorkspace({
                       {visitedAdminTabs.has("board") && (
                         <div className={cn("p-4", adminSubView === "board" ? "block" : "hidden")}>
                           <BoardManagementPanel />
-                        </div>
-                      )}
-                      {visitedAdminTabs.has("content") && (
-                        <div className={cn("p-4", adminSubView === "content" ? "block" : "hidden")}>
-                          <PageContentCMSPanel />
-                        </div>
-                      )}
-                      {visitedAdminTabs.has("navigation") && (
-                        <div className={cn("p-4", adminSubView === "navigation" ? "block" : "hidden")}>
-                          <NavigationManagementPanel />
                         </div>
                       )}
                     </>

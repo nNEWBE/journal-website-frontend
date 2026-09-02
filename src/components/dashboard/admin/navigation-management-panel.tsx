@@ -128,6 +128,36 @@ export function NavigationManagementPanel() {
   const [formSubEnabled, setFormSubEnabled] = useState(true);
   const [iconSearch, setIconSearch] = useState("");
 
+  // Initial snapshots to detect dirty state
+  const [initItem, setInitItem] = useState<{
+    label: string; href: string; hasDropdown: boolean;
+    dropdownHeader: string; footerLabel: string; footerHref: string;
+    openInNewTab: boolean; enabled: boolean;
+  } | null>(null);
+
+  const [initSub, setInitSub] = useState<{
+    label: string; href: string; desc: string; iconName: string; enabled: boolean;
+  } | null>(null);
+
+  const isItemDirty = initItem !== null && (
+    formItemLabel !== initItem.label ||
+    formItemHref !== initItem.href ||
+    formHasDropdown !== initItem.hasDropdown ||
+    formDropdownHeader !== initItem.dropdownHeader ||
+    formFooterLabel !== initItem.footerLabel ||
+    formFooterHref !== initItem.footerHref ||
+    formOpenInNewTab !== initItem.openInNewTab ||
+    formItemEnabled !== initItem.enabled
+  );
+
+  const isSubDirty = initSub !== null && (
+    formSubLabel !== initSub.label ||
+    formSubHref !== initSub.href ||
+    formSubDesc !== initSub.desc ||
+    formSubIconName !== initSub.iconName ||
+    formSubEnabled !== initSub.enabled
+  );
+
   // -------------------------------------------------------------
   // Delete & Reset Modals
   // -------------------------------------------------------------
@@ -167,6 +197,7 @@ export function NavigationManagementPanel() {
     setFormFooterHref("");
     setFormOpenInNewTab(false);
     setFormItemEnabled(true);
+    setInitItem({ label: "", href: "/", hasDropdown: false, dropdownHeader: "", footerLabel: "", footerHref: "", openInNewTab: false, enabled: true });
     setIsItemModalOpen(true);
   };
 
@@ -180,6 +211,16 @@ export function NavigationManagementPanel() {
     setFormFooterHref(item.footerHref || "");
     setFormOpenInNewTab(Boolean(item.openInNewTab));
     setFormItemEnabled(item.enabled !== false);
+    setInitItem({
+      label: item.label,
+      href: item.href,
+      hasDropdown: Boolean(item.dropdown && item.dropdown.length > 0),
+      dropdownHeader: item.dropdownHeader || "",
+      footerLabel: item.footerLabel || "",
+      footerHref: item.footerHref || "",
+      openInNewTab: Boolean(item.openInNewTab),
+      enabled: item.enabled !== false,
+    });
     setIsItemModalOpen(true);
   };
 
@@ -243,6 +284,7 @@ export function NavigationManagementPanel() {
     setFormSubIconName("BookOpen");
     setFormSubEnabled(true);
     setIconSearch("");
+    setInitSub({ label: "", href: "/", desc: "", iconName: "BookOpen", enabled: true });
     setIsSubModalOpen(true);
   };
 
@@ -255,6 +297,13 @@ export function NavigationManagementPanel() {
     setFormSubIconName(sub.iconName || "BookOpen");
     setFormSubEnabled(sub.enabled !== false);
     setIconSearch("");
+    setInitSub({
+      label: sub.label,
+      href: sub.href,
+      desc: sub.description || "",
+      iconName: sub.iconName || "BookOpen",
+      enabled: sub.enabled !== false,
+    });
     setIsSubModalOpen(true);
   };
 
@@ -877,8 +926,8 @@ export function NavigationManagementPanel() {
             <button
               type="submit"
               form="nav-item-form"
-              disabled={isSavingDb}
-              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              disabled={isSavingDb || !isItemDirty}
+              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isSavingDb && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>{editingItem ? "Save to Database" : "Create Nav Item"}</span>
@@ -1007,8 +1056,8 @@ export function NavigationManagementPanel() {
             <button
               type="submit"
               form="nav-sub-item-form"
-              disabled={isSavingDb}
-              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              disabled={isSavingDb || !isSubDirty}
+              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isSavingDb && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>{editingSubItem ? "Save Sub-Link to DB" : "Add Sub-Link to DB"}</span>
