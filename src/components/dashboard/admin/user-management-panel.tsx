@@ -12,9 +12,6 @@ import {
   XCircle,
   MoreVertical,
   Pencil,
-  Mail,
-  Building,
-  GraduationCap,
   AlertTriangle,
   RotateCcw,
   Check,
@@ -28,6 +25,7 @@ import { toast } from "sonner";
 import { adminApi, AuthResponseData } from "@/lib/api";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import {
@@ -612,12 +610,12 @@ export function UserManagementPanel({
                           u.role === "super-admin"
                             ? "bg-purple-50 text-purple-700 border-purple-200"
                             : u.role === "admin"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : u.role === "editor"
-                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : u.role === "reviewer"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-slate-50 text-slate-700 border-slate-200"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : u.role === "editor"
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : u.role === "reviewer"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-slate-50 text-slate-700 border-slate-200"
                         )}
                       >
                         {u.role ? u.role.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Author"}
@@ -879,17 +877,13 @@ export function UserManagementPanel({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
+          <div className="pt-1">
+            <CustomCheckbox
               id="editEnabled"
               checked={editEnabled}
-              onChange={(e) => setEditEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              onChange={setEditEnabled}
+              label="Account Active & Enabled"
             />
-            <label htmlFor="editEnabled" className="font-bold text-slate-700 cursor-pointer text-xs">
-              Account Active & Enabled
-            </label>
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">

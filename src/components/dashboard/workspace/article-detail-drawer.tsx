@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   BookOpen,
@@ -27,6 +28,46 @@ export function ArticleDetailDrawer({
   isOpen,
   onClose,
 }: ArticleDetailDrawerProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    if (typeof window !== "undefined" && (window as any).__lenis) {
+      (window as any).__lenis.stop();
+    }
+
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.paddingRight = "";
+      // Instantly restore scroll position without animation
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
+      document.documentElement.style.scrollBehavior = "";
+
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.start();
+      }
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !submission || typeof window === "undefined") return null;
 
   const cfg = statusConfig[submission.status] ?? {
@@ -37,9 +78,10 @@ export function ArticleDetailDrawer({
   const StatusIcon = cfg.icon;
 
   return createPortal(
-    <div className="fixed inset-0 z-[999999] flex justify-end bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[999999] flex justify-end bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-200 overflow-hidden">
       <div
-        className="relative w-full max-w-2xl h-full bg-white shadow-2xl overflow-y-auto flex flex-col animate-in slide-in-from-right duration-300"
+        data-lenis-prevent="true"
+        className="relative w-full max-w-2xl h-full bg-white shadow-2xl overflow-y-auto flex flex-col animate-in slide-in-from-right duration-300 overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

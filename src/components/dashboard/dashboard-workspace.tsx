@@ -710,7 +710,7 @@ export function DashboardWorkspace({
   const roleAccent = roleAccentMap[activeRole];
 
   return (
-    <div className="flex min-h-screen bg-[#f5f7fb] w-full">
+    <div className="flex min-h-screen w-full bg-[#f5f7fb]">
       {/* Mobile Drawer Sidebar */}
       <AnimatePresence>
         {isMobileSidebarOpen && (
@@ -997,7 +997,7 @@ export function DashboardWorkspace({
       <aside
         data-lenis-prevent="true"
         className={cn(
-          "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-40",
+          "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-30",
           mounted && isSidebarCollapsed ? "w-[68px]" : "w-[270px]"
         )}
       >
@@ -1496,8 +1496,8 @@ export function DashboardWorkspace({
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col min-w-0 min-h-screen">
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col min-w-0">
         <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center justify-between border-b border-[color:var(--color-gb-border)] bg-white/95 backdrop-blur-md px-4 shadow-xs">
           <div className="flex items-center gap-2">
             <button
@@ -1563,7 +1563,7 @@ export function DashboardWorkspace({
           </div>
         </header>
 
-        <div className="flex-1">
+        <main className="flex-1">
           {pathname.includes("/submissions/new") || pathname.includes("/profile") ? (
             children
           ) : (
@@ -2087,7 +2087,7 @@ export function DashboardWorkspace({
               )}
             </>
           )}
-        </div>
+        </main>
       </div>
 
       {/* Drawer */}

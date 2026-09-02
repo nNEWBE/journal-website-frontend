@@ -27,6 +27,7 @@ import { contentApi, type PageContentDTO } from "@/lib/api";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { CustomTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -665,17 +666,13 @@ export function PageContentCMSPanel() {
               />
             </div>
 
-            <div className="flex items-center gap-2.5 sm:pt-6">
-              <input
-                type="checkbox"
+            <div className="flex items-center sm:pt-6">
+              <CustomCheckbox
                 id="formPublished"
                 checked={formPublished}
-                onChange={(e) => setFormPublished(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                onChange={setFormPublished}
+                label="Publish Immediately (Visible to Public)"
               />
-              <label htmlFor="formPublished" className="text-xs font-bold text-slate-800 cursor-pointer">
-                Publish Immediately (Visible to Public)
-              </label>
             </div>
           </div>
 

@@ -42,7 +42,7 @@ export function CustomDrawer({
   className,
   contentClassName,
 }: CustomDrawerProps) {
-  // ESC key listener & body scroll lock
+  // ESC key listener & scroll lock that preserves sticky sidebar
   useEffect(() => {
     if (!isOpen) return;
 
@@ -52,12 +52,38 @@ export function CustomDrawer({
       }
     };
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Pause Lenis smooth scroll if active
+    if (typeof window !== "undefined" && (window as any).__lenis) {
+      (window as any).__lenis.stop();
+    }
+
+    // Freeze scroll position without breaking sticky elements
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = prevOverflow;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.paddingRight = "";
+      // Instantly restore scroll position without animation
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
+      document.documentElement.style.scrollBehavior = "";
+
+      // Resume Lenis smooth scroll if active
+      if (typeof window !== "undefined" && (window as any).__lenis) {
+        (window as any).__lenis.start();
+      }
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, onClose]);
@@ -67,7 +93,7 @@ export function CustomDrawer({
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[999999] flex justify-end">
+        <div className="fixed inset-0 z-[999999] flex justify-end overflow-hidden">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -126,8 +152,9 @@ export function CustomDrawer({
 
             {/* Scrollable Content Body */}
             <div
+              data-lenis-prevent="true"
               className={cn(
-                "flex-1 overflow-y-auto p-6 text-slate-800 text-xs sidebar-scroll",
+                "flex-1 overflow-y-auto p-6 text-slate-800 text-xs sidebar-scroll overscroll-contain",
                 contentClassName
               )}
             >
