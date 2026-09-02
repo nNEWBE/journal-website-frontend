@@ -15,7 +15,6 @@ import {
   Mail,
   Building,
   GraduationCap,
-  Sparkles,
   AlertTriangle,
   RotateCcw,
   Check,

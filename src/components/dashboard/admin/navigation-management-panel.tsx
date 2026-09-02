@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
-  Sparkles,
   Link2,
   ExternalLink,
   ChevronDown,

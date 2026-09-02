@@ -7,7 +7,6 @@ import {
   Calendar,
   Layers,
   CheckCircle2,
-  Sparkles,
   Edit,
   ExternalLink,
   RotateCcw,

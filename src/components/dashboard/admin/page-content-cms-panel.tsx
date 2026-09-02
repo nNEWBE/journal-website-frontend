@@ -18,7 +18,6 @@ import {
   Layers,
   Save,
   Search,
-  Sparkles,
   AlertCircle,
   HelpCircle,
   Home as HomeIcon,

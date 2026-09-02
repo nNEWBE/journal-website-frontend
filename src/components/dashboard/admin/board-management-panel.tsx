@@ -10,7 +10,6 @@ import {
   GraduationCap,
   Building,
   RotateCcw,
-  Sparkles,
   Award,
   Crown,
   ShieldCheck,
