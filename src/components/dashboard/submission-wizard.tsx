@@ -116,10 +116,6 @@ export function SubmissionWizard() {
   async function handleSubmit() {
     setIsSubmitting(true);
     try {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("gb_journal_submissions");
-      }
-
       const draft = await submissionsApi.createDraft({
         title: form.title || "Untitled Manuscript",
         type: form.type || "Research Article",
@@ -150,10 +146,6 @@ export function SubmissionWizard() {
       toast.success(`Manuscript ${generatedId} submitted successfully!`);
     } finally {
       setIsSubmitting(false);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("gb_journal_submissions");
-        localStorage.removeItem("gb_journal_decision_log");
-      }
     }
   }
 

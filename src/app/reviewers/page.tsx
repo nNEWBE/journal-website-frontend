@@ -27,6 +27,14 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { ReviewersHero } from "@/components/reviewers/reviewers-hero";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 export const metadata: Metadata = {
   title: "Reviewer Guidelines & Evaluation Rubric — GB Journal of Research",
@@ -419,70 +427,68 @@ export default function ReviewersPage() {
             </div>
 
             {/* Table Area */}
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-100/80 text-[10.5px] font-bold uppercase tracking-wider text-slate-700">
-                    <th className="px-6 py-3.5 w-[320px] sm:w-[360px]">Evaluation Dimension</th>
-                    <th className="px-6 py-3.5">Assessment Focus & Verification Guidelines</th>
-                    <th className="px-6 py-3.5 text-right w-64 min-w-[220px]">Rating Benchmark</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200/90">
-                  {RUBRIC_CRITERIA.map((criterion) => {
-                    const Icon = criterion.icon;
-                    const isEthics = criterion.scale === "Pass / Fail";
-                    return (
-                      <tr
-                        key={criterion.num}
-                        className="hover:bg-blue-50/40 border-l-3 border-l-transparent hover:border-l-[#1e40af] transition-all group"
-                      >
-                        <td className="px-6 py-5 align-top">
-                          <div className="flex items-start gap-3.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-blue-50/80 border border-blue-100/90 text-[#1e40af] group-hover:bg-[#0b1b3d] group-hover:text-white transition-colors">
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                                <span className="inline-block bg-blue-50 text-[#1e40af] px-1.5 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider border border-blue-100 whitespace-nowrap">
-                                  Criterion {criterion.num}
-                                </span>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                  {criterion.category}
-                                </span>
-                              </div>
-                              <h4 className="font-academic text-[14.5px] font-medium text-slate-950 group-hover:text-[#1e40af] transition-colors leading-snug">
-                                {criterion.domain}
-                              </h4>
-                            </div>
+            <Table minWidth={760}>
+              <TableHeader>
+                <TableRow className="border-b border-slate-200 bg-slate-100/80 text-[10.5px] font-bold uppercase tracking-wider text-slate-700">
+                  <TableHead className="px-6 py-3.5 w-[320px] sm:w-[360px] text-slate-700">Evaluation Dimension</TableHead>
+                  <TableHead className="px-6 py-3.5 text-slate-700">Assessment Focus & Verification Guidelines</TableHead>
+                  <TableHead className="px-6 py-3.5 text-right w-64 min-w-[220px] text-slate-700">Rating Benchmark</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-200/90">
+                {RUBRIC_CRITERIA.map((criterion) => {
+                  const Icon = criterion.icon;
+                  const isEthics = criterion.scale === "Pass / Fail";
+                  return (
+                    <TableRow
+                      key={criterion.num}
+                      className="hover:bg-blue-50/40 border-l-3 border-l-transparent hover:border-l-[#1e40af] transition-all group"
+                    >
+                      <TableCell className="px-6 py-5 align-top">
+                        <div className="flex items-start gap-3.5">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-blue-50/80 border border-blue-100/90 text-[#1e40af] group-hover:bg-[#0b1b3d] group-hover:text-white transition-colors">
+                            <Icon className="h-4 w-4" />
                           </div>
-                        </td>
-                        <td className="px-6 py-5 align-top text-xs leading-relaxed text-slate-600 font-medium pr-4">
-                          {criterion.focus}
-                        </td>
-                        <td className="px-6 py-5 align-top text-right">
-                          <div className="flex flex-col items-end gap-1.5">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold font-mono border shadow-2xs ${
-                                isEthics
-                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                  : "bg-blue-50 text-[#1e40af] border-blue-200"
-                              }`}
-                            >
-                              {isEthics && <ShieldCheck className="h-3 w-3 text-emerald-600" />}
-                              <span>{criterion.scale}</span>
-                            </span>
-                            <p className="text-[10.5px] font-semibold text-slate-500 text-right leading-tight">
-                              {criterion.anchor}
-                            </p>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                              <span className="inline-block bg-blue-50 text-[#1e40af] px-1.5 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider border border-blue-100 whitespace-nowrap">
+                                Criterion {criterion.num}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                {criterion.category}
+                              </span>
+                            </div>
+                            <h4 className="font-academic text-[14.5px] font-medium text-slate-950 group-hover:text-[#1e40af] transition-colors leading-snug">
+                              {criterion.domain}
+                            </h4>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-5 align-top text-xs leading-relaxed text-slate-600 font-medium pr-4">
+                        {criterion.focus}
+                      </TableCell>
+                      <TableCell className="px-6 py-5 align-top text-right">
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold font-mono border shadow-2xs ${
+                              isEthics
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : "bg-blue-50 text-[#1e40af] border-blue-200"
+                            }`}
+                          >
+                            {isEthics && <ShieldCheck className="h-3 w-3 text-emerald-600" />}
+                            <span>{criterion.scale}</span>
+                          </span>
+                          <p className="text-[10.5px] font-semibold text-slate-500 text-right leading-tight">
+                            {criterion.anchor}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
 
             {/* Scorecard Footnote */}
             <div className="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-600">

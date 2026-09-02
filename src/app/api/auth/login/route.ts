@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     const isProduction = process.env.NODE_ENV === "production";
 
-    // Set secure Access Token cookies (both standard and prefix names)
+    // Set secure Access Token cookie
     if (accessToken) {
       response.cookies.set("access_token", accessToken, {
         httpOnly: true,
@@ -116,17 +116,11 @@ export async function POST(req: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24, // 1 day
       });
-
-      response.cookies.set("gb_access_token", accessToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24,
-      });
+      // Purge redundant legacy cookie if present
+      response.cookies.delete("gb_access_token");
     }
 
-    // Set secure Refresh Token cookies (both standard and prefix names)
+    // Set secure Refresh Token cookie
     if (refreshToken) {
       response.cookies.set("refresh_token", refreshToken, {
         httpOnly: true,
@@ -135,14 +129,8 @@ export async function POST(req: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
-
-      response.cookies.set("gb_refresh_token", refreshToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
+      // Purge redundant legacy cookie if present
+      response.cookies.delete("gb_refresh_token");
     }
 
     // Set client session cookie for synchronous UI hydration

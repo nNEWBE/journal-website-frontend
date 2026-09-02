@@ -55,13 +55,21 @@ import { StatCard } from "@/components/ui/stat-card";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { PremiumLoader } from "@/components/ui/loader";
 import { CustomTooltip } from "@/components/ui/tooltip";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
   submissions as seedSubmissions,
   type Role,
   type Submission,
 } from "@/lib/data";
-import { getSession, clearSession, type User } from "@/lib/auth";
+import { getSession, clearSession, deleteCookie, type User } from "@/lib/auth";
 import { submissionsApi } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/authSlice";
@@ -306,7 +314,7 @@ export function DashboardWorkspace({
 
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector((state) => state.auth.user);
-  const [currentUser, setCurrentUser] = useState<User | null>(reduxUser || null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -394,8 +402,9 @@ export function DashboardWorkspace({
     if (pathname.includes("/editor")) return "editor";
     if (pathname.includes("/reviewer")) return "reviewer";
     if (pathname.includes("/author")) return "author";
+    if (!mounted) return initialRole;
     return (currentUser?.role as Role) || initialRole;
-  }, [pathname, currentUser?.role, initialRole]);
+  }, [pathname, currentUser?.role, initialRole, mounted]);
 
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
@@ -451,11 +460,12 @@ export function DashboardWorkspace({
   const [revisionNotes, setRevisionNotes] = useState("");
 
   useEffect(() => {
-    // Purge any legacy mock data from browser localStorage
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("gb_journal_submissions");
-      localStorage.removeItem("gb_journal_decision_log");
-    }
+    // Delete legacy UI and duplicate token cookies to keep the cookies table clean
+    deleteCookie("sidebar_state");
+    deleteCookie("gb_sidebar_collapsed");
+    deleteCookie("pha_lang");
+    deleteCookie("gb_access_token");
+    deleteCookie("gb_refresh_token");
 
     if (!reduxUser) {
       const session = getSession();
@@ -477,9 +487,12 @@ export function DashboardWorkspace({
     }
     loadRealData();
 
-    const collapsed = typeof window !== "undefined" && localStorage.getItem("gb_sidebar_collapsed") === "true";
-    if (collapsed) {
-      setIsSidebarCollapsed(true);
+    // Read sidebar collapse from localStorage (supporting 'sidebar_state' and 'gb_sidebar_collapsed')
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("sidebar_state") ?? localStorage.getItem("gb_sidebar_collapsed");
+      if (stored === "true" || stored === "collapsed") {
+        setIsSidebarCollapsed(true);
+      }
     }
   }, []);
 
@@ -487,6 +500,7 @@ export function DashboardWorkspace({
     const nextState = !isSidebarCollapsed;
     setIsSidebarCollapsed(nextState);
     if (typeof window !== "undefined") {
+      localStorage.setItem("sidebar_state", String(nextState));
       localStorage.setItem("gb_sidebar_collapsed", String(nextState));
     }
   };
@@ -969,41 +983,40 @@ export function DashboardWorkspace({
       <aside
         data-lenis-prevent="true"
         className={cn(
-          "hidden lg:flex flex-col transition-all duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-40",
+          "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-40",
           mounted && isSidebarCollapsed ? "w-[68px]" : "w-[270px]"
         )}
       >
         <div className="flex h-full min-h-0 flex-col">
           {/* Header Brand */}
-          <div className={cn(
-            "h-16 flex items-center border-b border-white/10 shrink-0 bg-[#050b1d] transition-all duration-300",
-            isSidebarCollapsed ? "px-0 justify-center" : "px-4"
-          )}>
+          <div className="h-16 flex items-center px-3 border-b border-white/10 shrink-0 bg-[#050b1d]">
             <Link
               href="/"
-              className={cn(
-                "flex items-center group overflow-hidden",
-                isSidebarCollapsed ? "justify-center" : "gap-3 w-full"
-              )}
+              className="flex items-center w-full group overflow-hidden"
               title="Return to Public Journal"
             >
-              <div className="h-9 w-9 rounded-lg bg-white border border-white/20 p-1 flex items-center justify-center shrink-0 group-hover:border-amber-400/80 transition-colors shadow-xs">
-                <img
-                  src="/gb-logo-official.png"
-                  alt="Gono Bishwabidyalay emblem"
-                  className="h-7 w-7 object-contain"
-                />
-              </div>
-              {!isSidebarCollapsed && (
-                <div className="min-w-0 flex-1">
-                  <p className="font-academic font-bold text-sm tracking-wide text-white leading-tight truncate">
-                    GB JOURNAL
-                  </p>
-                  <p className="text-[8.5px] text-slate-400 uppercase tracking-wider font-mono mt-0.5 truncate">
-                    Research Workspace
-                  </p>
+              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                <div className="h-9 w-9 rounded-lg bg-white border border-white/20 p-1 flex items-center justify-center shrink-0 group-hover:border-amber-400/80 transition-colors shadow-xs">
+                  <img
+                    src="/gb-logo-official.png"
+                    alt="Gono Bishwabidyalay emblem"
+                    className="h-7 w-7 object-contain"
+                  />
                 </div>
-              )}
+              </div>
+              <div
+                className={cn(
+                  "min-w-0 flex-1 pl-2.5 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                  isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}
+              >
+                <p className="font-academic font-bold text-sm tracking-wide text-white leading-tight truncate">
+                  GB JOURNAL
+                </p>
+                <p className="text-[8.5px] text-slate-400 uppercase tracking-wider font-mono mt-0.5 truncate">
+                  Research Workspace
+                </p>
+              </div>
             </Link>
           </div>
 
@@ -1011,18 +1024,18 @@ export function DashboardWorkspace({
           <div
             data-lenis-prevent="true"
             onWheel={(e) => e.stopPropagation()}
-            className={cn(
-              "mt-3 flex-1 min-h-0 sidebar-scroll space-y-4",
-              isSidebarCollapsed ? "px-2" : "px-3"
-            )}
+            className="mt-3 flex-1 min-h-0 sidebar-scroll space-y-4 px-3"
           >
             {/* Core Section */}
             <div>
-              {!isSidebarCollapsed && (
-                <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
-                  Core Workspace
-                </p>
-              )}
+              <p
+                className={cn(
+                  "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200",
+                  isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
+                )}
+              >
+                Core Workspace
+              </p>
               <div className="space-y-1">
                 {/* Active Workspace for Non-Admin roles */}
                 {activeRole !== "admin" && activeRole !== "super-admin" && (
@@ -1044,26 +1057,31 @@ export function DashboardWorkspace({
                               router.push(item.href);
                             }}
                             className={cn(
-                              "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
-                              isSidebarCollapsed
-                                ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
-                                : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                              "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                               isActive
-                                ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                                ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                             )}
                           >
-                            <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                            {!isSidebarCollapsed && (
-                              <>
-                                <span className="truncate flex-1 font-medium text-slate-200 group-hover:text-white">
-                                  {item.label}
-                                </span>
-                                {isActive && (
-                                  <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                                )}
-                              </>
+                            {isActive && (
+                              <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
                             )}
+                            <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                              <Icon className={cn("h-4 w-4 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                            </div>
+                            <div
+                              className={cn(
+                                "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                                isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                              )}
+                            >
+                              <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                                {item.label}
+                              </span>
+                              {isActive && (
+                                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                              )}
+                            </div>
                           </button>
                         </CustomTooltip>
                       );
@@ -1082,26 +1100,31 @@ export function DashboardWorkspace({
                       router.push("/dashboard/analytics");
                     }}
                     className={cn(
-                      "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 relative group border-y-0 border-r-0 border-l-[3px]",
-                      isSidebarCollapsed
-                        ? "w-10 h-10 mx-auto justify-center rounded-xl border-l-0"
-                        : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                      "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                       activeView === "analytics" && !pathname.includes("/profile")
-                        ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                        : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                        ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                        : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                     )}
                   >
-                    <BarChart2 className={cn("h-4 w-4 shrink-0 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                    {!isSidebarCollapsed && (
-                      <>
-                        <span className="flex-1 font-medium text-slate-200 group-hover:text-white">
-                          Journal Analytics
-                        </span>
-                        {activeView === "analytics" && !pathname.includes("/profile") && (
-                          <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                        )}
-                      </>
+                    {activeView === "analytics" && !pathname.includes("/profile") && (
+                      <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
                     )}
+                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                      <BarChart2 className={cn("h-4 w-4 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                    </div>
+                    <div
+                      className={cn(
+                        "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                        isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                      )}
+                    >
+                      <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                        Journal Analytics
+                      </span>
+                      {activeView === "analytics" && !pathname.includes("/profile") && (
+                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                      )}
+                    </div>
                   </button>
                 </CustomTooltip>
               </div>
@@ -1110,12 +1133,15 @@ export function DashboardWorkspace({
             {/* Administration Management Tools (Desktop) */}
             {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
               <div>
-                {!isSidebarCollapsed && (
-                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between">
-                    <span>Management Tools</span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
-                  </p>
-                )}
+                <p
+                  className={cn(
+                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200 flex items-center justify-between",
+                    isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
+                  )}
+                >
+                  <span>Management Tools</span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
+                </p>
                 <div className="space-y-1">
                   {[
                     { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
@@ -1150,26 +1176,31 @@ export function DashboardWorkspace({
                             }
                           }}
                           className={cn(
-                            "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group border-y-0 border-r-0 border-l-[3px]",
-                            isSidebarCollapsed
-                              ? "w-10 h-9 mx-auto justify-center rounded-xl border-l-0"
-                              : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
+                            "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                             isTabActive
-                              ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                              : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                              ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                              : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                           )}
                         >
-                          <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isTabActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                          {!isSidebarCollapsed && (
-                            <>
-                              <span className="truncate flex-1 font-medium text-slate-200 group-hover:text-white">
-                                {tab.label}
-                              </span>
-                              {isTabActive && (
-                                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                              )}
-                            </>
+                          {isTabActive && (
+                            <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
                           )}
+                          <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                            <Icon className={cn("h-4 w-4 transition-colors", isTabActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                          </div>
+                          <div
+                            className={cn(
+                              "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                              isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                            )}
+                          >
+                            <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                              {tab.label}
+                            </span>
+                            {isTabActive && (
+                              <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                            )}
+                          </div>
                         </button>
                       </CustomTooltip>
                     );
@@ -1181,11 +1212,14 @@ export function DashboardWorkspace({
             {/* Role Views Switcher (if admin or super-admin) */}
             {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
               <div>
-                {!isSidebarCollapsed && (
-                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
-                    Role Suites
-                  </p>
-                )}
+                <p
+                  className={cn(
+                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200",
+                    isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
+                  )}
+                >
+                  Role Suites
+                </p>
                 <div className="space-y-1">
                   {navItems
                     .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
@@ -1203,20 +1237,21 @@ export function DashboardWorkspace({
                               setIsMobileSidebarOpen(false);
                               router.push(item.href);
                             }}
-                            className={cn(
-                              "flex items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 relative group border-y-0 border-r-0 border-l-[3px]",
-                              isSidebarCollapsed
-                                ? "w-10 h-9 mx-auto justify-center rounded-xl border-l-0"
-                                : "w-full px-3 gap-3 rounded-r-xl rounded-l-xs",
-                              "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
-                            )}
+                            className="flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
                           >
-                            <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-200" />
-                            {!isSidebarCollapsed && (
-                              <span className="truncate flex-1 text-slate-300 group-hover:text-white">
+                            <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                              <Icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-200" />
+                            </div>
+                            <div
+                              className={cn(
+                                "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                                isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                              )}
+                            >
+                              <span className="truncate text-slate-300 group-hover:text-white">
                                 {item.label}
                               </span>
-                            )}
+                            </div>
                           </button>
                         </CustomTooltip>
                       );
@@ -1227,11 +1262,14 @@ export function DashboardWorkspace({
 
             {/* Public Links */}
             <div>
-              {!isSidebarCollapsed && (
-                <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
-                  Journal Portal
-                </p>
-              )}
+              <p
+                className={cn(
+                  "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200",
+                  isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
+                )}
+              >
+                Journal Portal
+              </p>
               <div className="space-y-1">
                 <CustomTooltip
                   content="Public Homepage"
@@ -1240,19 +1278,21 @@ export function DashboardWorkspace({
                 >
                   <Link
                     href="/"
-                    className={cn(
-                      "flex items-center rounded-xl text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-all h-9 group",
-                      isSidebarCollapsed
-                        ? "w-10 h-9 mx-auto justify-center"
-                        : "w-full px-3 gap-3"
-                    )}
+                    className="flex items-center text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors h-10 w-full rounded-xl overflow-hidden group"
                   >
-                    <BookOpen className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-white" />
-                    {!isSidebarCollapsed && (
-                      <span className="truncate flex-1 text-slate-300 group-hover:text-white">
+                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                      <BookOpen className="h-3.5 w-3.5 text-slate-400 group-hover:text-white" />
+                    </div>
+                    <div
+                      className={cn(
+                        "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                        isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                      )}
+                    >
+                      <span className="truncate text-slate-300 group-hover:text-white">
                         Public Homepage
                       </span>
-                    )}
+                    </div>
                   </Link>
                 </CustomTooltip>
 
@@ -1263,19 +1303,21 @@ export function DashboardWorkspace({
                 >
                   <Link
                     href="/issues"
-                    className={cn(
-                      "flex items-center rounded-xl text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-all h-9 group",
-                      isSidebarCollapsed
-                        ? "w-10 h-9 mx-auto justify-center"
-                        : "w-full px-3 gap-3"
-                    )}
+                    className="flex items-center text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors h-10 w-full rounded-xl overflow-hidden group"
                   >
-                    <Archive className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-white" />
-                    {!isSidebarCollapsed && (
-                      <span className="truncate flex-1 text-slate-300 group-hover:text-white">
+                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                      <Archive className="h-3.5 w-3.5 text-slate-400 group-hover:text-white" />
+                    </div>
+                    <div
+                      className={cn(
+                        "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                        isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                      )}
+                    >
+                      <span className="truncate text-slate-300 group-hover:text-white">
                         Issues Archive
                       </span>
-                    )}
+                    </div>
                   </Link>
                 </CustomTooltip>
               </div>
@@ -1285,10 +1327,7 @@ export function DashboardWorkspace({
           {/* Footer Controls: User Card Trigger with Profile & Sign Out Popover */}
           <div
             ref={userMenuRef}
-            className={cn(
-              "mt-auto border-t border-white/[0.08] relative shrink-0 bg-[#050b1d] transition-all duration-300",
-              isSidebarCollapsed ? "p-2 flex justify-center" : "p-2.5"
-            )}
+            className="mt-auto border-t border-white/[0.08] relative shrink-0 bg-[#050b1d] p-3 transition-colors"
           >
             {/* Popover Menu */}
             <AnimatePresence>
@@ -1394,18 +1433,15 @@ export function DashboardWorkspace({
                 type="button"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className={cn(
-                  "flex items-center rounded-xl transition-all duration-150 cursor-pointer border group",
+                  "flex items-center rounded-xl transition-all duration-150 cursor-pointer border group h-11 w-full overflow-hidden",
                   isUserMenuOpen
                     ? "bg-white/10 border-white/20 shadow-md ring-1 ring-white/10"
-                    : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.07] hover:border-white/15",
-                  isSidebarCollapsed
-                    ? "h-10 w-10 justify-center p-0"
-                    : "w-full p-2 gap-2.5"
+                    : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.07] hover:border-white/15"
                 )}
                 title={`${currentUser.name} (${currentUser.role}) — Click for options`}
               >
                 {/* Avatar */}
-                <div className="relative shrink-0">
+                <div className="w-10 h-10 flex items-center justify-center shrink-0">
                   {currentUser.avatar ? (
                     <img
                       src={currentUser.avatar}
@@ -1420,23 +1456,26 @@ export function DashboardWorkspace({
                 </div>
 
                 {/* Name & Role (expanded only) */}
-                {!isSidebarCollapsed && (
-                  <>
-                    <div className="min-w-0 flex-1 text-left">
-                      <p className="text-xs font-semibold text-slate-100 truncate leading-tight group-hover:text-white transition-colors">
-                        {currentUser.name}
-                      </p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal capitalize">
-                        {currentUser.role.replace("-", " ")}
-                      </p>
-                    </div>
+                <div
+                  className={cn(
+                    "min-w-0 flex-1 flex items-center justify-between pr-2.5 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200 text-left",
+                    isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-100 truncate leading-tight group-hover:text-white transition-colors">
+                      {currentUser.name}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5 font-normal capitalize">
+                      {currentUser.role.replace("-", " ")}
+                    </p>
+                  </div>
 
-                    <ChevronsUpDown className={cn(
-                      "h-3.5 w-3.5 shrink-0 transition-all text-slate-400 group-hover:text-slate-200",
-                      isUserMenuOpen && "text-slate-200 rotate-180"
-                    )} />
-                  </>
-                )}
+                  <ChevronsUpDown className={cn(
+                    "h-3.5 w-3.5 shrink-0 transition-all text-slate-400 group-hover:text-slate-200 ml-1",
+                    isUserMenuOpen && "text-slate-200 rotate-180"
+                  )} />
+                </div>
               </button>
             )}
           </div>
@@ -1832,10 +1871,10 @@ export function DashboardWorkspace({
                             ) : (
                               <>
                                 {/* Desktop Table View */}
-                                <div className="hidden md:block overflow-x-auto">
-                                  <table className="w-full min-w-[780px] border-collapse text-left">
-                                    <thead>
-                                      <tr className="border-b border-[color:var(--color-gb-border)] bg-[#f9fafc]">
+                                <div className="hidden md:block">
+                                  <Table minWidth={780}>
+                                    <TableHeader>
+                                      <TableRow>
                                         {[
                                           "Manuscript",
                                           "Status",
@@ -1844,23 +1883,19 @@ export function DashboardWorkspace({
                                           "Due Date",
                                           "Actions",
                                         ].map((h) => (
-                                          <th
+                                          <TableHead
                                             key={h}
-                                            className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--color-gb-muted)] ${h === "Actions" ? "text-right" : ""
-                                              }`}
+                                            className={h === "Actions" ? "text-right" : ""}
                                           >
                                             {h}
-                                          </th>
+                                          </TableHead>
                                         ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[color:var(--color-gb-border)]" suppressHydrationWarning>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody suppressHydrationWarning>
                                       {filtered.map((sub) => (
-                                        <tr
-                                          key={sub.id}
-                                          className="group hover:bg-[#f9fafc] transition-colors"
-                                        >
-                                          <td className="px-4 py-3 max-w-[280px]">
+                                        <TableRow key={sub.id}>
+                                          <TableCell className="max-w-[280px]">
                                             <span className="font-mono text-[10px] font-black text-[color:var(--color-gb-red)]">
                                               {sub.id}
                                             </span>
@@ -1870,15 +1905,15 @@ export function DashboardWorkspace({
                                             <p className="mt-0.5 text-[10px] text-[color:var(--color-gb-muted)]">
                                               {sub.type} · {sub.author}
                                             </p>
-                                          </td>
-                                          <td className="px-4 py-3">
+                                          </TableCell>
+                                          <TableCell>
                                             <StatusPill status={sub.status} />
                                             <p className="mt-1 text-[10px] text-[color:var(--color-gb-muted)] flex items-center gap-1">
                                               <Clock className="h-2.5 w-2.5" />
                                               {sub.updated}
                                             </p>
-                                          </td>
-                                          <td className="px-4 py-3">
+                                          </TableCell>
+                                          <TableCell>
                                             {sub.reviewers.length ? (
                                               <div className="space-y-0.5">
                                                 {sub.reviewers.map((r, i) => (
@@ -1895,17 +1930,18 @@ export function DashboardWorkspace({
                                                 Unassigned
                                               </span>
                                             )}
-                                          </td>
-                                          <td className="px-4 py-3">
+                                          </TableCell>
+                                          <TableCell>
                                             <div className="flex items-center gap-2">
                                               <div className="h-1.5 w-12 rounded-full bg-slate-100 overflow-hidden">
                                                 <div
-                                                  className={`h-full rounded-full transition-all ${sub.score >= 80
+                                                  className={`h-full rounded-full transition-all ${
+                                                    sub.score >= 80
                                                       ? "bg-emerald-500"
                                                       : sub.score >= 60
-                                                        ? "bg-amber-500"
-                                                        : "bg-red-500"
-                                                    }`}
+                                                      ? "bg-amber-500"
+                                                      : "bg-red-500"
+                                                  }`}
                                                   style={{ width: `${sub.score}%` }}
                                                 />
                                               </div>
@@ -1913,8 +1949,8 @@ export function DashboardWorkspace({
                                                 {sub.score}
                                               </span>
                                             </div>
-                                          </td>
-                                          <td className="px-4 py-3">
+                                          </TableCell>
+                                          <TableCell>
                                             {canEditDates ? (
                                               <CustomDatePicker
                                                 value={sub.due}
@@ -1925,8 +1961,8 @@ export function DashboardWorkspace({
                                                 {sub.due}
                                               </span>
                                             )}
-                                          </td>
-                                          <td className="px-4 py-3 text-right">
+                                          </TableCell>
+                                          <TableCell className="text-right">
                                             <RowActionsDropdown
                                               sub={sub}
                                               canAdvance={canAdvance}
@@ -1939,11 +1975,11 @@ export function DashboardWorkspace({
                                               triggerSubmitReview={triggerSubmitReview}
                                               triggerViewInfo={triggerViewInfo}
                                             />
-                                          </td>
-                                        </tr>
+                                          </TableCell>
+                                        </TableRow>
                                       ))}
-                                    </tbody>
-                                  </table>
+                                    </TableBody>
+                                  </Table>
                                 </div>
 
                                 {/* Mobile Card List View */}

@@ -37,9 +37,7 @@ function isLikelyValidJwt(token: string): boolean {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const accessToken =
-    req.cookies.get("access_token")?.value ||
-    req.cookies.get("gb_access_token")?.value;
+  const accessToken = req.cookies.get("access_token")?.value;
 
   // Check if this is a protected route
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
@@ -89,9 +87,9 @@ export async function proxy(req: NextRequest) {
       const response = NextResponse.redirect(loginUrl);
       response.cookies.delete("access_token");
       response.cookies.delete("refresh_token");
+      response.cookies.delete("gb_journal_user_session");
       response.cookies.delete("gb_access_token");
       response.cookies.delete("gb_refresh_token");
-      response.cookies.delete("gb_journal_user_session");
       return response;
     }
   }

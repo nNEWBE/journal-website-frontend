@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { issuesApi, adminApi, IssueData } from "@/lib/api";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomDrawer } from "@/components/ui/drawer";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 
@@ -201,14 +202,16 @@ export function IssueManagementPanel() {
         </div>
       )}
 
-      {/* Create Issue Modal */}
-      <CustomModal
+      {/* Create Issue Drawer */}
+      <CustomDrawer
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Create New Volume & Issue"
         description="Initialize a publication issue to assemble accepted peer-reviewed articles."
+        icon={BookOpen}
+        size="lg"
       >
-        <form onSubmit={handleCreateIssue} className="space-y-3.5 text-xs">
+        <form onSubmit={handleCreateIssue} className="space-y-4 text-xs">
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Volume *</label>
@@ -217,7 +220,7 @@ export function IssueManagementPanel() {
                 required
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono"
               />
             </div>
             <div>
@@ -227,7 +230,7 @@ export function IssueManagementPanel() {
                 required
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono"
               />
             </div>
             <div>
@@ -237,7 +240,7 @@ export function IssueManagementPanel() {
                 required
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-mono"
               />
             </div>
           </div>
@@ -248,20 +251,20 @@ export function IssueManagementPanel() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Regular Issue or Special Topic Theme"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Scope & Editorial Overview</label>
             <textarea
-              rows={3}
+              rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the disciplinary scope or themes in this volume issue..."
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
-              className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 overflow-y-auto overscroll-contain resize-y"
+              className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-blue-500 overflow-y-auto overscroll-contain resize-y"
             />
           </div>
 
@@ -272,28 +275,28 @@ export function IssueManagementPanel() {
               value={coverUrl}
               onChange={(e) => setCoverUrl(e.target.value)}
               placeholder="https://..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2.5 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? "Creating..." : "Create Issue"}
             </button>
           </div>
         </form>
-      </CustomModal>
+      </CustomDrawer>
     </div>
   );
 }

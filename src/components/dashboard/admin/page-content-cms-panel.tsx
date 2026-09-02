@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { contentApi, type PageContentDTO } from "@/lib/api";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { CustomTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -513,12 +514,14 @@ export function PageContentCMSPanel() {
         </div>
       )}
 
-      {/* Add / Edit Section Modal */}
-      <CustomModal
+      {/* Add / Edit Section Drawer */}
+      <CustomDrawer
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title={isCreatingNew ? `Add Section to ${currentTabInfo.label}` : `Edit Section — ${formTitle}`}
-        className="max-w-2xl"
+        description="Configure and publish academic content sections across the journal portal."
+        icon={Edit}
+        size="xl"
       >
         <form onSubmit={handleSaveSection} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -546,7 +549,7 @@ export function PageContentCMSPanel() {
                 disabled={!isCreatingNew}
                 required
                 className={cn(
-                  "w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden",
+                  "w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden",
                   !isCreatingNew && "bg-slate-100 text-slate-500 cursor-not-allowed"
                 )}
               />
@@ -563,7 +566,7 @@ export function PageContentCMSPanel() {
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
 
@@ -576,7 +579,7 @@ export function PageContentCMSPanel() {
               placeholder="e.g. Rigorous, unbiased, and transparent scientific evaluation."
               value={formSubtitle}
               onChange={(e) => setFormSubtitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
 
@@ -585,7 +588,7 @@ export function PageContentCMSPanel() {
               Body Content (Text / Markdown)
             </label>
             <textarea
-              rows={6}
+              rows={8}
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
               placeholder="Enter academic content, guidelines, or policy clauses..."
@@ -598,18 +601,32 @@ export function PageContentCMSPanel() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-bold text-slate-700">
-                Structured Meta JSON (Optional)
+                Structured Meta (JSON configuration)
               </label>
-              <span className="text-[10px] text-slate-400">For badges, checklist or stats</span>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const parsed = JSON.parse(formMetaJson || "{}");
+                    setFormMetaJson(JSON.stringify(parsed, null, 2));
+                    toast.success("JSON formatted cleanly!");
+                  } catch {
+                    toast.error("Invalid JSON syntax.");
+                  }
+                }}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+              >
+                Format JSON
+              </button>
             </div>
             <textarea
-              rows={2}
+              rows={4}
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
-              placeholder='{"issnPrint": "2073-8447", "frequency": "Biannual"}'
+              placeholder='{ "icon": "shield", "order": 1 }'
               value={formMetaJson}
               onChange={(e) => setFormMetaJson(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-2.5 font-mono text-[11px] text-slate-800 focus:border-blue-500 focus:outline-hidden overscroll-contain"
+              className="w-full rounded-lg border border-slate-200 p-3 text-[11px] font-mono text-slate-800 leading-relaxed focus:border-blue-500 focus:outline-hidden overscroll-contain overflow-y-auto bg-slate-50"
             />
           </div>
 
@@ -624,11 +641,11 @@ export function PageContentCMSPanel() {
                 max={99}
                 value={formDisplayOrder}
                 onChange={(e) => setFormDisplayOrder(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
 
-            <div className="flex items-center gap-2.5 pt-6">
+            <div className="flex items-center gap-2.5 sm:pt-6">
               <input
                 type="checkbox"
                 id="formPublished"
@@ -642,32 +659,34 @@ export function PageContentCMSPanel() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={() => setIsEditModalOpen(false)}
-              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
               {saving ? "Saving Changes..." : "Save & Publish"}
             </button>
           </div>
         </form>
-      </CustomModal>
+      </CustomDrawer>
 
-      {/* Section Live Preview Modal */}
-      <CustomModal
+      {/* Section Live Preview Drawer */}
+      <CustomDrawer
         isOpen={!!previewSection}
         onClose={() => setPreviewSection(null)}
         title="Public Layout Live Preview"
-        className="max-w-3xl"
+        description="Inspect the rendered layout of this section before releasing to public readers."
+        icon={Eye}
+        size="xl"
       >
         {previewSection && (
           <div className="space-y-4">
@@ -696,7 +715,7 @@ export function PageContentCMSPanel() {
               </div>
 
               {previewSection.metaJson && (
-                <div className="mt-4 rounded-xl bg-slate-50 p-3 border border-slate-200/80">
+                <div className="mt-4 rounded-xl bg-slate-50 p-3.5 border border-slate-200/80">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                     Structured Parameters
                   </p>
@@ -707,17 +726,17 @@ export function PageContentCMSPanel() {
               )}
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-2">
               <button
                 onClick={() => setPreviewSection(null)}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-all cursor-pointer"
+                className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-all cursor-pointer"
               >
                 Close Preview
               </button>
             </div>
           </div>
         )}
-      </CustomModal>
+      </CustomDrawer>
 
       {/* Reset Defaults Confirmation Modal */}
       <CustomModal

@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSlider } from "@/components/ui/custom-slider";
 
 interface ProfilePanelProps {
@@ -1359,12 +1360,14 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         )}
       </div>
 
-      {/* Avatar & Photo Selection Modal */}
-      <CustomModal
+      {/* Avatar & Photo Selection Drawer */}
+      <CustomDrawer
         isOpen={isAvatarModalOpen}
         onClose={() => setIsAvatarModalOpen(false)}
         title="Update Profile Picture"
-        className="max-w-lg"
+        description="Customize your scholar photo or choose an academic avatar preset."
+        icon={Camera}
+        size="lg"
       >
         <div className="space-y-4">
           {/* Tabs: Presets vs Upload */}
@@ -1660,7 +1663,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             </div>
           )}
         </div>
-      </CustomModal>
+      </CustomDrawer>
     </div>
   );
 }

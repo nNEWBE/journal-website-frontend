@@ -1,6 +1,14 @@
 "use client";
 
 import { Award, UserCheck } from "lucide-react";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface ReviewerPerformance {
   name: string;
@@ -64,37 +72,35 @@ export function ReviewerWorkloadTable() {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500">
-              <th className="py-2.5 px-3">Reviewer</th>
-              <th className="py-2.5 px-3">Discipline</th>
-              <th className="py-2.5 px-3">Completed</th>
-              <th className="py-2.5 px-3">Avg Turnaround</th>
-              <th className="py-2.5 px-3 text-right">Rating</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {mockReviewers.map((r) => (
-              <tr key={r.name} className="hover:bg-slate-50/80 transition-colors">
-                <td className="py-3 px-3 font-bold text-slate-900 flex items-center gap-2">
-                  <UserCheck className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                  {r.name}
-                </td>
-                <td className="py-3 px-3 font-medium text-slate-600">{r.field}</td>
-                <td className="py-3 px-3 font-semibold text-slate-800">
-                  {r.completed} / {r.assigned}
-                </td>
-                <td className="py-3 px-3 font-mono text-slate-700">{r.avgDays}d</td>
-                <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
-                  {r.score}%
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Reviewer</TableHead>
+            <TableHead>Discipline</TableHead>
+            <TableHead>Completed</TableHead>
+            <TableHead>Avg Turnaround</TableHead>
+            <TableHead className="text-right">Rating</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {mockReviewers.map((r) => (
+            <TableRow key={r.name}>
+              <TableCell className="font-bold text-slate-900 flex items-center gap-2">
+                <UserCheck className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                {r.name}
+              </TableCell>
+              <TableCell className="font-medium text-slate-600">{r.field}</TableCell>
+              <TableCell className="font-semibold text-slate-800">
+                {r.completed} / {r.assigned}
+              </TableCell>
+              <TableCell className="font-mono text-slate-700">{r.avgDays}d</TableCell>
+              <TableCell className="text-right font-extrabold text-emerald-700">
+                {r.score}%
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

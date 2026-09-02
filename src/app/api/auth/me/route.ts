@@ -64,12 +64,12 @@ export async function GET(req: NextRequest) {
             const refreshOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${isProduction ? "; Secure" : ""}`;
             refreshCookies = [
               `access_token=${newToken}${opts}`,
-              `gb_access_token=${newToken}${opts}`,
+              `gb_access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`,
             ];
             if (newRefreshToken) {
               refreshCookies.push(
                 `refresh_token=${newRefreshToken}${refreshOpts}`,
-                `gb_refresh_token=${newRefreshToken}${refreshOpts}`
+                `gb_refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`
               );
             }
 

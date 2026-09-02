@@ -28,8 +28,17 @@ import {
 import { toast } from "sonner";
 import { adminApi, AuthResponseData } from "@/lib/api";
 import { CustomModal } from "@/components/ui/modal";
+import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 type UserItem = AuthResponseData["user"];
@@ -506,113 +515,113 @@ export function UserManagementPanel({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-[color:var(--color-gb-border)] bg-[#f9fafc]">
-                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Scholar</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Affiliation</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Role Privilege</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Status</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[color:var(--color-gb-border)] text-xs">
-                {filteredUsers.map((u) => {
-                  const isCurrent = currentUser?.id === u.id || currentUser?.email === u.email;
-                  const isUserActive = (u as any).enabled !== false;
-                  return (
-                    <tr key={u.id} className="hover:bg-[#f9fafc] transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
-                            {u.avatarUrl ? (
-                              <img src={u.avatarUrl} alt={u.fullName} className="h-full w-full object-cover" />
-                            ) : (
-                              u.fullName?.charAt(0) || "U"
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-[color:var(--color-gb-ink)] truncate flex items-center gap-1.5">
-                              {u.fullName}
-                              {isCurrent && (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800">You</span>
-                              )}
-                            </p>
-                            <p className="text-[11px] text-slate-400 truncate mt-0.5">{u.email}</p>
-                          </div>
+          <Table minWidth={700}>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Scholar</TableHead>
+                <TableHead>Affiliation</TableHead>
+                <TableHead>Role Privilege</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((u) => {
+                const isCurrent = currentUser?.id === u.id || currentUser?.email === u.email;
+                const isUserActive = (u as any).enabled !== false;
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt={u.fullName} className="h-full w-full object-cover" />
+                          ) : (
+                            u.fullName?.charAt(0) || "U"
+                          )}
                         </div>
-                      </td>
+                        <div className="min-w-0">
+                          <p className="font-bold text-[color:var(--color-gb-ink)] truncate flex items-center gap-1.5">
+                            {u.fullName}
+                            {isCurrent && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800">You</span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">{u.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
 
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-slate-700 truncate max-w-[200px]">{u.department || "Academic Faculty"}</p>
-                        <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{u.institution || "Gono Bishwabidyalay"}</p>
-                      </td>
+                    <TableCell>
+                      <p className="font-medium text-slate-700 truncate max-w-[200px]">{u.department || "Academic Faculty"}</p>
+                      <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{u.institution || "Gono Bishwabidyalay"}</p>
+                    </TableCell>
 
-                      <td className="px-4 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border",
-                            u.role === "super-admin"
-                              ? "bg-purple-50 text-purple-700 border-purple-200"
-                              : u.role === "admin"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : u.role === "editor"
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : u.role === "reviewer"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-slate-50 text-slate-700 border-slate-200"
-                          )}
-                        >
-                          {u.role ? u.role.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Author"}
-                        </span>
-                      </td>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border",
+                          u.role === "super-admin"
+                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                            : u.role === "admin"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : u.role === "editor"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : u.role === "reviewer"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-50 text-slate-700 border-slate-200"
+                        )}
+                      >
+                        {u.role ? u.role.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Author"}
+                      </span>
+                    </TableCell>
 
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleStatusToggle(u.id, isUserActive)}
-                          disabled={isCurrent}
-                          className={cn(
-                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                            isUserActive
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                              : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                          )}
-                        >
-                          {isUserActive ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                          {isUserActive ? "Active" : "Disabled"}
-                        </button>
-                      </td>
+                    <TableCell>
+                      <button
+                        onClick={() => handleStatusToggle(u.id, isUserActive)}
+                        disabled={isCurrent}
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                          isUserActive
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                        )}
+                      >
+                        {isUserActive ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        {isUserActive ? "Active" : "Disabled"}
+                      </button>
+                    </TableCell>
 
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={(e) => handleOpenMenu(e, u)}
-                          className={cn(
-                            "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
-                            actionMenuUserId === u.id && "bg-slate-100 text-slate-700 ring-2 ring-slate-200"
-                          )}
-                          title="User Actions"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    <TableCell className="text-right">
+                      <button
+                        onClick={(e) => handleOpenMenu(e, u)}
+                        className={cn(
+                          "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
+                          actionMenuUserId === u.id && "bg-slate-100 text-slate-700 ring-2 ring-slate-200"
+                        )}
+                        title="User Actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </div>
 
-      {/* Add User Modal */}
-      <CustomModal
+      {/* Add User Drawer */}
+      <CustomDrawer
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="Add / Invite New Academic User"
         description="Register a new scholar or staff member to the journal portal."
+        icon={UserPlus}
+        size="lg"
       >
-        <form onSubmit={handleCreateUser} className="space-y-3.5 text-xs">
+        <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
             <input
@@ -620,7 +629,7 @@ export function UserManagementPanel({
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               placeholder="e.g. Dr. Ayesha Siddique"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
@@ -632,11 +641,11 @@ export function UserManagementPanel({
               value={formEmail}
               onChange={(e) => setFormEmail(e.target.value)}
               placeholder="e.g. ayesha@gonobishwabidyalay.edu.bd"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Role Privilege</label>
               <CustomSelect
@@ -660,19 +669,19 @@ export function UserManagementPanel({
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 placeholder="e.g. Associate Professor"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Department</label>
               <input
                 value={formDept}
                 onChange={(e) => setFormDept(e.target.value)}
                 placeholder="Department of Pharmacy"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
               />
             </div>
 
@@ -682,7 +691,7 @@ export function UserManagementPanel({
                 value={formInst}
                 onChange={(e) => setFormInst(e.target.value)}
                 placeholder="Gono Bishwabidyalay"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -694,37 +703,39 @@ export function UserManagementPanel({
               value={formPassword}
               onChange={(e) => setFormPassword(e.target.value)}
               placeholder="Leave blank to auto-generate temporary password"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2.5 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
             >
-              {isSubmitting ? "Creating..." : "Create User"}
+              {isSubmitting ? "Creating User..." : "Create User"}
             </button>
           </div>
         </form>
-      </CustomModal>
+      </CustomDrawer>
 
-      {/* Edit User Modal */}
-      <CustomModal
+      {/* Edit User Drawer */}
+      <CustomDrawer
         isOpen={!!userToEdit}
         onClose={() => setUserToEdit(null)}
         title="Edit Scholar / User Profile"
         description={`Update academic credentials, affiliation, and privilege role for ${userToEdit?.fullName}.`}
+        icon={Pencil}
+        size="lg"
       >
-        <form onSubmit={handleUpdateUser} className="space-y-3.5 text-xs">
+        <form onSubmit={handleUpdateUser} className="space-y-4 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
             <input
@@ -732,7 +743,7 @@ export function UserManagementPanel({
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder="e.g. Dr. Ayesha Siddique"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
             />
           </div>
 
@@ -741,12 +752,12 @@ export function UserManagementPanel({
             <input
               disabled
               value={userToEdit?.email || ""}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 font-medium cursor-not-allowed"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500 font-medium cursor-not-allowed"
             />
             <span className="text-[10px] text-slate-400 mt-0.5 block">Email address is permanently bound to this user record.</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Role Privilege</label>
               <CustomSelect
@@ -770,19 +781,19 @@ export function UserManagementPanel({
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="e.g. Associate Professor"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Department</label>
               <input
                 value={editDept}
                 onChange={(e) => setEditDept(e.target.value)}
                 placeholder="Department of Pharmacy"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
               />
             </div>
 
@@ -792,19 +803,19 @@ export function UserManagementPanel({
                 value={editInst}
                 onChange={(e) => setEditInst(e.target.value)}
                 placeholder="Gono Bishwabidyalay"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block font-bold text-slate-700 mb-1">ORCID iD</label>
               <input
                 value={editOrcid}
                 onChange={(e) => setEditOrcid(e.target.value)}
                 placeholder="0000-0002-1825-0097"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
               />
             </div>
 
@@ -815,7 +826,7 @@ export function UserManagementPanel({
                 value={editPassword}
                 onChange={(e) => setEditPassword(e.target.value)}
                 placeholder="Leave blank to keep unchanged"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
               />
             </div>
           </div>
@@ -833,24 +844,24 @@ export function UserManagementPanel({
             </label>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={() => setUserToEdit(null)}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2.5 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isUpdating}
-              className="px-4 py-2 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isUpdating ? "Saving Changes..." : "Save Changes"}
             </button>
           </div>
         </form>
-      </CustomModal>
+      </CustomDrawer>
 
       {/* Delete Confirmation Modal */}
       <CustomModal

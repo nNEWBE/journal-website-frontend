@@ -96,13 +96,7 @@ export async function POST(req: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24,
     });
-    response.cookies.set("gb_access_token", newAccessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
+    response.cookies.delete("gb_access_token");
 
     if (newRefreshToken) {
       response.cookies.set("refresh_token", newRefreshToken, {
@@ -112,13 +106,7 @@ export async function POST(req: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
       });
-      response.cookies.set("gb_refresh_token", newRefreshToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
+      response.cookies.delete("gb_refresh_token");
     }
 
     return response;

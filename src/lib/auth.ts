@@ -1,5 +1,5 @@
 import { type Role } from "./data";
-import { authApi, setTokens, clearTokens } from "./api";
+import { authApi } from "./api";
 
 export interface User {
   id?: string | number;
@@ -31,26 +31,53 @@ export interface User {
 
 export const SESSION_KEY = "gb_journal_user_session";
 
-// Automatically wipe all legacy credentials, sessions, and demo data from localStorage
-if (typeof window !== "undefined") {
-  try {
-    localStorage.removeItem("gb_journal_submissions");
-    localStorage.removeItem("gb_journal_decision_log");
-    localStorage.removeItem("gb_journal_access_token");
-    localStorage.removeItem("gb_journal_refresh_token");
-    localStorage.removeItem("gb_journal_user_session");
-  } catch (e) {
-    // Ignore
-  }
-}
-
-// In-memory cache for instant client access without touching localStorage
+// In-memory cache for instant client access
 let inMemoryUser: User | null = null;
 
-function parseCookie(name: string): string | null {
+export function parseCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : null;
+}
+
+export function setCookie(name: string, value: string, days = 7): void {
+  if (typeof document === "undefined") return;
+  const isProduction = window.location.protocol === "https:";
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${
+    60 * 60 * 24 * days
+  }; SameSite=Lax${isProduction ? "; Secure" : ""}`;
+}
+
+export function deleteCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+}
+
+// Migrate client preferences from cookies to localStorage and purge legacy duplicate cookies
+if (typeof window !== "undefined") {
+  try {
+    // Migrate sidebar_state / gb_sidebar_collapsed to localStorage
+    const sidebarCookie = parseCookie("sidebar_state") || parseCookie("gb_sidebar_collapsed");
+    if (sidebarCookie && !localStorage.getItem("sidebar_state")) {
+      localStorage.setItem("sidebar_state", sidebarCookie);
+      localStorage.setItem("gb_sidebar_collapsed", sidebarCookie);
+    }
+    deleteCookie("sidebar_state");
+    deleteCookie("gb_sidebar_collapsed");
+
+    // Migrate pha_lang to localStorage
+    const langCookie = parseCookie("pha_lang");
+    if (langCookie && !localStorage.getItem("pha_lang")) {
+      localStorage.setItem("pha_lang", langCookie);
+    }
+    deleteCookie("pha_lang");
+
+    // Purge redundant prefixed duplicate token cookies
+    deleteCookie("gb_access_token");
+    deleteCookie("gb_refresh_token");
+  } catch (e) {
+    // Ignore
+  }
 }
 
 function parseJwt(token: string) {
@@ -84,7 +111,7 @@ export function getSession(): User | null {
   }
 
   try {
-    const token = parseCookie("access_token") || parseCookie("gb_access_token");
+    const token = parseCookie("access_token");
     if (token) {
       const jwt = parseJwt(token);
       if (jwt && jwt.sub) {
@@ -116,13 +143,7 @@ export function setSession(user: User): void {
   inMemoryUser = user;
   if (typeof document === "undefined") return;
   try {
-    // Store non-sensitive user metadata in a standard cookie (never in localStorage)
-    const isProduction = window.location.protocol === "https:";
-    document.cookie = `${SESSION_KEY}=${encodeURIComponent(
-      JSON.stringify(user)
-    )}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${
-      isProduction ? "; Secure" : ""
-    }`;
+    setCookie(SESSION_KEY, JSON.stringify(user), 7);
   } catch (e) {
     console.error("Failed to store auth session cookie", e);
   }
@@ -132,16 +153,14 @@ export function clearSession(): void {
   inMemoryUser = null;
   if (typeof window !== "undefined") {
     try {
-      localStorage.removeItem("gb_journal_submissions");
-      localStorage.removeItem("gb_journal_decision_log");
-      localStorage.removeItem("gb_journal_access_token");
-      localStorage.removeItem("gb_journal_refresh_token");
-      localStorage.removeItem("gb_journal_user_session");
-      document.cookie = `${SESSION_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      document.cookie = `gb_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      document.cookie = `gb_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      deleteCookie(SESSION_KEY);
+      deleteCookie("access_token");
+      deleteCookie("refresh_token");
+      deleteCookie("gb_access_token");
+      deleteCookie("gb_refresh_token");
+      deleteCookie("sidebar_state");
+      deleteCookie("gb_sidebar_collapsed");
+      deleteCookie("pha_lang");
       authApi.logout().catch(() => {});
     } catch (e) {
       console.error("Failed to clear auth session", e);
@@ -224,5 +243,3 @@ export async function registerWithApi(payload: {
   setSession(user);
   return user;
 }
-
-

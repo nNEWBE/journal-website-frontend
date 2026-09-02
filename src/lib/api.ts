@@ -1,40 +1,26 @@
 import { type Role, type Article, type Submission, type BoardMember } from "./data";
-import { handleSessionExpired } from "./auth";
+import { handleSessionExpired, parseCookie, setCookie, deleteCookie } from "./auth";
 import { getBackendUrl } from "./backend-url";
 
 export const API_BASE_URL = getBackendUrl();
 
-// Purge any legacy localStorage tokens and mock data for security
 export function clearTokens(): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem("gb_journal_submissions");
-    localStorage.removeItem("gb_journal_decision_log");
-    localStorage.removeItem("gb_journal_access_token");
-    localStorage.removeItem("gb_journal_refresh_token");
-    localStorage.removeItem("gb_journal_user_session");
-  } catch (e) {
-    // Ignore
-  }
-}
-
-if (typeof window !== "undefined") {
-  try {
-    localStorage.removeItem("gb_journal_submissions");
-    localStorage.removeItem("gb_journal_decision_log");
-  } catch (e) {
-    // Ignore
-  }
+  deleteCookie("access_token");
+  deleteCookie("refresh_token");
+  deleteCookie("gb_access_token");
+  deleteCookie("gb_refresh_token");
 }
 
 export function setTokens(access: string, refresh?: string): void {
-  // Legacy stub - tokens are now strictly managed via secure HttpOnly cookies
-  clearTokens();
+  if (!access) return;
+  setCookie("access_token", access, 1);
+  if (refresh) {
+    setCookie("refresh_token", refresh, 7);
+  }
 }
 
 export function getAccessToken(): string | null {
-  // Tokens are now stored exclusively in secure HttpOnly cookies
-  return null;
+  return parseCookie("access_token");
 }
 
 let isRefreshing = false;

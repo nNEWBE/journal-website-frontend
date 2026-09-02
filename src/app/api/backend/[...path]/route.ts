@@ -78,13 +78,13 @@ async function tryRefreshToken(req: NextRequest): Promise<{
     const refreshOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${isProduction ? "; Secure" : ""}`;
     const setCookieHeaders = [
       `access_token=${newToken}${cookieOpts}`,
-      `gb_access_token=${newToken}${cookieOpts}`,
+      `gb_access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`,
     ];
 
     if (newRefreshToken) {
       setCookieHeaders.push(
         `refresh_token=${newRefreshToken}${refreshOpts}`,
-        `gb_refresh_token=${newRefreshToken}${refreshOpts}`
+        `gb_refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`
       );
     }
 
@@ -122,9 +122,7 @@ async function makeBackendRequest(
 
 async function handleProxy(req: NextRequest, endpoint: string, method: string) {
   try {
-    let accessToken =
-      req.cookies.get("access_token")?.value ||
-      req.cookies.get("gb_access_token")?.value;
+    let accessToken = req.cookies.get("access_token")?.value;
 
     const url = new URL(req.url);
     const targetUrl = `${BACKEND_URL}/api/v1/${endpoint}${url.search}`;
