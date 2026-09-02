@@ -97,7 +97,7 @@ export const defaultMainNav: NavItem[] = [
     label: "About & Governance",
     href: "/about",
     enabled: true,
-    dropdownHeader: "Learn about our institution, leadership & ethics",
+    dropdownHeader: "About & Governance",
     footerHref: "/about",
     footerLabel: "View full journal overview",
     dropdown: [
@@ -140,7 +140,7 @@ export const defaultMainNav: NavItem[] = [
     label: "Issues & Articles",
     href: "/issues",
     enabled: true,
-    dropdownHeader: "Browse published volumes, editions & indexed papers",
+    dropdownHeader: "Issues & Archive",
     footerHref: "/articles",
     footerLabel: "Search all articles",
     dropdown: [
@@ -167,7 +167,7 @@ export const defaultMainNav: NavItem[] = [
     label: "For Authors",
     href: "/authors",
     enabled: true,
-    dropdownHeader: "Guidelines & submission portal",
+    dropdownHeader: "Author Resources",
     footerHref: "/dashboard/submissions/new",
     footerLabel: "Submit your manuscript",
     dropdown: [

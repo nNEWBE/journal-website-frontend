@@ -43,27 +43,23 @@ export function SiteHeaderNav() {
               href={item.href}
               target={item.openInNewTab ? "_blank" : undefined}
               rel={item.openInNewTab ? "noopener noreferrer" : undefined}
-              className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-bold tracking-tight transition-colors cursor-pointer ${
-                isActive
-                  ? "text-[color:var(--bangla-red)]"
-                  : isRouteActive
+              className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-bold tracking-tight transition-colors cursor-pointer ${isActive
+                ? "text-[color:var(--bangla-red)]"
+                : isRouteActive
                   ? "text-[color:var(--color-gb-blue)] font-extrabold"
                   : "text-slate-800 hover:text-[color:var(--color-gb-blue)]"
-              }`}
+                }`}
             >
               <span className="relative py-0.5">
                 <span>{item.label}</span>
-                {/* Wavy active underline animation preserved */}
                 <span
-                  className={`absolute inset-x-0 -bottom-1 h-[6px] transition-all duration-300 pointer-events-none animate-wave-flow ${
-                    isActive || isRouteActive
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-[2px]"
-                  }`}
+                  className={`absolute inset-x-0 -bottom-1 h-[6px] transition-all duration-300 pointer-events-none animate-wave-flow ${isActive || isRouteActive
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-[2px]"
+                    }`}
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 6' fill='none' stroke='${
-                      isActive ? "%23e11d48" : "%231f2f82"
-                    }' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 3Q5 0 10 3T20 3'/%3E%3C/svg%3E")`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 6' fill='none' stroke='${isActive ? "%23e11d48" : "%231f2f82"
+                      }' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 3Q5 0 10 3T20 3'/%3E%3C/svg%3E")`,
                     backgroundRepeat: "repeat-x",
                     backgroundSize: "20px 6px",
                   }}
@@ -72,41 +68,35 @@ export function SiteHeaderNav() {
 
               {hasDropdown && (
                 <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform duration-250 ${
-                    isActive
-                      ? "rotate-180 text-[color:var(--bangla-red)] opacity-100"
-                      : isRouteActive
+                  className={`h-3.5 w-3.5 transition-transform duration-250 ${isActive
+                    ? "rotate-180 text-[color:var(--bangla-red)] opacity-100"
+                    : isRouteActive
                       ? "text-[color:var(--color-gb-blue)] opacity-90"
                       : "text-slate-400 opacity-75"
-                  }`}
+                    }`}
                 />
               )}
             </Link>
 
             {hasDropdown && (
               <div
-                className={`absolute left-0 top-full pt-2 z-50 min-w-[340px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  isActive
-                    ? "opacity-100 visible translate-y-0 scale-100 pointer-events-auto"
-                    : "opacity-0 invisible translate-y-2 scale-[0.98] pointer-events-none"
-                }`}
+                className={`absolute left-0 top-full pt-2 z-50 min-w-[340px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isActive
+                  ? "opacity-100 visible translate-y-0 scale-100 pointer-events-auto"
+                  : "opacity-0 invisible translate-y-2 scale-[0.98] pointer-events-none"
+                  }`}
               >
-                {/* Dropdown Container: Zero-radius, crisp academic border & top accent line */}
                 <div className="bg-white border border-slate-300/90 shadow-[0_16px_40px_rgba(11,18,61,0.14)] overflow-hidden">
-                  {/* Top Navy Accent Bar */}
                   <div className="h-[2.5px] w-full bg-[#0b1b3d]" />
 
-                  {/* Header / Category Kicker */}
-                  <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+                  <div className="px-3.5 py-2 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#1e40af] truncate max-w-[230px]">
                       {item.dropdownHeader || item.label}
                     </p>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                    <span className="text-[8.5px] font-bold uppercase tracking-widest text-slate-400 font-mono shrink-0">
                       GB Journal
                     </span>
                   </div>
 
-                  {/* Sub-items List with staggered slide animation */}
                   <div key={activeTab} className="p-1.5 flex flex-col gap-1">
                     {visibleDropdown.map((sub, idxSub) => {
                       const SubIcon = getNavIcon(sub.iconName);
@@ -124,30 +114,26 @@ export function SiteHeaderNav() {
                               : "none",
                             animationDelay: isActive ? `${idxSub * 40}ms` : "0ms",
                           }}
-                          className={`group/sub flex items-start gap-3 p-3 transition-all duration-150 cursor-pointer border-l-3 ${
-                            isSubActive
-                              ? "bg-blue-50/70 border-[#1e40af]"
-                              : "border-transparent hover:bg-slate-50/90 hover:border-slate-400"
-                          }`}
-                        >
-                          {/* Square Icon Container */}
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center border transition-all duration-150 mt-0.5 ${
-                              isSubActive
-                                ? "bg-[#0b1b3d] text-white border-[#0b1b3d] shadow-2xs"
-                                : "bg-slate-50 border-slate-200 text-slate-600 group-hover/sub:bg-[#0b1b3d] group-hover/sub:text-white group-hover/sub:border-[#0b1b3d]"
+                          className={`group/sub flex items-start gap-3 p-3 transition-all duration-150 cursor-pointer border-l-3 ${isSubActive
+                            ? "bg-blue-50/70 border-[#1e40af]"
+                            : "border-transparent hover:bg-slate-50/90 hover:border-slate-400"
                             }`}
+                        >
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center border transition-all duration-150 mt-0.5 ${isSubActive
+                              ? "bg-[#0b1b3d] text-white border-[#0b1b3d] shadow-2xs"
+                              : "bg-[#0b1b3d] border-[#0b1b3d] text-white group-hover/sub:bg-[#1e40af] group-hover/sub:border-[#1e40af]"
+                              }`}
                           >
-                            <SubIcon className="h-4 w-4" />
+                            <SubIcon className="h-4 w-4 text-white" />
                           </div>
 
                           <div className="min-w-0 flex-1">
                             <p
-                              className={`text-[13px] font-bold tracking-tight transition-colors duration-150 ${
-                                isSubActive
-                                  ? "text-[#0b1b3d]"
-                                  : "text-slate-900 group-hover/sub:text-[#1e40af]"
-                              }`}
+                              className={`text-[13px] font-bold tracking-tight transition-colors duration-150 ${isSubActive
+                                ? "text-[#0b1b3d]"
+                                : "text-slate-900 group-hover/sub:text-[#1e40af]"
+                                }`}
                             >
                               {sub.label}
                             </p>
@@ -162,7 +148,6 @@ export function SiteHeaderNav() {
                     })}
                   </div>
 
-                  {/* Dropdown Footer Action Link */}
                   {item.footerHref && (
                     <div className="border-t border-slate-200/80 bg-slate-50/80 px-4 py-2.5 flex items-center justify-between">
                       <Link

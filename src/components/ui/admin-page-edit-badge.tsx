@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Edit3, Sparkles } from "lucide-react";
+import { Edit3 } from "lucide-react";
 import { getSession } from "@/lib/auth";
 
 interface AdminPageEditBadgeProps {
@@ -25,12 +25,11 @@ export function AdminPageEditBadge({ pageKey }: AdminPageEditBadgeProps) {
     <div className="fixed bottom-6 right-6 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <Link
         href={`/dashboard/admin`}
-        className="group flex items-center gap-2 rounded-full bg-[#070e24]/90 hover:bg-[#070e24] px-4 py-2.5 text-xs font-bold text-white shadow-2xl border border-amber-400/40 backdrop-blur-md transition-all hover:scale-105 hover:shadow-amber-500/20"
+        className="group flex items-center gap-2 rounded-full bg-[#070e24]/95 hover:bg-[#070e24] px-4 py-2.5 text-xs font-bold text-white shadow-2xl border border-white/25 backdrop-blur-md transition-all hover:scale-105 hover:shadow-black/40 cursor-pointer"
         title="Open CMS to edit this page content"
       >
-        <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-        <Edit3 className="h-3.5 w-3.5 text-amber-300 group-hover:rotate-12 transition-transform" />
-        <span>Edit Page (CMS)</span>
+        <Edit3 className="h-3.5 w-3.5 text-white group-hover:rotate-12 transition-transform" />
+        <span className="text-white">Edit Page (CMS)</span>
       </Link>
     </div>
   );

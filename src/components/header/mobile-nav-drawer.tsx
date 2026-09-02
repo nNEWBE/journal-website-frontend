@@ -98,7 +98,7 @@ export function MobileNavDrawer({
                         <SubIcon
                           className={`h-3.5 w-3.5 ${
                             isSubActive
-                              ? "text-amber-300"
+                              ? "text-white"
                               : "text-[color:var(--color-gb-blue)]"
                           }`}
                         />
