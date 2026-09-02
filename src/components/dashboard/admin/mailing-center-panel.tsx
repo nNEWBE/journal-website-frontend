@@ -28,12 +28,18 @@ const AUDIENCE_OPTIONS = [
   { id: "INDIVIDUAL", label: "Specific Recipient Email", icon: Mail, desc: "Send to one or multiple specific email addresses" },
 ];
 
+let mailTemplateCache: { data: MailTemplateItem[]; timestamp: number } | null = null;
+
 export function MailingCenterPanel() {
-  const [templates, setTemplates] = useState<MailTemplateItem[]>([]);
+  const [templates, setTemplates] = useState<MailTemplateItem[]>(() => mailTemplateCache?.data || []);
   const [selectedAudience, setSelectedAudience] = useState("ALL_USERS");
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [subject, setSubject] = useState("");
-  const [messageBody, setMessageBody] = useState("");
+  const [subject, setSubject] = useState(
+    () => mailTemplateCache?.data?.[0]?.subject || "Call for Papers: Gono Bishwabidyalay Journal of Science & Technology"
+  );
+  const [messageBody, setMessageBody] = useState(
+    () => mailTemplateCache?.data?.[0]?.body || "Dear Scholars,\n\nWe are pleased to invite original research papers and review articles for our upcoming volume. Authors are encouraged to submit manuscripts covering Multidisciplinary Sciences, Health & Pharmacy, Engineering, and Social Sciences.\n\nBest regards,\nEditorial Board\nGono Bishwabidyalay Journal"
+  );
   const [isSending, setIsSending] = useState(false);
   const [outboxLogs, setOutboxLogs] = useState<Array<{ id: string; subject: string; audience: string; time: string; count: number }>>([
     {
@@ -55,18 +61,21 @@ export function MailingCenterPanel() {
   // Load templates
   useEffect(() => {
     async function loadTemplates() {
+      if (mailTemplateCache?.data && Date.now() - mailTemplateCache.timestamp < 60000) {
+        return;
+      }
       try {
         const data = await adminApi.getMailTemplates();
         if (Array.isArray(data) && data.length > 0) {
           setTemplates(data);
-          // Set default template
-          setSubject(data[0].subject);
-          setMessageBody(data[0].body);
+          mailTemplateCache = { data, timestamp: Date.now() };
+          if (!subject) {
+            setSubject(data[0].subject);
+            setMessageBody(data[0].body);
+          }
         }
       } catch {
         // Fallback default templates
-        setSubject("Call for Papers: Gono Bishwabidyalay Journal of Science & Technology");
-        setMessageBody("Dear Scholars,\n\nWe are pleased to invite original research papers and review articles for our upcoming volume. Authors are encouraged to submit manuscripts covering Multidisciplinary Sciences, Health & Pharmacy, Engineering, and Social Sciences.\n\nBest regards,\nEditorial Board\nGono Bishwabidyalay Journal");
       }
     }
     loadTemplates();

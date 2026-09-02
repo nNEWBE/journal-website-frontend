@@ -52,13 +52,17 @@ const ROLE_OPTIONS = [
   { value: "super-admin", label: "Super Admins" },
 ];
 
+// Module-level cache for instant tab switching without loading delays
+let userCache: { data: UserItem[]; timestamp: number } | null = null;
+
 export function UserManagementPanel({
   currentUser,
 }: {
   currentUser?: UserItem | null;
 }) {
-  const [users, setUsers] = useState<UserItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<UserItem[]>(() => userCache?.data || []);
+  const [loading, setLoading] = useState<boolean>(!userCache?.data || userCache.data.length === 0);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -133,20 +137,38 @@ export function UserManagementPanel({
   const [userToDelete, setUserToDelete] = useState<UserItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch users
-  const loadUsers = async () => {
-    try {
+  // Fetch users with caching and non-blocking background revalidation
+  const loadUsers = async (force = false) => {
+    const hasCache = userCache?.data && userCache.data.length > 0;
+    if (hasCache && !force) {
+      setUsers(userCache!.data);
+      setLoading(false);
+      // Revalidate in background only if cache is older than 60s
+      if (Date.now() - userCache!.timestamp < 60000) {
+        return;
+      }
+      setIsRefreshing(true);
+    } else if (!hasCache) {
       setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
+    try {
       const data = await adminApi.listUsers();
       if (Array.isArray(data)) {
         setUsers(data);
+        userCache = { data, timestamp: Date.now() };
       }
     } catch (err: any) {
-      toast.error("Failed to load user directory", {
-        description: err.message,
-      });
+      if (!hasCache) {
+        toast.error("Failed to load user directory", {
+          description: err.message,
+        });
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -188,9 +210,11 @@ export function UserManagementPanel({
     try {
       toast.loading("Updating role...", { id: `role-${userId}` });
       const updated = await adminApi.updateUserRole(userId, newRole);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: updated.role } : u))
-      );
+      setUsers((prev) => {
+        const next = prev.map((u) => (u.id === userId ? { ...u, role: updated.role } : u));
+        userCache = { data: next, timestamp: Date.now() };
+        return next;
+      });
       toast.success("User role updated successfully", { id: `role-${userId}` });
     } catch (err: any) {
       toast.error("Failed to update role", {
@@ -208,9 +232,11 @@ export function UserManagementPanel({
         id: `status-${userId}`,
       });
       await adminApi.updateUserStatus(userId, nextEnabled);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, enabled: nextEnabled } as any : u))
-      );
+      setUsers((prev) => {
+        const next = prev.map((u) => (u.id === userId ? ({ ...u, enabled: nextEnabled } as any) : u));
+        userCache = { data: next, timestamp: Date.now() };
+        return next;
+      });
       toast.success(`Account ${nextEnabled ? "activated" : "deactivated"}`, {
         id: `status-${userId}`,
       });
@@ -251,7 +277,7 @@ export function UserManagementPanel({
       setFormName("");
       setFormEmail("");
       setFormPassword("");
-      loadUsers();
+      loadUsers(true);
     } catch (err: any) {
       toast.error("Failed to create user", {
         description: err.message,
@@ -297,9 +323,11 @@ export function UserManagementPanel({
         enabled: editEnabled,
       });
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userToEdit.id ? { ...u, ...updated } : u))
-      );
+      setUsers((prev) => {
+        const next = prev.map((u) => (u.id === userToEdit.id ? { ...u, ...updated } : u));
+        userCache = { data: next, timestamp: Date.now() };
+        return next;
+      });
 
       toast.success("Scholar profile updated successfully", {
         description: `Changes saved for ${editName.trim()}`,
@@ -320,7 +348,11 @@ export function UserManagementPanel({
     try {
       setIsDeleting(true);
       await adminApi.deleteUser(userToDelete.id);
-      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setUsers((prev) => {
+        const next = prev.filter((u) => u.id !== userToDelete.id);
+        userCache = { data: next, timestamp: Date.now() };
+        return next;
+      });
       toast.success("User account deleted successfully");
       setUserToDelete(null);
     } catch (err: any) {
@@ -341,6 +373,11 @@ export function UserManagementPanel({
             <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 font-sans">
               Administration
             </span>
+            {isRefreshing && (
+              <span className="text-[9px] font-semibold text-blue-600 animate-pulse">
+                Syncing latest directory...
+              </span>
+            )}
           </div>
           <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
             User Directory & Access Control
@@ -350,13 +387,25 @@ export function UserManagementPanel({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
-        >
-          <UserPlus className="h-4 w-4" />
-          Add / Invite User
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => loadUsers(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+            title="Refresh user directory"
+          >
+            <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
+            <span>Sync</span>
+          </button>
+
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+          >
+            <UserPlus className="h-4 w-4" />
+            Add / Invite User
+          </button>
+        </div>
       </div>
 
       {/* Role Stat Cards */}
@@ -500,7 +549,7 @@ export function UserManagementPanel({
       </div>
 
       {/* Users Table */}
-      <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm">
         {loading ? (
           <AcademicDataLoader
             title="Loading Scholar Directory"

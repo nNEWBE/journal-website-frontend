@@ -92,6 +92,11 @@ html {
   scrollbar-gutter: stable;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 html.lenis,
 html.lenis body {
   height: auto;

@@ -9,16 +9,66 @@ export interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
 }
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className, containerClassName, minWidth, style, ...props }, ref) => (
-    <div className={cn("relative w-full overflow-x-auto scrollbar-none", containerClassName)}>
-      <table
-        ref={ref}
-        style={{ minWidth, ...style }}
-        className={cn("w-full border-collapse text-left text-xs", className)}
-        {...props}
-      />
-    </div>
-  )
+  ({ className, containerClassName, minWidth, style, ...props }, ref) => {
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const hasHorizontalOverflow = container.scrollWidth > container.clientWidth;
+
+      // If user holds Shift key or uses a trackpad with horizontal delta:
+      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        if (hasHorizontalOverflow) {
+          const delta = e.shiftKey ? e.deltaY : e.deltaX;
+          container.scrollLeft += delta;
+        }
+      } else if (Math.abs(e.deltaY) > 0) {
+        // Vertical wheel event over table:
+        // Find closest scrollable ancestor (e.g. modal/drawer) or scroll window
+        let parent: HTMLElement | null = container.parentElement;
+        let scrollTarget: HTMLElement | null = null;
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          const style = window.getComputedStyle(parent);
+          if (
+            (style.overflowY === "auto" || style.overflowY === "scroll") &&
+            parent.scrollHeight > parent.clientHeight
+          ) {
+            scrollTarget = parent;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+
+        if (scrollTarget) {
+          scrollTarget.scrollBy({ top: e.deltaY, left: 0, behavior: "auto" });
+        } else {
+          window.scrollBy({ top: e.deltaY, left: 0, behavior: "auto" });
+        }
+      }
+    };
+
+    return (
+      <div
+        ref={containerRef}
+        onWheel={handleWheel}
+        className={cn("relative w-full overflow-x-auto scrollbar-none", containerClassName)}
+        style={{
+          overscrollBehaviorX: "contain",
+          overscrollBehaviorY: "auto",
+          touchAction: "pan-y",
+        }}
+      >
+        <table
+          ref={ref}
+          style={{ minWidth, ...style }}
+          className={cn("w-full border-collapse text-left text-xs", className)}
+          {...props}
+        />
+      </div>
+    );
+  }
 );
 Table.displayName = "Table";
 

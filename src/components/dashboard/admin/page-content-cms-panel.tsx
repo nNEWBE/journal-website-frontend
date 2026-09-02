@@ -75,10 +75,13 @@ const PAGE_TABS = [
   },
 ];
 
+const cmsCache: Record<string, { data: PageContentDTO[]; timestamp: number }> = {};
+
 export function PageContentCMSPanel() {
   const [activeTab, setActiveTab] = useState<string>("home");
-  const [sections, setSections] = useState<PageContentDTO[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [sections, setSections] = useState<PageContentDTO[]>(() => cmsCache["home"]?.data || []);
+  const [loading, setLoading] = useState<boolean>(!cmsCache["home"]?.data || cmsCache["home"].data.length === 0);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Modal states
@@ -105,21 +108,39 @@ export function PageContentCMSPanel() {
   const [formPublished, setFormPublished] = useState<boolean>(true);
 
   // Fetch sections for the current page
-  const fetchSections = async (pageKey: string) => {
-    try {
+  const fetchSections = async (pageKey: string, force = false) => {
+    const cached = cmsCache[pageKey];
+    if (cached?.data && !force) {
+      setSections(cached.data);
+      setLoading(false);
+      if (Date.now() - cached.timestamp < 60000) {
+        return;
+      }
+      setIsRefreshing(true);
+    } else if (!cached?.data) {
       setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
+    try {
       const data = await contentApi.getAdminContent(pageKey);
       setSections(data || []);
+      cmsCache[pageKey] = { data: data || [], timestamp: Date.now() };
     } catch (err: any) {
       console.warn("Failed to fetch admin content, fetching public published fallback:", err.message);
       try {
         const fallback = await contentApi.getPublished(pageKey);
         setSections(fallback || []);
+        cmsCache[pageKey] = { data: fallback || [], timestamp: Date.now() };
       } catch {
-        toast.error("Failed to load page content from server.");
+        if (!cached?.data) {
+          toast.error("Failed to load page content from server.");
+        }
       }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 

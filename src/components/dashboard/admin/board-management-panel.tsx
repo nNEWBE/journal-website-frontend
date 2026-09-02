@@ -41,9 +41,12 @@ const BOARD_ROLES = [
   "Managing Editor",
 ];
 
+let boardCache: { data: BoardMember[]; timestamp: number } | null = null;
+
 export function BoardManagementPanel() {
-  const [members, setMembers] = useState<BoardMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState<BoardMember[]>(() => boardCache?.data || []);
+  const [loading, setLoading] = useState<boolean>(!boardCache?.data || boardCache.data.length === 0);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
 
@@ -91,17 +94,34 @@ export function BoardManagementPanel() {
     }
   };
 
-  const loadMembers = async () => {
-    try {
+  const loadMembers = async (force = false) => {
+    const hasCache = boardCache?.data && boardCache.data.length > 0;
+    if (hasCache && !force) {
+      setMembers(boardCache!.data);
+      setLoading(false);
+      if (Date.now() - boardCache!.timestamp < 60000) {
+        return;
+      }
+      setIsRefreshing(true);
+    } else if (!hasCache) {
       setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
+    try {
       const data = await boardApi.getAll();
       if (Array.isArray(data)) {
         setMembers(data);
+        boardCache = { data, timestamp: Date.now() };
       }
     } catch (err: any) {
-      toast.error("Failed to load editorial board", { description: err.message });
+      if (!hasCache) {
+        toast.error("Failed to load editorial board", { description: err.message });
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 

@@ -20,9 +20,12 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 
+let issueCache: { data: IssueData[]; timestamp: number } | null = null;
+
 export function IssueManagementPanel() {
-  const [issues, setIssues] = useState<IssueData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [issues, setIssues] = useState<IssueData[]>(() => issueCache?.data || []);
+  const [loading, setLoading] = useState<boolean>(!issueCache?.data || issueCache.data.length === 0);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Create issue modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,17 +37,34 @@ export function IssueManagementPanel() {
   const [description, setDescription] = useState("Original research on drug synthesis, pharmaceutical biotechnology, and clinical drug delivery systems.");
   const [coverUrl, setCoverUrl] = useState("");
 
-  const loadIssues = async () => {
-    try {
+  const loadIssues = async (force = false) => {
+    const hasCache = issueCache?.data && issueCache.data.length > 0;
+    if (hasCache && !force) {
+      setIssues(issueCache!.data);
+      setLoading(false);
+      if (Date.now() - issueCache!.timestamp < 60000) {
+        return;
+      }
+      setIsRefreshing(true);
+    } else if (!hasCache) {
       setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
+    try {
       const data = await issuesApi.getAll();
       if (Array.isArray(data)) {
         setIssues(data);
+        issueCache = { data, timestamp: Date.now() };
       }
     } catch (err: any) {
-      toast.error("Failed to load issues", { description: err.message });
+      if (!hasCache) {
+        toast.error("Failed to load issues", { description: err.message });
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -56,12 +76,14 @@ export function IssueManagementPanel() {
     try {
       toast.loading("Setting current active issue...", { id: `current-${issueId}` });
       await adminApi.setCurrentIssue(issueId);
-      setIssues((prev) =>
-        prev.map((i) => ({
+      setIssues((prev) => {
+        const next = prev.map((i) => ({
           ...i,
           isCurrent: i.id === issueId || String(i.id) === String(issueId),
-        }))
-      );
+        }));
+        issueCache = { data: next, timestamp: Date.now() };
+        return next;
+      });
       toast.success("Active issue updated successfully", { id: `current-${issueId}` });
     } catch (err: any) {
       toast.error("Failed to update active issue", {
@@ -87,7 +109,7 @@ export function IssueManagementPanel() {
 
       toast.success("New issue created successfully!");
       setIsModalOpen(false);
-      loadIssues();
+      loadIssues(true);
     } catch (err: any) {
       toast.error("Failed to create issue", { description: err.message });
     } finally {
@@ -104,6 +126,11 @@ export function IssueManagementPanel() {
             <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-800 font-sans">
               Publishing & Archive
             </span>
+            {isRefreshing && (
+              <span className="text-[9px] font-semibold text-blue-600 animate-pulse">
+                Syncing issues...
+              </span>
+            )}
           </div>
           <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
             Volumes & Issue Releases
