@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Play } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export interface CommunityArticle {
   id: string;
@@ -61,6 +63,29 @@ export const communityArticles: CommunityArticle[] = [
 ];
 
 export function HomeResearchCommunity() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "research-community");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const title = section?.title || "From Our Research Community";
+
   return (
     <section
       aria-label="From Our Research Community"
@@ -70,8 +95,13 @@ export function HomeResearchCommunity() {
         {/* Section Header */}
         <div className="pb-8 sm:pb-10 border-b border-slate-200/80">
           <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-            From Our Research Community
+            {title}
           </h2>
+          {section?.subtitle && (
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+              {section.subtitle}
+            </p>
+          )}
         </div>
 
         {/* 4-Column Community Cards */}

@@ -20,7 +20,6 @@ import {
   FileCheck2,
   Calendar,
   Layers,
-  Sparkles,
   Quote,
   Share2,
   ChevronRight,

@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, BookOpen, FileText } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export interface LatestArticle {
   id: string;
@@ -68,12 +70,12 @@ export const latestArticles: LatestArticle[] = [
   {
     id: "la-04",
     slug: "real-time-surveillance-infectious-disease-mobility",
-    image: "/images/latest/disease_map.jpg",
-    tags: "PUBLIC HEALTH • DATA SCIENCE",
+    image: "/images/latest/disease_mobility.jpg",
+    tags: "PUBLIC HEALTH • EPIDEMIOLOGY",
     title:
-      "Real-time surveillance of infectious disease trends using mobility and EHR data",
+      "Real-time surveillance of infectious disease spread via aggregated mobility data",
     authors:
-      "Nina Gopal, PhD¹, Samuel O. Adebayo, PhD², Priya Natarajan, PhD¹, and Daniel Lee, PhD¹",
+      "Amara Okafor, MD¹, Wei Zhang, PhD², Carlos Gomez, MD¹, and Sarah Jenkins, PhD¹",
     journal: "Nexus Journal of Public Health",
     journalHref: "/issues/current",
     date: "May 17, 2025",
@@ -83,6 +85,39 @@ export const latestArticles: LatestArticle[] = [
 ];
 
 export function HomeLatestResearch() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "latest-research");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const meta = (() => {
+    try {
+      return section?.metaJson ? JSON.parse(section.metaJson) : {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const title = section?.title || "Latest Research";
+  const viewAllText = meta.viewAllText || "View all articles";
+  const viewAllHref = meta.viewAllHref || "/articles";
+
   return (
     <section
       aria-label="Latest Research"
@@ -91,14 +126,21 @@ export function HomeLatestResearch() {
       <div className="container-x">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/60">
-          <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.6rem] font-medium tracking-[-0.02em] text-slate-950">
-            Latest Research
-          </h2>
+          <div>
+            <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.6rem] font-medium tracking-[-0.02em] text-slate-950">
+              {title}
+            </h2>
+            {section?.subtitle && (
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                {section.subtitle}
+              </p>
+            )}
+          </div>
           <Link
-            href="/articles"
+            href={viewAllHref}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"
           >
-            <span>View all articles</span>
+            <span>{viewAllText}</span>
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>

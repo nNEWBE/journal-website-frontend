@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, LockOpen } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export interface FeaturedJournalItem {
   id: string;
@@ -59,16 +61,39 @@ export const featuredJournals: FeaturedJournalItem[] = [
     coverTitlePrefix: "Journal of",
     coverTitle: "Immunology\nResearch",
     title: "Journal of Immunology Research",
-    category: "IMMUNOLOGY",
+    category: "IMMUNOLOGY & INFECTIOUS DISEASE",
     description:
-      "Advancing understanding of immune mechanisms and translational immunology.",
-    latestIssue: "Vol. 15, No. 1  |  January 2025",
+      "Translating foundational immunology into clinical insights and therapeutic solutions.",
+    latestIssue: "Vol. 11, No. 1  |  January 2025",
     image: "/images/journals/immunology.jpg",
     href: "/issues/current",
   },
 ];
 
 export function HomeFeaturedJournals() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "featured-journals");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const title = section?.title || "Featured Journals";
+
   return (
     <section
       aria-label="Featured Journals"
@@ -77,9 +102,16 @@ export function HomeFeaturedJournals() {
       <div className="container-x">
         {/* Section Header */}
         <div className="flex items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
-          <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-            Featured Journals
-          </h2>
+          <div>
+            <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
+              {title}
+            </h2>
+            {section?.subtitle && (
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                {section.subtitle}
+              </p>
+            )}
+          </div>
           <Link
             href="/issues"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"

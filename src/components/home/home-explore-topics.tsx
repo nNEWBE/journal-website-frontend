@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -13,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export interface TopicItem {
   id: string;
@@ -73,6 +75,34 @@ export const topicList: TopicItem[] = [
 ];
 
 export function HomeExploreTopics() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find(
+          (sec) => sec.sectionKey === "explore-topics" || sec.sectionKey === "scope-tracks"
+        );
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const title = section?.title || "Explore by Topic";
+  const subtitle =
+    section?.subtitle ||
+    "Discover research across disciplines and stay informed on the latest advances in key fields shaping our world.";
+
   return (
     <section
       aria-label="Explore by Topic"
@@ -86,11 +116,10 @@ export function HomeExploreTopics() {
               EXPLORE BY TOPIC
             </p>
             <h2 className="mt-2 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-              Explore by Topic
+              {title}
             </h2>
             <p className="mt-3 text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
-              Discover research across disciplines and stay informed on the
-              latest advances in key fields shaping our world.
+              {subtitle}
             </p>
           </div>
 

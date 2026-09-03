@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { FadeIn } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 interface FaqItem {
   id: string;
@@ -58,10 +59,10 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     id: "faq-5",
     category: "access",
-    question: "How can authors track manuscript status in real time?",
+    question: "How can I track my submitted manuscript after submission?",
     answer:
-      "Authors can log into the GB Journal Workspace at any time to monitor the exact editorial state of their submission—including desk assessment, reviewer invitation, revision requests, editorial decisions, proofreading, and final volume assignment.",
-    highlight: "Live multi-stage progress tracking via author dashboard.",
+      "Once submitted, authors can track every evaluation phase in real-time through the Research Workspace dashboard. Status stages include Initial Screening, In Peer Review, Revision Requested, Accepted, and Published Online. Instant email notifications are dispatched at every milestone.",
+    highlight: "Real-time lifecycle tracking directly via the author portal.",
   },
   {
     id: "faq-6",
@@ -82,13 +83,53 @@ const CATEGORIES = [
 ] as const;
 
 export function HomeFaqSection() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [openId, setOpenId] = useState<string>("faq-1");
 
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "home-faq");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const title = section?.title || "Frequently Asked Questions";
+
+  const meta = (() => {
+    try {
+      return section?.metaJson ? JSON.parse(section.metaJson) : {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const dynamicFaqs: FaqItem[] =
+    Array.isArray(meta.faqs) && meta.faqs.length > 0
+      ? meta.faqs.map((f: any, idx: number) => ({
+          id: `dyn-faq-${idx}`,
+          category: "all",
+          question: f.q || "Scholarly Inquiry",
+          answer: f.a || "",
+        }))
+      : FAQ_ITEMS;
+
   const filteredFaqs =
     activeCategory === "all"
-      ? FAQ_ITEMS
-      : FAQ_ITEMS.filter((item) => item.category === activeCategory);
+      ? dynamicFaqs
+      : dynamicFaqs.filter((item) => item.category === activeCategory);
 
   return (
     <section
@@ -103,8 +144,13 @@ export function HomeFaqSection() {
               FREQUENTLY ASKED QUESTIONS
             </p>
             <h2 className="mt-2 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-              Author & Reviewer Guidance
+              {title}
             </h2>
+            {section?.subtitle && (
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                {section.subtitle}
+              </p>
+            )}
           </div>
           <Link
             href="/contact"

@@ -25,12 +25,16 @@ import {
   ChevronLeft,
   ChevronRight,
   BookMarked,
-  Sparkles,
+  BookmarkCheck,
+  Library,
   ArrowUp,
   ArrowDown,
   Check,
   Image as ImageIcon,
   X,
+  Sliders,
+  Tag,
+  EyeOff,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -44,6 +48,36 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { DashboardSearchFilterBar } from "@/components/dashboard/dashboard-search-bar";
 import { cn } from "@/lib/utils";
+
+// Core seeded sections that should never be permanently deleted; only selected or unselected
+const CORE_SECTION_KEYS = new Set([
+  "hero-main",
+  "latest-research",
+  "current-issue",
+  "most-read",
+  "explore-topics",
+  "featured-journals",
+  "call-for-papers",
+  "research-community",
+  "home-faq",
+  "journal-stats",
+  "scope-tracks",
+  "overview",
+  "mission",
+  "aims-scope",
+  "indexing",
+  "guidelines",
+  "submission-checklist",
+  "apc-waiver",
+  "peer-review",
+  "ethics-plagiarism",
+  "open-access",
+  "office-info",
+  "governance-charter",
+  "advisory-council",
+  "peer-review-protocol",
+  "reviewer-benefits",
+]);
 
 const PAGE_TABS = [
   {
@@ -284,6 +318,89 @@ export function PageContentCMSPanel() {
     updateMetaWithArticles(defaultSlugs);
     toast.success("Loaded 4 recommended research papers from publications repository!");
   };
+
+  // Structured Meta field-level helpers (No raw JSON needed by user)
+  const parsedMeta: Record<string, any> = useMemo(() => {
+    try {
+      if (!formMetaJson) return {};
+      return JSON.parse(formMetaJson);
+    } catch {
+      return {};
+    }
+  }, [formMetaJson]);
+
+  const updateMetaField = (key: string, value: any) => {
+    try {
+      const current = formMetaJson ? JSON.parse(formMetaJson) : {};
+      if (value === undefined || value === "") {
+        delete current[key];
+      } else {
+        current[key] = value;
+      }
+      setFormMetaJson(JSON.stringify(current));
+    } catch {
+      setFormMetaJson(JSON.stringify({ [key]: value }));
+    }
+  };
+
+  const removeMetaField = (key: string) => {
+    try {
+      const current = formMetaJson ? JSON.parse(formMetaJson) : {};
+      delete current[key];
+      setFormMetaJson(JSON.stringify(current));
+    } catch {
+      setFormMetaJson("{}");
+    }
+  };
+
+  const [newCustomKey, setNewCustomKey] = useState("");
+  const [newCustomVal, setNewCustomVal] = useState("");
+  const [isAddingCustomParam, setIsAddingCustomParam] = useState(false);
+  const [newTrackInput, setNewTrackInput] = useState("");
+
+  const handleAddCustomParam = () => {
+    if (!newCustomKey.trim()) {
+      toast.error("Please enter a parameter name.");
+      return;
+    }
+    updateMetaField(newCustomKey.trim(), newCustomVal.trim());
+    setNewCustomKey("");
+    setNewCustomVal("");
+    setIsAddingCustomParam(false);
+    toast.success(`Parameter "${newCustomKey.trim()}" added.`);
+  };
+
+  const knownSectionKeys = useMemo(() => {
+    const set = new Set(["selectedArticleIds", "featuredSlides"]);
+    if (formSectionKey === "journal-stats") {
+      ["turnaroundDays", "acceptanceRate", "reviewersActive", "indexedArticles", "articlesPublished", "globalReaders", "newsletterTitle", "newsletterSubtitle"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "hero-main") {
+      ["badge", "issnPrint", "issnOnline", "primaryCtaText", "secondaryCtaText"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "call-for-papers") {
+      ["badge", "deadline", "targetVolume", "fastTrack"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "latest-research") {
+      ["viewAllText", "viewAllHref", "selectedArticleIds"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "current-issue") {
+      ["journalName", "volumeIssue", "issueDate", "publicationDate", "issnPrint", "issnOnline", "featuredPaperTitle", "doiPrefix", "browseHref", "pdfHref"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "most-read") {
+      ["articleCount", "selectedArticleIds"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "explore-topics" || formSectionKey === "scope-tracks" || Array.isArray(parsedMeta.tracks)) {
+      set.add("tracks");
+    } else if (formSectionKey === "featured-journals") {
+      ["category"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "research-community") {
+      ["spotlightAuthor", "spotlightTitle", "symposium"].forEach((k) => set.add(k));
+    } else if (formSectionKey === "home-faq") {
+      set.add("faqs");
+    } else if (formSectionKey === "office-info" || formPageKey === "contact") {
+      ["email", "phone", "location", "office"].forEach((k) => set.add(k));
+    }
+    return set;
+  }, [formSectionKey, formPageKey, parsedMeta]);
+
+  const customMetaEntries = useMemo(() => {
+    return Object.entries(parsedMeta).filter(([k]) => !knownSectionKeys.has(k));
+  }, [parsedMeta, knownSectionKeys]);
 
   // Initial snapshot to track dirty form state
   const [initForm, setInitForm] = useState<{
@@ -695,16 +812,19 @@ export function PageContentCMSPanel() {
                       "text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-colors cursor-pointer inline-flex items-center gap-1",
                       section.published
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                        : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                        : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
                     )}
+                    title={section.published ? "Click to unselect from page" : "Click to select and publish to page"}
                   >
                     <span
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        section.published ? "bg-emerald-500" : "bg-amber-500"
+                        section.published ? "bg-emerald-500" : "bg-slate-400"
                       )}
                     />
-                    {section.published ? "Published (Live)" : "Draft (Hidden)"}
+                    {section.published
+                      ? (activeTab === "home" ? "Selected on Home" : "Published (Live)")
+                      : (activeTab === "home" ? "Not Selected (Hidden)" : "Hidden (Draft)")}
                   </button>
                 </div>
 
@@ -725,14 +845,40 @@ export function PageContentCMSPanel() {
                     Edit Content
                   </button>
 
-                  {section.id && (
+                  {/* For built-in sections: Unselect/Select toggle instead of permanent delete */}
+                  {CORE_SECTION_KEYS.has(section.sectionKey) ? (
                     <button
-                      onClick={() => setSectionToDelete(section)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Remove section"
+                      onClick={() => handleTogglePublish(section)}
+                      className={cn(
+                        "inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer",
+                        section.published
+                          ? "text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200"
+                          : "text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                      )}
+                      title={section.published ? "Unselect from homepage (keeps all content safe)" : "Select to show on homepage"}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {section.published ? (
+                        <>
+                          <EyeOff className="h-3.5 w-3.5 text-slate-500" />
+                          <span>Unselect</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Select</span>
+                        </>
+                      )}
                     </button>
+                  ) : (
+                    section.id && (
+                      <button
+                        onClick={() => setSectionToDelete(section)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                        title="Unselect & remove custom section"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -753,13 +899,34 @@ export function PageContentCMSPanel() {
                   </div>
                 )}
 
-                {section.metaJson && (
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
-                      Structured Meta JSON attached
-                    </span>
-                  </div>
-                )}
+                {section.metaJson && (() => {
+                  try {
+                    const meta = JSON.parse(section.metaJson);
+                    const entries = Object.entries(meta).filter(
+                      ([k]) => k !== "selectedArticleIds" && k !== "featuredSlides"
+                    );
+                    if (entries.length === 0) return null;
+                    return (
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                        {entries.slice(0, 5).map(([k, v]) => (
+                          <span
+                            key={k}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                          >
+                            <span className="text-slate-400 capitalize">
+                              {k.replace(/([A-Z])/g, " $1")}:
+                            </span>
+                            <span className="font-semibold text-slate-800 truncate max-w-[150px]">
+                              {Array.isArray(v) ? `${v.length} items` : String(v)}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  } catch {
+                    return null;
+                  }
+                })()}
 
                 {section.pageKey === "home" && section.sectionKey === "hero-main" && (
                   <div className="mt-3.5 p-3.5 rounded-xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
@@ -799,7 +966,7 @@ export function PageContentCMSPanel() {
                       onClick={() => openEditModal(section)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer shrink-0"
                     >
-                      <Sparkles className="h-3.5 w-3.5" />
+                      <Library className="h-3.5 w-3.5" />
                       <span>Select Publications</span>
                     </button>
                   </div>
@@ -915,7 +1082,7 @@ export function PageContentCMSPanel() {
                       </span>
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Select manuscripts from the publications repository to showcase on the homepage hero visualizer.
+                      Choose which publications appear on the homepage hero carousel. Unselecting here will never delete or alter manuscripts in your publications repository.
                     </p>
                   </div>
                 </div>
@@ -925,7 +1092,7 @@ export function PageContentCMSPanel() {
                   onClick={handleLoadDefaultArticles}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <BookmarkCheck className="h-3.5 w-3.5 text-blue-600" />
                   <span>Load Top 4 Defaults</span>
                 </button>
               </div>
@@ -948,9 +1115,9 @@ export function PageContentCMSPanel() {
                     <button
                       type="button"
                       onClick={handleLoadDefaultArticles}
-                      className="mt-2.5 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                      className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
                     >
-                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      <BookmarkCheck className="h-3.5 w-3.5 text-blue-600" />
                       <span>Click to load 4 recommended papers from publications repository</span>
                     </button>
                   </div>
@@ -1003,10 +1170,11 @@ export function PageContentCMSPanel() {
                             <button
                               type="button"
                               onClick={() => handleRemoveArticleFromCarousel(artId)}
-                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 cursor-pointer ml-1 transition-colors"
-                              title="Remove from Carousel"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer ml-1"
+                              title="Unselect from homepage hero (publication remains safely in repository)"
                             >
-                              <X className="h-3.5 w-3.5" />
+                              <X className="h-3 w-3 text-slate-400" />
+                              <span>Unselect</span>
                             </button>
                           </div>
                         </div>
@@ -1124,34 +1292,723 @@ export function PageContentCMSPanel() {
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-slate-700">
-                Structured Meta (JSON configuration)
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    const parsed = JSON.parse(formMetaJson || "{}");
-                    setFormMetaJson(JSON.stringify(parsed, null, 2));
-                    toast.success("JSON formatted cleanly!");
-                  } catch {
-                    toast.error("Invalid JSON syntax.");
-                  }
-                }}
-                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-              >
-                Format JSON
-              </button>
+          {/* Section Settings & Parameters (Human-friendly UI, No Raw JSON) */}
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-2xs">
+                  <Sliders className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">
+                    Section Parameters & Key Metrics
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Configure display metrics, identifiers, and parameters without raw code.
+                  </p>
+                </div>
+              </div>
             </div>
-            <textarea
-              rows={4}
-              placeholder='{ "icon": "shield", "order": 1 }'
-              value={formMetaJson}
-              onChange={(e) => setFormMetaJson(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-3 text-[11px] font-mono text-slate-800 leading-relaxed focus:border-blue-500 focus:outline-hidden bg-slate-50 resize-y"
-            />
+
+            {/* Case A: Journal Benchmarks & Turnaround Metrics */}
+            {formSectionKey === "journal-stats" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    First Decision Turnaround
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 18 Days"
+                    value={parsedMeta.turnaroundDays || ""}
+                    onChange={(e) => updateMetaField("turnaroundDays", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Average peer review speed</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Overall Acceptance Rate
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 34%"
+                    value={parsedMeta.acceptanceRate || ""}
+                    onChange={(e) => updateMetaField("acceptanceRate", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Scientific selectivity benchmark</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Active Peer Reviewers
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 140+"
+                    value={parsedMeta.reviewersActive || ""}
+                    onChange={(e) => updateMetaField("reviewersActive", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Global reviewer pool size</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Indexed Scientific Articles
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 380+"
+                    value={parsedMeta.indexedArticles || ""}
+                    onChange={(e) => updateMetaField("indexedArticles", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Total papers indexed</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Total Articles Published
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 12,486+"
+                    value={parsedMeta.articlesPublished || ""}
+                    onChange={(e) => updateMetaField("articlesPublished", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Total scholarly outputs</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Global Readers & Downloads
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 85,000+"
+                    value={parsedMeta.globalReaders || ""}
+                    onChange={(e) => updateMetaField("globalReaders", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">International reader footprint</span>
+                </div>
+
+                <div className="sm:col-span-2 pt-1 border-t border-slate-100">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Newsletter Box Headline
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Stay informed with GB Journal research alerts"
+                    value={parsedMeta.newsletterTitle || ""}
+                    onChange={(e) => updateMetaField("newsletterTitle", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Newsletter Subtitle
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Receive curated research highlights and call announcements..."
+                    value={parsedMeta.newsletterSubtitle || ""}
+                    onChange={(e) => updateMetaField("newsletterSubtitle", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case: Latest Research Settings */}
+            {formSectionKey === "latest-research" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    View All Action Button Text
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. View all articles"
+                    value={parsedMeta.viewAllText || ""}
+                    onChange={(e) => updateMetaField("viewAllText", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    View All Link Route
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. /articles"
+                    value={parsedMeta.viewAllHref || ""}
+                    onChange={(e) => updateMetaField("viewAllHref", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case: Current Issue Details */}
+            {formSectionKey === "current-issue" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Journal Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Nexus Journal of Molecular Sciences"
+                    value={parsedMeta.journalName || ""}
+                    onChange={(e) => updateMetaField("journalName", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Volume & Issue Designation
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Vol. 12, No. 4"
+                    value={parsedMeta.volumeIssue || ""}
+                    onChange={(e) => updateMetaField("volumeIssue", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Issue Release Date / Month
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. May 2025"
+                    value={parsedMeta.issueDate || ""}
+                    onChange={(e) => updateMetaField("issueDate", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Publication Date
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. May 15, 2025"
+                    value={parsedMeta.publicationDate || ""}
+                    onChange={(e) => updateMetaField("publicationDate", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Print ISSN
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2073-8447"
+                    value={parsedMeta.issnPrint || ""}
+                    onChange={(e) => updateMetaField("issnPrint", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Online ISSN
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2790-2188"
+                    value={parsedMeta.issnOnline || ""}
+                    onChange={(e) => updateMetaField("issnOnline", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Featured Research Paper Headline
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Machine learning-guided discovery of allosteric inhibitors..."
+                    value={parsedMeta.featuredPaperTitle || ""}
+                    onChange={(e) => updateMetaField("featuredPaperTitle", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Browse Issue URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. /issues/current"
+                    value={parsedMeta.browseHref || ""}
+                    onChange={(e) => updateMetaField("browseHref", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Download Issue PDF URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. /pdfs/current-issue.pdf"
+                    value={parsedMeta.pdfHref || ""}
+                    onChange={(e) => updateMetaField("pdfHref", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case: Research Community Spotlight */}
+            {formSectionKey === "research-community" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Spotlight Author
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Aisha Rahman, PhD"
+                    value={parsedMeta.spotlightAuthor || ""}
+                    onChange={(e) => updateMetaField("spotlightAuthor", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Annual Symposium Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Annual Research Symposium 2026"
+                    value={parsedMeta.symposium || ""}
+                    onChange={(e) => updateMetaField("symposium", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case B: Hero Main Settings */}
+            {formSectionKey === "hero-main" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Header Masthead Badge
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Official Biannual Journal"
+                    value={parsedMeta.badge || ""}
+                    onChange={(e) => updateMetaField("badge", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Print ISSN
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2073-8447"
+                    value={parsedMeta.issnPrint || ""}
+                    onChange={(e) => updateMetaField("issnPrint", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Online ISSN
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2790-2188"
+                    value={parsedMeta.issnOnline || ""}
+                    onChange={(e) => updateMetaField("issnOnline", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Primary Action Button Text
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Submit Manuscript"
+                    value={parsedMeta.primaryCtaText || ""}
+                    onChange={(e) => updateMetaField("primaryCtaText", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Secondary Action Button Text
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Explore Latest Issue"
+                    value={parsedMeta.secondaryCtaText || ""}
+                    onChange={(e) => updateMetaField("secondaryCtaText", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case C: Call For Papers */}
+            {formSectionKey === "call-for-papers" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Call Badge
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Active Call"
+                    value={parsedMeta.badge || ""}
+                    onChange={(e) => updateMetaField("badge", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Submission Deadline
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. October 31, 2026"
+                    value={parsedMeta.deadline || ""}
+                    onChange={(e) => updateMetaField("deadline", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Target Volume & Issue
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Volume 14, Issue 2"
+                    value={parsedMeta.targetVolume || ""}
+                    onChange={(e) => updateMetaField("targetVolume", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Fast-Track Review Status
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Available / 2-Week Window"
+                    value={parsedMeta.fastTrack || ""}
+                    onChange={(e) => updateMetaField("fastTrack", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case D: Editorial Office / Contact Info */}
+            {(formSectionKey === "office-info" || formPageKey === "contact") && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Official Editorial Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g. journal@gonouniversity.edu.bd"
+                    value={parsedMeta.email || ""}
+                    onChange={(e) => updateMetaField("email", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Office Phone
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +880-2-7792225"
+                    value={parsedMeta.phone || ""}
+                    onChange={(e) => updateMetaField("phone", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Campus Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Mirzanagar, Savar, Dhaka 1344"
+                    value={parsedMeta.location || ""}
+                    onChange={(e) => updateMetaField("location", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Room / Building
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Administrative Building, Room 204"
+                    value={parsedMeta.office || ""}
+                    onChange={(e) => updateMetaField("office", e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Case E: Research Scope Tracks / Explore Topics (List / Tags) */}
+            {(formSectionKey === "scope-tracks" || formSectionKey === "explore-topics" || Array.isArray(parsedMeta.tracks)) && (
+              <div className="space-y-2 pt-1">
+                <label className="block text-[11px] font-bold text-slate-700">
+                  Disciplines & Research Tracks / Topics
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(parsedMeta.tracks) ? parsedMeta.tracks : []).map((track: string, tIdx: number) => (
+                    <span
+                      key={tIdx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-800 shadow-2xs"
+                    >
+                      <Tag className="h-3 w-3 text-blue-600" />
+                      <span>{track}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const list = Array.isArray(parsedMeta.tracks) ? parsedMeta.tracks : [];
+                          updateMetaField("tracks", list.filter((_: any, idx: number) => idx !== tIdx));
+                        }}
+                        className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Type new topic (e.g. Biomedical Engineering)..."
+                    value={newTrackInput}
+                    onChange={(e) => setNewTrackInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (newTrackInput.trim()) {
+                          const current = Array.isArray(parsedMeta.tracks) ? parsedMeta.tracks : [];
+                          updateMetaField("tracks", [...current, newTrackInput.trim()]);
+                          setNewTrackInput("");
+                        }
+                      }
+                    }}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newTrackInput.trim()) {
+                        const current = Array.isArray(parsedMeta.tracks) ? parsedMeta.tracks : [];
+                        updateMetaField("tracks", [...current, newTrackInput.trim()]);
+                        setNewTrackInput("");
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Topic</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Case: Frequently Asked Questions (FAQ) */}
+            {formSectionKey === "home-faq" && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Frequently Asked Questions ({(Array.isArray(parsedMeta.faqs) ? parsedMeta.faqs : []).length} Q&As)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = Array.isArray(parsedMeta.faqs) ? parsedMeta.faqs : [];
+                      updateMetaField("faqs", [...current, { q: "New Question", a: "Answer text goes here." }]);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add Question</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(Array.isArray(parsedMeta.faqs) ? parsedMeta.faqs : []).map((faq: any, fIdx: number) => (
+                    <div key={fIdx} className="p-3 rounded-xl border border-slate-200 bg-white space-y-2 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold font-mono text-slate-400">Q{fIdx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = Array.isArray(parsedMeta.faqs) ? parsedMeta.faqs : [];
+                            updateMetaField("faqs", current.filter((_: any, idx: number) => idx !== fIdx));
+                          }}
+                          className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer text-xs"
+                          title="Remove FAQ"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Question title..."
+                        value={faq.q || ""}
+                        onChange={(e) => {
+                          const current = Array.isArray(parsedMeta.faqs) ? [...parsedMeta.faqs] : [];
+                          current[fIdx] = { ...current[fIdx], q: e.target.value };
+                          updateMetaField("faqs", current);
+                        }}
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500"
+                      />
+                      <textarea
+                        rows={2}
+                        placeholder="Answer explanation..."
+                        value={faq.a || ""}
+                        onChange={(e) => {
+                          const current = Array.isArray(parsedMeta.faqs) ? [...parsedMeta.faqs] : [];
+                          current[fIdx] = { ...current[fIdx], a: e.target.value };
+                          updateMetaField("faqs", current);
+                        }}
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-500 resize-y"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Custom or Additional Parameters (Key-Value) */}
+            {customMetaEntries.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-200/80">
+                <label className="block text-[11px] font-bold text-slate-700">
+                  Additional Parameters
+                </label>
+                <div className="space-y-2">
+                  {customMetaEntries.map(([key, val]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        disabled
+                        value={key}
+                        className="w-1/3 rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs text-slate-600 font-mono"
+                      />
+                      <input
+                        type="text"
+                        value={typeof val === "object" ? JSON.stringify(val) : String(val)}
+                        onChange={(e) => updateMetaField(key, e.target.value)}
+                        className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMetaField(key)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete parameter"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add New Custom Parameter Action */}
+            <div className="pt-1">
+              {isAddingCustomParam ? (
+                <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50 space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Parameter name (e.g. reviewWindow)"
+                      value={newCustomKey}
+                      onChange={(e) => setNewCustomKey(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value (e.g. 21 Days)"
+                      value={newCustomVal}
+                      onChange={(e) => setNewCustomVal(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingCustomParam(false);
+                        setNewCustomKey("");
+                        setNewCustomVal("");
+                      }}
+                      className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-700 cursor-pointer font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddCustomParam}
+                      className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      Save Parameter
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCustomParam(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Custom Parameter</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
@@ -1277,23 +2134,23 @@ export function PageContentCMSPanel() {
         </div>
       </CustomModal>
 
-      {/* Delete Section Confirmation Modal */}
+      {/* Remove Custom Section Confirmation Modal */}
       <CustomModal
         isOpen={!!sectionToDelete}
         onClose={() => setSectionToDelete(null)}
-        title="Delete Content Section?"
+        title="Unselect & Remove Custom Section?"
         className="max-w-md"
       >
         {sectionToDelete && (
           <div className="space-y-4">
-            <div className="flex items-start gap-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200">
-              <Trash2 className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <EyeOff className="h-5 w-5 text-slate-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-bold text-rose-950 mb-0.5">
-                  Are you sure you want to remove &quot;{sectionToDelete.title}&quot;?
+                <p className="text-xs font-bold text-slate-900 mb-0.5">
+                  Unselect &quot;{sectionToDelete.title}&quot; from this page?
                 </p>
-                <p className="text-xs text-rose-800 leading-relaxed">
-                  Section key <code className="font-mono bg-rose-100/80 px-1 py-0.5 rounded text-[11px]">{sectionToDelete.sectionKey}</code> will be permanently removed from the public portal.
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  This custom section will be removed from the public portal display. Your publications, manuscripts, and portal records are never deleted and remain safely preserved in the system.
                 </p>
               </div>
             </div>
@@ -1310,10 +2167,10 @@ export function PageContentCMSPanel() {
                 type="button"
                 onClick={handleExecuteDeleteSection}
                 disabled={isDeleting}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-900 transition-all cursor-pointer disabled:opacity-50"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                {isDeleting ? "Deleting..." : "Delete Section"}
+                <EyeOff className="h-3.5 w-3.5" />
+                {isDeleting ? "Unselecting..." : "Unselect from Page"}
               </button>
             </div>
           </div>

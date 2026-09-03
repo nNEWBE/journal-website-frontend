@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Eye } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export interface MostReadItem {
   rank: string;
@@ -68,6 +70,29 @@ export const mostReadArticles: MostReadItem[] = [
 ];
 
 export function HomeMostRead() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "most-read");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const title = section?.title || "Most Read";
+
   return (
     <section
       aria-label="Most Read Articles"
@@ -76,9 +101,16 @@ export function HomeMostRead() {
       <div className="container-x">
         {/* Section Header */}
         <div className="flex items-baseline justify-between gap-4 pb-6 sm:pb-8 border-b border-slate-200/80">
-          <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-            Most Read
-          </h2>
+          <div>
+            <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
+              {title}
+            </h2>
+            {section?.subtitle && (
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                {section.subtitle}
+              </p>
+            )}
+          </div>
           <Link
             href="/articles"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1e40af] hover:underline group"

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Calendar } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export interface SpecialIssueCall {
   id: string;
@@ -180,6 +182,32 @@ function CallIllustration({ type }: { type: SpecialIssueCall["illustrationType"]
 }
 
 export function HomeCallsForPapers() {
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "call-for-papers");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const title = section?.title || "Calls for Papers / Special Issues";
+  const subtitle =
+    section?.subtitle ||
+    "We invite researchers to contribute to our ongoing special issues on cutting-edge multidisciplinary topics.";
+
   return (
     <section
       aria-label="Calls for Papers / Special Issues"
@@ -190,11 +218,10 @@ export function HomeCallsForPapers() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 sm:pb-10 border-b border-slate-200/80">
           <div>
             <h2 className="font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-              Calls for Papers / Special Issues
+              {title}
             </h2>
             <p className="mt-2.5 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-              We invite researchers to contribute to our ongoing special issues
-              on cutting-edge topics in molecular sciences.
+              {subtitle}
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BookOpen,
   FileText,
@@ -10,10 +10,52 @@ import {
   Users,
 } from "lucide-react";
 import { FadeIn } from "@/components/layout/page-transition";
+import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export function HomeMetricsNewsletter() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [section, setSection] = useState<PageContentDTO | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .getPublished("home")
+      .then((sections) => {
+        if (!active) return;
+        const s = sections.find((sec) => sec.sectionKey === "journal-stats");
+        if (s) setSection(s);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (section && section.published === false) {
+    return null;
+  }
+
+  const meta = (() => {
+    try {
+      return section?.metaJson ? JSON.parse(section.metaJson) : {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const title = section?.title || "Advancing knowledge. Driving impact.";
+  const subtitle =
+    section?.subtitle ||
+    "Key highlights from the Nexus Journal Press community.";
+  const articlesPublished = meta.articlesPublished || "12,486+";
+  const globalReaders = meta.globalReaders || "85,000+";
+  const acceptanceRate = meta.acceptanceRate || "34%";
+  const reviewersActive = meta.reviewersActive || "140+";
+  const newsletterTitle = meta.newsletterTitle || "Stay Updated";
+  const newsletterSubtitle =
+    meta.newsletterSubtitle ||
+    "Subscribe to our newsletter for the latest research highlights, journal updates, and open access content.";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +80,10 @@ export function HomeMetricsNewsletter() {
                     RESEARCH METRICS
                   </p>
                   <h2 className="mt-2 font-academic text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-slate-950">
-                    Advancing knowledge. Driving impact.
+                    {title}
                   </h2>
                   <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Key highlights from the Nexus Journal Press community.
+                    {subtitle}
                   </p>
                 </div>
 
@@ -53,7 +95,7 @@ export function HomeMetricsNewsletter() {
                       <FileText className="h-5 w-5" strokeWidth={1.5} />
                     </span>
                     <p className="font-academic lining-nums text-2xl sm:text-[26px] font-medium text-slate-950">
-                      12,486+
+                      {articlesPublished}
                     </p>
                     <p className="mt-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
                       ARTICLES PUBLISHED
@@ -69,13 +111,13 @@ export function HomeMetricsNewsletter() {
                       <BookOpen className="h-5 w-5" strokeWidth={1.5} />
                     </span>
                     <p className="font-academic lining-nums text-2xl sm:text-[26px] font-medium text-slate-950">
-                      36+
+                      {acceptanceRate}
                     </p>
                     <p className="mt-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                      ACTIVE JOURNALS
+                      ACCEPTANCE RATE
                     </p>
                     <p className="mt-1 text-[11px] text-slate-500 leading-snug">
-                      High-quality, peer-reviewed publications
+                      High-quality, peer-reviewed standards
                     </p>
                   </div>
 
@@ -85,13 +127,13 @@ export function HomeMetricsNewsletter() {
                       <Users className="h-5 w-5" strokeWidth={1.5} />
                     </span>
                     <p className="font-academic lining-nums text-2xl sm:text-[26px] font-medium text-slate-950">
-                      18,750+
+                      {reviewersActive}
                     </p>
                     <p className="mt-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                      RESEARCHERS
+                      PEER REVIEWERS
                     </p>
                     <p className="mt-1 text-[11px] text-slate-500 leading-snug">
-                      Contributing to global scientific progress
+                      Contributing to global scientific review
                     </p>
                   </div>
 
@@ -101,13 +143,13 @@ export function HomeMetricsNewsletter() {
                       <Globe className="h-5 w-5" strokeWidth={1.5} />
                     </span>
                     <p className="font-academic lining-nums text-2xl sm:text-[26px] font-medium text-slate-950">
-                      142
+                      {globalReaders}
                     </p>
                     <p className="mt-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                      COUNTRIES REACHED
+                      GLOBAL READERS
                     </p>
                     <p className="mt-1 text-[11px] text-slate-500 leading-snug">
-                      Research with a worldwide impact
+                      Research with international footprint
                     </p>
                   </div>
                 </div>
@@ -120,11 +162,10 @@ export function HomeMetricsNewsletter() {
                     STAY CONNECTED
                   </p>
                   <h3 className="mt-1.5 font-academic text-2xl sm:text-[26px] font-medium text-slate-950">
-                    Stay Updated
+                    {newsletterTitle}
                   </h3>
                   <p className="mt-2 text-xs text-slate-600 leading-relaxed">
-                    Subscribe to our newsletter for the latest research
-                    highlights, journal updates, and open access content.
+                    {newsletterSubtitle}
                   </p>
 
                   {/* Subscribe Form */}
