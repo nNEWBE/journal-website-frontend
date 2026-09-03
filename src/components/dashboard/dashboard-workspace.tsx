@@ -100,8 +100,19 @@ const navItems = [
   { id: "author" as Role, label: "Author Suite", icon: PenLine, href: "/dashboard/author" },
   { id: "reviewer" as Role, label: "Reviewer Suite", icon: UserCheck, href: "/dashboard/reviewer" },
   { id: "editor" as Role, label: "Editor Suite", icon: ClipboardCheck, href: "/dashboard/editor" },
-  { id: "admin" as Role, label: "Admin Suite", icon: ShieldCheck, href: "/dashboard/admin" },
-  { id: "super-admin" as Role, label: "Super Admin", icon: Crown, href: "/dashboard/super-admin" },
+  { id: "admin" as Role, label: "Admin Suite", icon: ShieldCheck, href: "/dashboard/pipeline" },
+  { id: "super-admin" as Role, label: "Super Admin", icon: Crown, href: "/dashboard/pipeline" },
+];
+
+const managementTools = [
+  { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck, href: "/dashboard/pipeline" },
+  { id: "publications", label: "All Publications", icon: BookMarked, href: "/dashboard/publications" },
+  { id: "users", label: "User Directory", icon: Users, href: "/dashboard/users" },
+  { id: "mailing", label: "Mailing & Broadcast", icon: Mail, href: "/dashboard/mailing" },
+  { id: "issues", label: "Issues & Volumes", icon: BookOpen, href: "/dashboard/issues" },
+  { id: "board", label: "Editorial Board", icon: Crown, href: "/dashboard/board" },
+  { id: "content", label: "Site & Pages CMS", icon: FileText, href: "/dashboard/cms" },
+  { id: "navigation", label: "Menu & Nav Manager", icon: Compass, href: "/dashboard/navigation" },
 ];
 
 function StatusPill({ status }: { status: string }) {
@@ -406,8 +417,17 @@ export function DashboardWorkspace({
     if (pathname.includes("/editor")) return "editor";
     if (pathname.includes("/reviewer")) return "reviewer";
     if (pathname.includes("/author")) return "author";
-    if (pathname.includes("/cms") || pathname.includes("/navigation")) {
-      return (currentUser?.role as Role) || "admin";
+    if (
+      pathname.includes("/cms") ||
+      pathname.includes("/navigation") ||
+      pathname.includes("/publications") ||
+      pathname.includes("/pipeline") ||
+      pathname.includes("/users") ||
+      pathname.includes("/mailing") ||
+      pathname.includes("/issues") ||
+      pathname.includes("/board")
+    ) {
+      return (currentUser?.role as Role) || "super-admin";
     }
     if (!mounted) return initialRole;
     return (currentUser?.role as Role) || initialRole;
@@ -416,53 +436,9 @@ export function DashboardWorkspace({
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
   const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
-  const [adminSubView, setAdminSubView] = useState<"pipeline" | "publications" | "users" | "mailing" | "issues" | "board" | "content" | "navigation">("pipeline");
-  const [visitedAdminTabs, setVisitedAdminTabs] = useState<Set<string>>(() => new Set(["pipeline"]));
-
-  useEffect(() => {
-    if (adminSubView) {
-      setVisitedAdminTabs((prev) => {
-        if (prev.has(adminSubView)) return prev;
-        const next = new Set(prev);
-        next.add(adminSubView);
-        return next;
-      });
-    }
-  }, [adminSubView]);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Admin tab scroll state & ref
-  const adminTabsRef = useRef<HTMLDivElement>(null);
-  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
-  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
-
-  const updateAdminTabsScroll = () => {
-    if (!adminTabsRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = adminTabsRef.current;
-    setCanScrollTabsLeft(scrollLeft > 4);
-    setCanScrollTabsRight(scrollLeft < scrollWidth - clientWidth - 4);
-  };
-
-  const scrollAdminTabs = (direction: "left" | "right") => {
-    if (!adminTabsRef.current) return;
-    const offset = 220;
-    adminTabsRef.current.scrollBy({
-      left: direction === "left" ? -offset : offset,
-      behavior: "smooth",
-    });
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(updateAdminTabsScroll, 100);
-    window.addEventListener("resize", updateAdminTabsScroll);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", updateAdminTabsScroll);
-    };
-  }, [activeRole, adminSubView]);
 
   const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
   const [msgText, setMsgText] = useState("");
@@ -844,65 +820,29 @@ export function DashboardWorkspace({
                       <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
                     </p>
                     <div className="space-y-1">
-                      {[
-                        { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
-                        { id: "publications", label: "All Publications", icon: BookMarked },
-                        { id: "users", label: "User Directory", icon: Users },
-                        { id: "mailing", label: "Mailing & Broadcast", icon: Mail },
-                        { id: "issues", label: "Issues & Volumes", icon: BookOpen },
-                        { id: "board", label: "Editorial Board", icon: Crown },
-                        { id: "content", label: "Site & Pages CMS", icon: FileText },
-                        { id: "navigation", label: "Menu & Nav Manager", icon: Compass },
-                      ].map((tab) => {
+                      {managementTools.map((tab) => {
                         const Icon = tab.icon;
-                        const isTabActive =
-                          (tab.id === "content" && pathname.includes("/cms")) ||
-                          (tab.id === "navigation" && pathname.includes("/navigation")) ||
-                          (tab.id === "publications" && pathname.includes("/publications")) ||
-                          (!pathname.includes("/cms") &&
-                            !pathname.includes("/navigation") &&
-                            !pathname.includes("/publications") &&
-                            !pathname.includes("/profile") &&
-                            (activeRole === "admin" || activeRole === "super-admin") &&
-                            activeView === "workspace" &&
-                            adminSubView === tab.id);
+                        const isTabActive = pathname.startsWith(tab.href);
 
                         return (
                           <button
                             key={tab.id}
                             onClick={() => {
                               setIsMobileSidebarOpen(false);
-                              if (tab.id === "content") {
-                                router.push("/dashboard/cms");
-                              } else if (tab.id === "navigation") {
-                                router.push("/dashboard/navigation");
-                              } else if (tab.id === "publications") {
-                                router.push("/dashboard/publications");
-                              } else {
-                                setAdminSubView(tab.id as any);
-                                if (activeRole !== "admin" && activeRole !== "super-admin") {
-                                  router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
-                                } else if (
-                                  activeView !== "workspace" ||
-                                  pathname.includes("/profile") ||
-                                  pathname.includes("/cms") ||
-                                  pathname.includes("/navigation") ||
-                                  pathname.includes("/publications")
-                                ) {
-                                  router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
-                                }
-                              }
+                              router.push(tab.href);
                             }}
                             className={cn(
-                              "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
+                              "flex w-full items-center rounded-xl text-left text-xs transition-colors h-9 px-3 gap-3 cursor-pointer",
                               isTabActive
-                                ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                                ? "bg-blue-600/20 text-white font-bold"
+                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                             )}
                           >
-                            <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-[#60a5fa]" : "text-slate-400")} />
-                            <span className="truncate flex-1 font-medium">{tab.label}</span>
-                            {isTabActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
+                            <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-blue-400" : "text-slate-400")} />
+                            <span className="truncate flex-1">{tab.label}</span>
+                            {isTabActive && (
+                              <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-auto" />
+                            )}
                           </button>
                         );
                       })}
@@ -977,24 +917,14 @@ export function DashboardWorkspace({
                     </div>
                   </Link>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <Link
-                      href="/"
-                      onClick={() => setIsMobileSidebarOpen(false)}
-                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-[11px] font-medium transition-colors border border-white/[0.06]"
-                    >
-                      <BookOpen className="h-3 w-3 text-slate-400" />
-                      <span>Homepage</span>
-                    </Link>
-                    <Link
-                      href="/issues"
-                      onClick={() => setIsMobileSidebarOpen(false)}
-                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-[11px] font-medium transition-colors border border-white/[0.06]"
-                    >
-                      <Archive className="h-3 w-3 text-slate-400" />
-                      <span>Archive</span>
-                    </Link>
-                  </div>
+                  <Link
+                    href="/"
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                    className="flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-xs font-medium transition-colors border border-white/[0.06]"
+                  >
+                    <BookOpen className="h-3.5 w-3.5 text-slate-400" />
+                    <span>Public Homepage</span>
+                  </Link>
 
                   <button
                     type="button"
@@ -1178,28 +1108,9 @@ export function DashboardWorkspace({
                   <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
                 </p>
                 <div className="space-y-1">
-                  {[
-                    { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
-                    { id: "publications", label: "All Publications", icon: BookMarked },
-                    { id: "users", label: "User Directory", icon: Users },
-                    { id: "mailing", label: "Mailing & Broadcast", icon: Mail },
-                    { id: "issues", label: "Issues & Volumes", icon: BookOpen },
-                    { id: "board", label: "Editorial Board", icon: Crown },
-                    { id: "content", label: "Site & Pages CMS", icon: FileText },
-                    { id: "navigation", label: "Menu & Nav Manager", icon: Compass },
-                  ].map((tab) => {
+                  {managementTools.map((tab) => {
                     const Icon = tab.icon;
-                    const isTabActive =
-                      (tab.id === "content" && pathname.includes("/cms")) ||
-                      (tab.id === "navigation" && pathname.includes("/navigation")) ||
-                      (tab.id === "publications" && pathname.includes("/publications")) ||
-                      (!pathname.includes("/cms") &&
-                        !pathname.includes("/navigation") &&
-                        !pathname.includes("/publications") &&
-                        !pathname.includes("/profile") &&
-                        (activeRole === "admin" || activeRole === "super-admin") &&
-                        activeView === "workspace" &&
-                        adminSubView === tab.id);
+                    const isTabActive = pathname.startsWith(tab.href);
 
                     return (
                       <CustomTooltip
@@ -1211,26 +1122,7 @@ export function DashboardWorkspace({
                         <button
                           onClick={() => {
                             setIsMobileSidebarOpen(false);
-                            if (tab.id === "content") {
-                              router.push("/dashboard/cms");
-                            } else if (tab.id === "navigation") {
-                              router.push("/dashboard/navigation");
-                            } else if (tab.id === "publications") {
-                              router.push("/dashboard/publications");
-                            } else {
-                              setAdminSubView(tab.id as any);
-                              if (activeRole !== "admin" && activeRole !== "super-admin") {
-                                router.push(currentUser?.role === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
-                              } else if (
-                                activeView !== "workspace" ||
-                                pathname.includes("/profile") ||
-                                pathname.includes("/cms") ||
-                                pathname.includes("/navigation") ||
-                                pathname.includes("/publications")
-                              ) {
-                                router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
-                              }
-                            }
+                            router.push(tab.href);
                           }}
                           className={cn(
                             "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
@@ -1417,18 +1309,6 @@ export function DashboardWorkspace({
                       <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
                     </Link>
 
-                    <Link
-                      href="/issues"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Archive className="h-4 w-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
-                        <span>Issues Archive</span>
-                      </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-
                     <div className="my-1 border-t border-white/[0.08]" />
 
                     <button
@@ -1588,7 +1468,12 @@ export function DashboardWorkspace({
           pathname.includes("/profile") ||
           pathname.includes("/cms") ||
           pathname.includes("/navigation") ||
-          pathname.includes("/publications") ? (
+          pathname.includes("/publications") ||
+          pathname.includes("/pipeline") ||
+          pathname.includes("/users") ||
+          pathname.includes("/mailing") ||
+          pathname.includes("/issues") ||
+          pathname.includes("/board") ? (
             children
           ) : (
             <>
@@ -1653,137 +1538,7 @@ export function DashboardWorkspace({
                     </motion.div>
                   </AnimatePresence>
 
-                  {(activeRole === "admin" || activeRole === "super-admin") && (
-                    <div className="relative border-b border-[color:var(--color-gb-border)] bg-slate-50/50">
-                      {/* Left scroll arrow */}
-                      {canScrollTabsLeft && (
-                        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1.5 pr-4 bg-gradient-to-r from-slate-100 via-slate-100/90 to-transparent">
-                          <button
-                            onClick={() => scrollAdminTabs("left")}
-                            className="h-6 w-6 rounded-md bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer hover:shadow"
-                            title="Scroll left"
-                          >
-                            <ChevronLeft className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Scrollable Tabs without browser scrollbar */}
-                      <div
-                        ref={adminTabsRef}
-                        onScroll={updateAdminTabsScroll}
-                        className="flex items-center gap-1.5 px-4 pt-3 overflow-x-auto scrollbar-none scroll-smooth"
-                      >
-                        <button
-                          onClick={() => setAdminSubView("pipeline")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "pipeline"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <ClipboardCheck className="h-3.5 w-3.5" />
-                          Manuscript Pipeline
-                        </button>
-                        <button
-                          onClick={() => setAdminSubView("users")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "users"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <UserIcon className="h-3.5 w-3.5" />
-                          User Directory
-                        </button>
-                        <button
-                          onClick={() => setAdminSubView("mailing")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "mailing"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <Mail className="h-3.5 w-3.5" />
-                          Mailing & Broadcast
-                        </button>
-                        <button
-                          onClick={() => setAdminSubView("issues")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "issues"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <BookOpen className="h-3.5 w-3.5" />
-                          Issues & Volumes
-                        </button>
-                        <button
-                          onClick={() => setAdminSubView("board")}
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0",
-                            adminSubView === "board"
-                              ? "border-[color:var(--color-gb-blue)] text-[color:var(--color-gb-blue)] bg-white rounded-t-lg shadow-xs"
-                              : "border-transparent text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <Crown className="h-3.5 w-3.5" />
-                          Editorial Board
-                        </button>
-                      </div>
-
-                      {/* Right scroll arrow */}
-                      {canScrollTabsRight && (
-                        <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1.5 pl-4 bg-gradient-to-l from-slate-100 via-slate-100/90 to-transparent">
-                          <button
-                            onClick={() => scrollAdminTabs("right")}
-                            className="h-6 w-6 rounded-md bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer hover:shadow"
-                            title="Scroll right"
-                          >
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {(activeRole === "admin" || activeRole === "super-admin") && (
-                    <>
-                      {visitedAdminTabs.has("users") && (
-                        <div className={cn("p-4", adminSubView === "users" ? "block" : "hidden")}>
-                          <UserManagementPanel currentUser={currentUser as any} />
-                        </div>
-                      )}
-                      {visitedAdminTabs.has("mailing") && (
-                        <div className={cn("p-4", adminSubView === "mailing" ? "block" : "hidden")}>
-                          <MailingCenterPanel />
-                        </div>
-                      )}
-                      {visitedAdminTabs.has("issues") && (
-                        <div className={cn("p-4", adminSubView === "issues" ? "block" : "hidden")}>
-                          <IssueManagementPanel />
-                        </div>
-                      )}
-                      {visitedAdminTabs.has("board") && (
-                        <div className={cn("p-4", adminSubView === "board" ? "block" : "hidden")}>
-                          <BoardManagementPanel />
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  <div
-                    className={
-                      (activeRole === "admin" || activeRole === "super-admin") &&
-                      adminSubView !== "pipeline"
-                        ? "hidden"
-                        : "block"
-                    }
-                  >
+                  <div>
                     <div className="p-4">
                       <DashboardStatsGrid submissions={submissions} />
                     </div>

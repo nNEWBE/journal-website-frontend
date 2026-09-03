@@ -13,6 +13,8 @@ export default function SuperAdminDashboardPage() {
       router.push("/login?redirect=/dashboard/super-admin");
     } else if (user.role !== "super-admin") {
       router.replace("/dashboard/analytics");
+    } else {
+      router.replace("/dashboard/pipeline");
     }
   }, [router]);
 
