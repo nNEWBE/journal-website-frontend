@@ -715,9 +715,7 @@ export function BoardManagementPanel() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Brief biography or research background..."
-              data-lenis-prevent="true"
-              onWheel={(e) => e.stopPropagation()}
-              className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all overflow-y-auto overscroll-contain resize-y font-sans"
+              className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all resize-y font-sans"
             />
           </div>
         </form>

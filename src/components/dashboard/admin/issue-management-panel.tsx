@@ -279,9 +279,7 @@ export function IssueManagementPanel() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the disciplinary scope or themes in this volume issue..."
-              data-lenis-prevent="true"
-              onWheel={(e) => e.stopPropagation()}
-              className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-blue-500 overflow-y-auto overscroll-contain resize-y"
+              className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-blue-500 resize-y"
             />
           </div>
 

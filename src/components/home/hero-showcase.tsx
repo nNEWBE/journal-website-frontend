@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { contentApi, articlesApi } from "@/lib/api";
+import { articles as initialArticles } from "@/lib/data";
 
 export interface FeaturedSlide {
   id: string;
@@ -134,21 +136,95 @@ export const featuredSlides: FeaturedSlide[] = [
   },
 ];
 
+function getCoverImage(article: any): string {
+  if (article.image && typeof article.image === "string" && article.image.trim()) {
+    return article.image;
+  }
+  const topic = (article.topic || "").toLowerCase();
+  if (topic.includes("pharmacy") || topic.includes("drug")) return "/images/hero/molecular_inhibitors.jpg";
+  if (topic.includes("tech") || topic.includes("computer") || topic.includes("ai")) return "/images/hero/quantum_computing.jpg";
+  if (topic.includes("agri") || topic.includes("farm") || topic.includes("climate") || topic.includes("crop")) return "/images/hero/crop_genomics.jpg";
+  if (topic.includes("cell") || topic.includes("medic") || topic.includes("health")) return "/images/hero/pulmonary_fibrosis.jpg";
+  return "/images/hero/molecular_inhibitors.jpg";
+}
+
 const AUTO_PLAY_INTERVAL = 8000;
 
 export function HeroShowcase() {
+  const [slides, setSlides] = useState<FeaturedSlide[]>(featuredSlides);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % featuredSlides.length);
+  // Dynamic fetch from Home CMS
+  useEffect(() => {
+    let active = true;
+    async function loadDynamicFeatured() {
+      try {
+        const sections = await contentApi.getPublished("home");
+        const heroSection = sections.find(
+          (s) => s.sectionKey === "hero-main" || s.sectionKey === "featured-research"
+        );
+        if (heroSection?.metaJson) {
+          const meta = JSON.parse(heroSection.metaJson);
+          if (Array.isArray(meta.featuredSlides) && meta.featuredSlides.length > 0) {
+            if (active) setSlides(meta.featuredSlides);
+            return;
+          }
+          if (Array.isArray(meta.selectedArticleIds) && meta.selectedArticleIds.length > 0) {
+            const res = await articlesApi.list({ size: 100 }).catch(() => null);
+            const allArticles = res?.content && res.content.length > 0 ? res.content : initialArticles;
+            const mapped: FeaturedSlide[] = [];
+            meta.selectedArticleIds.forEach((idOrSlug: string, idx: number) => {
+              const art = allArticles.find(
+                (a: any) => a.slug === idOrSlug || a.id === idOrSlug || a.articleId === idOrSlug
+              );
+              if (art) {
+                mapped.push({
+                  id: art.slug || art.id,
+                  num: String(idx + 1).padStart(2, "0"),
+                  category: "FEATURED RESEARCH",
+                  journalCategory: art.topic || "Multidisciplinary Science",
+                  isOpenAccess: true,
+                  title: art.title,
+                  shortTitle: art.title,
+                  authors: Array.isArray(art.authors) ? art.authors.join(", ") : (art.authors || "Editorial Research Group"),
+                  journal: "GB Journal of Science & Technology",
+                  journalHref: "/issues/current",
+                  volumeIssue: art.volume ? `${art.volume}, ${art.issue || "Issue 1"}` : "Vol. 14, No. 2",
+                  publishDate: art.publishedAt || "June 2025",
+                  abstract: art.abstract || "",
+                  doi: art.doi || "10.5555/gbj.2025",
+                  doiHref: art.doi ? `https://doi.org/${art.doi}` : undefined,
+                  image: getCoverImage(art),
+                  articleHref: `/articles/${art.slug || art.id}`,
+                  issueHref: "/issues/current",
+                });
+              }
+            });
+            if (mapped.length > 0 && active) {
+              setSlides(mapped);
+            }
+          }
+        }
+      } catch {
+        // graceful fallback to default
+      }
+    }
+    loadDynamicFeatured();
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % (slides.length || 1));
+  }, [slides.length]);
 
   const prevSlide = useCallback(() => {
     setCurrentIndex(
-      (prev) => (prev - 1 + featuredSlides.length) % featuredSlides.length
+      (prev) => (prev - 1 + (slides.length || 1)) % (slides.length || 1)
     );
-  }, []);
+  }, [slides.length]);
 
   useEffect(() => {
     if (isPaused) return;
@@ -172,7 +248,8 @@ export function HeroShowcase() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nextSlide, prevSlide]);
 
-  const currentSlide = featuredSlides[currentIndex];
+  const safeIndex = Math.min(currentIndex, Math.max(0, slides.length - 1));
+  const currentSlide = slides[safeIndex] || featuredSlides[0];
 
   return (
     <section
@@ -188,8 +265,8 @@ export function HeroShowcase() {
           {/* Left Column: Numbered List of Featured Articles */}
           <div className="flex flex-col justify-between self-stretch order-2 lg:order-1 pt-2 lg:pt-0">
             <div className="space-y-3 sm:space-y-3.5">
-              {featuredSlides.map((slide, idx) => {
-                const isActive = idx === currentIndex;
+              {slides.map((slide, idx) => {
+                const isActive = idx === safeIndex;
                 return (
                   <button
                     key={slide.id}
@@ -316,7 +393,7 @@ export function HeroShowcase() {
 
               <div className="font-mono text-xs tracking-wider">
                 <span className="font-bold text-[#1e40af]">{currentSlide.num}</span>
-                <span className="text-slate-400"> / 0{featuredSlides.length}</span>
+                <span className="text-slate-400"> / {String(slides.length).padStart(2, "0")}</span>
               </div>
 
               <button

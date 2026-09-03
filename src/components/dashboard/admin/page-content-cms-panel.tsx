@@ -24,9 +24,18 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  BookMarked,
+  Sparkles,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
+import Image from "next/image";
 import { toast } from "sonner";
-import { contentApi, type PageContentDTO } from "@/lib/api";
+import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
+import { articles as initialArticles, type Article } from "@/lib/data";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
@@ -172,6 +181,109 @@ export function PageContentCMSPanel() {
   const [formMetaJson, setFormMetaJson] = useState<string>("");
   const [formDisplayOrder, setFormDisplayOrder] = useState<number>(1);
   const [formPublished, setFormPublished] = useState<boolean>(true);
+
+  // Publications repository integration for homepage carousel
+  const [allArticles, setAllArticles] = useState<Article[]>(initialArticles);
+  const [articleSearch, setArticleSearch] = useState<string>("");
+
+  useEffect(() => {
+    async function loadRepoArticles() {
+      try {
+        const res = await articlesApi.list({ size: 100 });
+        if (res?.content && res.content.length > 0) {
+          setAllArticles(res.content);
+        }
+      } catch {
+        // fallback to initialArticles
+      }
+    }
+    loadRepoArticles();
+  }, []);
+
+  const getArticleCover = (art: Article) => {
+    if (art.image && typeof art.image === "string" && art.image.trim()) {
+      return art.image;
+    }
+    const topic = (art.topic || "").toLowerCase();
+    if (topic.includes("pharmacy") || topic.includes("drug")) return "/images/hero/molecular_inhibitors.jpg";
+    if (topic.includes("tech") || topic.includes("computer") || topic.includes("ai")) return "/images/hero/quantum_computing.jpg";
+    if (topic.includes("agri") || topic.includes("farm") || topic.includes("climate") || topic.includes("crop")) return "/images/hero/crop_genomics.jpg";
+    if (topic.includes("cell") || topic.includes("medic") || topic.includes("health")) return "/images/hero/pulmonary_fibrosis.jpg";
+    return "/images/hero/molecular_inhibitors.jpg";
+  };
+
+  const selectedArticleIds: string[] = useMemo(() => {
+    try {
+      if (!formMetaJson) return [];
+      const parsed = JSON.parse(formMetaJson);
+      return Array.isArray(parsed.selectedArticleIds) ? parsed.selectedArticleIds : [];
+    } catch {
+      return [];
+    }
+  }, [formMetaJson]);
+
+  const updateMetaWithArticles = (articleIds: string[]) => {
+    try {
+      const currentMeta = formMetaJson ? JSON.parse(formMetaJson) : {};
+      currentMeta.selectedArticleIds = articleIds;
+      currentMeta.featuredSlides = articleIds.map((id, index) => {
+        const art = allArticles.find((a) => a.slug === id || a.id === id) || initialArticles.find((a) => a.slug === id || a.id === id);
+        return {
+          id: art?.slug || id,
+          num: String(index + 1).padStart(2, "0"),
+          category: "FEATURED RESEARCH",
+          journalCategory: art?.topic || "Multidisciplinary Science",
+          isOpenAccess: true,
+          title: art?.title || "Research Manuscript",
+          shortTitle: art?.title || "Research Manuscript",
+          authors: Array.isArray(art?.authors) ? art.authors.join(", ") : (art?.authors || "Editorial Research Group"),
+          journal: "GB Journal of Science & Technology",
+          journalHref: "/issues/current",
+          volumeIssue: art?.volume ? `${art.volume}, ${art.issue || "Issue 1"}` : "Vol. 14, No. 2",
+          publishDate: art?.publishedAt || "June 2025",
+          abstract: art?.abstract || "",
+          doi: art?.doi || "10.5555/gbj.2025",
+          doiHref: art?.doi ? `https://doi.org/${art.doi}` : undefined,
+          image: art ? getArticleCover(art) : "/images/hero/molecular_inhibitors.jpg",
+          articleHref: `/articles/${art?.slug || id}`,
+          issueHref: "/issues/current",
+        };
+      });
+      setFormMetaJson(JSON.stringify(currentMeta, null, 2));
+    } catch {
+      setFormMetaJson(JSON.stringify({ selectedArticleIds: articleIds }, null, 2));
+    }
+  };
+
+  const handleAddArticleToCarousel = (art: Article) => {
+    const artId = art.slug || art.id;
+    if (selectedArticleIds.includes(artId)) return;
+    const nextIds = [...selectedArticleIds, artId];
+    updateMetaWithArticles(nextIds);
+    toast.success(`"${art.title.slice(0, 30)}..." added to carousel!`);
+  };
+
+  const handleRemoveArticleFromCarousel = (artId: string) => {
+    const nextIds = selectedArticleIds.filter((id) => id !== artId);
+    updateMetaWithArticles(nextIds);
+    toast.info("Removed from carousel.");
+  };
+
+  const handleMoveArticleOrder = (idx: number, direction: "up" | "down") => {
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= selectedArticleIds.length) return;
+    const nextIds = [...selectedArticleIds];
+    const temp = nextIds[idx];
+    nextIds[idx] = nextIds[targetIdx];
+    nextIds[targetIdx] = temp;
+    updateMetaWithArticles(nextIds);
+  };
+
+  const handleLoadDefaultArticles = () => {
+    const defaultSlugs = initialArticles.slice(0, 4).map((a) => a.slug || a.id);
+    updateMetaWithArticles(defaultSlugs);
+    toast.success("Loaded 4 recommended research papers from publications repository!");
+  };
 
   // Initial snapshot to track dirty form state
   const [initForm, setInitForm] = useState<{
@@ -648,6 +760,50 @@ export function PageContentCMSPanel() {
                     </span>
                   </div>
                 )}
+
+                {section.pageKey === "home" && section.sectionKey === "hero-main" && (
+                  <div className="mt-3.5 p-3.5 rounded-xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <BookMarked className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900">
+                            Homepage Featured Research Carousel
+                          </h5>
+                          {(() => {
+                            try {
+                              const meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                              const count = Array.isArray(meta.selectedArticleIds)
+                                ? meta.selectedArticleIds.length
+                                : (Array.isArray(meta.featuredSlides) ? meta.featuredSlides.length : 4);
+                              return (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                                  {count} Publications Selected
+                                </span>
+                              );
+                            } catch {
+                              return null;
+                            }
+                          })()}
+                        </div>
+                        <p className="text-[11.5px] text-slate-500 mt-0.5">
+                          Controls the interactive 4-slide research visualizer on the main journal homepage.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(section)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer shrink-0"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Select Publications</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -662,8 +818,28 @@ export function PageContentCMSPanel() {
         description="Configure and publish academic content sections across the journal portal."
         icon={Edit}
         size="xl"
+        footer={
+          <div className="flex items-center justify-end gap-2.5 w-full">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="page-section-form"
+              disabled={saving || !isFormDirty}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Save className="h-3.5 w-3.5" />
+              {saving ? "Saving Changes..." : "Save & Publish"}
+            </button>
+          </div>
+        }
       >
-        <form onSubmit={handleSaveSection} className="space-y-4">
+        <form id="page-section-form" onSubmit={handleSaveSection} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -723,18 +899,228 @@ export function PageContentCMSPanel() {
             />
           </div>
 
+          {/* Featured Publications Selector for Home Page Hero Carousel */}
+          {formPageKey === "home" && (formSectionKey === "hero-main" || formSectionKey === "featured-research" || isCreatingNew) && (
+            <div className="rounded-2xl border-2 border-blue-200/90 bg-gradient-to-b from-blue-50/60 to-slate-50/40 p-4 sm:p-5 space-y-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <BookMarked className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                      <span>Homepage Featured Research Carousel</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/70">
+                        {selectedArticleIds.length} Publications Chosen
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Select manuscripts from the publications repository to showcase on the homepage hero visualizer.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLoadDefaultArticles}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Load Top 4 Defaults</span>
+                </button>
+              </div>
+
+              {/* Currently Selected Carousel Slides (Ordered 01, 02, 03, 04...) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    Active Carousel Lineup ({selectedArticleIds.length} Slides)
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    Recommended: 4 articles for full grid layout
+                  </span>
+                </div>
+
+                {selectedArticleIds.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500">
+                    <p className="font-medium text-slate-700">No publications selected yet.</p>
+                    <p className="text-[11px] text-slate-400 mt-1">The homepage will display default editorial highlights.</p>
+                    <button
+                      type="button"
+                      onClick={handleLoadDefaultArticles}
+                      className="mt-2.5 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                    >
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      <span>Click to load 4 recommended papers from publications repository</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedArticleIds.map((artId, idx) => {
+                      const art = allArticles.find((a) => a.slug === artId || a.id === artId) || initialArticles.find((a) => a.slug === artId || a.id === artId);
+                      const cover = art ? getArticleCover(art) : "/images/hero/molecular_inhibitors.jpg";
+                      return (
+                        <div
+                          key={artId}
+                          className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-200/90 bg-white shadow-2xs hover:border-blue-200 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
+                              {String(idx + 1).padStart(2, "0")}
+                            </span>
+                            <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                              <img src={cover} alt="" className="h-full w-full object-cover" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-900 truncate">
+                                {art?.title || artId}
+                              </p>
+                              <p className="text-[10.5px] text-slate-500 truncate mt-0.5">
+                                {Array.isArray(art?.authors) ? art.authors.join(", ") : art?.authors || "Academic Researchers"} • <span className="font-semibold text-blue-700">{art?.topic || "Science"}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveArticleOrder(idx, "up")}
+                              disabled={idx === 0}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 cursor-pointer transition-colors"
+                              title="Move Slide Up"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveArticleOrder(idx, "down")}
+                              disabled={idx === selectedArticleIds.length - 1}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 cursor-pointer transition-colors"
+                              title="Move Slide Down"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveArticleFromCarousel(artId)}
+                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 cursor-pointer ml-1 transition-colors"
+                              title="Remove from Carousel"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Add More Publications from Repository */}
+              <div className="pt-3 border-t border-slate-200/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    Add Publications from Repository
+                  </label>
+                  <span className="text-[10.5px] text-slate-500 font-medium">
+                    {allArticles.length} total publications
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search publications by title, author, topic, or DOI..."
+                    value={articleSearch}
+                    onChange={(e) => setArticleSearch(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3.5 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+                  />
+                  {articleSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setArticleSearch("")}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 drawer-scroll">
+                  {allArticles
+                    .filter((art) => {
+                      if (!articleSearch.trim()) return true;
+                      const q = articleSearch.toLowerCase();
+                      return (
+                        art.title?.toLowerCase().includes(q) ||
+                        art.topic?.toLowerCase().includes(q) ||
+                        (Array.isArray(art.authors) ? art.authors.join(" ") : art.authors || "").toLowerCase().includes(q) ||
+                        art.doi?.toLowerCase().includes(q)
+                      );
+                    })
+                    .slice(0, 20)
+                    .map((art) => {
+                      const artId = art.slug || art.id;
+                      const isSelected = selectedArticleIds.includes(artId);
+                      const cover = getArticleCover(art);
+                      return (
+                        <div
+                          key={artId}
+                          className={cn(
+                            "flex items-center justify-between gap-2.5 p-2 rounded-xl border transition-all text-xs",
+                            isSelected
+                              ? "border-blue-200 bg-blue-50/60"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="relative h-8 w-8 shrink-0 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                              <img src={cover} alt="" className="h-full w-full object-cover" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-slate-900 truncate text-[11.5px]">
+                                {art.title}
+                              </p>
+                              <p className="text-[10px] text-slate-500 truncate">
+                                {Array.isArray(art.authors) ? art.authors[0] : art.authors} • <span className="text-blue-700 font-medium">{art.topic}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {isSelected ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-100/90 px-2 py-1 rounded-lg shrink-0 border border-blue-200/80">
+                              <Check className="h-3 w-3" />
+                              Selected
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAddArticleToCarousel(art)}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0 border border-blue-200 hover:border-blue-600"
+                            >
+                              <Plus className="h-3 w-3" />
+                              Add
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Body Content (Text / Markdown)
             </label>
             <textarea
-              rows={8}
-              data-lenis-prevent="true"
-              onWheel={(e) => e.stopPropagation()}
+              rows={6}
               placeholder="Enter academic content, guidelines, or policy clauses..."
               value={formContent}
               onChange={(e) => setFormContent(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-900 leading-relaxed focus:border-blue-500 focus:outline-hidden font-sans overscroll-contain overflow-y-auto"
+              className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-900 leading-relaxed focus:border-blue-500 focus:outline-hidden font-sans resize-y"
             />
           </div>
 
@@ -761,12 +1147,10 @@ export function PageContentCMSPanel() {
             </div>
             <textarea
               rows={4}
-              data-lenis-prevent="true"
-              onWheel={(e) => e.stopPropagation()}
               placeholder='{ "icon": "shield", "order": 1 }'
               value={formMetaJson}
               onChange={(e) => setFormMetaJson(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 p-3 text-[11px] font-mono text-slate-800 leading-relaxed focus:border-blue-500 focus:outline-hidden overscroll-contain overflow-y-auto bg-slate-50"
+              className="w-full rounded-lg border border-slate-200 p-3 text-[11px] font-mono text-slate-800 leading-relaxed focus:border-blue-500 focus:outline-hidden bg-slate-50 resize-y"
             />
           </div>
 
@@ -781,6 +1165,7 @@ export function PageContentCMSPanel() {
                 max={99}
                 value={formDisplayOrder}
                 onChange={(e) => setFormDisplayOrder(Number(e.target.value))}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
@@ -793,24 +1178,6 @@ export function PageContentCMSPanel() {
                 label="Publish Immediately (Visible to Public)"
               />
             </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={() => setIsEditModalOpen(false)}
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !isFormDirty}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? "Saving Changes..." : "Save & Publish"}
-            </button>
           </div>
         </form>
       </CustomDrawer>
