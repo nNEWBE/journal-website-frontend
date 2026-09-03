@@ -311,32 +311,24 @@ export function AnalyticsPanel({
           value={s.total}
           icon={FileText}
           accent="blue"
-          badge="+12.4%"
-          sublabel={`Across ${cfg.label}`}
         />
         <KpiStatCard
           label="Avg. Turnaround"
           value={s.turnaround}
           icon={Clock}
           accent="emerald"
-          badge={s.turnaroundDiff}
-          sublabel="First editorial decision"
         />
         <KpiStatCard
           label="Published Papers"
           value={s.published}
           icon={BookOpen}
           accent="purple"
-          badge={s.acceptanceDiff}
-          sublabel="Indexed in current volume"
         />
         <KpiStatCard
           label="Peer Reviewers"
           value="48 Active"
           icon={Users}
           accent="amber"
-          badge="+4 Reviewers"
-          sublabel="Double-blind panel"
         />
       </div>
 

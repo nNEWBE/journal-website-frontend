@@ -33,6 +33,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { DashboardSearchFilterBar } from "@/components/dashboard/dashboard-search-bar";
 import { cn } from "@/lib/utils";
 
 const PAGE_TABS = [
@@ -512,30 +513,15 @@ export function PageContentCMSPanel() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[color:var(--color-gb-border)] shadow-xs">
-        <div className="flex items-center gap-2 flex-1 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] px-3 py-1.5 focus-within:border-[color:var(--color-gb-blue)] focus-within:bg-white transition-all">
-          <Search className="h-4 w-4 text-[color:var(--color-gb-muted)] shrink-0" />
-          <input
-            type="text"
-            placeholder={`Filter ${currentTabInfo.label} sections by title, key or content...`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-xs text-[color:var(--color-gb-ink)] placeholder-[color:var(--color-gb-muted)] focus:outline-hidden"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="text-[10px] text-slate-400 hover:text-slate-600 px-1 font-bold"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-500 shrink-0 font-medium px-1">
-          <span>{filteredSections.length} Sections configured</span>
-        </div>
-      </div>
+      <DashboardSearchFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder={`Filter ${currentTabInfo.label} sections by title, key or content...`}
+      >
+        <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
+          {filteredSections.length} Sections configured
+        </span>
+      </DashboardSearchFilterBar>
 
       {/* Content Section List */}
       {loading ? (

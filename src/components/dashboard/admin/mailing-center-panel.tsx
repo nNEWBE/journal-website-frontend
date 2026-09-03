@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { adminApi, MailTemplateItem } from "@/lib/api";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 
 const AUDIENCE_OPTIONS = [
@@ -22,6 +23,12 @@ const AUDIENCE_OPTIONS = [
   { id: "ALL_AUTHORS", label: "All Authors", icon: PenLine, desc: "Send notice to all submitting researchers" },
   { id: "ALL_REVIEWERS", label: "All Peer Reviewers", icon: Shield, desc: "Broadcast to active review board members" },
   { id: "ALL_EDITORS", label: "Editorial Team", icon: UserCheck, desc: "Dispatch message to section & senior editors" },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: "NORMAL", label: "Normal" },
+  { value: "HIGH", label: "High Priority" },
+  { value: "URGENT", label: "Urgent Notice" },
 ];
 
 let mailTemplateCache: MailTemplateItem[] | null = null;
@@ -197,15 +204,13 @@ export function MailingCenterPanel() {
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Priority
                 </label>
-                <select
+                <CustomSelect
+                  options={PRIORITY_OPTIONS}
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value as any)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 bg-white outline-none focus:border-[color:var(--color-gb-blue)]"
-                >
-                  <option value="NORMAL">Normal</option>
-                  <option value="HIGH">High Priority</option>
-                  <option value="URGENT">Urgent Notice</option>
-                </select>
+                  onChange={(val) => setPriority(val as any)}
+                  size="form"
+                  className="w-full text-xs font-semibold"
+                />
               </div>
             </div>
 
@@ -230,14 +235,25 @@ export function MailingCenterPanel() {
                 Emails are sent with institutional DKIM &amp; SPF authentication.
               </span>
 
-              <button
-                type="submit"
-                disabled={isSending}
-                className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-6 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer"
-              >
-                <Send className="h-4 w-4" />
-                {isSending ? "Dispatching..." : "Dispatch Broadcast"}
-              </button>
+              {(() => {
+                const isFormReady = Boolean(subject.trim() && messageBody.trim());
+                const canDispatch = isFormReady && !isSending;
+                return (
+                  <button
+                    type="submit"
+                    disabled={!canDispatch}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-xs font-bold transition-all",
+                      canDispatch
+                        ? "bg-[color:var(--color-gb-blue)] text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] hover:shadow hover:-translate-y-0.5 cursor-pointer"
+                        : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none border border-slate-300/60"
+                    )}
+                  >
+                    <Send className="h-4 w-4" />
+                    {isSending ? "Dispatching..." : "Dispatch Broadcast"}
+                  </button>
+                );
+              })()}
             </div>
           </form>
         </div>

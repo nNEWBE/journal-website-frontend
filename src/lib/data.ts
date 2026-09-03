@@ -372,6 +372,8 @@ export const dashboardStats = [
 
 export type BoardMember = {
   id?: string | number;
+  userId?: string | number;
+  email?: string;
   name: string;
   role: string;
   unit?: string;

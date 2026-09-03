@@ -22,6 +22,7 @@ import {
   UploadCloud,
   Image as ImageIcon,
   Loader2,
+  Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import { boardApi, adminApi, filesApi } from "@/lib/api";
@@ -32,6 +33,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
+import { DashboardSearchFilterBar } from "@/components/dashboard/dashboard-search-bar";
 import { cn } from "@/lib/utils";
 
 const BOARD_ROLES = [
@@ -46,6 +48,8 @@ let boardCache: { data: BoardMember[]; timestamp: number } | null = null;
 
 export function BoardManagementPanel() {
   const [members, setMembers] = useState<BoardMember[]>(() => boardCache?.data || []);
+  const [systemUsers, setSystemUsers] = useState<any[]>([]);
+  const [linkedUserId, setLinkedUserId] = useState<string | number | "">("");
   const [loading, setLoading] = useState<boolean>(!boardCache?.data || boardCache.data.length === 0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -111,10 +115,16 @@ export function BoardManagementPanel() {
     }
 
     try {
-      const data = await boardApi.getAll();
+      const [data, usersData] = await Promise.all([
+        boardApi.getAll(),
+        adminApi.listUsers().catch(() => []),
+      ]);
       if (Array.isArray(data)) {
         setMembers(data);
         boardCache = { data, timestamp: Date.now() };
+      }
+      if (Array.isArray(usersData)) {
+        setSystemUsers(usersData);
       }
     } catch (err: any) {
       if (!hasCache) {
@@ -166,8 +176,42 @@ export function BoardManagementPanel() {
     });
   }, [members, searchQuery, roleFilter]);
 
+  // Options for linking a board member to a registered system user account
+  const userOptions = useMemo(() => {
+    const opts = [{ value: "", label: "None — External Scholar / Masthead Only" }];
+    systemUsers.forEach((u) => {
+      opts.push({
+        value: String(u.id),
+        label: `${u.fullName} (${(u.role || "user").toUpperCase()} • ${u.email})`,
+      });
+    });
+    return opts;
+  }, [systemUsers]);
+
+  const handleSelectUser = (selectedId: string) => {
+    if (!selectedId) {
+      setLinkedUserId("");
+      return;
+    }
+    const u = systemUsers.find((user) => String(user.id) === String(selectedId));
+    if (u) {
+      setLinkedUserId(u.id);
+      setName(u.fullName || "");
+      if (u.title) setDesignation(u.title);
+      const aff = [u.department, u.institution].filter(Boolean).join(", ");
+      if (aff) setAffiliation(aff);
+      toast.info(`Auto-populated details from ${u.fullName}'s user profile.`);
+    }
+  };
+
+  const handleUnlinkUser = () => {
+    setLinkedUserId("");
+    toast.info("Unlinked from user directory. Record is now an external scholar.");
+  };
+
   const openAddModal = () => {
     setEditingMember(null);
+    setLinkedUserId("");
     setName("");
     setDesignation("Professor");
     setAffiliation("Department of Pharmacy, Gono Bishwabidyalay");
@@ -179,6 +223,10 @@ export function BoardManagementPanel() {
 
   const openEditModal = (m: BoardMember) => {
     setEditingMember(m);
+    const matchingUser = systemUsers.find(
+      (u) => (m.userId && String(u.id) === String(m.userId)) || u.fullName?.toLowerCase() === m.name?.toLowerCase()
+    );
+    setLinkedUserId(matchingUser ? matchingUser.id : (m.userId || ""));
     setName(m.name || "");
     setDesignation(m.designation || "");
     setAffiliation(m.affiliation || "");
@@ -204,6 +252,7 @@ export function BoardManagementPanel() {
         role: role.trim(),
         bio: bio.trim() || undefined,
         avatarUrl: avatarUrl.trim() || undefined,
+        userId: linkedUserId || undefined,
       };
 
       if (editingMember && editingMember.id) {
@@ -305,6 +354,23 @@ export function BoardManagementPanel() {
         </button>
       </DashboardHeaderActions>
 
+      {/* Editorial Board Governance Clarification Banner */}
+      <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/90 via-sky-50/40 to-white p-4 sm:p-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+            <Crown className="h-4.5 w-4.5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="text-xs font-bold text-slate-900">
+              Public Journal Masthead &amp; Academic Governance
+            </h4>
+            <p className="text-[11.5px] text-slate-600 mt-0.5 leading-relaxed">
+              This panel manages the official editorial board showcased on the public journal website and published issues. Board members can be <strong>linked to registered accounts</strong> in the User Directory or listed as <strong>external honorary scholars</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         <KpiStatCard
@@ -312,63 +378,33 @@ export function BoardManagementPanel() {
           value={stats.total}
           icon={Users}
           accent="blue"
-          badge="All Appointments"
-          sublabel="Appointments"
-          active={roleFilter === "ALL"}
-          onClick={() => setRoleFilter("ALL")}
         />
         <KpiStatCard
           label="Chief & Managing"
           value={stats.chief}
           icon={Crown}
           accent="amber"
-          badge="Executive Editors"
-          sublabel="Executive Board"
-          active={roleFilter === "CHIEF"}
-          onClick={() => setRoleFilter("CHIEF")}
         />
         <KpiStatCard
           label="Section Editors"
           value={stats.section}
           icon={BookOpen}
           accent="indigo"
-          badge="Specialized Fields"
-          sublabel="Subject Specialists"
-          active={roleFilter === "SECTION"}
-          onClick={() => setRoleFilter("SECTION")}
         />
         <KpiStatCard
           label="Advisory & Associate"
           value={stats.advisory}
           icon={Award}
           accent="emerald"
-          badge="Peer Council"
-          sublabel="Peer Oversight"
-          active={roleFilter === "ADVISORY"}
-          onClick={() => setRoleFilter("ADVISORY")}
         />
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[color:var(--color-gb-border)] shadow-xs">
-        <div className="flex items-center gap-2 flex-1 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] px-3 py-1.5 focus-within:border-[color:var(--color-gb-blue)] focus-within:bg-white transition-all">
-          <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by scholar name, department, institution, or role..."
-            className="w-full bg-transparent text-xs font-medium text-[color:var(--color-gb-ink)] outline-none placeholder:text-slate-400"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
+      <DashboardSearchFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Search by scholar name, department, institution, or role..."
+      >
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {[
             { id: "ALL", label: "All Roles" },
@@ -390,7 +426,7 @@ export function BoardManagementPanel() {
             </button>
           ))}
         </div>
-      </div>
+      </DashboardSearchFilterBar>
 
       {/* Board Members Grid */}
       {loading ? (
@@ -414,6 +450,10 @@ export function BoardManagementPanel() {
             const roleBadge = getRoleBadge(member.role);
             const RoleIcon = roleBadge.icon;
             const initials = getInitials(member.name || "Scholar");
+            const linkedUser = systemUsers.find(
+              (u) => (member.userId && String(u.id) === String(member.userId)) || u.fullName?.toLowerCase() === member.name?.toLowerCase()
+            );
+            const isLinked = Boolean(linkedUser);
 
             return (
               <div
@@ -427,10 +467,23 @@ export function BoardManagementPanel() {
                       <RoleIcon className="h-3 w-3 shrink-0" />
                       {roleBadge.label}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Public
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isLinked ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/80" title={`Linked to registered user account (${linkedUser?.email})`}>
+                          <CheckCircle2 className="h-2.5 w-2.5 text-blue-600" />
+                          Platform User
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/80" title="External honorary scholar without system login account">
+                          <Globe className="h-2.5 w-2.5 text-slate-400" />
+                          External
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Public
+                      </span>
+                    </div>
                   </div>
 
                   {/* Profile Header */}
@@ -509,8 +562,57 @@ export function BoardManagementPanel() {
         description="Configure academic appointments displayed on the journal editorial board."
         icon={Crown}
         size="lg"
+        footer={
+          <div className="flex items-center justify-end gap-2.5 w-full">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="board-member-form"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-xl bg-[color:var(--color-gb-blue)] text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            >
+              {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>{editingMember ? "Update Member" : "Add Member"}</span>
+            </button>
+          </div>
+        }
       >
-        <form onSubmit={handleSave} className="space-y-4 text-xs">
+        <form id="board-member-form" onSubmit={handleSave} className="space-y-4 text-xs">
+          {/* User Account Linkage Section */}
+          <div className="rounded-xl border border-blue-200/90 bg-gradient-to-r from-blue-50/70 via-sky-50/30 to-white p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-blue-600" />
+                <span>Link to User Directory (Optional)</span>
+              </label>
+              {linkedUserId && (
+                <button
+                  type="button"
+                  onClick={handleUnlinkUser}
+                  className="text-[10px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
+                >
+                  Unlink Account
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 leading-snug">
+              Select an existing platform user to auto-populate their academic credentials, or choose &quot;None&quot; for external honorary scholars.
+            </p>
+            <CustomSelect
+              size="form"
+              options={userOptions}
+              value={linkedUserId ? String(linkedUserId) : ""}
+              onChange={handleSelectUser}
+              placeholder="Select from registered user directory..."
+            />
+          </div>
+
           <div>
             <label className="block font-bold text-slate-700 mb-1">Scholar Name *</label>
             <input
@@ -518,7 +620,7 @@ export function BoardManagementPanel() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Prof. Dr. Laila Rahman"
-              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all font-medium"
             />
           </div>
 
@@ -529,7 +631,7 @@ export function BoardManagementPanel() {
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
                 placeholder="e.g. Professor & Dean"
-                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all font-medium"
               />
             </div>
 
@@ -551,7 +653,7 @@ export function BoardManagementPanel() {
               value={affiliation}
               onChange={(e) => setAffiliation(e.target.value)}
               placeholder="e.g. Department of Pharmacy, Gono Bishwabidyalay"
-              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all font-medium"
             />
           </div>
 
@@ -615,25 +717,8 @@ export function BoardManagementPanel() {
               placeholder="Brief biography or research background..."
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
-              className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-blue-500 overflow-y-auto overscroll-contain resize-y"
+              className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all overflow-y-auto overscroll-contain resize-y font-sans"
             />
-          </div>
-
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2 rounded-lg bg-[color:var(--color-gb-blue)] text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] disabled:opacity-50 cursor-pointer"
-            >
-              {isSubmitting ? "Saving..." : editingMember ? "Update Member" : "Add Member"}
-            </button>
           </div>
         </form>
       </CustomDrawer>

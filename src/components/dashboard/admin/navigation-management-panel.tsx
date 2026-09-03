@@ -520,32 +520,24 @@ export function NavigationManagementPanel() {
           value={stats.totalTop}
           icon={Compass}
           accent="blue"
-          badge={`${stats.activeTop} Active`}
-          sublabel="Main Header Links"
         />
         <KpiStatCard
           label="Dropdown Menus"
           value={stats.dropdownCount}
           icon={Layers}
           accent="amber"
-          badge="Mega Dropdowns"
-          sublabel="Nested Categories"
         />
         <KpiStatCard
           label="Sub-Items"
           value={stats.totalSubs}
           icon={FolderTree}
           accent="purple"
-          badge="Sub-Links"
-          sublabel="Catalogue Entries"
         />
         <KpiStatCard
           label="Direct Links"
           value={stats.directCount}
           icon={Link2}
           accent="emerald"
-          badge="Direct Route"
-          sublabel="Single Click Paths"
         />
       </div>
 

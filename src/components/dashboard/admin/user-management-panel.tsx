@@ -21,8 +21,10 @@ import {
   Crown,
   ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { adminApi, AuthResponseData } from "@/lib/api";
+import { adminApi, boardApi, AuthResponseData } from "@/lib/api";
+import { BoardMember } from "@/lib/data";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
@@ -30,6 +32,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
+import { DashboardSearchFilterBar } from "@/components/dashboard/dashboard-search-bar";
 import {
   Table,
   TableHeader,
@@ -60,6 +63,7 @@ export function UserManagementPanel({
   currentUser?: UserItem | null;
 }) {
   const [users, setUsers] = useState<UserItem[]>(() => userCache?.data || []);
+  const [boardMembers, setBoardMembers] = useState<BoardMember[]>([]);
   const [loading, setLoading] = useState<boolean>(!userCache?.data || userCache.data.length === 0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,10 +158,16 @@ export function UserManagementPanel({
     }
 
     try {
-      const data = await adminApi.listUsers();
+      const [data, boardData] = await Promise.all([
+        adminApi.listUsers(),
+        boardApi.getAll().catch(() => []),
+      ]);
       if (Array.isArray(data)) {
         setUsers(data);
         userCache = { data, timestamp: Date.now() };
+      }
+      if (Array.isArray(boardData)) {
+        setBoardMembers(boardData);
       }
     } catch (err: any) {
       if (!hasCache) {
@@ -393,73 +403,39 @@ export function UserManagementPanel({
           value={stats.total}
           icon={Users}
           accent="blue"
-          badge="All Accounts"
-          sublabel="Directory"
-          active={roleFilter === "ALL"}
-          onClick={() => setRoleFilter("ALL")}
         />
         <KpiStatCard
           label="Authors"
           value={stats.authors}
           icon={PenLine}
           accent="sky"
-          badge={`${stats.total ? Math.round((stats.authors / stats.total) * 100) : 0}% Share`}
-          sublabel="Submitters"
-          active={roleFilter === "author"}
-          onClick={() => setRoleFilter("author")}
         />
         <KpiStatCard
           label="Reviewers"
           value={stats.reviewers}
           icon={UserCheck}
           accent="amber"
-          badge="Peer Panel"
-          sublabel="Peer Review"
-          active={roleFilter === "reviewer"}
-          onClick={() => setRoleFilter("reviewer")}
         />
         <KpiStatCard
           label="Editors"
           value={stats.editors}
           icon={Shield}
           accent="purple"
-          badge="Editorial Desk"
-          sublabel="Decision Desk"
-          active={roleFilter === "editor"}
-          onClick={() => setRoleFilter("editor")}
         />
         <KpiStatCard
           label="Admins"
           value={stats.admins}
           icon={Crown}
           accent="emerald"
-          badge="Governance"
-          sublabel="Governance"
-          active={roleFilter === "admin"}
-          onClick={() => setRoleFilter("admin")}
         />
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[color:var(--color-gb-border)] shadow-xs">
-        <div className="flex items-center gap-2 flex-1 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] px-3 py-1.5 focus-within:border-[color:var(--color-gb-blue)] focus-within:bg-white transition-all">
-          <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, email, department, institution..."
-            className="w-full bg-transparent text-xs font-medium text-[color:var(--color-gb-ink)] outline-none placeholder:text-slate-400"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
+      <DashboardSearchFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Search by name, email, department, institution..."
+      >
         <div className="w-full sm:w-52 shrink-0">
           <CustomSelect
             options={ROLE_OPTIONS}
@@ -470,7 +446,7 @@ export function UserManagementPanel({
             placeholder="Filter by Role"
           />
         </div>
-      </div>
+      </DashboardSearchFilterBar>
 
       {/* Users Table */}
       <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm">
@@ -531,22 +507,40 @@ export function UserManagementPanel({
                     </TableCell>
 
                     <TableCell>
-                      <span
-                        className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border",
-                          u.role === "super-admin"
-                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                            : u.role === "admin"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : u.role === "editor"
-                                ? "bg-blue-50 text-blue-700 border-blue-200"
-                                : u.role === "reviewer"
-                                  ? "bg-amber-50 text-amber-700 border-amber-200"
-                                  : "bg-slate-50 text-slate-700 border-slate-200"
-                        )}
-                      >
-                        {u.role ? u.role.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Author"}
-                      </span>
+                      {(() => {
+                        const boardAppointment = boardMembers.find(
+                          (b) => (b.userId && String(b.userId) === String(u.id)) || b.name?.toLowerCase() === u.fullName?.toLowerCase()
+                        );
+                        return (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={cn(
+                                "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border",
+                                u.role === "super-admin"
+                                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                                  : u.role === "admin"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    : u.role === "editor"
+                                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                                      : u.role === "reviewer"
+                                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                                        : "bg-slate-50 text-slate-700 border-slate-200"
+                              )}
+                            >
+                              {u.role ? u.role.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Author"}
+                            </span>
+                            {boardAppointment && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80"
+                                title={`Appointed to Editorial Board: ${boardAppointment.role}`}
+                              >
+                                <Crown className="h-2.5 w-2.5 text-indigo-600" />
+                                Board
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
 
                     <TableCell>
@@ -883,6 +877,19 @@ export function UserManagementPanel({
             <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
             <span>Edit Profile</span>
           </button>
+
+          {/* View or Appoint to Editorial Board */}
+          <Link
+            href="/dashboard/board"
+            onClick={() => {
+              setActionMenuUserId(null);
+              setMenuPosition(null);
+            }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
+          >
+            <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+            <span>Editorial Board</span>
+          </Link>
 
           {/* Toggle Status */}
           <button
