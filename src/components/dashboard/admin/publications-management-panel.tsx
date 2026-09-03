@@ -38,6 +38,7 @@ import { articlesApi, issuesApi, IssueData } from "@/lib/api";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { cn } from "@/lib/utils";
 
 function getCoverImage(article: Article): string {
@@ -451,46 +452,31 @@ export function PublicationsManagementPanel() {
       </DashboardHeaderActions>
 
       {/* ── KPI Metric Badges ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-          <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <FileText className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Publications</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalPubs}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-          <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Quote className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Citations</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalCitations}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-          <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <FileDown className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Full Downloads</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalDownloads.toLocaleString()}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-          <div className="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Eye className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Reads</p>
-            <p className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalViews.toLocaleString()}</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <KpiStatCard
+          label="Total Publications"
+          value={stats.totalPubs}
+          icon={FileText}
+          accent="blue"
+        />
+        <KpiStatCard
+          label="Total Citations"
+          value={stats.totalCitations}
+          icon={Quote}
+          accent="emerald"
+        />
+        <KpiStatCard
+          label="Full Downloads"
+          value={stats.totalDownloads}
+          icon={FileDown}
+          accent="amber"
+        />
+        <KpiStatCard
+          label="Total Reads"
+          value={stats.totalViews}
+          icon={Eye}
+          accent="indigo"
+        />
       </div>
 
       {/* ── Filter & Search Control Center ── */}

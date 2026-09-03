@@ -21,6 +21,7 @@ import { ChartContainer } from "@/components/ui/chart";
 
 import { AcceptanceRateCard } from "@/components/dashboard/analytics/acceptance-rate-card";
 import { ReviewerWorkloadTable } from "@/components/dashboard/analytics/reviewer-workload-table";
+import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 
 const C = {
   navy: "#1f2f82",
@@ -304,42 +305,38 @@ export function AnalyticsPanel({
       </div>
 
       {/* Top Metric Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <PremiumStatCard
-          title="Total Submissions"
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <KpiStatCard
+          label="Total Submissions"
           value={s.total}
-          subtitle={`Across ${cfg.label}`}
           icon={FileText}
-          color={C.navy}
-          trend="+12.4%"
-          trendUp={true}
+          accent="blue"
+          badge="+12.4%"
+          sublabel={`Across ${cfg.label}`}
         />
-        <PremiumStatCard
-          title="Avg. Turnaround"
+        <KpiStatCard
+          label="Avg. Turnaround"
           value={s.turnaround}
-          subtitle="First editorial decision"
           icon={Clock}
-          color={C.emerald}
-          trend={s.turnaroundDiff}
-          trendUp={true}
+          accent="emerald"
+          badge={s.turnaroundDiff}
+          sublabel="First editorial decision"
         />
-        <PremiumStatCard
-          title="Published Papers"
+        <KpiStatCard
+          label="Published Papers"
           value={s.published}
-          subtitle="Indexed in current volume"
           icon={BookOpen}
-          color={C.violet}
-          trend={s.acceptanceDiff}
-          trendUp={true}
+          accent="purple"
+          badge={s.acceptanceDiff}
+          sublabel="Indexed in current volume"
         />
-        <PremiumStatCard
-          title="Peer Reviewers"
+        <KpiStatCard
+          label="Peer Reviewers"
           value="48 Active"
-          subtitle="Double-blind panel"
           icon={Users}
-          color={C.amber}
-          trend="+4 Reviewers"
-          trendUp={true}
+          accent="amber"
+          badge="+4 Reviewers"
+          sublabel="Double-blind panel"
         />
       </div>
 

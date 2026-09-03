@@ -1,6 +1,6 @@
 "use client";
 
-import { StatCard } from "@/components/ui/stat-card";
+import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import {
   CheckCircle2,
   Clock,
@@ -26,26 +26,26 @@ export function DashboardStatsGrid({ submissions }: DashboardStatsGridProps) {
   ).length;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <KpiStatCard
         label="Total Submissions"
         value={total}
         icon={Layers}
         accent="blue"
       />
-      <StatCard
+      <KpiStatCard
         label="In Peer Review"
         value={underReview}
         icon={Search}
-        accent="violet"
+        accent="indigo"
       />
-      <StatCard
+      <KpiStatCard
         label="Accepted / Published"
         value={accepted}
         icon={CheckCircle2}
-        accent="green"
+        accent="emerald"
       />
-      <StatCard
+      <KpiStatCard
         label="Pending Revisions"
         value={revisions}
         icon={Clock}

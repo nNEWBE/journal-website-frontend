@@ -31,6 +31,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { cn } from "@/lib/utils";
 
 const BOARD_ROLES = [
@@ -305,99 +306,47 @@ export function BoardManagementPanel() {
       </DashboardHeaderActions>
 
       {/* Stats Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        {[
-          {
-            id: "ALL",
-            label: "Total Board",
-            sublabel: "Appointments",
-            value: stats.total,
-            icon: Users,
-            iconColor: "text-blue-600",
-            iconBg: "bg-blue-50/90 border-blue-200/80",
-            badgeBg: "bg-blue-50 text-blue-700 border-blue-200/80",
-            badge: "All Appointments",
-            activeClass: "ring-2 ring-[color:var(--color-gb-blue)] border-transparent bg-gradient-to-b from-blue-50/30 to-white shadow-md",
-          },
-          {
-            id: "CHIEF",
-            label: "Chief & Managing",
-            sublabel: "Executive Board",
-            value: stats.chief,
-            icon: Crown,
-            iconColor: "text-amber-600",
-            iconBg: "bg-amber-50/90 border-amber-200/80",
-            badgeBg: "bg-amber-50 text-amber-700 border-amber-200/80",
-            badge: "Executive Editors",
-            activeClass: "ring-2 ring-amber-500 border-transparent bg-gradient-to-b from-amber-50/30 to-white shadow-md",
-          },
-          {
-            id: "SECTION",
-            label: "Section Editors",
-            sublabel: "Subject Specialists",
-            value: stats.section,
-            icon: BookOpen,
-            iconColor: "text-indigo-600",
-            iconBg: "bg-indigo-50/90 border-indigo-200/80",
-            badgeBg: "bg-indigo-50 text-indigo-700 border-indigo-200/80",
-            badge: "Specialized Fields",
-            activeClass: "ring-2 ring-indigo-500 border-transparent bg-gradient-to-b from-indigo-50/30 to-white shadow-md",
-          },
-          {
-            id: "ADVISORY",
-            label: "Advisory & Associate",
-            sublabel: "Peer Oversight",
-            value: stats.advisory,
-            icon: Award,
-            iconColor: "text-emerald-600",
-            iconBg: "bg-emerald-50/90 border-emerald-200/80",
-            badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-            badge: "Peer Council",
-            activeClass: "ring-2 ring-emerald-500 border-transparent bg-gradient-to-b from-emerald-50/30 to-white shadow-md",
-          },
-        ].map((card) => {
-          const Icon = card.icon;
-          const isSelected = roleFilter === card.id;
-          return (
-            <button
-              key={card.id}
-              onClick={() => setRoleFilter(card.id)}
-              className={cn(
-                "group relative text-left rounded-2xl border bg-white p-4 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden",
-                isSelected
-                  ? card.activeClass
-                  : "border-[color:var(--color-gb-border)] hover:border-slate-300"
-              )}
-            >
-              {/* Top Row: Icon & Badge */}
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className={cn("h-9 w-9 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs", card.iconBg, card.iconColor)}>
-                  <Icon className="h-4.5 w-4.5" />
-                </div>
-                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border tracking-wide", card.badgeBg)}>
-                  {card.badge}
-                </span>
-              </div>
-
-              {/* Middle Row: Large Bold Metric */}
-              <div className="my-1.5">
-                <span className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
-                  {card.value}
-                </span>
-              </div>
-
-              {/* Bottom Row: Role Label & Sublabel */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <p className="text-xs font-bold text-slate-700 group-hover:text-slate-950 transition-colors">
-                  {card.label}
-                </p>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {card.sublabel}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <KpiStatCard
+          label="Total Board"
+          value={stats.total}
+          icon={Users}
+          accent="blue"
+          badge="All Appointments"
+          sublabel="Appointments"
+          active={roleFilter === "ALL"}
+          onClick={() => setRoleFilter("ALL")}
+        />
+        <KpiStatCard
+          label="Chief & Managing"
+          value={stats.chief}
+          icon={Crown}
+          accent="amber"
+          badge="Executive Editors"
+          sublabel="Executive Board"
+          active={roleFilter === "CHIEF"}
+          onClick={() => setRoleFilter("CHIEF")}
+        />
+        <KpiStatCard
+          label="Section Editors"
+          value={stats.section}
+          icon={BookOpen}
+          accent="indigo"
+          badge="Specialized Fields"
+          sublabel="Subject Specialists"
+          active={roleFilter === "SECTION"}
+          onClick={() => setRoleFilter("SECTION")}
+        />
+        <KpiStatCard
+          label="Advisory & Associate"
+          value={stats.advisory}
+          icon={Award}
+          accent="emerald"
+          badge="Peer Council"
+          sublabel="Peer Oversight"
+          active={roleFilter === "ADVISORY"}
+          onClick={() => setRoleFilter("ADVISORY")}
+        />
       </div>
 
       {/* Search & Filter Bar */}

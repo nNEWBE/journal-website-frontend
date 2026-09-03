@@ -29,6 +29,7 @@ import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import {
   Table,
   TableHeader,
@@ -386,111 +387,57 @@ export function UserManagementPanel({
       </DashboardHeaderActions>
 
       {/* Role Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {[
-          {
-            id: "ALL",
-            label: "Total Scholars",
-            sublabel: "Directory",
-            value: stats.total,
-            icon: Users,
-            iconColor: "text-blue-600",
-            iconBg: "bg-blue-50/90 border-blue-200/80",
-            badgeBg: "bg-blue-50 text-blue-700 border-blue-200/80",
-            badge: "All Accounts",
-            activeClass: "ring-2 ring-[color:var(--color-gb-blue)] border-transparent bg-gradient-to-b from-blue-50/30 to-white shadow-md",
-          },
-          {
-            id: "author",
-            label: "Authors",
-            sublabel: "Submitters",
-            value: stats.authors,
-            icon: PenLine,
-            iconColor: "text-sky-600",
-            iconBg: "bg-sky-50/90 border-sky-200/80",
-            badgeBg: "bg-sky-50 text-sky-700 border-sky-200/80",
-            badge: `${stats.total ? Math.round((stats.authors / stats.total) * 100) : 0}% Share`,
-            activeClass: "ring-2 ring-sky-500 border-transparent bg-gradient-to-b from-sky-50/30 to-white shadow-md",
-          },
-          {
-            id: "reviewer",
-            label: "Reviewers",
-            sublabel: "Peer Panel",
-            value: stats.reviewers,
-            icon: UserCheck,
-            iconColor: "text-amber-600",
-            iconBg: "bg-amber-50/90 border-amber-200/80",
-            badgeBg: "bg-amber-50 text-amber-700 border-amber-200/80",
-            badge: "Peer Panel",
-            activeClass: "ring-2 ring-amber-500 border-transparent bg-gradient-to-b from-amber-50/30 to-white shadow-md",
-          },
-          {
-            id: "editor",
-            label: "Editors",
-            sublabel: "Decision Desk",
-            value: stats.editors,
-            icon: Shield,
-            iconColor: "text-purple-600",
-            iconBg: "bg-purple-50/90 border-purple-200/80",
-            badgeBg: "bg-purple-50 text-purple-700 border-purple-200/80",
-            badge: "Editorial Desk",
-            activeClass: "ring-2 ring-purple-500 border-transparent bg-gradient-to-b from-purple-50/30 to-white shadow-md",
-          },
-          {
-            id: "admin",
-            label: "Admins",
-            sublabel: "Governance",
-            value: stats.admins,
-            icon: Crown,
-            iconColor: "text-emerald-600",
-            iconBg: "bg-emerald-50/90 border-emerald-200/80",
-            badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-            badge: "Governance",
-            activeClass: "ring-2 ring-emerald-500 border-transparent bg-gradient-to-b from-emerald-50/30 to-white shadow-md",
-          },
-        ].map((card) => {
-          const Icon = card.icon;
-          const isSelected = roleFilter === card.id;
-          return (
-            <button
-              key={card.id}
-              onClick={() => setRoleFilter(card.id)}
-              className={cn(
-                "group relative text-left rounded-2xl border bg-white p-4 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden",
-                isSelected
-                  ? card.activeClass
-                  : "border-[color:var(--color-gb-border)] hover:border-slate-300"
-              )}
-            >
-              {/* Top Row: Icon & Badge */}
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className={cn("h-9 w-9 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs", card.iconBg, card.iconColor)}>
-                  <Icon className="h-4.5 w-4.5" />
-                </div>
-                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border tracking-wide", card.badgeBg)}>
-                  {card.badge}
-                </span>
-              </div>
-
-              {/* Middle Row: Large Bold Metric */}
-              <div className="my-1.5">
-                <span className="text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
-                  {card.value}
-                </span>
-              </div>
-
-              {/* Bottom Row: Role Label & Sublabel */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <p className="text-xs font-bold text-slate-700 group-hover:text-slate-950 transition-colors">
-                  {card.label}
-                </p>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {card.sublabel}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+        <KpiStatCard
+          label="Total Scholars"
+          value={stats.total}
+          icon={Users}
+          accent="blue"
+          badge="All Accounts"
+          sublabel="Directory"
+          active={roleFilter === "ALL"}
+          onClick={() => setRoleFilter("ALL")}
+        />
+        <KpiStatCard
+          label="Authors"
+          value={stats.authors}
+          icon={PenLine}
+          accent="sky"
+          badge={`${stats.total ? Math.round((stats.authors / stats.total) * 100) : 0}% Share`}
+          sublabel="Submitters"
+          active={roleFilter === "author"}
+          onClick={() => setRoleFilter("author")}
+        />
+        <KpiStatCard
+          label="Reviewers"
+          value={stats.reviewers}
+          icon={UserCheck}
+          accent="amber"
+          badge="Peer Panel"
+          sublabel="Peer Review"
+          active={roleFilter === "reviewer"}
+          onClick={() => setRoleFilter("reviewer")}
+        />
+        <KpiStatCard
+          label="Editors"
+          value={stats.editors}
+          icon={Shield}
+          accent="purple"
+          badge="Editorial Desk"
+          sublabel="Decision Desk"
+          active={roleFilter === "editor"}
+          onClick={() => setRoleFilter("editor")}
+        />
+        <KpiStatCard
+          label="Admins"
+          value={stats.admins}
+          icon={Crown}
+          accent="emerald"
+          badge="Governance"
+          sublabel="Governance"
+          active={roleFilter === "admin"}
+          onClick={() => setRoleFilter("admin")}
+        />
       </div>
 
       {/* Search & Filter Bar */}

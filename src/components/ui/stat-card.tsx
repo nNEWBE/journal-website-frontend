@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+export { KpiStatCard, type KpiStatCardProps, KPI_ACCENT_MAP } from "@/components/dashboard/kpi-stat-card";
+
 interface StatCardProps {
   label: string;
   value: string | number;

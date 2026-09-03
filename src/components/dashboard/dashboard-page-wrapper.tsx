@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
 import {
   BookMarked,
@@ -79,13 +80,11 @@ export const MANAGEMENT_PAGE_HEADERS: Record<string, DashboardPageHeaderProps> =
 };
 
 interface DashboardHeaderContextType {
-  setActions: (actions: React.ReactNode) => void;
-  setBadge: (badge: string | undefined) => void;
+  portalTarget: HTMLDivElement | null;
 }
 
 const DashboardHeaderContext = createContext<DashboardHeaderContextType>({
-  setActions: () => {},
-  setBadge: () => {},
+  portalTarget: null,
 });
 
 export function useDashboardHeader() {
@@ -96,16 +95,18 @@ export function useDashboardHeader() {
  * Component that allows child panels to dynamically portal action buttons and controls into DashboardPageWrapper's header
  */
 export function DashboardHeaderActions({ children }: { children: React.ReactNode }) {
-  const { setActions } = useDashboardHeader();
+  const { portalTarget } = useDashboardHeader();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setActions(children);
-    return () => {
-      setActions(null);
-    };
-  }, [children, setActions]);
+    setMounted(true);
+  }, []);
 
-  return null;
+  if (!mounted || !portalTarget) {
+    return null;
+  }
+
+  return createPortal(children, portalTarget);
 }
 
 export function DashboardPageHeader({
@@ -115,7 +116,8 @@ export function DashboardPageHeader({
   icon: Icon,
   actions,
   className,
-}: DashboardPageHeaderProps) {
+  portalRef,
+}: DashboardPageHeaderProps & { portalRef?: React.Ref<HTMLDivElement> }) {
   return (
     <div
       className={cn(
@@ -148,11 +150,10 @@ export function DashboardPageHeader({
         </div>
       </div>
 
-      {actions && (
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          {actions}
-        </div>
-      )}
+      <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+        {actions}
+        <div ref={portalRef} className="flex items-center gap-2 flex-wrap" />
+      </div>
     </div>
   );
 }
@@ -192,8 +193,7 @@ export function DashboardPageWrapper({
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [dynamicActions, setDynamicActions] = useState<React.ReactNode>(null);
-  const [dynamicBadge, setDynamicBadge] = useState<string | undefined>(undefined);
+  const [portalTarget, setPortalTarget] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const session = getSession();
@@ -233,20 +233,15 @@ export function DashboardPageWrapper({
     ? ({
         ...(defaultHeader || {}),
         ...(typeof header === "object" ? header : {}),
-        badge: dynamicBadge || (typeof header === "object" && header?.badge) || defaultHeader?.badge,
-        actions: dynamicActions || (typeof header === "object" && header?.actions) || defaultHeader?.actions,
       } as DashboardPageHeaderProps)
     : null;
 
   return (
-    <DashboardHeaderContext.Provider
-      value={{
-        setActions: setDynamicActions,
-        setBadge: setDynamicBadge,
-      }}
-    >
+    <DashboardHeaderContext.Provider value={{ portalTarget }}>
       <div className={cn("p-4 sm:p-6 space-y-6", className)}>
-        {resolvedHeader && <DashboardPageHeader {...resolvedHeader} />}
+        {resolvedHeader && (
+          <DashboardPageHeader {...resolvedHeader} portalRef={setPortalTarget} />
+        )}
         {typeof children === "function" ? children(user) : children}
       </div>
     </DashboardHeaderContext.Provider>

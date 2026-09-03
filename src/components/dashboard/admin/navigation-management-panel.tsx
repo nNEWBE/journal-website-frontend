@@ -41,6 +41,7 @@ import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { cn } from "@/lib/utils";
 
 export function NavigationManagementPanel() {
@@ -513,74 +514,39 @@ export function NavigationManagementPanel() {
       </DashboardHeaderActions>
 
       {/* ── Overview Metric Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="h-8 w-8 rounded-xl border bg-blue-50/90 border-blue-200/80 text-blue-600 flex items-center justify-center">
-              <Compass className="h-4 w-4" />
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200/80">
-              {stats.activeTop} Active
-            </span>
-          </div>
-          <p className="text-2xl font-black text-[color:var(--color-gb-ink)] font-academic">
-            {stats.totalTop}
-          </p>
-          <p className="text-[11px] font-semibold text-[color:var(--color-gb-muted)] mt-0.5">
-            Top-Level Links (DB)
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="h-8 w-8 rounded-xl border bg-amber-50/90 border-amber-200/80 text-amber-600 flex items-center justify-center">
-              <Layers className="h-4 w-4" />
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200/80">
-              Mega Dropdowns
-            </span>
-          </div>
-          <p className="text-2xl font-black text-[color:var(--color-gb-ink)] font-academic">
-            {stats.dropdownCount}
-          </p>
-          <p className="text-[11px] font-semibold text-[color:var(--color-gb-muted)] mt-0.5">
-            Dropdown Menus
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="h-8 w-8 rounded-xl border bg-purple-50/90 border-purple-200/80 text-purple-600 flex items-center justify-center">
-              <FolderTree className="h-4 w-4" />
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200/80">
-              Sub-Items
-            </span>
-          </div>
-          <p className="text-2xl font-black text-[color:var(--color-gb-ink)] font-academic">
-            {stats.totalSubs}
-          </p>
-          <p className="text-[11px] font-semibold text-[color:var(--color-gb-muted)] mt-0.5">
-            Sub-Links & Categories
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="h-8 w-8 rounded-xl border bg-emerald-50/90 border-emerald-200/80 text-emerald-600 flex items-center justify-center">
-              <Link2 className="h-4 w-4" />
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200/80">
-              Direct Route
-            </span>
-          </div>
-          <p className="text-2xl font-black text-[color:var(--color-gb-ink)] font-academic">
-            {stats.directCount}
-          </p>
-          <p className="text-[11px] font-semibold text-[color:var(--color-gb-muted)] mt-0.5">
-            Single Click Links
-          </p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <KpiStatCard
+          label="Top-Level Links"
+          value={stats.totalTop}
+          icon={Compass}
+          accent="blue"
+          badge={`${stats.activeTop} Active`}
+          sublabel="Main Header Links"
+        />
+        <KpiStatCard
+          label="Dropdown Menus"
+          value={stats.dropdownCount}
+          icon={Layers}
+          accent="amber"
+          badge="Mega Dropdowns"
+          sublabel="Nested Categories"
+        />
+        <KpiStatCard
+          label="Sub-Items"
+          value={stats.totalSubs}
+          icon={FolderTree}
+          accent="purple"
+          badge="Sub-Links"
+          sublabel="Catalogue Entries"
+        />
+        <KpiStatCard
+          label="Direct Links"
+          value={stats.directCount}
+          icon={Link2}
+          accent="emerald"
+          badge="Direct Route"
+          sublabel="Single Click Paths"
+        />
       </div>
 
       {/* ── Live Interactive Menu Hierarchy ─────────────────────── */}
