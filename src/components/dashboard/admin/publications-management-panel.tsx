@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { articles as initialArticles, articleTypes as defaultArticleTypes, topics as defaultTopics, Article } from "@/lib/data";
 import { articlesApi, issuesApi, IssueData } from "@/lib/api";
 import { CustomDrawer } from "@/components/ui/drawer";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 
 function getCoverImage(article: Article): string {
@@ -63,7 +64,6 @@ export function PublicationsManagementPanel() {
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [selectedIssue, setSelectedIssue] = useState<string>("all");
   const [selectedYear, setSelectedYear] = useState<string>("all");
-  const [openAccessOnly, setOpenAccessOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "citations" | "downloads" | "views" | "title">("newest");
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
 
@@ -185,6 +185,48 @@ export function PublicationsManagementPanel() {
     return Array.from(yearSet).sort((a, b) => b.localeCompare(a));
   }, [articlesList]);
 
+  // Options for CustomSelect filters
+  const topicOptions = useMemo(
+    () => [
+      { value: "all", label: "All Disciplines" },
+      ...dynamicTopics.map((t) => ({ value: t, label: t })),
+    ],
+    [dynamicTopics]
+  );
+
+  const typeOptions = useMemo(
+    () => [
+      { value: "all", label: "All Types" },
+      ...dynamicTypes.map((t) => ({ value: t, label: t })),
+    ],
+    [dynamicTypes]
+  );
+
+  const issueOptions = useMemo(
+    () => [
+      { value: "all", label: "All Issues" },
+      ...dynamicIssues,
+    ],
+    [dynamicIssues]
+  );
+
+  const yearOptions = useMemo(
+    () => [
+      { value: "all", label: "All Years" },
+      ...dynamicYears.map((yr) => ({ value: yr, label: yr })),
+    ],
+    [dynamicYears]
+  );
+
+  const sortOptions = [
+    { value: "newest", label: "Newest First" },
+    { value: "oldest", label: "Oldest First" },
+    { value: "citations", label: "Most Cited" },
+    { value: "downloads", label: "Most Downloads" },
+    { value: "views", label: "Most Viewed" },
+    { value: "title", label: "Title (A → Z)" },
+  ];
+
   // Filter and sort the articles
   const filteredArticles = useMemo(() => {
     return articlesList.filter((article) => {
@@ -238,12 +280,6 @@ export function PublicationsManagementPanel() {
         }
       }
 
-      // 6. Open Access filter
-      if (openAccessOnly) {
-        // Articles in GB Journal are open access unless specified
-        return true;
-      }
-
       return true;
     }).sort((a, b) => {
       if (sortBy === "citations") {
@@ -264,7 +300,7 @@ export function PublicationsManagementPanel() {
       // default: newest
       return (b.id || "").localeCompare(a.id || "");
     });
-  }, [articlesList, searchQuery, selectedType, selectedTopic, selectedIssue, selectedYear, openAccessOnly, sortBy]);
+  }, [articlesList, searchQuery, selectedType, selectedTopic, selectedIssue, selectedYear, sortBy]);
 
   // Overall Statistics KPIs
   const stats = useMemo(() => {
@@ -284,9 +320,8 @@ export function PublicationsManagementPanel() {
     if (selectedTopic !== "all") count++;
     if (selectedIssue !== "all") count++;
     if (selectedYear !== "all") count++;
-    if (openAccessOnly) count++;
     return count;
-  }, [searchQuery, selectedType, selectedTopic, selectedIssue, selectedYear, openAccessOnly]);
+  }, [searchQuery, selectedType, selectedTopic, selectedIssue, selectedYear]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -294,7 +329,6 @@ export function PublicationsManagementPanel() {
     setSelectedTopic("all");
     setSelectedIssue("all");
     setSelectedYear("all");
-    setOpenAccessOnly(false);
     setSortBy("newest");
   };
 
@@ -533,25 +567,20 @@ export function PublicationsManagementPanel() {
           </div>
         </div>
 
-        {/* Filter Dropdowns Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
+        {/* Filter Dropdowns Row using CustomSelect */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
           {/* 1. Research Discipline */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               Discipline
             </label>
-            <select
+            <CustomSelect
+              options={topicOptions}
               value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
-              className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="all">All Disciplines</option>
-              {dynamicTopics.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedTopic}
+              size="form"
+              className="w-full"
+            />
           </div>
 
           {/* 2. Article Type */}
@@ -559,18 +588,13 @@ export function PublicationsManagementPanel() {
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               Article Type
             </label>
-            <select
+            <CustomSelect
+              options={typeOptions}
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="all">All Types</option>
-              {dynamicTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedType}
+              size="form"
+              className="w-full"
+            />
           </div>
 
           {/* 3. Issue & Volume */}
@@ -578,18 +602,13 @@ export function PublicationsManagementPanel() {
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               Issue / Volume
             </label>
-            <select
+            <CustomSelect
+              options={issueOptions}
               value={selectedIssue}
-              onChange={(e) => setSelectedIssue(e.target.value)}
-              className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="all">All Issues</option>
-              {dynamicIssues.map((iss) => (
-                <option key={iss.value} value={iss.value}>
-                  {iss.label}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedIssue}
+              size="form"
+              className="w-full"
+            />
           </div>
 
           {/* 4. Publication Year */}
@@ -597,18 +616,13 @@ export function PublicationsManagementPanel() {
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               Year
             </label>
-            <select
+            <CustomSelect
+              options={yearOptions}
               value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="all">All Years</option>
-              {dynamicYears.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedYear}
+              size="form"
+              className="w-full"
+            />
           </div>
 
           {/* 5. Sort By */}
@@ -616,34 +630,13 @@ export function PublicationsManagementPanel() {
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               Sort By
             </label>
-            <select
+            <CustomSelect
+              options={sortOptions}
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="citations">Most Cited</option>
-              <option value="downloads">Most Downloads</option>
-              <option value="views">Most Viewed</option>
-              <option value="title">Title (A → Z)</option>
-            </select>
-          </div>
-
-          {/* 6. Open Access Checkbox Pill */}
-          <div className="flex flex-col justify-end">
-            <button
-              onClick={() => setOpenAccessOnly((prev) => !prev)}
-              className={cn(
-                "h-[35px] flex items-center justify-center gap-1.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none",
-                openAccessOnly
-                  ? "bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs"
-                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-              )}
-            >
-              <ShieldCheck className={cn("h-3.5 w-3.5", openAccessOnly ? "text-emerald-600" : "text-slate-400")} />
-              <span>Open Access</span>
-            </button>
+              onChange={(val) => setSortBy(val as any)}
+              size="form"
+              className="w-full"
+            />
           </div>
         </div>
 
@@ -696,15 +689,6 @@ export function PublicationsManagementPanel() {
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold">
                 <span>Year: {selectedYear}</span>
                 <button onClick={() => setSelectedYear("all")} className="hover:text-slate-900 cursor-pointer">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-
-            {openAccessOnly && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
-                <span>Open Access Only</span>
-                <button onClick={() => setOpenAccessOnly(false)} className="hover:text-emerald-900 cursor-pointer">
                   <X className="h-3 w-3" />
                 </button>
               </span>

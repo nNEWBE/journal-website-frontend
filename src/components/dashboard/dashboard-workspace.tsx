@@ -944,31 +944,6 @@ export function DashboardWorkspace({
                     </div>
                   </div>
                 )}
-
-                {/* Journal Portal Links */}
-                <div>
-                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
-                    Journal Portal
-                  </p>
-                  <div className="space-y-1">
-                    <Link
-                      href="/"
-                      onClick={() => setIsMobileSidebarOpen(false)}
-                      className="flex w-full items-center rounded-xl text-left text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white transition-all h-9 px-3 gap-3"
-                    >
-                      <BookOpen className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="truncate flex-1">Public Homepage</span>
-                    </Link>
-                    <Link
-                      href="/issues"
-                      onClick={() => setIsMobileSidebarOpen(false)}
-                      className="flex w-full items-center rounded-xl text-left text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white transition-all h-9 px-3 gap-3"
-                    >
-                      <Archive className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="truncate flex-1">Issues Archive</span>
-                    </Link>
-                  </div>
-                </div>
               </div>
 
               {/* Mobile Footer with Profile & Sign Out */}
@@ -1001,6 +976,25 @@ export function DashboardWorkspace({
                       </p>
                     </div>
                   </Link>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href="/"
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-[11px] font-medium transition-colors border border-white/[0.06]"
+                    >
+                      <BookOpen className="h-3 w-3 text-slate-400" />
+                      <span>Homepage</span>
+                    </Link>
+                    <Link
+                      href="/issues"
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-[11px] font-medium transition-colors border border-white/[0.06]"
+                    >
+                      <Archive className="h-3 w-3 text-slate-400" />
+                      <span>Archive</span>
+                    </Link>
+                  </div>
 
                   <button
                     type="button"
@@ -1322,69 +1316,6 @@ export function DashboardWorkspace({
                 </div>
               </div>
             )}
-
-            {/* Public Links */}
-            <div>
-              <p
-                className={cn(
-                  "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200",
-                  isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
-                )}
-              >
-                Journal Portal
-              </p>
-              <div className="space-y-1">
-                <CustomTooltip
-                  content="Public Homepage"
-                  disabled={!isSidebarCollapsed}
-                  side="right"
-                >
-                  <Link
-                    href="/"
-                    className="flex items-center text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors h-10 w-full rounded-xl overflow-hidden group"
-                  >
-                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                      <BookOpen className="h-3.5 w-3.5 text-slate-400 group-hover:text-white" />
-                    </div>
-                    <div
-                      className={cn(
-                        "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
-                        isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
-                      )}
-                    >
-                      <span className="truncate text-slate-300 group-hover:text-white">
-                        Public Homepage
-                      </span>
-                    </div>
-                  </Link>
-                </CustomTooltip>
-
-                <CustomTooltip
-                  content="Issues Archive"
-                  disabled={!isSidebarCollapsed}
-                  side="right"
-                >
-                  <Link
-                    href="/issues"
-                    className="flex items-center text-left text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors h-10 w-full rounded-xl overflow-hidden group"
-                  >
-                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                      <Archive className="h-3.5 w-3.5 text-slate-400 group-hover:text-white" />
-                    </div>
-                    <div
-                      className={cn(
-                        "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
-                        isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
-                      )}
-                    >
-                      <span className="truncate text-slate-300 group-hover:text-white">
-                        Issues Archive
-                      </span>
-                    </div>
-                  </Link>
-                </CustomTooltip>
-              </div>
-            </div>
           </div>
 
           {/* Footer Controls: User Card Trigger with Profile & Sign Out Popover */}
@@ -1471,6 +1402,34 @@ export function DashboardWorkspace({
                       </div>
                       <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
                     </Link>
+
+                    <div className="my-1 border-t border-white/[0.08]" />
+
+                    <Link
+                      href="/"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <BookOpen className="h-4 w-4 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                        <span>Public Homepage</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+
+                    <Link
+                      href="/issues"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Archive className="h-4 w-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                        <span>Issues Archive</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+
+                    <div className="my-1 border-t border-white/[0.08]" />
 
                     <button
                       type="button"
