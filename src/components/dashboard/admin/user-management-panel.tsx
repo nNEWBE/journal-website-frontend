@@ -28,7 +28,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
-import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-wrapper";
+import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import {
   Table,
   TableHeader,
@@ -364,34 +364,26 @@ export function UserManagementPanel({
 
   return (
     <div className="space-y-6">
-      {/* Top Header & Overview Cards */}
-      <DashboardPageHeader
-        icon={Users}
-        title="User Directory & Access Control"
-        subtitle="Manage academic scholar credentials, role privileges, and active user accounts."
-        badge={isRefreshing ? "Syncing directory..." : "Administration"}
-        actions={
-          <>
-            <button
-              onClick={() => loadUsers(true)}
-              disabled={isRefreshing}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-              title="Refresh user directory"
-            >
-              <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
-              <span>Sync</span>
-            </button>
+      {/* Top Header Actions */}
+      <DashboardHeaderActions>
+        <button
+          onClick={() => loadUsers(true)}
+          disabled={isRefreshing}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+          title="Refresh user directory"
+        >
+          <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
+          <span>Sync</span>
+        </button>
 
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>Add / Invite User</span>
-            </button>
-          </>
-        }
-      />
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>Add / Invite User</span>
+        </button>
+      </DashboardHeaderActions>
 
       {/* Role Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">

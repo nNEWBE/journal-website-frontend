@@ -1,7 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import {
+  BookMarked,
+  BookOpen,
+  ClipboardCheck,
+  Compass,
+  Crown,
+  Layers,
+  Mail,
+  Users,
+} from "lucide-react";
 import { getSession, type User } from "@/lib/auth";
 import { type Role } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -13,6 +23,89 @@ export interface DashboardPageHeaderProps {
   icon?: React.ComponentType<{ className?: string }>;
   actions?: React.ReactNode;
   className?: string;
+}
+
+/**
+ * Default header definitions for all Management Tools links
+ */
+export const MANAGEMENT_PAGE_HEADERS: Record<string, DashboardPageHeaderProps> = {
+  "/dashboard/pipeline": {
+    title: "Manuscript Pipeline",
+    subtitle: "Monitor submissions, assign double-blind reviewers, and advance editorial workflows.",
+    icon: ClipboardCheck,
+    badge: "Editorial Workflow",
+  },
+  "/dashboard/publications": {
+    title: "All Publications Repository",
+    subtitle: "Comprehensive directory of peer-reviewed articles, scholarly DOIs, and readership analytics.",
+    icon: BookMarked,
+  },
+  "/dashboard/users": {
+    title: "User Directory & Access Control",
+    subtitle: "Manage academic scholar credentials, role privileges, and active user accounts.",
+    icon: Users,
+    badge: "Administration",
+  },
+  "/dashboard/mailing": {
+    title: "Mailing & Scholar Broadcast",
+    subtitle: "Dispatch announcements, call for papers, and updates directly to registered scholars.",
+    icon: Mail,
+    badge: "Communications Center",
+  },
+  "/dashboard/issues": {
+    title: "Volumes & Issue Releases",
+    subtitle: "Organize accepted manuscripts into publication volumes, issues, and featured releases.",
+    icon: BookOpen,
+    badge: "Publishing & Archive",
+  },
+  "/dashboard/board": {
+    title: "Editorial Board Governance",
+    subtitle: "Manage academic appointments, advisory scholars, and section editors displayed on the public portal.",
+    icon: Crown,
+    badge: "Academic Governance",
+  },
+  "/dashboard/cms": {
+    title: "Dynamic Page & Section Publisher",
+    subtitle: "Edit text, upload guidelines, modify publication policies, and update announcements across the public journal portal.",
+    icon: Layers,
+    badge: "Site & Content Management (CMS)",
+  },
+  "/dashboard/navigation": {
+    title: "Navigation & Menu Architecture",
+    subtitle: "Add, edit, delete, reorder, and configure public top-level menu items, dropdown categories, and links in the database.",
+    icon: Compass,
+    badge: "PostgreSQL Database Sync",
+  },
+};
+
+interface DashboardHeaderContextType {
+  setActions: (actions: React.ReactNode) => void;
+  setBadge: (badge: string | undefined) => void;
+}
+
+const DashboardHeaderContext = createContext<DashboardHeaderContextType>({
+  setActions: () => {},
+  setBadge: () => {},
+});
+
+export function useDashboardHeader() {
+  return useContext(DashboardHeaderContext);
+}
+
+/**
+ * Component that allows child panels to dynamically portal action buttons and controls into DashboardPageWrapper's header
+ */
+export function DashboardHeaderActions({ children }: { children: React.ReactNode }) {
+  const { setActions } = useDashboardHeader();
+
+  useEffect(() => {
+    setActions(children);
+    return () => {
+      setActions(null);
+    };
+  }, [children, setActions]);
+
+  return null;
 }
 
 export function DashboardPageHeader({
@@ -71,9 +164,9 @@ export interface DashboardPageWrapperProps {
    */
   allowedRoles?: Role[];
   /**
-   * Optional header banner matching the academic workspace card aesthetic.
+   * Optional header override. Set to false to suppress the automatic header.
    */
-  header?: DashboardPageHeaderProps;
+  header?: DashboardPageHeaderProps | false;
   /**
    * Fallback redirect route when user role is not allowed. Defaults to "/dashboard/analytics".
    */
@@ -99,6 +192,8 @@ export function DashboardPageWrapper({
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [dynamicActions, setDynamicActions] = useState<React.ReactNode>(null);
+  const [dynamicBadge, setDynamicBadge] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const session = getSession();
@@ -128,10 +223,32 @@ export function DashboardPageWrapper({
     );
   }
 
+  // Determine header configuration:
+  // 1. If header === false, suppress header
+  // 2. If header object is provided, merge with default
+  // 3. Otherwise, check MANAGEMENT_PAGE_HEADERS for matching pathname
+  const defaultHeader = pathname ? MANAGEMENT_PAGE_HEADERS[pathname] : undefined;
+  const showHeader = header !== false && (Boolean(header) || Boolean(defaultHeader));
+  const resolvedHeader: DashboardPageHeaderProps | null = showHeader
+    ? ({
+        ...(defaultHeader || {}),
+        ...(typeof header === "object" ? header : {}),
+        badge: dynamicBadge || (typeof header === "object" && header?.badge) || defaultHeader?.badge,
+        actions: dynamicActions || (typeof header === "object" && header?.actions) || defaultHeader?.actions,
+      } as DashboardPageHeaderProps)
+    : null;
+
   return (
-    <div className={cn("p-4 sm:p-6 space-y-6", className)}>
-      {header && <DashboardPageHeader {...header} />}
-      {typeof children === "function" ? children(user) : children}
-    </div>
+    <DashboardHeaderContext.Provider
+      value={{
+        setActions: setDynamicActions,
+        setBadge: setDynamicBadge,
+      }}
+    >
+      <div className={cn("p-4 sm:p-6 space-y-6", className)}>
+        {resolvedHeader && <DashboardPageHeader {...resolvedHeader} />}
+        {typeof children === "function" ? children(user) : children}
+      </div>
+    </DashboardHeaderContext.Provider>
   );
 }

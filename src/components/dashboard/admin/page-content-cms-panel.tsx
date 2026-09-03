@@ -32,7 +32,7 @@ import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { CustomTooltip } from "@/components/ui/tooltip";
+import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { cn } from "@/lib/utils";
 
 const PAGE_TABS = [
@@ -407,51 +407,35 @@ export function PageContentCMSPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--color-gb-border)] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-800 font-sans">
-              Site &amp; Content Management (CMS)
-            </span>
-          </div>
-          <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
-            Dynamic Page &amp; Section Publisher
-          </h2>
-          <p className="text-xs text-[color:var(--color-gb-muted)]">
-            Edit text, upload guidelines, modify publication policies, and update announcements across the public journal portal.
-          </p>
-        </div>
+      {/* Top Header Actions */}
+      <DashboardHeaderActions>
+        <button
+          onClick={openCreateModal}
+          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add New Section</span>
+        </button>
 
-        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            Add New Section
-          </button>
+        <button
+          onClick={() => setIsResetConfirmOpen(true)}
+          title="Restore default academic template"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+        >
+          <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+          <span>Reset Defaults</span>
+        </button>
 
-          <button
-            onClick={() => setIsResetConfirmOpen(true)}
-            title="Restore default academic template"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
-          >
-            <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
-            Reset Defaults
-          </button>
-
-          <a
-            href={currentTabInfo.route}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 transition-colors shadow-2xs"
-          >
-            <ExternalLink className="h-3.5 w-3.5 text-blue-600" />
-            View Live Page
-          </a>
-        </div>
-      </div>
+        <a
+          href={currentTabInfo.route}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 transition-colors shadow-2xs"
+        >
+          <ExternalLink className="h-3.5 w-3.5 text-blue-600" />
+          <span>View Live Page</span>
+        </a>
+      </DashboardHeaderActions>
 
       {/* Page Tabs as Compact Horizontal Bar */}
       <div className="relative border-b border-slate-200/90 bg-white/70 backdrop-blur-xs rounded-xl p-1 shadow-2xs">

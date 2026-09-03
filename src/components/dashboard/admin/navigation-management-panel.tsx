@@ -40,6 +40,7 @@ import {
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
+import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { cn } from "@/lib/utils";
 
 export function NavigationManagementPanel() {
@@ -481,58 +482,35 @@ export function NavigationManagementPanel() {
 
   return (
     <div className="space-y-6">
-      {/* ── Top Header ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--color-gb-border)] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 font-sans flex items-center gap-1">
-              <Database className="h-3 w-3" />
-              PostgreSQL Database Sync
-            </span>
-            {isSavingDb && (
-              <span className="text-[10px] font-semibold text-blue-600 flex items-center gap-1 animate-pulse">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Saving to DB...
-              </span>
-            )}
-          </div>
-          <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
-            Navigation & Menu Architecture
-          </h2>
-          <p className="text-xs text-[color:var(--color-gb-muted)]">
-            Add, edit, delete, reorder, and configure public top-level menu items, dropdown categories, and links in the database.
-          </p>
-        </div>
+      {/* ── Top Header Actions ─────────────────────────────────── */}
+      <DashboardHeaderActions>
+        <button
+          onClick={() => loadFromDb()}
+          disabled={loading || isSavingDb}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+          title="Reload from backend database"
+        >
+          <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", loading && "animate-spin text-blue-600")} />
+          <span>Sync DB</span>
+        </button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => loadFromDb()}
-            disabled={loading || isSavingDb}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-            title="Reload from backend database"
-          >
-            <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", loading && "animate-spin text-blue-600")} />
-            <span>Sync DB</span>
-          </button>
+        <button
+          onClick={() => setIsResetConfirmOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+          title="Reset database to default GB Journal navigation"
+        >
+          <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+          <span>Reset Defaults</span>
+        </button>
 
-          <button
-            onClick={() => setIsResetConfirmOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
-            title="Reset database to default GB Journal navigation"
-          >
-            <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
-            <span>Reset Defaults</span>
-          </button>
-
-          <button
-            onClick={handleOpenCreateItem}
-            className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            Add Nav Item
-          </button>
-        </div>
-      </div>
+        <button
+          onClick={handleOpenCreateItem}
+          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Nav Item</span>
+        </button>
+      </DashboardHeaderActions>
 
       {/* ── Overview Metric Cards ───────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
