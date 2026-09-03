@@ -16,6 +16,7 @@ import {
   Calendar,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
@@ -42,6 +43,9 @@ import {
   Send,
   Settings,
   ShieldCheck,
+  Shield,
+  Home as HomeIcon,
+  Phone,
   TrendingUp,
   User as UserIcon,
   Users,
@@ -111,8 +115,19 @@ const managementTools = [
   { id: "mailing", label: "Mailing & Broadcast", icon: Mail, href: "/dashboard/mailing" },
   { id: "issues", label: "Issues & Volumes", icon: BookOpen, href: "/dashboard/issues" },
   { id: "board", label: "Editorial Board", icon: Crown, href: "/dashboard/board" },
-  { id: "content", label: "Site & Pages CMS", icon: FileText, href: "/dashboard/cms" },
   { id: "navigation", label: "Menu & Nav Manager", icon: Compass, href: "/dashboard/navigation" },
+];
+
+const cmsPages = [
+  { id: "home", label: "Home Page", icon: HomeIcon, href: "/dashboard/cms/home", pageKey: "home" },
+  { id: "about", label: "About Journal", icon: BookOpen, href: "/dashboard/cms/about", pageKey: "about" },
+  { id: "editorial-board", label: "Editorial Board", icon: Users, href: "/dashboard/cms/editorial-board", pageKey: "editorial-board" },
+  { id: "authors", label: "Author Guidelines", icon: PenLine, href: "/dashboard/cms/authors", pageKey: "authors" },
+  { id: "reviewers", label: "Reviewer Guidelines", icon: CheckCircle2, href: "/dashboard/cms/reviewers", pageKey: "reviewers" },
+  { id: "policies", label: "Policies & Ethics", icon: Shield, href: "/dashboard/cms/policies", pageKey: "policies" },
+  { id: "issues", label: "Issues Archive", icon: Layers, href: "/dashboard/cms/issues", pageKey: "issues" },
+  { id: "articles", label: "Articles & Papers", icon: FileText, href: "/dashboard/cms/articles", pageKey: "articles" },
+  { id: "contact", label: "Contact Office", icon: Phone, href: "/dashboard/cms/contact", pageKey: "contact" },
 ];
 
 function StatusPill({ status }: { status: string }) {
@@ -352,6 +367,10 @@ export function DashboardWorkspace({
   }, [reduxUser, dispatch]);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCoreExpanded, setIsCoreExpanded] = useState(true);
+  const [isManagementExpanded, setIsManagementExpanded] = useState(true);
+  const [isCmsExpanded, setIsCmsExpanded] = useState(true);
+  const [isRoleSuitesExpanded, setIsRoleSuitesExpanded] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -758,130 +777,206 @@ export function DashboardWorkspace({
               >
                 {/* Core Section */}
                 <div>
-                  <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
-                    Core Workspace
-                  </p>
-                  <div className="space-y-1">
-                    {/* Non-admin suites */}
-                    {activeRole !== "admin" && activeRole !== "super-admin" && (
-                      navItems
-                        .filter((item) => activeRole === item.id)
-                        .map((item) => {
-                          const Icon = item.icon;
-                          const isActive = activeView === "workspace" && !pathname.includes("/profile");
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => {
-                                setIsMobileSidebarOpen(false);
-                                router.push(item.href);
-                              }}
-                              className={cn(
-                                "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
-                                isActive
-                                  ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
-                              )}
-                            >
-                              <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
-                              <span className="truncate flex-1 font-medium">{item.label}</span>
-                              {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
-                            </button>
-                          );
-                        })
-                    )}
+                  <button
+                    type="button"
+                    onClick={() => setIsCoreExpanded(!isCoreExpanded)}
+                    className="w-full px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between hover:text-slate-200 transition-colors cursor-pointer select-none"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>Core Workspace</span>
+                      <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isCoreExpanded && "-rotate-90")} />
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-500/20 text-slate-300 font-bold">Core</span>
+                  </button>
+                  {isCoreExpanded && (
+                    <div className="space-y-1">
+                      {/* Non-admin suites */}
+                      {activeRole !== "admin" && activeRole !== "super-admin" && (
+                        navItems
+                          .filter((item) => activeRole === item.id)
+                          .map((item) => {
+                            const Icon = item.icon;
+                            const isActive = activeView === "workspace" && !pathname.includes("/profile");
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() => {
+                                  setIsMobileSidebarOpen(false);
+                                  router.push(item.href);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
+                                  isActive
+                                    ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                                    : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                                )}
+                              >
+                                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
+                                <span className="truncate flex-1 font-medium">{item.label}</span>
+                                {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
+                              </button>
+                            );
+                          })
+                      )}
 
-                    <button
-                      onClick={() => {
-                        setIsMobileSidebarOpen(false);
-                        router.push("/dashboard/analytics");
-                      }}
-                      className={cn(
-                        "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
-                        activeView === "analytics" && !pathname.includes("/profile")
-                          ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                          : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
-                      )}
-                    >
-                      <BarChart2 className={cn("h-4 w-4 shrink-0", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400")} />
-                      <span className="flex-1 font-medium">Journal Analytics</span>
-                      {activeView === "analytics" && !pathname.includes("/profile") && (
-                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                      )}
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => {
+                          setIsMobileSidebarOpen(false);
+                          router.push("/dashboard/analytics");
+                        }}
+                        className={cn(
+                          "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
+                          activeView === "analytics" && !pathname.includes("/profile")
+                            ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                            : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                        )}
+                      >
+                        <BarChart2 className={cn("h-4 w-4 shrink-0", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400")} />
+                        <span className="flex-1 font-medium">Journal Analytics</span>
+                        {activeView === "analytics" && !pathname.includes("/profile") && (
+                          <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Administration Management Tools */}
                 {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
                   <div>
-                    <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between">
-                      <span>Management Tools</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsManagementExpanded(!isManagementExpanded)}
+                      className="w-full px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between hover:text-slate-200 transition-colors cursor-pointer select-none"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>Management Tools</span>
+                        <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isManagementExpanded && "-rotate-90")} />
+                      </span>
                       <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
-                    </p>
-                    <div className="space-y-1">
-                      {managementTools.map((tab) => {
-                        const Icon = tab.icon;
-                        const isTabActive = pathname.startsWith(tab.href);
+                    </button>
+                    {isManagementExpanded && (
+                      <div className="space-y-1">
+                        {managementTools.map((tab) => {
+                          const Icon = tab.icon;
+                          const isTabActive = pathname.startsWith(tab.href);
 
-                        return (
-                          <button
-                            key={tab.id}
-                            onClick={() => {
-                              setIsMobileSidebarOpen(false);
-                              router.push(tab.href);
-                            }}
-                            className={cn(
-                              "flex w-full items-center rounded-xl text-left text-xs transition-colors h-9 px-3 gap-3 cursor-pointer",
-                              isTabActive
-                                ? "bg-blue-600/20 text-white font-bold"
-                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
-                            )}
-                          >
-                            <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-blue-400" : "text-slate-400")} />
-                            <span className="truncate flex-1">{tab.label}</span>
-                            {isTabActive && (
-                              <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-auto" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => {
+                                setIsMobileSidebarOpen(false);
+                                router.push(tab.href);
+                              }}
+                              className={cn(
+                                "flex w-full items-center rounded-xl text-left text-xs transition-colors h-9 px-3 gap-3 cursor-pointer",
+                                isTabActive
+                                  ? "bg-blue-600/20 text-white font-bold"
+                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                              )}
+                            >
+                              <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-blue-400" : "text-slate-400")} />
+                              <span className="truncate flex-1">{tab.label}</span>
+                              {isTabActive && (
+                                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-auto" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Pages CMS Category */}
+                {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCmsExpanded(!isCmsExpanded)}
+                      className="w-full px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between hover:text-slate-200 transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>Pages CMS</span>
+                        <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isCmsExpanded && "-rotate-90")} />
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">Content</span>
+                    </button>
+                    {isCmsExpanded && (
+                      <div className="space-y-1">
+                        {cmsPages.map((tab) => {
+                          const Icon = tab.icon;
+                          const isTabActive = pathname === tab.href || (tab.id === "home" && pathname === "/dashboard/cms");
+
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => {
+                                setIsMobileSidebarOpen(false);
+                                router.push(tab.href);
+                              }}
+                              className={cn(
+                                "flex w-full items-center rounded-xl text-left text-xs transition-colors h-9 px-3 gap-3 cursor-pointer",
+                                isTabActive
+                                  ? "bg-blue-600/20 text-white font-bold"
+                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                              )}
+                            >
+                              <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-blue-400" : "text-slate-400")} />
+                              <span className="truncate flex-1">{tab.label}</span>
+                              {isTabActive && (
+                                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-auto" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Role Suites */}
                 {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
                   <div>
-                    <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5">
-                      Role Suites
-                    </p>
-                    <div className="space-y-1">
-                      {navItems
-                        .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
-                        .map((item) => {
-                          const Icon = item.icon;
-                          const isActive = activeRole === item.id && activeView === "workspace";
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => {
-                                setIsMobileSidebarOpen(false);
-                                router.push(item.href);
-                              }}
-                              className={cn(
-                                "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
-                                isActive
-                                  ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
-                                  : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
-                              )}
-                            >
-                              <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                              <span className="truncate flex-1">{item.label}</span>
-                            </button>
-                          );
-                        })}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsRoleSuitesExpanded(!isRoleSuitesExpanded)}
+                      className="w-full px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 flex items-center justify-between hover:text-slate-200 transition-colors cursor-pointer select-none"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>Role Suites</span>
+                        <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isRoleSuitesExpanded && "-rotate-90")} />
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold">Roles</span>
+                    </button>
+                    {isRoleSuitesExpanded && (
+                      <div className="space-y-1">
+                        {navItems
+                          .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
+                          .map((item) => {
+                            const Icon = item.icon;
+                            const isActive = activeRole === item.id && activeView === "workspace";
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() => {
+                                  setIsMobileSidebarOpen(false);
+                                  router.push(item.href);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
+                                  isActive
+                                    ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
+                                    : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
+                                )}
+                              >
+                                <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                <span className="truncate flex-1">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -993,46 +1088,163 @@ export function DashboardWorkspace({
           >
             {/* Core Section */}
             <div>
-              <p
+              <div
+                onClick={() => !isSidebarCollapsed && setIsCoreExpanded(!isCoreExpanded)}
                 className={cn(
-                  "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200",
+                  "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200 flex items-center justify-between select-none",
+                  !isSidebarCollapsed && "cursor-pointer hover:text-slate-200",
                   isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
                 )}
               >
-                Core Workspace
-              </p>
-              <div className="space-y-1">
-                {/* Active Workspace for Non-Admin roles */}
-                {activeRole !== "admin" && activeRole !== "super-admin" && (
-                  navItems
-                    .filter((item) => activeRole === item.id)
-                    .map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeView === "workspace" && !pathname.includes("/profile");
+                <span className="flex items-center gap-1.5">
+                  <span>Core Workspace</span>
+                  <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isCoreExpanded && "-rotate-90")} />
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-500/20 text-slate-300 font-bold">Core</span>
+              </div>
+              {(isCoreExpanded || isSidebarCollapsed) && (
+                <div className="space-y-1">
+                  {/* Active Workspace for Non-Admin roles */}
+                  {activeRole !== "admin" && activeRole !== "super-admin" && (
+                    navItems
+                      .filter((item) => activeRole === item.id)
+                      .map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeView === "workspace" && !pathname.includes("/profile");
+                        return (
+                          <CustomTooltip
+                            key={item.id}
+                            content={item.label}
+                            disabled={!isSidebarCollapsed}
+                            side="right"
+                          >
+                            <button
+                              onClick={() => {
+                                setIsMobileSidebarOpen(false);
+                                router.push(item.href);
+                              }}
+                              className={cn(
+                                "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
+                                isActive
+                                  ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                              )}
+                            >
+                              {isActive && (
+                                <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
+                              )}
+                              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                                <Icon className={cn("h-4 w-4 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                              </div>
+                              <div
+                                className={cn(
+                                  "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                                  isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                                )}
+                              >
+                                <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                                  {item.label}
+                                </span>
+                                {isActive && (
+                                  <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                                )}
+                              </div>
+                            </button>
+                          </CustomTooltip>
+                        );
+                      })
+                  )}
+
+                  {/* Analytics */}
+                  <CustomTooltip
+                    content="Journal Analytics"
+                    disabled={!isSidebarCollapsed}
+                    side="right"
+                  >
+                    <button
+                      onClick={() => {
+                        setIsMobileSidebarOpen(false);
+                        router.push("/dashboard/analytics");
+                      }}
+                      className={cn(
+                        "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
+                        activeView === "analytics" && !pathname.includes("/profile")
+                          ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                          : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                      )}
+                    >
+                      {activeView === "analytics" && !pathname.includes("/profile") && (
+                        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
+                      )}
+                      <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                        <BarChart2 className={cn("h-4 w-4 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                      </div>
+                      <div
+                        className={cn(
+                          "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                          isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                        )}
+                      >
+                        <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                          Journal Analytics
+                        </span>
+                        {activeView === "analytics" && !pathname.includes("/profile") && (
+                          <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                        )}
+                      </div>
+                    </button>
+                  </CustomTooltip>
+                </div>
+              )}
+            </div>
+
+            {/* Administration Management Tools (Desktop) */}
+            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+              <div>
+                <div
+                  onClick={() => !isSidebarCollapsed && setIsManagementExpanded(!isManagementExpanded)}
+                  className={cn(
+                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200 flex items-center justify-between select-none",
+                    !isSidebarCollapsed && "cursor-pointer hover:text-slate-200",
+                    isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span>Management Tools</span>
+                    <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isManagementExpanded && "-rotate-90")} />
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
+                </div>
+                {(isManagementExpanded || isSidebarCollapsed) && (
+                  <div className="space-y-1">
+                    {managementTools.map((tab) => {
+                      const Icon = tab.icon;
+                      const isTabActive = pathname.startsWith(tab.href);
+
                       return (
                         <CustomTooltip
-                          key={item.id}
-                          content={item.label}
+                          key={tab.id}
+                          content={tab.label}
                           disabled={!isSidebarCollapsed}
                           side="right"
                         >
                           <button
                             onClick={() => {
                               setIsMobileSidebarOpen(false);
-                              router.push(item.href);
+                              router.push(tab.href);
                             }}
                             className={cn(
                               "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
-                              isActive
+                              isTabActive
                                 ? "bg-blue-600/20 text-white font-bold shadow-xs"
                                 : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                             )}
                           >
-                            {isActive && (
+                            {isTabActive && (
                               <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
                             )}
                             <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                              <Icon className={cn("h-4 w-4 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
+                              <Icon className={cn("h-4 w-4 transition-colors", isTabActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
                             </div>
                             <div
                               className={cn(
@@ -1041,171 +1253,147 @@ export function DashboardWorkspace({
                               )}
                             >
                               <span className="truncate font-medium text-slate-200 group-hover:text-white">
-                                {item.label}
+                                {tab.label}
                               </span>
-                              {isActive && (
+                              {isTabActive && (
                                 <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
                               )}
                             </div>
                           </button>
                         </CustomTooltip>
                       );
-                    })
+                    })}
+                  </div>
                 )}
-
-                {/* Analytics */}
-                <CustomTooltip
-                  content="Journal Analytics"
-                  disabled={!isSidebarCollapsed}
-                  side="right"
-                >
-                  <button
-                    onClick={() => {
-                      setIsMobileSidebarOpen(false);
-                      router.push("/dashboard/analytics");
-                    }}
-                    className={cn(
-                      "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
-                      activeView === "analytics" && !pathname.includes("/profile")
-                        ? "bg-blue-600/20 text-white font-bold shadow-xs"
-                        : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
-                    )}
-                  >
-                    {activeView === "analytics" && !pathname.includes("/profile") && (
-                      <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
-                    )}
-                    <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                      <BarChart2 className={cn("h-4 w-4 transition-colors", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                    </div>
-                    <div
-                      className={cn(
-                        "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
-                        isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
-                      )}
-                    >
-                      <span className="truncate font-medium text-slate-200 group-hover:text-white">
-                        Journal Analytics
-                      </span>
-                      {activeView === "analytics" && !pathname.includes("/profile") && (
-                        <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
-                      )}
-                    </div>
-                  </button>
-                </CustomTooltip>
-              </div>
-            </div>
-
-            {/* Administration Management Tools (Desktop) */}
-            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
-              <div>
-                <p
-                  className={cn(
-                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200 flex items-center justify-between",
-                    isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
-                  )}
-                >
-                  <span>Management Tools</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold">Admin</span>
-                </p>
-                <div className="space-y-1">
-                  {managementTools.map((tab) => {
-                    const Icon = tab.icon;
-                    const isTabActive = pathname.startsWith(tab.href);
-
-                    return (
-                      <CustomTooltip
-                        key={tab.id}
-                        content={tab.label}
-                        disabled={!isSidebarCollapsed}
-                        side="right"
-                      >
-                        <button
-                          onClick={() => {
-                            setIsMobileSidebarOpen(false);
-                            router.push(tab.href);
-                          }}
-                          className={cn(
-                            "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
-                            isTabActive
-                              ? "bg-blue-600/20 text-white font-bold shadow-xs"
-                              : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
-                          )}
-                        >
-                          {isTabActive && (
-                            <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
-                          )}
-                          <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                            <Icon className={cn("h-4 w-4 transition-colors", isTabActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
-                          </div>
-                          <div
-                            className={cn(
-                              "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
-                              isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
-                            )}
-                          >
-                            <span className="truncate font-medium text-slate-200 group-hover:text-white">
-                              {tab.label}
-                            </span>
-                            {isTabActive && (
-                              <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
-                            )}
-                          </div>
-                        </button>
-                      </CustomTooltip>
-                    );
-                  })}
-                </div>
               </div>
             )}
 
-            {/* Role Views Switcher (if admin or super-admin) */}
-            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
+            {/* Pages CMS Category */}
+            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
               <div>
-                <p
+                <div
+                  onClick={() => !isSidebarCollapsed && setIsCmsExpanded(!isCmsExpanded)}
                   className={cn(
-                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200",
+                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200 flex items-center justify-between",
+                    !isSidebarCollapsed && "cursor-pointer hover:text-slate-200",
                     isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
                   )}
                 >
-                  Role Suites
-                </p>
-                <div className="space-y-1">
-                  {navItems
-                    .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
-                    .map((item) => {
-                      const Icon = item.icon;
+                  <span className="flex items-center gap-1.5">
+                    <span>Pages CMS</span>
+                    <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isCmsExpanded && "-rotate-90")} />
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">Content</span>
+                </div>
+                {(isCmsExpanded || isSidebarCollapsed) && (
+                  <div className="space-y-1">
+                    {cmsPages.map((tab) => {
+                      const Icon = tab.icon;
+                      const isTabActive = pathname === tab.href || (tab.id === "home" && pathname === "/dashboard/cms");
+
                       return (
                         <CustomTooltip
-                          key={item.id}
-                          content={item.label}
+                          key={tab.id}
+                          content={tab.label}
                           disabled={!isSidebarCollapsed}
                           side="right"
                         >
                           <button
                             onClick={() => {
                               setIsMobileSidebarOpen(false);
-                              router.push(item.href);
+                              router.push(tab.href);
                             }}
-                            className="flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                            className={cn(
+                              "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
+                              isTabActive
+                                ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                            )}
                           >
+                            {isTabActive && (
+                              <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
+                            )}
                             <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                              <Icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-200" />
+                              <Icon className={cn("h-4 w-4 transition-colors", isTabActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
                             </div>
                             <div
                               className={cn(
-                                "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                                "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
                                 isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
                               )}
                             >
-                              <span className="truncate text-slate-300 group-hover:text-white">
-                                {item.label}
+                              <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                                {tab.label}
                               </span>
+                              {isTabActive && (
+                                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                              )}
                             </div>
                           </button>
                         </CustomTooltip>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Role Views Switcher (if admin or super-admin) */}
+            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
+              <div>
+                <div
+                  onClick={() => !isSidebarCollapsed && setIsRoleSuitesExpanded(!isRoleSuitesExpanded)}
+                  className={cn(
+                    "px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400/80 mb-1.5 whitespace-nowrap overflow-hidden transition-all duration-200 flex items-center justify-between select-none",
+                    !isSidebarCollapsed && "cursor-pointer hover:text-slate-200",
+                    isSidebarCollapsed ? "opacity-0 h-0 mb-0 pointer-events-none" : "opacity-100 h-4"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span>Role Suites</span>
+                    <ChevronDown className={cn("h-3 w-3 transition-transform text-slate-400", !isRoleSuitesExpanded && "-rotate-90")} />
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold">Roles</span>
                 </div>
+                {(isRoleSuitesExpanded || isSidebarCollapsed) && (
+                  <div className="space-y-1">
+                    {navItems
+                      .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
+                      .map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <CustomTooltip
+                            key={item.id}
+                            content={item.label}
+                            disabled={!isSidebarCollapsed}
+                            side="right"
+                          >
+                            <button
+                              onClick={() => {
+                                setIsMobileSidebarOpen(false);
+                                router.push(item.href);
+                              }}
+                              className="flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                            >
+                              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                                <Icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-200" />
+                              </div>
+                              <div
+                                className={cn(
+                                  "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                                  isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                                )}
+                              >
+                                <span className="truncate text-slate-300 group-hover:text-white">
+                                  {item.label}
+                                </span>
+                              </div>
+                            </button>
+                          </CustomTooltip>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -12,6 +12,12 @@ import {
   Layers,
   Mail,
   Users,
+  Home as HomeIcon,
+  PenLine,
+  CheckCircle2,
+  Shield,
+  FileText,
+  Phone,
 } from "lucide-react";
 import { getSession, type User } from "@/lib/auth";
 import { type Role } from "@/lib/data";
@@ -66,10 +72,64 @@ export const MANAGEMENT_PAGE_HEADERS: Record<string, DashboardPageHeaderProps> =
     badge: "Academic Governance",
   },
   "/dashboard/cms": {
-    title: "Dynamic Page & Section Publisher",
-    subtitle: "Edit text, upload guidelines, modify publication policies, and update announcements across the public journal portal.",
+    title: "Pages CMS — Home Page",
+    subtitle: "Configure hero showcase, carousel publications, research highlights, and metrics on the public homepage.",
+    icon: HomeIcon,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/home": {
+    title: "Pages CMS — Home Page",
+    subtitle: "Configure hero showcase, carousel publications, research highlights, and metrics on the public homepage.",
+    icon: HomeIcon,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/about": {
+    title: "Pages CMS — About Journal",
+    subtitle: "Manage journal overview, mission, indexing criteria, and aims & scope.",
+    icon: BookOpen,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/editorial-board": {
+    title: "Pages CMS — Editorial Board",
+    subtitle: "Manage public academic leadership, section editors, governance charter, and advisory council.",
+    icon: Users,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/authors": {
+    title: "Pages CMS — Author Guidelines",
+    subtitle: "Edit manuscript preparation instructions, submission checklists, templates, and APC waivers.",
+    icon: PenLine,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/reviewers": {
+    title: "Pages CMS — Reviewer Guidelines",
+    subtitle: "Configure peer review protocol, evaluation rubrics, reviewer ethics, and academic recognition.",
+    icon: CheckCircle2,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/policies": {
+    title: "Pages CMS — Policies & Ethics",
+    subtitle: "Manage anti-plagiarism screening, COPE compliance, double-blind review framework, and open access policies.",
+    icon: Shield,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/issues": {
+    title: "Pages CMS — Issues Archive",
+    subtitle: "Configure public issue releases, volume archive text, and catalog headers.",
     icon: Layers,
-    badge: "Site & Content Management (CMS)",
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/articles": {
+    title: "Pages CMS — Articles Directory",
+    subtitle: "Configure public paper listings, indexing metrics, PDF links, and DOI configurations.",
+    icon: FileText,
+    badge: "Pages CMS",
+  },
+  "/dashboard/cms/contact": {
+    title: "Pages CMS — Contact Office",
+    subtitle: "Edit editorial secretariat details, campus location, help desk, and inquiry contacts.",
+    icon: Phone,
+    badge: "Pages CMS",
   },
   "/dashboard/navigation": {
     title: "Navigation & Menu Architecture",
