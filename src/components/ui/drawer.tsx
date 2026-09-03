@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -42,7 +42,13 @@ export function CustomDrawer({
   className,
   contentClassName,
 }: CustomDrawerProps) {
-  // ESC key listener & scroll lock that preserves sticky sidebar
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // ESC key listener & root scroll lock (locks both html and body to eliminate the outer window scrollbar)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -57,28 +63,24 @@ export function CustomDrawer({
       (window as any).__lenis.stop();
     }
 
-    // Freeze scroll position without breaking sticky elements
-    const scrollY = window.scrollY;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    const isWindowScrollable =
+      document.documentElement.scrollHeight > window.innerHeight ||
+      document.body.scrollHeight > window.innerHeight;
+
+    if (isWindowScrollable) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
     }
+
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.paddingRight = "";
-      // Instantly restore scroll position without animation
-      document.documentElement.style.scrollBehavior = "auto";
-      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
-      document.documentElement.style.scrollBehavior = "";
+      if (isWindowScrollable) {
+        document.documentElement.style.overflow = prevHtmlOverflow;
+        document.body.style.overflow = prevBodyOverflow;
+      }
 
       // Resume Lenis smooth scroll if active
       if (typeof window !== "undefined" && (window as any).__lenis) {
@@ -88,24 +90,28 @@ export function CustomDrawer({
     };
   }, [isOpen, onClose]);
 
-  if (typeof window === "undefined") return null;
+  if (!mounted) return null;
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[999999] flex justify-end overflow-hidden">
+        <motion.div
+          key="drawer-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="fixed inset-0 z-[999999] flex justify-end overflow-hidden"
+        >
           {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+          <div
             onClick={onClose}
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
           />
 
           {/* Drawer Panel */}
           <motion.div
+            key="drawer-panel"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -116,9 +122,11 @@ export function CustomDrawer({
               className
             )}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
           >
             {/* Header */}
-            <div className="sticky top-0 z-20 flex items-start justify-between border-b border-slate-200 bg-white/95 px-6 py-4.5 backdrop-blur-md">
+            <div className="shrink-0 z-20 flex items-start justify-between border-b border-slate-200 bg-white px-6 py-4.5 shadow-xs">
               <div className="flex items-start gap-3 min-w-0 flex-1 pr-4">
                 {Icon && (
                   <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 shrink-0 mt-0.5 shadow-2xs">
@@ -150,11 +158,11 @@ export function CustomDrawer({
               </button>
             </div>
 
-            {/* Scrollable Content Body */}
+            {/* Scrollable Content Body with dedicated visible scrollbar */}
             <div
               data-lenis-prevent="true"
               className={cn(
-                "flex-1 overflow-y-auto p-6 text-slate-800 text-xs sidebar-scroll overscroll-contain",
+                "flex-1 min-h-0 overflow-y-auto p-6 text-slate-800 text-xs drawer-scroll overscroll-contain",
                 contentClassName
               )}
             >
@@ -163,14 +171,19 @@ export function CustomDrawer({
 
             {/* Optional Sticky Footer */}
             {footer && (
-              <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-slate-50/95 px-6 py-3.5 backdrop-blur-md flex items-center justify-end gap-2.5">
+              <div className="shrink-0 z-20 border-t border-slate-200 bg-white px-6 py-3.5 flex items-center justify-end gap-2.5 shadow-xs">
                 {footer}
               </div>
             )}
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>,
     document.body
   );
 }
+
+// Export Drawer alias
+export const Drawer = CustomDrawer;
+export type DrawerProps = CustomDrawerProps;
+

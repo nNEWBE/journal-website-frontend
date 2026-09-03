@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   FileText,
   Plus,
@@ -21,6 +21,9 @@ import {
   AlertCircle,
   HelpCircle,
   Home as HomeIcon,
+  Users,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { contentApi, type PageContentDTO } from "@/lib/api";
@@ -50,27 +53,59 @@ const PAGE_TABS = [
     color: "blue",
   },
   {
+    id: "editorial-board",
+    label: "Editorial Board",
+    route: "/editorial-board",
+    icon: Users,
+    description: "Academic leadership, section editors, governance charter, and advisory council.",
+    color: "indigo",
+  },
+  {
     id: "authors",
     label: "Author Guidelines",
     route: "/authors",
     icon: PenLine,
-    description: "Manuscript preparation, submission checklist, and APC policy.",
+    description: "Manuscript preparation, submission checklist, templates, and APC policy.",
     color: "sky",
+  },
+  {
+    id: "reviewers",
+    label: "Reviewer Guidelines",
+    route: "/reviewers",
+    icon: CheckCircle2,
+    description: "Peer review protocol, evaluation rubrics, reviewer ethics, and academic recognition.",
+    color: "teal",
   },
   {
     id: "policies",
     label: "Policies & Ethics",
     route: "/policies",
     icon: Shield,
-    description: "Peer review framework, anti-plagiarism, and open access licensing.",
+    description: "Peer review framework, anti-plagiarism screening, COPE compliance, and open access.",
     color: "purple",
+  },
+  {
+    id: "issues",
+    label: "Issues Archive",
+    route: "/issues",
+    icon: Layers,
+    description: "Current volume, published archives, biannual issue catalog, and table of contents.",
+    color: "rose",
+  },
+  {
+    id: "articles",
+    label: "Articles & Papers",
+    route: "/articles",
+    icon: FileText,
+    description: "Searchable manuscript directory, indexing metrics, PDF downloads, and DOI links.",
+    color: "cyan",
   },
   {
     id: "contact",
     label: "Contact Office",
     route: "/contact",
     icon: Phone,
-    description: "Editorial secretariat, office location, help desk, and emails.",
+    description: "Editorial secretariat, physical office location, help desk, and inquiry emails.",
     color: "emerald",
   },
 ];
@@ -83,6 +118,36 @@ export function PageContentCMSPanel() {
   const [loading, setLoading] = useState<boolean>(!cmsCache["home"]?.data || cmsCache["home"].data.length === 0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Horizontal scroll tabs state
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateTabsScroll = () => {
+    if (!tabsContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+  };
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (!tabsContainerRef.current) return;
+    const offset = 260;
+    tabsContainerRef.current.scrollBy({
+      left: direction === "left" ? -offset : offset,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(updateTabsScroll, 100);
+    window.addEventListener("resize", updateTabsScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", updateTabsScroll);
+    };
+  }, []);
 
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -388,54 +453,78 @@ export function PageContentCMSPanel() {
         </div>
       </div>
 
-      {/* Page Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-        {PAGE_TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
+      {/* Page Tabs as Compact Horizontal Bar */}
+      <div className="relative border-b border-slate-200/90 bg-white/70 backdrop-blur-xs rounded-xl p-1 shadow-2xs">
+        {canScrollLeft && (
+          <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1 pr-3 bg-gradient-to-r from-white via-white/90 to-transparent">
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "group text-left p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden",
-                isActive
-                  ? "bg-white border-blue-500 shadow-md ring-2 ring-blue-500/20"
-                  : "bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white hover:shadow-xs"
-              )}
+              type="button"
+              onClick={() => scrollTabs("left")}
+              className="flex h-6 w-6 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Scroll left"
             >
-              <div className="flex items-center justify-between gap-2 mb-2">
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        <div
+          ref={tabsContainerRef}
+          onScroll={updateTabsScroll}
+          className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 px-0.5"
+        >
+          {PAGE_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "group flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 border",
+                  isActive
+                    ? "bg-white border-blue-200 text-blue-900 shadow-xs font-bold ring-1 ring-blue-500/20"
+                    : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/80"
+                )}
+              >
                 <div
                   className={cn(
-                    "h-8 w-8 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-105",
+                    "flex h-5 w-5 items-center justify-center rounded-md transition-colors",
                     isActive
-                      ? "bg-blue-600 text-white border-blue-600 shadow-xs"
-                      : "bg-slate-50 text-slate-600 border-slate-200"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3 w-3" />
                 </div>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                <span>{tab.label}</span>
+                <span
+                  className={cn(
+                    "text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors",
+                    isActive
+                      ? "bg-blue-50 text-blue-700 font-semibold"
+                      : "bg-slate-100 text-slate-400 group-hover:text-slate-500"
+                  )}
+                >
                   {tab.route}
                 </span>
-              </div>
+              </button>
+            );
+          })}
+        </div>
 
-              <div>
-                <p
-                  className={cn(
-                    "text-xs font-bold transition-colors truncate",
-                    isActive ? "text-blue-900" : "text-slate-700 group-hover:text-slate-900"
-                  )}
-                >
-                  {tab.label}
-                </p>
-                <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                  {tab.description}
-                </p>
-              </div>
+        {canScrollRight && (
+          <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1 pl-3 bg-gradient-to-l from-white via-white/90 to-transparent">
+            <button
+              type="button"
+              onClick={() => scrollTabs("right")}
+              className="flex h-6 w-6 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Scroll right"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
-          );
-        })}
+          </div>
+        )}
       </div>
 
       {/* Search & Filter Bar */}

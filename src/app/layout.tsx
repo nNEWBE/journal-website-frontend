@@ -56,11 +56,27 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${playfairDisplay.variable} ${notoBangla.variable} ${jetBrainsMono.variable} min-h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-sans">
         <StoreProvider>
           <SmoothScroll />
           {children}
-          <Toaster position="top-right" richColors closeButton theme="light" />
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            theme="light"
+            toastOptions={{
+              className: "font-sans",
+              classNames: {
+                toast: "font-sans shadow-lg",
+                title: "font-sans font-semibold tracking-tight text-sm",
+                description: "font-sans text-xs tracking-normal leading-relaxed opacity-90",
+                actionButton: "font-sans font-semibold text-xs",
+                cancelButton: "font-sans font-medium text-xs",
+                closeButton: "hover:bg-black/10 transition-colors",
+              },
+            }}
+          />
         </StoreProvider>
       </body>
     </html>

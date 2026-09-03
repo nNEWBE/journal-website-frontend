@@ -10,8 +10,10 @@ import {
   Archive,
   BarChart2,
   Bell,
+  BookMarked,
   BookOpen,
   Building2,
+  Calendar,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
@@ -20,6 +22,7 @@ import {
   ClipboardCheck,
   Clock,
   Crown,
+  Download,
   Eye,
   FileCheck2,
   FileText,
@@ -77,12 +80,13 @@ import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/aut
 
 import { roleNotes, roleAccentMap, statusConfig } from "./workspace/workspace-data";
 import { DashboardStatsGrid } from "./workspace/dashboard-stats-grid";
-import { ArticleDetailDrawer } from "./workspace/article-detail-drawer";
+import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
 import { UserManagementPanel } from "./admin/user-management-panel";
 import { MailingCenterPanel } from "./admin/mailing-center-panel";
 import { IssueManagementPanel } from "./admin/issue-management-panel";
 import { BoardManagementPanel } from "./admin/board-management-panel";
+import { PublicationsManagementPanel } from "./admin/publications-management-panel";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -412,7 +416,7 @@ export function DashboardWorkspace({
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
   const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
-  const [adminSubView, setAdminSubView] = useState<"pipeline" | "users" | "mailing" | "issues" | "board" | "content" | "navigation">("pipeline");
+  const [adminSubView, setAdminSubView] = useState<"pipeline" | "publications" | "users" | "mailing" | "issues" | "board" | "content" | "navigation">("pipeline");
   const [visitedAdminTabs, setVisitedAdminTabs] = useState<Set<string>>(() => new Set(["pipeline"]));
 
   useEffect(() => {
@@ -711,7 +715,7 @@ export function DashboardWorkspace({
   const roleAccent = roleAccentMap[activeRole];
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f5f7fb]">
+    <div className="flex h-screen w-full overflow-hidden bg-[#f5f7fb]">
       {/* Mobile Drawer Sidebar */}
       <AnimatePresence>
         {isMobileSidebarOpen && (
@@ -842,6 +846,7 @@ export function DashboardWorkspace({
                     <div className="space-y-1">
                       {[
                         { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
+                        { id: "publications", label: "All Publications", icon: BookMarked },
                         { id: "users", label: "User Directory", icon: Users },
                         { id: "mailing", label: "Mailing & Broadcast", icon: Mail },
                         { id: "issues", label: "Issues & Volumes", icon: BookOpen },
@@ -853,8 +858,10 @@ export function DashboardWorkspace({
                         const isTabActive =
                           (tab.id === "content" && pathname.includes("/cms")) ||
                           (tab.id === "navigation" && pathname.includes("/navigation")) ||
+                          (tab.id === "publications" && pathname.includes("/publications")) ||
                           (!pathname.includes("/cms") &&
                             !pathname.includes("/navigation") &&
+                            !pathname.includes("/publications") &&
                             !pathname.includes("/profile") &&
                             (activeRole === "admin" || activeRole === "super-admin") &&
                             activeView === "workspace" &&
@@ -869,6 +876,8 @@ export function DashboardWorkspace({
                                 router.push("/dashboard/cms");
                               } else if (tab.id === "navigation") {
                                 router.push("/dashboard/navigation");
+                              } else if (tab.id === "publications") {
+                                router.push("/dashboard/publications");
                               } else {
                                 setAdminSubView(tab.id as any);
                                 if (activeRole !== "admin" && activeRole !== "super-admin") {
@@ -877,7 +886,8 @@ export function DashboardWorkspace({
                                   activeView !== "workspace" ||
                                   pathname.includes("/profile") ||
                                   pathname.includes("/cms") ||
-                                  pathname.includes("/navigation")
+                                  pathname.includes("/navigation") ||
+                                  pathname.includes("/publications")
                                 ) {
                                   router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
                                 }
@@ -1014,7 +1024,7 @@ export function DashboardWorkspace({
       <aside
         data-lenis-prevent="true"
         className={cn(
-          "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] sticky top-0 h-screen overflow-hidden z-30",
+          "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] h-full overflow-hidden z-30",
           mounted && isSidebarCollapsed ? "w-[68px]" : "w-[270px]"
         )}
       >
@@ -1176,6 +1186,7 @@ export function DashboardWorkspace({
                 <div className="space-y-1">
                   {[
                     { id: "pipeline", label: "Manuscript Pipeline", icon: ClipboardCheck },
+                    { id: "publications", label: "All Publications", icon: BookMarked },
                     { id: "users", label: "User Directory", icon: Users },
                     { id: "mailing", label: "Mailing & Broadcast", icon: Mail },
                     { id: "issues", label: "Issues & Volumes", icon: BookOpen },
@@ -1187,8 +1198,10 @@ export function DashboardWorkspace({
                     const isTabActive =
                       (tab.id === "content" && pathname.includes("/cms")) ||
                       (tab.id === "navigation" && pathname.includes("/navigation")) ||
+                      (tab.id === "publications" && pathname.includes("/publications")) ||
                       (!pathname.includes("/cms") &&
                         !pathname.includes("/navigation") &&
+                        !pathname.includes("/publications") &&
                         !pathname.includes("/profile") &&
                         (activeRole === "admin" || activeRole === "super-admin") &&
                         activeView === "workspace" &&
@@ -1208,6 +1221,8 @@ export function DashboardWorkspace({
                               router.push("/dashboard/cms");
                             } else if (tab.id === "navigation") {
                               router.push("/dashboard/navigation");
+                            } else if (tab.id === "publications") {
+                              router.push("/dashboard/publications");
                             } else {
                               setAdminSubView(tab.id as any);
                               if (activeRole !== "admin" && activeRole !== "super-admin") {
@@ -1216,7 +1231,8 @@ export function DashboardWorkspace({
                                 activeView !== "workspace" ||
                                 pathname.includes("/profile") ||
                                 pathname.includes("/cms") ||
-                                pathname.includes("/navigation")
+                                pathname.includes("/navigation") ||
+                                pathname.includes("/publications")
                               ) {
                                 router.push(activeRole === "super-admin" ? "/dashboard/super-admin" : "/dashboard/admin");
                               }
@@ -1530,8 +1546,8 @@ export function DashboardWorkspace({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col min-w-0">
-        <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center justify-between border-b border-[color:var(--color-gb-border)] bg-white/95 backdrop-blur-md px-4 shadow-xs">
+      <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
+        <header className="shrink-0 z-20 flex h-12 items-center justify-between border-b border-[color:var(--color-gb-border)] bg-white/95 backdrop-blur-md px-4 shadow-xs">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -1573,6 +1589,10 @@ export function DashboardWorkspace({
                 <span className="font-bold text-[color:var(--color-gb-blue)]">
                   Menu &amp; Nav Manager
                 </span>
+              ) : pathname.includes("/publications") ? (
+                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                  All Publications
+                </span>
               ) : activeView === "analytics" ? (
                 <span className="font-bold text-[color:var(--color-gb-blue)]">
                   Analytics
@@ -1604,11 +1624,12 @@ export function DashboardWorkspace({
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="flex-1 min-h-0 overflow-y-auto">
           {pathname.includes("/submissions/new") ||
           pathname.includes("/profile") ||
           pathname.includes("/cms") ||
-          pathname.includes("/navigation") ? (
+          pathname.includes("/navigation") ||
+          pathname.includes("/publications") ? (
             children
           ) : (
             <>
@@ -2100,12 +2121,122 @@ export function DashboardWorkspace({
         </main>
       </div>
 
-      {/* Drawer */}
-      <ArticleDetailDrawer
-        submission={selectedSubmission}
-        isOpen={isInfoModalOpen}
+      {/* Manuscript Detail Drawer using CustomDrawer */}
+      <CustomDrawer
+        isOpen={isInfoModalOpen && Boolean(selectedSubmission)}
         onClose={() => setIsInfoModalOpen(false)}
-      />
+        title={selectedSubmission?.title || "Manuscript Details"}
+        description={
+          selectedSubmission
+            ? `${(selectedSubmission as any).track || selectedSubmission.type} • ID: ${selectedSubmission.id}`
+            : undefined
+        }
+        icon={BookOpen}
+        size="xl"
+        badge={
+          selectedSubmission ? (() => {
+            const cfg = getStatusConfig(selectedSubmission.status);
+            const StatusIcon = cfg.icon;
+            return (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cfg.classes}`}
+              >
+                <StatusIcon className="h-3 w-3" />
+                {cfg.label}
+              </span>
+            );
+          })() : null
+        }
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <button
+              type="button"
+              onClick={() => setIsInfoModalOpen(false)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => toast.success("Downloading manuscript package...")}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download All Files</span>
+            </button>
+          </div>
+        }
+      >
+        {selectedSubmission && (
+          <div className="space-y-6">
+            {/* Author info */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                  <UserIcon className="h-4.5 w-4.5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Corresponding Author
+                  </p>
+                  <p className="text-xs font-extrabold text-slate-800">
+                    {selectedSubmission.author}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                  <Calendar className="h-4.5 w-4.5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Submitted Date
+                  </p>
+                  <p className="text-xs font-extrabold text-slate-800">
+                    {(selectedSubmission as any).submittedDate || selectedSubmission.updated}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Abstract */}
+            {(selectedSubmission as any).abstract && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                  Abstract
+                </h3>
+                <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  {(selectedSubmission as any).abstract}
+                </p>
+              </div>
+            )}
+
+            {/* Reviewers Assigned */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                Peer Reviewers ({selectedSubmission.reviewers?.length || 0})
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedSubmission.reviewers && selectedSubmission.reviewers.length > 0 ? (
+                  selectedSubmission.reviewers.map((r, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                      {r}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-400 italic">
+                    No reviewers assigned yet
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </CustomDrawer>
 
       {/* Assign Modal */}
       <AssignReviewerModal

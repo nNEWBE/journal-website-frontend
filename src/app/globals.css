@@ -77,6 +77,66 @@
   border-radius: 0px !important;
 }
 
+/* ── Sonner Toast Typography & Aesthetics ── */
+[data-sonner-toaster],
+[data-sonner-toast],
+[data-sonner-toast] * {
+  font-family: var(--font-body), "Plus Jakarta Sans", "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-sonner-toast] {
+  letter-spacing: -0.01em !important;
+  box-shadow: 0 12px 36px -4px rgba(17, 27, 82, 0.12), 0 4px 12px -2px rgba(17, 27, 82, 0.06) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-family: var(--font-body), "Plus Jakarta Sans", sans-serif !important;
+  font-weight: 650 !important;
+  font-size: 0.875rem !important; /* 14px */
+  line-height: 1.25rem !important;
+  letter-spacing: -0.015em !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-family: var(--font-body), "Plus Jakarta Sans", sans-serif !important;
+  font-weight: 450 !important;
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.35 !important;
+  letter-spacing: -0.005em !important;
+  opacity: 0.92 !important;
+}
+
+[data-sonner-toast] [data-button] {
+  font-family: var(--font-body), "Plus Jakarta Sans", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+[data-sonner-toast] [data-cancel] {
+  font-family: var(--font-body), "Plus Jakarta Sans", sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title] {
+  color: #14532d !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: #166534 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title] {
+  color: #7f1d1d !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: #991b1b !important;
+}
+
 /* Toast close button and loading spinner circular overrides */
 [data-sonner-toast] [data-close-button],
 [data-sonner-toaster] [data-close-button],
@@ -178,12 +238,17 @@ header.sticky,
   }
 }
 .overflow-y-auto,
-.overflow-x-auto,
 .scroll-container {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   transform: translateZ(0);
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: auto !important;
 }
 
 /* Prevent expensive hover state layout thrashing while actively scrolling */
@@ -1566,8 +1631,7 @@ select:focus-visible,
 
   /* Promote sticky header & scroll containers to dedicated GPU compositor layers */
   header.sticky,
-  .overflow-y-auto,
-  .overflow-x-auto {
+  .overflow-y-auto {
     transform: translateZ(0);
     will-change: transform;
     -webkit-overflow-scrolling: touch;
@@ -1586,35 +1650,59 @@ select:focus-visible,
   }
 }
 
-/* Sidebar Custom Hover-Visible Scrollbar */
+/* Sidebar Custom Visible Scrollbar */
 .sidebar-scroll {
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none; /* Firefox default hidden */
-  -ms-overflow-style: none; /* IE/Edge default hidden */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent !important;
 }
 .sidebar-scroll::-webkit-scrollbar {
-  width: 5px;
-  display: none; /* WebKit default hidden */
+  width: 5px !important;
+  display: block !important;
 }
-.sidebar-scroll:hover {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
 }
-.sidebar-scroll:hover::-webkit-scrollbar {
-  display: block;
-  width: 5px;
-}
-.sidebar-scroll:hover::-webkit-scrollbar-track {
-  background: transparent;
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-radius: 9999px !important;
+  transition: background-color 0.2s ease !important;
 }
 .sidebar-scroll:hover::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.45) !important;
 }
-.sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Drawer & Light Container Visible Scrollbar */
+.drawer-scroll {
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #cbd5e1 transparent !important;
+}
+.drawer-scroll::-webkit-scrollbar {
+  width: 6px !important;
+  display: block !important;
+}
+.drawer-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.drawer-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1 !important;
+  border-radius: 9999px !important;
+  transition: background-color 0.15s ease-in-out !important;
+}
+.drawer-scroll:hover::-webkit-scrollbar-thumb,
+.drawer-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8 !important;
+}
+.drawer-scroll::-webkit-scrollbar-thumb:active {
+  background-color: #64748b !important;
 }
 
 /* Progress bar & academic loader animations */
