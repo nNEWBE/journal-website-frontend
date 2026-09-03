@@ -36,6 +36,7 @@ import { DashboardStatsGrid } from "../workspace/dashboard-stats-grid";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "../workspace/assign-reviewer-modal";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-wrapper";
 import {
   Table,
   TableHeader,
@@ -326,40 +327,32 @@ export function ManuscriptPipelinePanel() {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div className="flex items-center gap-3.5">
-          <div className="h-11 w-11 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shadow-2xs">
-            <ClipboardCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-base font-extrabold text-slate-900 tracking-tight">
-              Manuscript Pipeline
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Monitor submissions, assign double-blind reviewers, and advance editorial workflows.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-            title="Refresh Pipeline"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Sync</span>
-          </button>
-          <Link
-            href="/dashboard/submissions/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>New Submission</span>
-          </Link>
-        </div>
-      </div>
+      <DashboardPageHeader
+        icon={ClipboardCheck}
+        title="Manuscript Pipeline"
+        subtitle="Monitor submissions, assign double-blind reviewers, and advance editorial workflows."
+        badge={isRefreshing ? "Syncing..." : undefined}
+        actions={
+          <>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Refresh Pipeline"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Sync</span>
+            </button>
+            <Link
+              href="/dashboard/submissions/new"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New Submission</span>
+            </Link>
+          </>
+        }
+      />
 
       {/* KPI Stats Cards */}
       <DashboardStatsGrid submissions={submissions} />

@@ -37,6 +37,7 @@ import { articles as initialArticles, articleTypes as defaultArticleTypes, topic
 import { articlesApi, issuesApi, IssueData } from "@/lib/api";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-wrapper";
 import { cn } from "@/lib/utils";
 
 function getCoverImage(article: Article): string {
@@ -418,55 +419,43 @@ export function PublicationsManagementPanel() {
   return (
     <div className="space-y-6">
       {/* ── Top Header Section ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-blue-50 text-[color:var(--color-gb-blue)] flex items-center justify-center shadow-xs">
-              <BookMarked className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                All Publications Repository
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                Comprehensive directory of peer-reviewed articles, scholarly DOIs, and readership analytics.
-              </p>
-            </div>
-          </div>
-        </div>
+      <DashboardPageHeader
+        icon={BookMarked}
+        title="All Publications Repository"
+        subtitle="Comprehensive directory of peer-reviewed articles, scholarly DOIs, and readership analytics."
+        actions={
+          <>
+            <button
+              onClick={() => loadPublications(true)}
+              disabled={isRefreshing}
+              title="Refresh database records"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-blue-600")} />
+              <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+            </button>
 
-        {/* Global Quick Actions */}
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          <button
-            onClick={() => loadPublications(true)}
-            disabled={isRefreshing}
-            title="Refresh database records"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 rounded-xl transition-all cursor-pointer disabled:opacity-50"
-          >
-            <RotateCcw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-blue-600")} />
-            <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
-          </button>
+            <button
+              onClick={handleExportCSV}
+              title="Export filtered records as CSV"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-xs"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Export CSV</span>
+            </button>
 
-          <button
-            onClick={handleExportCSV}
-            title="Export filtered records as CSV"
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-xs"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Export CSV</span>
-          </button>
-
-          <Link
-            href="/articles"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[color:var(--color-gb-blue)] hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            <span>View Public Archive</span>
-          </Link>
-        </div>
-      </div>
+            <Link
+              href="/articles"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[color:var(--color-gb-blue)] hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>View Public Archive</span>
+            </Link>
+          </>
+        }
+      />
 
       {/* ── KPI Metric Badges ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">

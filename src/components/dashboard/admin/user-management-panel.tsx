@@ -28,6 +28,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-wrapper";
 import {
   Table,
   TableHeader,
@@ -364,46 +365,33 @@ export function UserManagementPanel({
   return (
     <div className="space-y-6">
       {/* Top Header & Overview Cards */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--color-gb-border)] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 font-sans">
-              Administration
-            </span>
-            {isRefreshing && (
-              <span className="text-[9px] font-semibold text-blue-600 animate-pulse">
-                Syncing latest directory...
-              </span>
-            )}
-          </div>
-          <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
-            User Directory & Access Control
-          </h2>
-          <p className="text-xs text-[color:var(--color-gb-muted)]">
-            Manage academic scholar credentials, role privileges, and active user accounts.
-          </p>
-        </div>
+      <DashboardPageHeader
+        icon={Users}
+        title="User Directory & Access Control"
+        subtitle="Manage academic scholar credentials, role privileges, and active user accounts."
+        badge={isRefreshing ? "Syncing directory..." : "Administration"}
+        actions={
+          <>
+            <button
+              onClick={() => loadUsers(true)}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+              title="Refresh user directory"
+            >
+              <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
+              <span>Sync</span>
+            </button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => loadUsers(true)}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-            title="Refresh user directory"
-          >
-            <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
-            <span>Sync</span>
-          </button>
-
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
-          >
-            <UserPlus className="h-4 w-4" />
-            Add / Invite User
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Add / Invite User</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Role Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">

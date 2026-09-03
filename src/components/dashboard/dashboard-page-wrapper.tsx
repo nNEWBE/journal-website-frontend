@@ -12,6 +12,56 @@ export interface DashboardPageHeaderProps {
   badge?: string;
   icon?: React.ComponentType<{ className?: string }>;
   actions?: React.ReactNode;
+  className?: string;
+}
+
+export function DashboardPageHeader({
+  title,
+  subtitle,
+  badge,
+  icon: Icon,
+  actions,
+  className,
+}: DashboardPageHeaderProps) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs",
+        className
+      )}
+    >
+      <div className="flex items-center gap-3.5">
+        {Icon && (
+          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-blue-50 text-[color:var(--color-gb-blue)] border border-blue-100 flex items-center justify-center shadow-xs shrink-0">
+            <Icon className="h-5 w-5" />
+          </div>
+        )}
+        <div>
+          {badge && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-800 font-sans">
+                {badge}
+              </span>
+            </div>
+          )}
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-academic">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {actions && (
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {actions}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export interface DashboardPageWrapperProps {
@@ -21,7 +71,7 @@ export interface DashboardPageWrapperProps {
    */
   allowedRoles?: Role[];
   /**
-   * Optional header banner matching the academic workspace aesthetic.
+   * Optional header banner matching the academic workspace card aesthetic.
    */
   header?: DashboardPageHeaderProps;
   /**
@@ -78,43 +128,10 @@ export function DashboardPageWrapper({
     );
   }
 
-  const HeaderIcon = header?.icon;
-
   return (
-    <div className="space-y-0">
-      {header && (
-        <div className="flex items-center justify-between border-b border-l-4 border-l-blue-600 border-[color:var(--color-gb-border)] px-5 py-4 bg-white/70 backdrop-blur-sm shadow-[inset_0_-1px_0_rgba(17,27,82,0.02)] transition-all">
-          <div className="flex items-start gap-3.5">
-            {HeaderIcon && (
-              <div className="p-2.5 rounded-xl border flex items-center justify-center shadow-sm shrink-0 mt-0.5 bg-blue-50 text-blue-600 border-blue-200">
-                <HeaderIcon className="h-5 w-5" />
-              </div>
-            )}
-            <div>
-              {header.badge && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border leading-none font-sans bg-blue-50 text-blue-700 border-blue-200">
-                    {header.badge}
-                  </span>
-                </div>
-              )}
-              <h1 className="mt-1.5 text-sm font-extrabold text-[color:var(--color-gb-ink)] tracking-tight font-academic">
-                {header.title}
-              </h1>
-              {header.subtitle && (
-                <p className="mt-1 max-w-2xl text-[11px] text-[color:var(--color-gb-muted)] leading-relaxed">
-                  {header.subtitle}
-                </p>
-              )}
-            </div>
-          </div>
-          {header.actions && <div>{header.actions}</div>}
-        </div>
-      )}
-
-      <div className={cn("p-4 sm:p-6 space-y-6", className)}>
-        {typeof children === "function" ? children(user) : children}
-      </div>
+    <div className={cn("p-4 sm:p-6 space-y-6", className)}>
+      {header && <DashboardPageHeader {...header} />}
+      {typeof children === "function" ? children(user) : children}
     </div>
   );
 }

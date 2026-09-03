@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminApi, MailTemplateItem } from "@/lib/api";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-wrapper";
 import { cn } from "@/lib/utils";
 
 const AUDIENCE_OPTIONS = [
@@ -115,33 +116,22 @@ export function MailingCenterPanel() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--color-gb-border)] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-800 font-sans">
-              Communications Center
-            </span>
-            <span className="text-[10px] font-bold text-slate-500 font-mono">
-              SMTP Relay &amp; Queue
-            </span>
-          </div>
-          <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
-            Mailing &amp; Scholar Broadcast
-          </h2>
-          <p className="text-xs text-[color:var(--color-gb-muted)]">
-            Dispatch announcements, call for papers, and updates directly to registered scholars.
-          </p>
-        </div>
-
-        <button
-          onClick={() => loadTemplates(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
-          title="Sync email templates from server"
-        >
-          <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
-          <span>Sync Templates</span>
-        </button>
-      </div>
+      <DashboardPageHeader
+        icon={Mail}
+        title="Mailing & Scholar Broadcast"
+        subtitle="Dispatch announcements, call for papers, and updates directly to registered scholars."
+        badge="Communications Center"
+        actions={
+          <button
+            onClick={() => loadTemplates(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+            title="Sync email templates from server"
+          >
+            <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+            <span>Sync Templates</span>
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Broadcast Composer */}

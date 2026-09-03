@@ -30,6 +30,7 @@ import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-wrapper";
 import { cn } from "@/lib/utils";
 
 const BOARD_ROLES = [
@@ -283,29 +284,33 @@ export function BoardManagementPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--color-gb-border)] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-sans">
-              Academic Governance
-            </span>
-          </div>
-          <h2 className="text-lg font-black text-[color:var(--color-gb-ink)] font-academic tracking-tight mt-1">
-            Editorial Board Governance
-          </h2>
-          <p className="text-xs text-[color:var(--color-gb-muted)]">
-            Manage academic appointments, advisory scholars, and section editors displayed on the public portal.
-          </p>
-        </div>
+      <DashboardPageHeader
+        icon={Crown}
+        title="Editorial Board Governance"
+        subtitle="Manage academic appointments, advisory scholars, and section editors displayed on the public portal."
+        badge={isRefreshing ? "Syncing board..." : "Academic Governance"}
+        actions={
+          <>
+            <button
+              onClick={() => loadMembers(true)}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+              title="Refresh editorial board"
+            >
+              <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
+              <span>Sync</span>
+            </button>
 
-        <button
-          onClick={openAddModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
-        >
-          <UserPlus className="h-4 w-4" />
-          Add Board Member
-        </button>
-      </div>
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Add Board Member</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
