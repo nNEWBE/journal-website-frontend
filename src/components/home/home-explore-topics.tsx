@@ -12,6 +12,14 @@ import {
   ShieldPlus,
   Stethoscope,
   Users,
+  GraduationCap,
+  BookOpen,
+  Library,
+  FileText,
+  Tag,
+  Compass,
+  Shield,
+  TrendingUp,
 } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
@@ -74,6 +82,25 @@ export const topicList: TopicItem[] = [
   },
 ];
 
+export const TOPIC_ICON_MAP: Record<string, any> = {
+  Brain,
+  Stethoscope,
+  Cog,
+  Globe2,
+  BarChart3,
+  Users,
+  ShieldPlus,
+  Briefcase,
+  GraduationCap,
+  BookOpen,
+  Library,
+  FileText,
+  Tag,
+  Compass,
+  Shield,
+  TrendingUp,
+};
+
 export function HomeExploreTopics() {
   const [section, setSection] = useState<PageContentDTO | null>(null);
 
@@ -102,6 +129,23 @@ export function HomeExploreTopics() {
   const subtitle =
     section?.subtitle ||
     "Discover research across disciplines and stay informed on the latest advances in key fields shaping our world.";
+
+  const displayedTopics = (() => {
+    try {
+      if (section?.metaJson) {
+        const meta = JSON.parse(section.metaJson);
+        if (Array.isArray(meta.topics) && meta.topics.length > 0) {
+          return meta.topics.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            icon: TOPIC_ICON_MAP[t.iconName || "Brain"] || Brain,
+            href: t.href || `/articles?topic=${encodeURIComponent(t.name)}`,
+          }));
+        }
+      }
+    } catch {}
+    return topicList;
+  })();
 
   return (
     <section
@@ -134,7 +178,7 @@ export function HomeExploreTopics() {
 
         {/* 8 Topic Cards Grid (4 columns x 2 rows) */}
         <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mt-8 sm:mt-10">
-          {topicList.map((topic) => {
+          {displayedTopics.map((topic: any) => {
             const Icon = topic.icon;
             return (
               <StaggerItem key={topic.id}>

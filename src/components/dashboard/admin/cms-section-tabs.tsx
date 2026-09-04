@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Layers } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface CmsSectionTabItem {
@@ -131,7 +131,7 @@ export function CmsSectionTabs({
               title="Scroll left"
               aria-label="Scroll left"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <div className="w-10 h-full bg-gradient-to-r from-white via-white/80 to-transparent pointer-events-none" />
           </div>
@@ -194,7 +194,7 @@ export function CmsSectionTabs({
               title="Scroll right"
               aria-label="Scroll right"
             >
-              <ArrowRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         )}

@@ -40,11 +40,32 @@ import {
   ArrowLeft,
   ExternalLink,
   Compass,
+  Calendar,
+  Globe,
+  Clock,
+  Play,
+  Download,
+  Mail,
+  Brain,
+  Stethoscope,
+  Cog,
+  Globe2,
+  BarChart3,
+  ShieldPlus,
+  Briefcase,
+  GraduationCap,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
 import { articles as initialArticles, type Article } from "@/lib/data";
+import { specialIssueCalls } from "@/components/home/home-calls-for-papers";
+import { latestArticles } from "@/components/home/home-latest-research";
+import { mostReadArticles } from "@/components/home/home-most-read";
+import { topicList } from "@/components/home/home-explore-topics";
+import { featuredJournals } from "@/components/home/home-featured-journals";
+import { communityArticles } from "@/components/home/home-research-community";
+import { FAQ_ITEMS } from "@/components/home/home-faq-section";
 import { CmsSectionTabs } from "./cms-section-tabs";
 import { broadcastSectionVisibility } from "@/lib/cms-visibility";
 import { AcademicDataLoader } from "@/components/ui/loader";
@@ -85,6 +106,56 @@ const CORE_SECTION_KEYS = new Set([
   "peer-review-protocol",
   "reviewer-benefits",
 ]);
+
+export interface EditableTopic {
+  id: string;
+  name: string;
+  iconName: string;
+  href: string;
+}
+
+export const DEFAULT_TOPICS: EditableTopic[] = [
+  { id: "ai", name: "Artificial Intelligence", iconName: "Brain", href: "/articles?topic=Technology" },
+  { id: "medicine", name: "Medicine", iconName: "Stethoscope", href: "/articles?topic=Medical+Sciences" },
+  { id: "engineering", name: "Engineering", iconName: "Cog", href: "/articles?topic=Technology" },
+  { id: "climate-science", name: "Climate Science", iconName: "Globe2", href: "/articles?topic=Agriculture" },
+  { id: "data-science", name: "Data Science", iconName: "BarChart3", href: "/articles?topic=Technology" },
+  { id: "social-research", name: "Social Research", iconName: "Users", href: "/articles?topic=Social+Sciences" },
+  { id: "public-health", name: "Public Health", iconName: "ShieldPlus", href: "/articles?topic=Public+Health" },
+  { id: "business", name: "Business", iconName: "Briefcase", href: "/articles?topic=Social+Sciences" },
+];
+
+export const TOPIC_ICON_OPTIONS = [
+  { name: "Brain", label: "Artificial Intelligence", icon: Brain },
+  { name: "Stethoscope", label: "Medicine & Healthcare", icon: Stethoscope },
+  { name: "Cog", label: "Engineering & Tech", icon: Cog },
+  { name: "Globe2", label: "Climate & Earth Sciences", icon: Globe2 },
+  { name: "BarChart3", label: "Data Science & Analytics", icon: BarChart3 },
+  { name: "Users", label: "Social & Behavioral Research", icon: Users },
+  { name: "ShieldPlus", label: "Public Health & Safety", icon: ShieldPlus },
+  { name: "Briefcase", label: "Business & Management", icon: Briefcase },
+  { name: "GraduationCap", label: "Academic Education", icon: GraduationCap },
+  { name: "BookOpen", label: "Humanities & Literature", icon: BookOpen },
+  { name: "Library", label: "Law & Policy", icon: Library },
+  { name: "FileText", label: "General Research", icon: FileText },
+  { name: "Tag", label: "Special Focus Track", icon: Tag },
+  { name: "Compass", label: "Interdisciplinary", icon: Compass },
+  { name: "Shield", label: "Security & Governance", icon: Shield },
+  { name: "TrendingUp", label: "Economics & Finance", icon: TrendingUp },
+];
+
+export function getSectionTopics(sec?: PageContentDTO | null): EditableTopic[] {
+  if (!sec) return DEFAULT_TOPICS;
+  try {
+    if (sec.metaJson) {
+      const meta = JSON.parse(sec.metaJson);
+      if (Array.isArray(meta.topics) && meta.topics.length > 0) {
+        return meta.topics;
+      }
+    }
+  } catch {}
+  return DEFAULT_TOPICS;
+}
 
 export interface HomeSectionMeta {
   label: string;
@@ -467,11 +538,113 @@ const PAGE_TABS = [
   },
 ];
 
+// Canonical sequence of sections matching the live homepage and page layouts
+export const CANONICAL_SECTION_ORDER: Record<string, string[]> = {
+  home: [
+    "hero-main",
+    "latest-research",
+    "current-issue",
+    "most-read",
+    "explore-topics",
+    "featured-journals",
+    "call-for-papers",
+    "research-community",
+    "home-faq",
+    "journal-stats",
+    "scope-tracks",
+  ],
+  about: [
+    "overview",
+    "aims-scope",
+    "indexing-metrics",
+    "indexing",
+    "mission",
+  ],
+  "editorial-board": [
+    "leadership",
+    "section-editors",
+    "advisory",
+    "advisory-council",
+    "governance",
+    "governance-charter",
+  ],
+  authors: [
+    "guidelines",
+    "checklist",
+    "submission-checklist",
+    "apc-waiver",
+    "templates",
+  ],
+  reviewers: [
+    "review-protocol",
+    "peer-review-protocol",
+    "benefits",
+    "reviewer-benefits",
+    "ethics",
+    "guidelines",
+  ],
+  policies: [
+    "peer-review",
+    "ethics-plagiarism",
+    "open-access",
+  ],
+  contact: [
+    "office-info",
+    "editorial-contacts",
+    "map-location",
+  ],
+};
+
+export const sortSectionsByCanonicalOrder = (
+  pageKey: string,
+  sectionList: PageContentDTO[]
+): PageContentDTO[] => {
+  const canonicalList = CANONICAL_SECTION_ORDER[pageKey] || [];
+
+  return [...sectionList]
+    .sort((a, b) => {
+      const aKey = a.sectionKey;
+      const bKey = b.sectionKey;
+
+      const aIdx = canonicalList.indexOf(aKey);
+      const bIdx = canonicalList.indexOf(bKey);
+
+      // If both are in canonical sequence, sort strictly by homepage/page sequence
+      if (aIdx !== -1 && bIdx !== -1) {
+        return aIdx - bIdx;
+      }
+      // Canonical sections always precede custom/unknown ones
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+
+      // Fall back to displayOrder or title
+      const orderA = a.displayOrder ?? 999;
+      const orderB = b.displayOrder ?? 999;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.title || aKey).localeCompare(b.title || bKey);
+    })
+    .map((sec, idx) => {
+      const canonIdx = canonicalList.indexOf(sec.sectionKey);
+      if (canonIdx !== -1) {
+        return {
+          ...sec,
+          displayOrder: canonIdx + 1,
+        };
+      }
+      return {
+        ...sec,
+        displayOrder: sec.displayOrder || idx + 1,
+      };
+    });
+};
+
 const cmsCache: Record<string, { data: PageContentDTO[]; timestamp: number }> = {};
 
 export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKey?: string }) {
   const [activeTab, setActiveTab] = useState<string>(initialPageKey);
-  const [sections, setSections] = useState<PageContentDTO[]>(() => cmsCache[initialPageKey]?.data || []);
+  const [sections, setSections] = useState<PageContentDTO[]>(() =>
+    sortSectionsByCanonicalOrder(initialPageKey, cmsCache[initialPageKey]?.data || [])
+  );
   const [loading, setLoading] = useState<boolean>(!cmsCache[initialPageKey]?.data || cmsCache[initialPageKey].data.length === 0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -523,9 +696,31 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
   // Preview & Confirm Modals
   const [previewSection, setPreviewSection] = useState<PageContentDTO | null>(null);
   const [sectionToDelete, setSectionToDelete] = useState<PageContentDTO | null>(null);
+  const [articleToRemove, setArticleToRemove] = useState<{
+    section?: PageContentDTO;
+    articleId: string;
+    articleTitle: string;
+    articleAuthors?: string;
+    isFromModal?: boolean;
+  } | null>(null);
+  const [isRemovingArticle, setIsRemovingArticle] = useState<boolean>(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+
+  // Topic Management Modal & Confirmation States
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState<boolean>(false);
+  const [editingTopic, setEditingTopic] = useState<EditableTopic | null>(null);
+  const [topicTargetSection, setTopicTargetSection] = useState<PageContentDTO | null>(null);
+  const [topicFormName, setTopicFormName] = useState<string>("");
+  const [topicFormId, setTopicFormId] = useState<string>("");
+  const [topicFormIcon, setTopicFormIcon] = useState<string>("Brain");
+  const [topicFormHref, setTopicFormHref] = useState<string>("/articles?topic=");
+  const [topicToDelete, setTopicToDelete] = useState<{
+    section: PageContentDTO;
+    topic: EditableTopic;
+  } | null>(null);
+  const [isSavingTopic, setIsSavingTopic] = useState<boolean>(false);
 
   // Form fields
   const [formPageKey, setFormPageKey] = useState<string>("about");
@@ -781,14 +976,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     toast.success("Hero slide lineup reordered successfully!");
   };
 
-  const handleQuickRemoveHeroArticle = async (
-    section: PageContentDTO,
-    articleId: string
-  ) => {
-    const heroArticles = getHeroSelectedArticles(section);
-    const newArticleIds = heroArticles.map((a) => a.id).filter((id) => id !== articleId);
-    await handleSaveHeroArticles(section, newArticleIds);
-    toast.info("Publication removed from hero carousel.");
+  const handleConfirmRemoveArticle = async () => {
+    if (!articleToRemove) return;
+    setIsRemovingArticle(true);
+    try {
+      if (articleToRemove.isFromModal) {
+        handleRemoveArticleFromCarousel(articleToRemove.articleId);
+      } else if (articleToRemove.section) {
+        const heroArticles = getHeroSelectedArticles(articleToRemove.section);
+        const newArticleIds = heroArticles
+          .map((a) => a.id)
+          .filter((id) => id !== articleToRemove.articleId);
+        await handleSaveHeroArticles(articleToRemove.section, newArticleIds);
+        toast.info("Publication removed from hero carousel.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove publication.");
+    } finally {
+      setIsRemovingArticle(false);
+      setArticleToRemove(null);
+    }
   };
 
   // Structured Meta field-level helpers (No raw JSON needed by user)
@@ -932,14 +1139,16 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
     try {
       const data = await contentApi.getAdminContent(pageKey);
-      setSections(data || []);
-      cmsCache[pageKey] = { data: data || [], timestamp: Date.now() };
+      const sorted = sortSectionsByCanonicalOrder(pageKey, data || []);
+      setSections(sorted);
+      cmsCache[pageKey] = { data: sorted, timestamp: Date.now() };
     } catch (err: any) {
       console.warn("Failed to fetch admin content, fetching public published fallback:", err.message);
       try {
         const fallback = await contentApi.getPublished(pageKey);
-        setSections(fallback || []);
-        cmsCache[pageKey] = { data: fallback || [], timestamp: Date.now() };
+        const sorted = sortSectionsByCanonicalOrder(pageKey, fallback || []);
+        setSections(sorted);
+        cmsCache[pageKey] = { data: sorted, timestamp: Date.now() };
       } catch {
         if (!cached?.data) {
           toast.error("Failed to load page content from server.");
@@ -1210,6 +1419,147 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     }
   };
 
+  // Open Add Topic Modal
+  const handleOpenAddTopic = (sec: PageContentDTO) => {
+    setTopicTargetSection(sec);
+    setEditingTopic(null);
+    setTopicFormName("");
+    setTopicFormId("");
+    setTopicFormIcon("Brain");
+    setTopicFormHref("/articles?topic=");
+    setIsTopicModalOpen(true);
+  };
+
+  // Open Edit Topic Modal
+  const handleOpenEditTopic = (sec: PageContentDTO, topic: EditableTopic) => {
+    setTopicTargetSection(sec);
+    setEditingTopic(topic);
+    setTopicFormName(topic.name);
+    setTopicFormId(topic.id);
+    setTopicFormIcon(topic.iconName || "Brain");
+    setTopicFormHref(topic.href);
+    setIsTopicModalOpen(true);
+  };
+
+  // Save Topic (Add or Edit)
+  const handleSaveTopic = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!topicTargetSection) return;
+    if (!topicFormName.trim()) {
+      toast.error("Please enter a discipline name.");
+      return;
+    }
+
+    const autoId =
+      topicFormId.trim() ||
+      topicFormName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+    const newTopic: EditableTopic = {
+      id: autoId,
+      name: topicFormName.trim(),
+      iconName: topicFormIcon || "Brain",
+      href:
+        topicFormHref.trim() ||
+        `/articles?topic=${encodeURIComponent(topicFormName.trim())}`,
+    };
+
+    const currentTopics = getSectionTopics(topicTargetSection);
+    let updatedTopics: EditableTopic[];
+
+    if (editingTopic) {
+      updatedTopics = currentTopics.map((t) =>
+        t.id === editingTopic.id ? newTopic : t
+      );
+    } else {
+      if (currentTopics.some((t) => t.id === newTopic.id)) {
+        toast.error(`A discipline with ID "${newTopic.id}" already exists.`);
+        return;
+      }
+      updatedTopics = [...currentTopics, newTopic];
+    }
+
+    try {
+      setIsSavingTopic(true);
+      let meta: Record<string, any> = {};
+      try {
+        meta = topicTargetSection.metaJson
+          ? JSON.parse(topicTargetSection.metaJson)
+          : {};
+      } catch {
+        meta = {};
+      }
+
+      const updatedMetaJson = JSON.stringify({ ...meta, topics: updatedTopics });
+      await contentApi.updateSection(topicTargetSection.pageKey, topicTargetSection.sectionKey, {
+        metaJson: updatedMetaJson,
+      });
+
+      // Update state locally immediately
+      setSections((prev) =>
+        prev.map((s) =>
+          s.id === topicTargetSection.id ||
+          (s.pageKey === topicTargetSection.pageKey &&
+            s.sectionKey === topicTargetSection.sectionKey)
+            ? { ...s, metaJson: updatedMetaJson }
+            : s
+        )
+      );
+
+      toast.success(
+        editingTopic
+          ? `Discipline "${newTopic.name}" updated successfully.`
+          : `Discipline "${newTopic.name}" added successfully.`
+      );
+      setIsTopicModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save discipline.");
+    } finally {
+      setIsSavingTopic(false);
+    }
+  };
+
+  // Confirm Delete Topic
+  const handleConfirmDeleteTopic = async () => {
+    if (!topicToDelete) return;
+    const { section: sec, topic } = topicToDelete;
+    const currentTopics = getSectionTopics(sec);
+    const updatedTopics = currentTopics.filter((t) => t.id !== topic.id);
+
+    try {
+      setIsSavingTopic(true);
+      let meta: Record<string, any> = {};
+      try {
+        meta = sec.metaJson ? JSON.parse(sec.metaJson) : {};
+      } catch {
+        meta = {};
+      }
+
+      const updatedMetaJson = JSON.stringify({ ...meta, topics: updatedTopics });
+      await contentApi.updateSection(sec.pageKey, sec.sectionKey, {
+        metaJson: updatedMetaJson,
+      });
+
+      setSections((prev) =>
+        prev.map((s) =>
+          s.id === sec.id ||
+          (s.pageKey === sec.pageKey && s.sectionKey === sec.sectionKey)
+            ? { ...s, metaJson: updatedMetaJson }
+            : s
+        )
+      );
+
+      toast.success(`Discipline "${topic.name}" deleted successfully.`);
+      setTopicToDelete(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete discipline.");
+    } finally {
+      setIsSavingTopic(false);
+    }
+  };
+
   const currentTabInfo = PAGE_TABS.find((t) => t.id === activeTab) || PAGE_TABS[0];
 
   return (
@@ -1342,28 +1692,2538 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
           <div className="space-y-3.5">
           {filteredSections.map((section, idx) => (
             <React.Fragment key={section.id || `${section.pageKey}-${section.sectionKey}`}>
-              {/* For homepage hero-main, hide the redundant static metadata card since the hero is exclusively driven by the Hero Carousel */}
-              {!(section.pageKey === "home" && section.sectionKey === "hero-main") && (
+              {/* 1. HERO BANNER & CAROUSEL SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "hero-main" && (() => {
+                let meta: Record<string, any> = {};
+                try {
+                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                } catch {
+                  meta = {};
+                }
+                const heroArticles = getHeroSelectedArticles(section);
+
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <BookMarked className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "Academic Research Hero Banner & Carousel"}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {heroArticles.length} Slides Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Main headline, ISSN badges, CTAs & featured research carousel."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Column Key Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <Sliders className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Active Carousel Slides
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {heroArticles.length} Featured Slides
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <RotateCcw className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Slide Transition
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            5-Second Auto-Advance
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <BookOpen className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Access Policy
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Gold Open Access
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Globe className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Indexing & DOI
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            CrossRef Registered
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Headline & Overview */}
+                    {section.content && (
+                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                          <FileText className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Hero Headline & Mission Statement</span>
+                        </div>
+                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                          {section.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hero Carousel Slides Cards */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Selected Publications for Hero Carousel
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            {heroArticles.length} Active Slides
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          Featured research showcased in the hero visualizer
+                        </span>
+                      </div>
+
+                      {heroArticles.length === 0 ? (
+                        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
+                          <BookOpen className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                          <p className="text-xs font-bold text-slate-700">No publications selected for hero carousel</p>
+                          <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
+                            Select publications from your repository to display them in the homepage hero slides.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3">
+                          {heroArticles.map((art, artIdx) => (
+                            <div
+                              key={art.id}
+                              className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                            >
+                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                                  <div className="flex flex-col items-center justify-center shrink-0">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
+                                      {String(artIdx + 1).padStart(2, "0")}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
+                                      Slide
+                                    </span>
+                                  </div>
+
+                                  <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
+                                    <img
+                                      src={art.image}
+                                      alt=""
+                                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
+                                        {art.topic}
+                                      </span>
+                                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                        Open Access
+                                      </span>
+                                      {art.volume && (
+                                        <span className="text-[10.5px] text-slate-400 font-mono">
+                                          {art.volume}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                                      {art.title}
+                                    </h5>
+
+                                    <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
+                                      <span className="flex items-center gap-1 text-slate-600 truncate max-w-[320px]">
+                                        <Users className="h-3 w-3 text-slate-400 shrink-0" />
+                                        <span className="truncate">{art.authors}</span>
+                                      </span>
+                                      {art.doi && (
+                                        <span className="font-mono text-[10px] text-slate-400">
+                                          DOI: {art.doi}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 self-end md:self-center shrink-0 border-t md:border-t-0 pt-2.5 md:pt-0 w-full md:w-auto justify-end">
+                                  <div className="flex items-center bg-slate-100/90 rounded-xl p-0.5 border border-slate-200/70">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickReorderHeroArticle(section, artIdx, "up")}
+                                      disabled={artIdx === 0}
+                                      className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white disabled:opacity-25 transition-all cursor-pointer"
+                                      title="Move slide earlier in carousel"
+                                    >
+                                      <ArrowUp className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickReorderHeroArticle(section, artIdx, "down")}
+                                      disabled={artIdx === heroArticles.length - 1}
+                                      className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white disabled:opacity-25 transition-all cursor-pointer"
+                                      title="Move slide later in carousel"
+                                    >
+                                      <ArrowDown className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+
+                                  <a
+                                    href={`/articles/${art.slug}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer"
+                                    title="View manuscript article page"
+                                  >
+                                    <ExternalLink className="h-3 w-3 text-slate-400" />
+                                    <span className="hidden sm:inline">View</span>
+                                  </a>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setArticleToRemove({
+                                        section,
+                                        articleId: art.id,
+                                        articleTitle: art.title,
+                                        articleAuthors: art.authors,
+                                      })
+                                    }
+                                    className="h-8 w-8 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-700 flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+                                    title="Remove from hero carousel (keeps article in repository)"
+                                    aria-label="Remove from hero carousel"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 2. LATEST RESEARCH SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "latest-research" && (() => {
+                let meta: Record<string, any> = {};
+                try {
+                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                } catch {
+                  meta = {};
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "Latest Research"}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {latestArticles.length} Manuscripts Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Recent breakthroughs and peer-reviewed scholarly papers from our global community."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Column Key Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <Shield className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Editorial Standard
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Double-Blind Peer Review
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <FileText className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Featured Manuscripts
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {latestArticles.length} Recent Papers
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Access License
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Open Access (CC-BY 4.0)
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <ExternalLink className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            View All Catalog Link
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {meta.viewAllText || "View all articles"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editorial Scope & Description */}
+                    {section.content && (
+                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                          <FileText className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Curatorial Scope & Editorial Description</span>
+                        </div>
+                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                          {section.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Manuscripts List */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Latest Manuscripts Featured on Homepage
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            {latestArticles.length} Live Papers
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          4-column research showcase displayed to public visitors
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {latestArticles.map((art, artIdx) => (
+                          <div
+                            key={art.id}
+                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                          >
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                                <div className="flex flex-col items-center justify-center shrink-0">
+                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
+                                    {String(artIdx + 1).padStart(2, "0")}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
+                                    Paper
+                                  </span>
+                                </div>
+
+                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
+                                  <img
+                                    src={art.image}
+                                    alt=""
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
+                                      {art.tags}
+                                    </span>
+                                    <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                      Peer Reviewed
+                                    </span>
+                                  </div>
+
+                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                                    {art.title}
+                                  </h5>
+
+                                  <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
+                                    <span className="flex items-center gap-1 text-slate-600 truncate max-w-[280px]">
+                                      <Users className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span className="truncate">{art.authors}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1 text-slate-500">
+                                      <Library className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span>{art.journal}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1 text-slate-400">
+                                      <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span>{art.date}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                <a
+                                  href={art.articleHref}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                                  <span>View Article</span>
+                                </a>
+                                <a
+                                  href={art.pdfHref}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  <FileText className="h-3 w-3 text-slate-500" />
+                                  <span>Download PDF</span>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 3. CURRENT ISSUE SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "current-issue" && (() => {
+                let meta: Record<string, any> = {};
+                try {
+                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                } catch {
+                  meta = {};
+                }
+
+                const journalName = meta.journalName || "Nexus Journal of Molecular Sciences";
+                const volumeIssue = meta.volumeIssue || "Vol. 12, No. 4";
+                const issueDate = meta.issueDate || section.subtitle || "May 2025";
+                const publicationDate = meta.publicationDate || "May 15, 2025";
+                const issnPrint = meta.issnPrint || "2073-8447";
+                const issnOnline = meta.issnOnline || "2790-2188";
+                const featuredPaperTitle =
+                  meta.featuredPaperTitle ||
+                  "Machine learning-guided discovery of allosteric inhibitors targeting emergent viral polymerases";
+                const browseHref = meta.browseHref || "/issues/current";
+
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "Current Issue — Active Edition"}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {volumeIssue}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Active volume, issue metadata, cover graphic, and PDF downloads."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Column Key Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <Library className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Journal Masthead
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {journalName}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <BookOpen className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Volume & Issue
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {volumeIssue}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <Calendar className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Publication Date
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {publicationDate}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Tag className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Registered ISSNs
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            P: {issnPrint} | O: {issnOnline}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editorial Scope Card */}
+                    <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                        <FileText className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Editorial Scope & Issue Overview</span>
+                      </div>
+                      <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                        {section.content ||
+                          "This issue features cutting-edge research at the intersection of molecular biology, chemical biology, and computational science. Highlighted studies explore emerging therapeutic targets, novel biomolecular mechanisms, and innovative methodologies advancing precision medicine and translational discovery."}
+                      </div>
+                    </div>
+
+                    {/* Lead Paper & Magazine Cover Showcase */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Active Issue Publication Showcase
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            Lead Issue Release
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          Cover visualizer and lead paper featured on the homepage
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col md:flex-row gap-5 items-center">
+                        <div className="relative w-32 aspect-[3/4] shrink-0 rounded-xl overflow-hidden border border-slate-300 shadow-md bg-[#061026]">
+                          <img
+                            src="/images/hero/molecular_inhibitors.jpg"
+                            alt="Current Issue Cover"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 p-2 flex flex-col justify-between">
+                            <span className="text-[9px] font-bold text-cyan-300 tracking-wider">GBJ</span>
+                            <span className="text-[8px] font-medium text-white/90">{volumeIssue}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
+                              Featured Lead Research Paper
+                            </span>
+                            <span className="text-[10.5px] text-slate-500 font-medium">
+                              {journalName} • {issueDate}
+                            </span>
+                          </div>
+
+                          <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                            {featuredPaperTitle}
+                          </h4>
+
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Lead breakthrough paper featured on the issue cover with open-access repository distribution and full editorial commentary.
+                          </p>
+
+                          <div className="flex items-center gap-2.5 pt-1">
+                            <a
+                              href={browseHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              <span>Browse Complete Issue</span>
+                            </a>
+                            <a
+                              href="/articles/community-healthcare-access-savar"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-slate-400" />
+                              <span>Read Featured Paper</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 4. MOST READ SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "most-read" && (() => {
+                let meta: Record<string, any> = {};
+                try {
+                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                } catch {
+                  meta = {};
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "Most Read — Trending Publications"}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {mostReadArticles.length} Ranked Manuscripts
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Trending manuscripts and highest cited publications across the academic network."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Column Key Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <TrendingUp className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Ranked Articles
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {mostReadArticles.length} Trending Papers
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <Eye className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Peak Readership
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            12.4K+ Global Readers
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <Calendar className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Evaluation Window
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Past 90 Days Rolling
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <BarChart2 className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Ranking Metric
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Views & Citations
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editorial Scope (if present) */}
+                    {section.content && (
+                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                          <FileText className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Editorial Description</span>
+                        </div>
+                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                          {section.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Ranked Articles List */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Ranked Manuscripts Featured on Homepage
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            Top {mostReadArticles.length} Trending
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          Ordered by global readership and citation engagement
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {mostReadArticles.map((item, rIdx) => (
+                          <div
+                            key={item.rank}
+                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                          >
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                                <div className="flex flex-col items-center justify-center shrink-0">
+                                  <span
+                                    className={cn(
+                                      "flex h-7 w-7 items-center justify-center rounded-xl font-mono text-xs font-bold shadow-2xs text-white",
+                                      rIdx === 0 ? "bg-amber-500" : "bg-[#1e40af]"
+                                    )}
+                                  >
+                                    {item.rank}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
+                                    Rank #{rIdx + 1}
+                                  </span>
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
+                                      {item.type}
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 flex items-center gap-1">
+                                      <Eye className="h-3 w-3 text-slate-400" />
+                                      <span>{item.views}</span>
+                                    </span>
+                                  </div>
+
+                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                                    {item.title}
+                                  </h5>
+
+                                  <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
+                                    <span className="flex items-center gap-1 text-slate-600">
+                                      <Library className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span>{item.journal}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1 text-slate-400">
+                                      <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span>{item.date}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                <a
+                                  href={item.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                                  <span>Read Paper</span>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 5. EXPLORE TOPICS SECTION */}
+              {section.pageKey === "home" &&
+                (section.sectionKey === "explore-topics" ||
+                  section.sectionKey === "scope-tracks") &&
+                (() => {
+                  const topics = getSectionTopics(section);
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Section Header Bar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <Tag className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900">
+                                {section.title || "Explore by Topic — Academic Disciplines"}
+                              </h4>
+                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                                {topics.length} Research Tracks
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                              {section.subtitle ||
+                                "Discipline categories and research faculty tracks available for exploration."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          {/* Realtime Visibility Switch */}
+                          <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                              {section.published ? (
+                                <Eye className="h-3 w-3 text-emerald-600" />
+                              ) : (
+                                <EyeOff className="h-3 w-3 text-slate-400" />
+                              )}
+                              <span>Visibility:</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(section)}
+                              className={cn(
+                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                                section.published ? "bg-emerald-500" : "bg-slate-300"
+                              )}
+                              role="switch"
+                              aria-checked={section.published}
+                              title={
+                                section.published
+                                  ? "Click to turn off and hide on live page in realtime"
+                                  : "Click to turn on and show on live page in realtime"
+                              }
+                            >
+                              <span
+                                className={cn(
+                                  "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                  section.published ? "translate-x-3.5" : "translate-x-0"
+                                )}
+                              />
+                            </button>
+                            <span
+                              className={cn(
+                                "text-[10.5px] font-bold",
+                                section.published ? "text-emerald-700" : "text-slate-500"
+                              )}
+                            >
+                              {section.published ? "Visible" : "Hidden"}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(section)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                            <span>Edit Content</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4-Column Key Parameters */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <Tag className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Discipline Tracks
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              {topics.length} Subject Areas
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <Compass className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Coverage Breadth
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              Multidisciplinary
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                            <Search className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Navigation Routing
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              Article Search Filters
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Repository Indexing
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              Full-Text Cross-Query
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Editorial Scope (if present) */}
+                      {section.content && (
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                          <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                            <FileText className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Editorial Overview</span>
+                          </div>
+                          <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                            {section.content}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Topics Grid with Add / Edit / Delete */}
+                      <div className="space-y-3 pt-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                              Discipline Categories Featured on Homepage
+                            </h5>
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                              {topics.length} Disciplines
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-slate-400 font-medium hidden md:inline">
+                              Interactive faculty tracks directing authors and readers
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAddTopic(section)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-2xs transition-colors cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Add Discipline</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {topics.length === 0 ? (
+                          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
+                            <Tag className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                            <p className="text-xs font-bold text-slate-700">No discipline categories added yet</p>
+                            <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
+                              Add academic disciplines to categorize publications and guide research discovery on the homepage.
+                            </p>
+                            <div className="mt-3 flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAddTopic(section)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-2xs"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>Add First Discipline</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {topics.map((topic) => {
+                              const iconOption =
+                                TOPIC_ICON_OPTIONS.find((opt) => opt.name === topic.iconName) ||
+                                TOPIC_ICON_OPTIONS[0];
+                              const IconComponent = iconOption.icon;
+
+                              return (
+                                <div
+                                  key={topic.id}
+                                  className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col justify-between"
+                                >
+                                  <div>
+                                    {/* Top Row: Icon on left, Edit & Delete buttons on right */}
+                                    <div className="flex items-center justify-between gap-2 mb-3">
+                                      <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200 shadow-2xs shrink-0">
+                                        <IconComponent className="h-5 w-5" />
+                                      </div>
+
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEditTopic(section, topic)}
+                                          className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                                          title={`Edit ${topic.name}`}
+                                          aria-label={`Edit ${topic.name}`}
+                                        >
+                                          <Edit className="h-3.5 w-3.5" />
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setTopicToDelete({
+                                              section,
+                                              topic,
+                                            })
+                                          }
+                                          className="h-7 w-7 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                                          title={`Delete ${topic.name}`}
+                                          aria-label={`Delete ${topic.name}`}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Name & ID */}
+                                    <h5 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
+                                      {topic.name}
+                                    </h5>
+                                    <p className="text-[10.5px] font-mono text-slate-400 mt-0.5">
+                                      ID: {topic.id}
+                                    </p>
+                                  </div>
+
+                                  {/* Bottom: Scholarly Track & Browse link */}
+                                  <div className="pt-3 border-t border-slate-100 mt-3 flex items-center justify-between">
+                                    <span className="text-[11px] font-semibold text-slate-500">
+                                      Scholarly Track
+                                    </span>
+                                    <a
+                                      href={topic.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700"
+                                    >
+                                      <span>Browse</span>
+                                      <ArrowRight className="h-3 w-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* 6. FEATURED JOURNALS SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "featured-journals" && (() => {
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Library className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "Featured Journals — Specialized Editions"}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {featuredJournals.length} Active Journals
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Specialized biannual series and peer-reviewed journal editions."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Column Key Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <Library className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Featured Serials
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {featuredJournals.length} Indexed Serials
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <Shield className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Editorial Model
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Continuous Online Publishing
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <Globe className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Global Impact
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Worldwide Citation Index
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <BookOpen className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Access Model
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Open Access Repository
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editorial Scope */}
+                    {section.content && (
+                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                          <FileText className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Editorial Overview</span>
+                        </div>
+                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                          {section.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Journal Cards List */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Specialized Journals Featured on Homepage
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            {featuredJournals.length} Active Serials
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          High-impact peer-reviewed journals published under Nexus Press
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {featuredJournals.map((fj, fjIdx) => (
+                          <div
+                            key={fj.id}
+                            className="group rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                          >
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                              <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                                <div className="relative h-20 w-16 sm:h-22 sm:w-18 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
+                                  <img
+                                    src={fj.image}
+                                    alt=""
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
+                                      {fj.category}
+                                    </span>
+                                    <span className="text-[10.5px] font-semibold text-slate-500 flex items-center gap-1">
+                                      <BookOpen className="h-3 w-3 text-slate-400" />
+                                      <span>{fj.latestIssue}</span>
+                                    </span>
+                                  </div>
+
+                                  <h5 className="text-sm font-bold text-slate-900 leading-snug">
+                                    {fj.title}
+                                  </h5>
+
+                                  <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                                    {fj.description}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                <a
+                                  href={fj.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                                  <span>View Journal</span>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 7. CALL FOR PAPERS SECTION */}
+              {section.pageKey === "home" &&
+                (section.sectionKey === "call-for-papers" ||
+                  section.sectionKey === "calls-for-papers") &&
+                (() => {
+                  let meta: Record<string, any> = {};
+                  try {
+                    meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                  } catch {
+                    meta = {};
+                  }
+
+                  const badge = meta.badge || "Active Call";
+                  const deadline = meta.deadline || "October 31, 2026";
+                  const targetVolume = meta.targetVolume || "Volume 14, Issue 2";
+                  const fastTrack = meta.fastTrack || "Available / 2-Week Window";
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Section Header Bar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <Megaphone className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900">
+                                {section.title || "Call for Papers — Upcoming Issue"}
+                              </h4>
+                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                                {badge}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                              {section.subtitle ||
+                                "Submission Deadline: October 31, 2026 | Fast-Track Review Available"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          {/* Realtime Visibility Switch */}
+                          <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                              {section.published ? (
+                                <Eye className="h-3 w-3 text-emerald-600" />
+                              ) : (
+                                <EyeOff className="h-3 w-3 text-slate-400" />
+                              )}
+                              <span>Visibility:</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(section)}
+                              className={cn(
+                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                                section.published ? "bg-emerald-500" : "bg-slate-300"
+                              )}
+                              role="switch"
+                              aria-checked={section.published}
+                              title={
+                                section.published
+                                  ? "Click to turn off and hide on live page in realtime"
+                                  : "Click to turn on and show on live page in realtime"
+                              }
+                            >
+                              <span
+                                className={cn(
+                                  "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                  section.published ? "translate-x-3.5" : "translate-x-0"
+                                )}
+                              />
+                            </button>
+                            <span
+                              className={cn(
+                                "text-[10.5px] font-bold",
+                                section.published ? "text-emerald-700" : "text-slate-500"
+                              )}
+                            >
+                              {section.published ? "Visible" : "Hidden"}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(section)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                            <span>Edit Content</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4-Column Key Parameters Cards Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <Tag className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Call Status Badge
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              {badge}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <Calendar className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Submission Deadline
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              {deadline}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                            <BookOpen className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Target Volume & Issue
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              {targetVolume}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Fast-Track Review
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              {fastTrack}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Editorial Scope & Invitation Card */}
+                      {section.content && (
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                          <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                            <FileText className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Editorial Scope & Manuscript Invitation</span>
+                          </div>
+                          <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                            {section.content}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Thematic Special Issue Tracks List */}
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                              Thematic Special Issues Featured on Homepage
+                            </h5>
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                              {specialIssueCalls.length} Special Issues
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                            Multidisciplinary thematic research calls
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                          {specialIssueCalls.map((call, cIdx) => (
+                            <div
+                              key={call.id}
+                              className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                            >
+                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs shrink-0">
+                                    {String(cIdx + 1).padStart(2, "0")}
+                                  </span>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <span
+                                        className={cn(
+                                          "text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 border border-blue-200/80",
+                                          call.badgeColor
+                                        )}
+                                      >
+                                        {call.badge}
+                                      </span>
+                                      <span className="text-[11px] font-medium text-slate-500">
+                                        {call.journal}
+                                      </span>
+                                    </div>
+
+                                    <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-1">
+                                      {call.title}
+                                    </h5>
+
+                                    <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
+                                      <span className="flex items-center gap-1 text-slate-600">
+                                        <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
+                                        <span>Submission Deadline: {call.deadline}</span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                  <a
+                                    href={call.href || "/articles"}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer shadow-2xs"
+                                  >
+                                    <ExternalLink className="h-3 w-3 text-slate-400" />
+                                    <span>View Track</span>
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* 8. RESEARCH COMMUNITY SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "research-community" && (() => {
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Users className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "From Our Research Community"}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {communityArticles.length} Community Highlights
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Faculty spotlights, author interviews, and annual symposium announcements."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Column Key Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <Users className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Active Features
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            {communityArticles.length} Spotlight Stories
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <Play className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Media Formats
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Interviews, Recaps & Video
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <Megaphone className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Outreach Lead
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Author Outreach Committee
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Globe className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Community Reach
+                          </p>
+                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                            Global Academic Network
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editorial Scope */}
+                    {section.content && (
+                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                          <FileText className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Editorial Description</span>
+                        </div>
+                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                          {section.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Community Articles List */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Community Highlights Featured on Homepage
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            {communityArticles.length} Featured Highlights
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          Author interviews, symposium recaps, and video discussions
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {communityArticles.map((ca, caIdx) => (
+                          <div
+                            key={ca.id}
+                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                          >
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                                <div className="flex flex-col items-center justify-center shrink-0">
+                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
+                                    {String(caIdx + 1).padStart(2, "0")}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
+                                    Story
+                                  </span>
+                                </div>
+
+                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
+                                  <img
+                                    src={ca.image}
+                                    alt=""
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
+                                      {ca.tag}
+                                    </span>
+                                    {ca.isVideo && (
+                                      <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200/60 flex items-center gap-1">
+                                        <Play className="h-2.5 w-2.5" />
+                                        <span>Video Recording</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-1">
+                                    {ca.title}
+                                  </h5>
+
+                                  <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                                    {ca.description}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                <a
+                                  href={ca.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                                  <span>{ca.actionText}</span>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 9. HOME FAQ SECTION */}
+              {section.pageKey === "home" &&
+                (section.sectionKey === "home-faq" || section.sectionKey === "faq") &&
+                (() => {
+                  return (
+                    <div className="space-y-4">
+                      {/* Section Header Bar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <HelpCircle className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900">
+                                {section.title || "Frequently Asked Questions — Author Guidance"}
+                              </h4>
+                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                                {FAQ_ITEMS.length} Questions & Answers
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                              {section.subtitle ||
+                                "Frequently asked questions for prospective authors, peer reviewers, and researchers."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          {/* Realtime Visibility Switch */}
+                          <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                              {section.published ? (
+                                <Eye className="h-3 w-3 text-emerald-600" />
+                              ) : (
+                                <EyeOff className="h-3 w-3 text-slate-400" />
+                              )}
+                              <span>Visibility:</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(section)}
+                              className={cn(
+                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                                section.published ? "bg-emerald-500" : "bg-slate-300"
+                              )}
+                              role="switch"
+                              aria-checked={section.published}
+                              title={
+                                section.published
+                                  ? "Click to turn off and hide on live page in realtime"
+                                  : "Click to turn on and show on live page in realtime"
+                              }
+                            >
+                              <span
+                                className={cn(
+                                  "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                  section.published ? "translate-x-3.5" : "translate-x-0"
+                                )}
+                              />
+                            </button>
+                            <span
+                              className={cn(
+                                "text-[10.5px] font-bold",
+                                section.published ? "text-emerald-700" : "text-slate-500"
+                              )}
+                            >
+                              {section.published ? "Visible" : "Hidden"}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(section)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                            <span>Edit Content</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4-Column Key Parameters */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <HelpCircle className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Guidance Questions
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              {FAQ_ITEMS.length} Author Q&As
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <FileText className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Key Topics
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              Scope, Review, APCs, Access
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                            <Shield className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Review Protocol
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              Double-Blind Evaluation
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <Mail className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Author Support
+                            </p>
+                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                              Editorial Desk Helpdesk
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Editorial Scope (if present) */}
+                      {section.content && (
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
+                          <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                            <FileText className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Editorial Overview</span>
+                          </div>
+                          <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                            {section.content}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* FAQ Cards List */}
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                              Frequently Asked Questions Featured on Homepage
+                            </h5>
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                              {FAQ_ITEMS.length} Author Q&As
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                            Clear guidelines covering submissions, timelines, and open scholarship
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                          {FAQ_ITEMS.map((faq, fIdx) => (
+                            <div
+                              key={faq.id}
+                              className="group rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200 space-y-2.5"
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#1e40af] text-white font-mono text-[11px] font-bold shadow-2xs shrink-0 mt-0.5">
+                                  Q{fIdx + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
+                                      {faq.category}
+                                    </span>
+                                  </div>
+                                  <h5 className="text-sm font-bold text-slate-900 leading-snug">
+                                    {faq.question}
+                                  </h5>
+                                </div>
+                              </div>
+
+                              {faq.highlight && (
+                                <div className="ml-9 p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2 text-xs font-semibold text-blue-900">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                  <span>{faq.highlight}</span>
+                                </div>
+                              )}
+
+                              <div className="ml-9 text-xs text-slate-600 leading-relaxed bg-slate-50/70 p-3 rounded-xl border border-slate-100 font-sans">
+                                {faq.answer}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* 10. JOURNAL STATS & NEWSLETTER SECTION */}
+              {section.pageKey === "home" && section.sectionKey === "journal-stats" && (() => {
+                let meta: Record<string, any> = {};
+                try {
+                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                } catch {
+                  meta = {};
+                }
+
+                const articlesPublished = meta.articlesPublished || "12,486+";
+                const globalReaders = meta.globalReaders || "85,000+";
+                const acceptanceRate = meta.acceptanceRate || "34%";
+                const reviewersActive = meta.reviewersActive || "140+";
+                const newsletterTitle = meta.newsletterTitle || "Stay Updated — Research Newsletter";
+                const newsletterSubtitle =
+                  meta.newsletterSubtitle ||
+                  "Subscribe to our newsletter for the latest research highlights, journal updates, and open access content.";
+
+                return (
+                  <div className="space-y-4">
+                    {/* Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <BarChart2 className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {section.title || "Advancing knowledge. Driving impact."}
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              Live Impact Metrics
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+                            {section.subtitle ||
+                              "Key highlights, editorial turnaround benchmarks & newsletter alert."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Realtime Visibility Switch */}
+                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                            {section.published ? (
+                              <Eye className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-slate-400" />
+                            )}
+                            <span>Visibility:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(section)}
+                            className={cn(
+                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                              section.published ? "bg-emerald-500" : "bg-slate-300"
+                            )}
+                            role="switch"
+                            aria-checked={section.published}
+                            title={
+                              section.published
+                                ? "Click to turn off and hide on live page in realtime"
+                                : "Click to turn on and show on live page in realtime"
+                            }
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                                section.published ? "translate-x-3.5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <span
+                            className={cn(
+                              "text-[10.5px] font-bold",
+                              section.published ? "text-emerald-700" : "text-slate-500"
+                            )}
+                          >
+                            {section.published ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit Content</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4 Live Key Metrics Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
+                        <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Articles Published
+                          </p>
+                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
+                            {articlesPublished}
+                          </p>
+                          <p className="text-[10.5px] text-slate-500 font-medium">Peer-Reviewed Papers</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
+                        <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <Globe className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Global Readers
+                          </p>
+                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
+                            {globalReaders}
+                          </p>
+                          <p className="text-[10.5px] text-slate-500 font-medium">Annual Active Scholars</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
+                        <div className="h-10 w-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Acceptance Rate
+                          </p>
+                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
+                            {acceptanceRate}
+                          </p>
+                          <p className="text-[10.5px] text-slate-500 font-medium">Selective Peer Review</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
+                        <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Users className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Active Reviewers
+                          </p>
+                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
+                            {reviewersActive}
+                          </p>
+                          <p className="text-[10.5px] text-slate-500 font-medium">Subject Specialists</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editorial Turnaround Benchmarks Card */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Editorial Turnaround & SLA Benchmarks
+                          </h5>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
+                            Verified Academic SLAs
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                          Average turnaround from submission to publication
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
+                          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs">
+                            <Clock className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Initial Desk Screening</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 font-mono mt-1">3–5 Business Days</p>
+                          <p className="text-[10.5px] text-slate-500 mt-0.5">Editorial scope and plagiarism clearance</p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
+                          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs">
+                            <Clock className="h-3.5 w-3.5 text-indigo-600" />
+                            <span>First Review Decision</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 font-mono mt-1">4–6 Weeks</p>
+                          <p className="text-[10.5px] text-slate-500 mt-0.5">Independent double-blind peer review</p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
+                          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                            <span>Production to DOI</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 font-mono mt-1">48 Hours</p>
+                          <p className="text-[10.5px] text-slate-500 mt-0.5">Online publication post-acceptance</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Newsletter Box Preview */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs space-y-2">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                        <Mail className="h-3.5 w-3.5 text-blue-600" />
+                        <span>{newsletterTitle}</span>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70">
+                          Active Dispatch Portal
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                        {newsletterSubtitle}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 11. GENERAL SECTION LAYOUT (FALLBACK FOR ANY OTHER PAGE OR CUSTOM SECTIONS) */}
+              {!(
+                section.pageKey === "home" &&
+                [
+                  "hero-main",
+                  "latest-research",
+                  "current-issue",
+                  "most-read",
+                  "explore-topics",
+                  "scope-tracks",
+                  "featured-journals",
+                  "call-for-papers",
+                  "calls-for-papers",
+                  "research-community",
+                  "home-faq",
+                  "faq",
+                  "journal-stats",
+                ].includes(section.sectionKey)
+              ) && (
                 <div
                   className={cn(
-                    "group rounded-2xl border bg-white p-5 transition-all duration-200 shadow-xs hover:shadow-md",
+                    "group rounded-2xl border bg-white p-5 transition-all duration-200 shadow-xs hover:shadow-md space-y-3.5",
                     section.published
                       ? "border-[color:var(--color-gb-border)] hover:border-blue-300"
                       : "border-amber-200 bg-amber-50/20"
                   )}
                 >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3 mb-3">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="flex items-center justify-center h-6 w-6 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold">
-                        #{section.displayOrder || idx + 1}
-                      </span>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60 flex items-center justify-center shrink-0 font-bold text-xs shadow-2xs">
+                        {(() => {
+                          const IconComponent =
+                            ALL_PAGE_SECTION_CONFIGS[section.pageKey]?.[section.sectionKey]?.icon ||
+                            HOME_SECTION_CONFIG[section.sectionKey]?.icon ||
+                            Layers;
+                          return <IconComponent className="h-5 w-5" />;
+                        })()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="flex items-center justify-center h-5 w-5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10.5px] font-bold">
+                            #{section.displayOrder || idx + 1}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
+                            {section.sectionKey}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 font-academic mt-1 truncate">
+                          {section.title}
+                        </h4>
+                        {section.subtitle && (
+                          <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                            {section.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
-                        {section.sectionKey}
-                      </span>
-
+                    <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                       {/* Section Visibility Switch */}
-                      <div className="inline-flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/90 shadow-2xs">
+                      <div className="inline-flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
                         <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
                           {section.published ? (
                             <Eye className="h-3 w-3 text-emerald-600" />
@@ -1381,7 +4241,11 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                           )}
                           role="switch"
                           aria-checked={section.published}
-                          title={section.published ? "Click to turn off and hide on live page in realtime" : "Click to turn on and show on live page in realtime"}
+                          title={
+                            section.published
+                              ? "Click to turn off and hide on live page in realtime"
+                              : "Click to turn on and show on live page in realtime"
+                          }
                         >
                           <span
                             className={cn(
@@ -1399,29 +4263,19 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                           {section.published ? "Visible" : "Hidden"}
                         </span>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setPreviewSection(section)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-950 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                      >
-                        <Eye className="h-3.5 w-3.5 text-slate-500" />
-                        Preview
-                      </button>
 
                       <button
                         onClick={() => openEditModal(section)}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100/80 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-white px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
                       >
-                        <Edit className="h-3.5 w-3.5 text-blue-600" />
-                        Edit Content
+                        <Edit className="h-3.5 w-3.5" />
+                        <span>Edit Content</span>
                       </button>
 
                       {!CORE_SECTION_KEYS.has(section.sectionKey) && section.id && (
                         <button
                           onClick={() => setSectionToDelete(section)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-700 px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                           title="Remove custom section"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -1431,17 +4285,8 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 font-academic">
-                      {section.title}
-                    </h4>
-                    {section.subtitle && (
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
-                        {section.subtitle}
-                      </p>
-                    )}
-
                     {section.content && (
-                      <div className="mt-3 rounded-xl bg-slate-50/80 p-3 text-xs text-slate-700 leading-relaxed border border-slate-200/60 font-sans whitespace-pre-line line-clamp-3">
+                      <div className="rounded-xl bg-slate-50/80 p-3.5 text-xs text-slate-700 leading-relaxed border border-slate-200/60 font-sans whitespace-pre-line line-clamp-3">
                         {section.content}
                       </div>
                     )}
@@ -1458,7 +4303,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                             {entries.slice(0, 5).map(([k, v]) => (
                               <span
                                 key={k}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-medium bg-slate-100/90 text-slate-700 border border-slate-200/80"
                               >
                                 <span className="text-slate-400 capitalize">
                                   {k.replace(/([A-Z])/g, " $1")}:
@@ -1477,176 +4322,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   </div>
                 </div>
               )}
-
-              {/* Dedicated Hero Carousel Publications Cards (Separate Cards, Not Crammed into Single Card) */}
-              {section.pageKey === "home" && section.sectionKey === "hero-main" && (() => {
-                const heroArticles = getHeroSelectedArticles(section);
-                return (
-                  <div className="space-y-3">
-                    {/* Publications Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <BookMarked className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              Selected Publications for Hero Carousel
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {heroArticles.length} Slides Active
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Featured research manuscripts showcased in the 4-slide hero visualizer on the journal homepage.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Library className="h-3.5 w-3.5" />
-                          <span>Manage Selection</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Individual Publication Cards - Each publication in its own separate card */}
-                    {heroArticles.length === 0 ? (
-                      <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
-                        <BookOpen className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                        <p className="text-xs font-bold text-slate-700">No publications selected for hero carousel</p>
-                        <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
-                          Select publications from your repository to display them in the homepage hero slides.
-                        </p>
-                        <div className="mt-3 flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(section)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-2xs"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            <span>Select Publications</span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3">
-                        {heroArticles.map((art, artIdx) => (
-                          <div
-                            key={art.id}
-                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                          >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                              {/* Left info: Slide number, Thumbnail image, Title, Authors, Badges */}
-                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-                                <div className="flex flex-col items-center justify-center shrink-0">
-                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
-                                    {String(artIdx + 1).padStart(2, "0")}
-                                  </span>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                                    Slide
-                                  </span>
-                                </div>
-
-                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
-                                  <img
-                                    src={art.image}
-                                    alt=""
-                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
-                                      {art.topic}
-                                    </span>
-                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                                      Open Access
-                                    </span>
-                                    {art.volume && (
-                                      <span className="text-[10.5px] text-slate-400 font-mono">
-                                        {art.volume}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                                    {art.title}
-                                  </h5>
-
-                                  <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
-                                    <span className="flex items-center gap-1 text-slate-600 truncate max-w-[320px]">
-                                      <Users className="h-3 w-3 text-slate-400 shrink-0" />
-                                      <span className="truncate">{art.authors}</span>
-                                    </span>
-                                    {art.doi && (
-                                      <span className="font-mono text-[10px] text-slate-400">
-                                        DOI: {art.doi}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Right controls: Reorder Up/Down, Read/Preview link, Remove button */}
-                              <div className="flex items-center gap-1.5 self-end md:self-center shrink-0 border-t md:border-t-0 pt-2.5 md:pt-0 w-full md:w-auto justify-end">
-                                <div className="flex items-center bg-slate-100/90 rounded-xl p-0.5 border border-slate-200/70">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleQuickReorderHeroArticle(section, artIdx, "up")}
-                                    disabled={artIdx === 0}
-                                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white disabled:opacity-25 transition-all cursor-pointer"
-                                    title="Move slide earlier in carousel"
-                                  >
-                                    <ArrowUp className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleQuickReorderHeroArticle(section, artIdx, "down")}
-                                    disabled={artIdx === heroArticles.length - 1}
-                                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white disabled:opacity-25 transition-all cursor-pointer"
-                                    title="Move slide later in carousel"
-                                  >
-                                    <ArrowDown className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-
-                                <a
-                                  href={`/articles/${art.slug}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer"
-                                  title="View manuscript article page"
-                                >
-                                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                                  <span className="hidden sm:inline">View</span>
-                                </a>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleQuickRemoveHeroArticle(section, art.id)}
-                                  className="h-8 w-8 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-700 flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
-                                  title="Remove from hero carousel (keeps article in repository)"
-                                  aria-label="Remove from hero carousel"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
             </React.Fragment>
           ))}
         </div>
@@ -1947,7 +4622,22 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleRemoveArticleFromCarousel(artId)}
+                              onClick={() => {
+                                const art =
+                                  allArticles.find((a) => a.slug === artId || a.id === artId) ||
+                                  initialArticles.find((a) => a.slug === artId || a.id === artId);
+                                setArticleToRemove({
+                                  articleId: artId,
+                                  articleTitle: art?.title || "Research Publication",
+                                  articleAuthors:
+                                    typeof art?.authors === "string"
+                                      ? art.authors
+                                      : Array.isArray(art?.authors)
+                                      ? art.authors.join(", ")
+                                      : undefined,
+                                  isFromModal: true,
+                                });
+                              }}
                               className="h-7 w-7 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-700 flex items-center justify-center transition-colors cursor-pointer ml-1"
                               title="Unselect from homepage hero (publication remains safely in repository)"
                               aria-label="Unselect from carousel"
@@ -2940,6 +5630,241 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
               >
                 <EyeOff className="h-3.5 w-3.5" />
                 {isDeleting ? "Unselecting..." : "Unselect from Page"}
+              </button>
+            </div>
+          </div>
+        )}
+      </CustomModal>
+
+      {/* Remove Publication from Hero Carousel Confirmation Modal */}
+      <CustomModal
+        isOpen={!!articleToRemove}
+        onClose={() => {
+          if (!isRemovingArticle) setArticleToRemove(null);
+        }}
+        title="Remove Publication from Carousel?"
+        className="max-w-md"
+      >
+        {articleToRemove && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/80">
+              <div className="h-9 w-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                <Trash2 className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                  {articleToRemove.articleTitle}
+                </p>
+                {articleToRemove.articleAuthors && (
+                  <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                    {articleToRemove.articleAuthors}
+                  </p>
+                )}
+                <div className="mt-2.5 pt-2 border-t border-rose-200/60">
+                  <p className="text-[11.5px] text-rose-800 leading-relaxed">
+                    This publication will be unselected from the homepage hero carousel.
+                    The research manuscript remains <strong>completely safe</strong> in the publications repository.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setArticleToRemove(null)}
+                disabled={isRemovingArticle}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemoveArticle}
+                disabled={isRemovingArticle}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isRemovingArticle ? "Removing..." : "Remove from Hero"}
+              </button>
+            </div>
+          </div>
+        )}
+      </CustomModal>
+
+      {/* Add / Edit Discipline Category Modal */}
+      <CustomModal
+        isOpen={isTopicModalOpen}
+        onClose={() => {
+          if (!isSavingTopic) setIsTopicModalOpen(false);
+        }}
+        title={editingTopic ? "Edit Discipline Category" : "Add Discipline Category"}
+        description={
+          editingTopic
+            ? "Modify discipline title, tracking ID, faculty icon, or exploration route."
+            : "Create a new academic discipline category to feature on the homepage."
+        }
+        className="max-w-lg"
+      >
+        <form onSubmit={handleSaveTopic} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Discipline Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={topicFormName}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTopicFormName(val);
+                if (!editingTopic) {
+                  const generated = val
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
+                  setTopicFormId(generated);
+                  setTopicFormHref(`/articles?topic=${encodeURIComponent(val)}`);
+                }
+              }}
+              placeholder="e.g. Artificial Intelligence, Molecular Biology"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-hidden transition-colors"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Discipline ID / Slug
+              </label>
+              <input
+                type="text"
+                value={topicFormId}
+                onChange={(e) => setTopicFormId(e.target.value)}
+                placeholder="e.g. ai, medicine"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-hidden transition-colors"
+              />
+              <p className="text-[10.5px] text-slate-400 mt-1">Unique identifier used for faculty track keying</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Browse Route / URL
+              </label>
+              <input
+                type="text"
+                value={topicFormHref}
+                onChange={(e) => setTopicFormHref(e.target.value)}
+                placeholder="/articles?topic=Technology"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-hidden transition-colors"
+              />
+              <p className="text-[10.5px] text-slate-400 mt-1">Target link when readers click Browse</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">
+              Select Category Icon
+            </label>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 max-h-48 overflow-y-auto">
+              {TOPIC_ICON_OPTIONS.map((opt) => {
+                const IconComp = opt.icon;
+                const isSelected = topicFormIcon === opt.name;
+                return (
+                  <button
+                    key={opt.name}
+                    type="button"
+                    onClick={() => setTopicFormIcon(opt.name)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-2 rounded-lg border transition-all cursor-pointer text-center",
+                      isSelected
+                        ? "border-blue-500 bg-blue-600 text-white shadow-xs font-bold ring-2 ring-blue-500/20"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50"
+                    )}
+                    title={opt.label}
+                  >
+                    <IconComp className="h-4 w-4 shrink-0" />
+                    <span className="text-[9.5px] truncate w-full mt-1">
+                      {opt.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsTopicModalOpen(false)}
+              disabled={isSavingTopic}
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSavingTopic || !topicFormName.trim()}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Save className="h-3.5 w-3.5" />
+              {isSavingTopic
+                ? "Saving..."
+                : editingTopic
+                ? "Update Discipline"
+                : "Add Discipline"}
+            </button>
+          </div>
+        </form>
+      </CustomModal>
+
+      {/* Delete Discipline Category Confirmation Modal */}
+      <CustomModal
+        isOpen={Boolean(topicToDelete)}
+        onClose={() => {
+          if (!isSavingTopic) setTopicToDelete(null);
+        }}
+        title="Delete Discipline Category?"
+        className="max-w-md"
+      >
+        {topicToDelete && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/80">
+              <div className="h-9 w-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                <Trash2 className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 leading-snug">
+                  {topicToDelete.topic.name}
+                </p>
+                <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                  ID: {topicToDelete.topic.id}
+                </p>
+                <div className="mt-2.5 pt-2 border-t border-rose-200/60">
+                  <p className="text-[11.5px] text-rose-800 leading-relaxed">
+                    This discipline category will be removed from the homepage explore tracks and public navigation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setTopicToDelete(null)}
+                disabled={isSavingTopic}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteTopic}
+                disabled={isSavingTopic}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isSavingTopic ? "Deleting..." : "Yes, Delete Discipline"}
               </button>
             </div>
           </div>

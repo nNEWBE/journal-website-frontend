@@ -23,7 +23,7 @@ interface FaqItem {
   highlight?: string;
 }
 
-const FAQ_ITEMS: FaqItem[] = [
+export const FAQ_ITEMS: FaqItem[] = [
   {
     id: "faq-1",
     category: "scope",
