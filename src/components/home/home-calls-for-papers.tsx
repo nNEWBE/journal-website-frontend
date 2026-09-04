@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Calendar } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface SpecialIssueCall {
   id: string;
@@ -181,10 +182,16 @@ function CallIllustration({ type }: { type: SpecialIssueCall["illustrationType"]
   );
 }
 
-export function HomeCallsForPapers() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeCallsForPapers({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("call-for-papers");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -197,7 +204,7 @@ export function HomeCallsForPapers() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

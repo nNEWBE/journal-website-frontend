@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowUpRight, LockOpen } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface FeaturedJournalItem {
   id: string;
@@ -70,10 +71,16 @@ export const featuredJournals: FeaturedJournalItem[] = [
   },
 ];
 
-export function HomeFeaturedJournals() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeFeaturedJournals({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("featured-journals");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -86,7 +93,7 @@ export function HomeFeaturedJournals() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

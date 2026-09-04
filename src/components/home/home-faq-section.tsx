@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { FadeIn } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 interface FaqItem {
   id: string;
@@ -82,12 +83,18 @@ const CATEGORIES = [
   { key: "access", label: "Tracking & Access" },
 ] as const;
 
-export function HomeFaqSection() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeFaqSection({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("home-faq");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [openId, setOpenId] = useState<string>("faq-1");
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -100,7 +107,7 @@ export function HomeFaqSection() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

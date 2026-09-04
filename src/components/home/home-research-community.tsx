@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowUpRight, Play } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface CommunityArticle {
   id: string;
@@ -62,10 +63,16 @@ export const communityArticles: CommunityArticle[] = [
   },
 ];
 
-export function HomeResearchCommunity() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeResearchCommunity({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("research-community");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -78,7 +85,7 @@ export function HomeResearchCommunity() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

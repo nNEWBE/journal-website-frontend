@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Eye } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface MostReadItem {
   rank: string;
@@ -69,10 +70,16 @@ export const mostReadArticles: MostReadItem[] = [
   },
 ];
 
-export function HomeMostRead() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeMostRead({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("most-read");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -85,7 +92,7 @@ export function HomeMostRead() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

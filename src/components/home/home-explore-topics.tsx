@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface TopicItem {
   id: string;
@@ -101,10 +102,16 @@ export const TOPIC_ICON_MAP: Record<string, any> = {
   TrendingUp,
 };
 
-export function HomeExploreTopics() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeExploreTopics({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("explore-topics");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -119,7 +126,7 @@ export function HomeExploreTopics() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

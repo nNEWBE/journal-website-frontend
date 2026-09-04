@@ -11,13 +11,20 @@ import {
 } from "lucide-react";
 import { FadeIn } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
-export function HomeMetricsNewsletter() {
+export function HomeMetricsNewsletter({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("journal-stats");
+  const activeSection = propSection || contextSection;
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -30,7 +37,7 @@ export function HomeMetricsNewsletter() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;
