@@ -32,11 +32,21 @@ import {
   Sliders,
   Tag,
   EyeOff,
+  TrendingUp,
+  BarChart2,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  ArrowLeft,
+  ExternalLink,
+  Compass,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
 import { articles as initialArticles, type Article } from "@/lib/data";
+import { CmsSectionTabs } from "./cms-section-tabs";
+import { broadcastSectionVisibility } from "@/lib/cms-visibility";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
@@ -75,6 +85,312 @@ const CORE_SECTION_KEYS = new Set([
   "peer-review-protocol",
   "reviewer-benefits",
 ]);
+
+export interface HomeSectionMeta {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  shortDesc: string;
+}
+
+export const HOME_SECTION_CONFIG: Record<string, HomeSectionMeta> = {
+  "hero-main": {
+    label: "Hero Banner",
+    icon: HomeIcon,
+    shortDesc: "Main headline, ISSN badges, CTAs & featured research carousel",
+  },
+  "latest-research": {
+    label: "Latest Research",
+    icon: FileText,
+    shortDesc: "Recently accepted and published scholarly articles",
+  },
+  "current-issue": {
+    label: "Current Issue",
+    icon: BookOpen,
+    shortDesc: "Active volume/issue, cover metadata, and PDF downloads",
+  },
+  "most-read": {
+    label: "Most Read",
+    icon: TrendingUp,
+    shortDesc: "Trending manuscripts and highest cited publications",
+  },
+  "explore-topics": {
+    label: "Topics",
+    icon: Tag,
+    shortDesc: "Discipline categories and research faculty tracks",
+  },
+  "featured-journals": {
+    label: "Featured",
+    icon: Library,
+    shortDesc: "Specialized biannual series and journal editions",
+  },
+  "call-for-papers": {
+    label: "Call for Papers",
+    icon: Megaphone,
+    shortDesc: "Active thematic call deadlines and fast-track submission",
+  },
+  "research-community": {
+    label: "Community",
+    icon: Users,
+    shortDesc: "Faculty spotlights and annual symposium announcements",
+  },
+  "home-faq": {
+    label: "FAQ",
+    icon: HelpCircle,
+    shortDesc: "Frequently asked questions for prospective authors",
+  },
+  "journal-stats": {
+    label: "Metrics & Stats",
+    icon: BarChart2,
+    shortDesc: "Editorial turnaround benchmarks, stats & newsletter alert",
+  },
+  "scope-tracks": {
+    label: "Research Scope",
+    icon: BookMarked,
+    shortDesc: "Academic faculty scope and research tracks",
+  },
+};
+
+export const ALL_PAGE_SECTION_CONFIGS: Record<
+  string,
+  Record<string, HomeSectionMeta>
+> = {
+  home: HOME_SECTION_CONFIG,
+  about: {
+    overview: {
+      label: "Overview",
+      icon: BookOpen,
+      shortDesc: "Journal overview and academic background",
+    },
+    "aims-scope": {
+      label: "Aims & Scope",
+      icon: Compass,
+      shortDesc: "Academic mission, research themes, and scope",
+    },
+    "indexing-metrics": {
+      label: "Indexing & Metrics",
+      icon: BarChart2,
+      shortDesc: "ISSN details, indexing databases, and citation metrics",
+    },
+    indexing: {
+      label: "Indexing & Metrics",
+      icon: BarChart2,
+      shortDesc: "ISSN details, indexing databases, and citation metrics",
+    },
+    mission: {
+      label: "Mission & Vision",
+      icon: Shield,
+      shortDesc: "Publication mission and dedication to open science",
+    },
+  },
+  "editorial-board": {
+    leadership: {
+      label: "Editor-in-Chief",
+      icon: Users,
+      shortDesc: "Editorial leadership and academic chairs",
+    },
+    "section-editors": {
+      label: "Section Editors",
+      icon: BookMarked,
+      shortDesc: "Discipline-specific section editors and associate editors",
+    },
+    advisory: {
+      label: "Advisory Council",
+      icon: Shield,
+      shortDesc: "International academic advisory council members",
+    },
+    "advisory-council": {
+      label: "Advisory Council",
+      icon: Shield,
+      shortDesc: "International academic advisory council members",
+    },
+    governance: {
+      label: "Editorial Charter",
+      icon: FileText,
+      shortDesc: "Editorial governance and appointment charter",
+    },
+    "governance-charter": {
+      label: "Editorial Charter",
+      icon: FileText,
+      shortDesc: "Editorial governance and appointment charter",
+    },
+  },
+  authors: {
+    guidelines: {
+      label: "Manuscript Prep",
+      icon: PenLine,
+      shortDesc: "Manuscript preparation and typography guidelines",
+    },
+    checklist: {
+      label: "Checklist",
+      icon: CheckCircle2,
+      shortDesc: "Pre-submission verification checklist",
+    },
+    "submission-checklist": {
+      label: "Checklist",
+      icon: CheckCircle2,
+      shortDesc: "Pre-submission verification checklist",
+    },
+    "apc-waiver": {
+      label: "APC & Fee Policy",
+      icon: Tag,
+      shortDesc: "Article processing charge schedule and waiver policy",
+    },
+    templates: {
+      label: "Templates",
+      icon: FileText,
+      shortDesc: "LaTeX and MS Word document submission templates",
+    },
+  },
+  reviewers: {
+    "review-protocol": {
+      label: "Review Protocol",
+      icon: CheckCircle2,
+      shortDesc: "Double-blind evaluation protocol and workflow",
+    },
+    "peer-review-protocol": {
+      label: "Review Protocol",
+      icon: CheckCircle2,
+      shortDesc: "Double-blind evaluation protocol and workflow",
+    },
+    guidelines: {
+      label: "Guidelines",
+      icon: FileText,
+      shortDesc: "Peer reviewer responsibilities and criteria",
+    },
+    "evaluation-rubrics": {
+      label: "Rubrics",
+      icon: Sliders,
+      shortDesc: "Manuscript evaluation rubrics and recommendation categories",
+    },
+    "reviewer-ethics": {
+      label: "Ethics & COI",
+      icon: Shield,
+      shortDesc: "Conflict of interest disclosure and ethical standards",
+    },
+    recognition: {
+      label: "Recognition",
+      icon: BookmarkCheck,
+      shortDesc: "Academic recognition and reviewer certificates",
+    },
+    "reviewer-benefits": {
+      label: "Recognition",
+      icon: BookmarkCheck,
+      shortDesc: "Academic recognition and reviewer certificates",
+    },
+  },
+  policies: {
+    "peer-review": {
+      label: "Double-Blind",
+      icon: Users,
+      shortDesc: "Double-blind evaluation framework and integrity",
+    },
+    "ethics-plagiarism": {
+      label: "Ethics & Plagiarism",
+      icon: Shield,
+      shortDesc: "COPE compliance and plagiarism screening thresholds",
+    },
+    "open-access": {
+      label: "Open Access",
+      icon: BookOpen,
+      shortDesc: "Creative Commons CC BY 4.0 license and terms",
+    },
+    "conflict-interest": {
+      label: "Conflict of Interest",
+      icon: AlertCircle,
+      shortDesc: "Author and reviewer conflict disclosure protocols",
+    },
+  },
+  issues: {
+    "current-volume": {
+      label: "Current Issue",
+      icon: Layers,
+      shortDesc: "Active volume release and cover narrative",
+    },
+    "archives-catalog": {
+      label: "Archive Catalog",
+      icon: BookOpen,
+      shortDesc: "Published biannual issues archive directory",
+    },
+    "special-issues": {
+      label: "Special Issues",
+      icon: BookmarkCheck,
+      shortDesc: "Special issue collections and call for guest editors",
+    },
+  },
+  articles: {
+    "directory-header": {
+      label: "Articles Directory",
+      icon: FileText,
+      shortDesc: "Searchable research repository header",
+    },
+    "indexing-info": {
+      label: "DOI & Metadata",
+      icon: BarChart2,
+      shortDesc: "Digital object identifier and CrossRef registry",
+    },
+    metrics: {
+      label: "Metrics & Citations",
+      icon: TrendingUp,
+      shortDesc: "Citation metrics and turnaround stats",
+    },
+  },
+  contact: {
+    secretariat: {
+      label: "Secretariat",
+      icon: Phone,
+      shortDesc: "Editorial secretariat contact details and emails",
+    },
+    "office-info": {
+      label: "Secretariat",
+      icon: Phone,
+      shortDesc: "Editorial secretariat contact details and emails",
+    },
+    location: {
+      label: "Campus Location",
+      icon: HomeIcon,
+      shortDesc: "Campus office address and building details",
+    },
+    support: {
+      label: "Help Desk",
+      icon: HelpCircle,
+      shortDesc: "Editorial help desk and inquiry support",
+    },
+    inquiries: {
+      label: "Inquiries",
+      icon: PenLine,
+      shortDesc: "Correspondence address and contact inquiry form",
+    },
+  },
+};
+
+export function getSectionMeta(pageKey: string, sectionKey: string, sectionTitle?: string): HomeSectionMeta {
+  const pageConfig = ALL_PAGE_SECTION_CONFIGS[pageKey];
+  if (pageConfig && pageConfig[sectionKey]) {
+    return pageConfig[sectionKey];
+  }
+  if (HOME_SECTION_CONFIG[sectionKey]) {
+    return HOME_SECTION_CONFIG[sectionKey];
+  }
+
+  // Generate a clean truncated label
+  let label = sectionTitle || sectionKey;
+  if (label.toLowerCase().includes("scope") || label.toLowerCase().includes("domain")) {
+    label = "Research Scope";
+  } else if (label.length > 18) {
+    const words = label.split(/[\s&—:-]+/).filter(Boolean);
+    if (words.length >= 2 && (words[0].length + words[1].length < 16)) {
+      label = `${words[0]} ${words[1]}`;
+    } else {
+      label = label.slice(0, 16).trim() + "...";
+    }
+  }
+
+  return {
+    label,
+    icon: Layers,
+    shortDesc: sectionTitle || sectionKey,
+  };
+}
 
 const PAGE_TABS = [
   {
@@ -159,12 +475,42 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
   const [loading, setLoading] = useState<boolean>(!cmsCache[initialPageKey]?.data || cmsCache[initialPageKey].data.length === 0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeSectionByPage, setActiveSectionByPage] = useState<Record<string, string>>({
+    home: "hero-main",
+  });
+
+  const currentSectionKey = useMemo(() => {
+    const saved = activeSectionByPage[activeTab];
+    if (saved && sections.some((s) => s.sectionKey === saved)) {
+      return saved;
+    }
+    return sections[0]?.sectionKey || "";
+  }, [activeSectionByPage, activeTab, sections]);
+
+  const setCurrentSectionKey = (key: string) => {
+    setActiveSectionByPage((prev) => ({
+      ...prev,
+      [activeTab]: key,
+    }));
+  };
 
   useEffect(() => {
     if (initialPageKey && initialPageKey !== activeTab) {
       setActiveTab(initialPageKey);
     }
   }, [initialPageKey]);
+
+  useEffect(() => {
+    if (sections.length > 0) {
+      const current = activeSectionByPage[activeTab];
+      if (!current || !sections.some((s) => s.sectionKey === current)) {
+        setActiveSectionByPage((prev) => ({
+          ...prev,
+          [activeTab]: sections[0].sectionKey,
+        }));
+      }
+    }
+  }, [activeTab, sections]);
 
 
 
@@ -288,10 +634,161 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     updateMetaWithArticles(nextIds);
   };
 
-  const handleLoadDefaultArticles = () => {
-    const defaultSlugs = initialArticles.slice(0, 4).map((a) => a.slug || a.id);
-    updateMetaWithArticles(defaultSlugs);
-    toast.success("Loaded 4 recommended research papers from publications repository!");
+  // Extract selected articles for hero section in the active view
+  const getHeroSelectedArticles = (section: PageContentDTO) => {
+    try {
+      const meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+      let articleIds: string[] = [];
+      if (Array.isArray(meta.selectedArticleIds) && meta.selectedArticleIds.length > 0) {
+        articleIds = meta.selectedArticleIds;
+      } else if (Array.isArray(meta.featuredSlides) && meta.featuredSlides.length > 0) {
+        articleIds = meta.featuredSlides.map((s: any) => s.id || s.slug || s.title);
+      } else {
+        articleIds = initialArticles.slice(0, 4).map((a) => a.slug || a.id);
+      }
+
+      return articleIds.map((idOrSlug, index) => {
+        const art =
+          allArticles.find((a) => a.slug === idOrSlug || a.id === idOrSlug) ||
+          initialArticles.find((a) => a.slug === idOrSlug || a.id === idOrSlug);
+
+        const slide = Array.isArray(meta.featuredSlides)
+          ? meta.featuredSlides.find(
+              (s: any) => s.id === idOrSlug || s.slug === idOrSlug || s.title === idOrSlug
+            )
+          : null;
+
+        const title = art?.title || slide?.title || idOrSlug;
+        const authors = art?.authors
+          ? Array.isArray(art.authors)
+            ? art.authors.join(", ")
+            : art.authors
+          : slide?.authors || "Editorial Research Group";
+        const topic = art?.topic || slide?.journalCategory || "Multidisciplinary Science";
+        const volume = art?.volume
+          ? `${art.volume}, ${art.issue || "Issue 1"}`
+          : slide?.volumeIssue || "Vol. 14, No. 2";
+        const doi = art?.doi || slide?.doi || "10.5555/gbj.2025";
+        const image = art
+          ? getArticleCover(art)
+          : slide?.image || "/images/hero/molecular_inhibitors.jpg";
+        const slug = art?.slug || art?.id || idOrSlug;
+
+        return {
+          id: idOrSlug,
+          slug,
+          title,
+          authors,
+          topic,
+          volume,
+          doi,
+          image,
+          slideNumber: index + 1,
+        };
+      });
+    } catch {
+      return [];
+    }
+  };
+
+  const handleSaveHeroArticles = async (
+    section: PageContentDTO,
+    articleIds: string[]
+  ) => {
+    try {
+      let currentMeta: Record<string, any> = {};
+      if (section.metaJson) {
+        try {
+          currentMeta = JSON.parse(section.metaJson);
+        } catch {
+          currentMeta = {};
+        }
+      }
+      currentMeta.selectedArticleIds = articleIds;
+      currentMeta.featuredSlides = articleIds.map((id, index) => {
+        const art =
+          allArticles.find((a) => a.slug === id || a.id === id) ||
+          initialArticles.find((a) => a.slug === id || a.id === id);
+        return {
+          id: art?.slug || id,
+          num: String(index + 1).padStart(2, "0"),
+          category: "FEATURED RESEARCH",
+          journalCategory: art?.topic || "Multidisciplinary Science",
+          isOpenAccess: true,
+          title: art?.title || "Research Manuscript",
+          shortTitle: art?.title || "Research Manuscript",
+          authors: Array.isArray(art?.authors)
+            ? art.authors.join(", ")
+            : art?.authors || "Editorial Research Group",
+          journal: "GB Journal of Science & Technology",
+          journalHref: "/issues/current",
+          volumeIssue: art?.volume ? `${art.volume}, ${art.issue || "Issue 1"}` : "Vol. 14, No. 2",
+          publishDate: art?.publishedAt || "June 2025",
+          abstract: art?.abstract || "",
+          doi: art?.doi || "10.5555/gbj.2025",
+          doiHref: art?.doi ? `https://doi.org/${art.doi}` : undefined,
+          image: art ? getArticleCover(art) : "/images/hero/molecular_inhibitors.jpg",
+          articleHref: `/articles/${art?.slug || id}`,
+          issueHref: "/issues/current",
+        };
+      });
+
+      const updatedMetaJson = JSON.stringify(currentMeta, null, 2);
+      await contentApi.updateSection(section.pageKey, section.sectionKey, {
+        ...section,
+        metaJson: updatedMetaJson,
+      });
+
+      setSections((prev) =>
+        prev.map((s) =>
+          s.pageKey === section.pageKey && s.sectionKey === section.sectionKey
+            ? { ...s, metaJson: updatedMetaJson }
+            : s
+        )
+      );
+
+      if (cmsCache[section.pageKey]) {
+        cmsCache[section.pageKey].data = cmsCache[section.pageKey].data.map((s) =>
+          s.pageKey === section.pageKey && s.sectionKey === section.sectionKey
+            ? { ...s, metaJson: updatedMetaJson }
+            : s
+        );
+      }
+
+      if (formSectionKey === section.sectionKey && formPageKey === section.pageKey) {
+        setFormMetaJson(updatedMetaJson);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update hero publications.");
+    }
+  };
+
+  const handleQuickReorderHeroArticle = async (
+    section: PageContentDTO,
+    currentIndex: number,
+    direction: "up" | "down"
+  ) => {
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const heroArticles = getHeroSelectedArticles(section);
+    if (targetIndex < 0 || targetIndex >= heroArticles.length) return;
+
+    const newArticleIds = heroArticles.map((a) => a.id);
+    const temp = newArticleIds[currentIndex];
+    newArticleIds[currentIndex] = newArticleIds[targetIndex];
+    newArticleIds[targetIndex] = temp;
+
+    await handleSaveHeroArticles(section, newArticleIds);
+    toast.success("Hero slide lineup reordered successfully!");
+  };
+
+  const handleQuickRemoveHeroArticle = async (
+    section: PageContentDTO,
+    articleId: string
+  ) => {
+    const heroArticles = getHeroSelectedArticles(section);
+    const newArticleIds = heroArticles.map((a) => a.id).filter((id) => id !== articleId);
+    await handleSaveHeroArticles(section, newArticleIds);
+    toast.info("Publication removed from hero carousel.");
   };
 
   // Structured Meta field-level helpers (No raw JSON needed by user)
@@ -458,9 +955,48 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     fetchSections(activeTab);
   }, [activeTab]);
 
-  // Filtered sections by search
-  const filteredSections = useMemo(() => {
-    if (!searchQuery.trim()) return sections;
+  // Section tabs for currently active CMS page
+  const pageSectionTabs = useMemo(() => {
+    if (sections.length === 0) return [];
+
+    return sections.map((sec) => {
+      const pageConfig = ALL_PAGE_SECTION_CONFIGS[activeTab];
+      const knownDef = pageConfig?.[sec.sectionKey] || HOME_SECTION_CONFIG[sec.sectionKey];
+
+      if (knownDef) {
+        return {
+          key: sec.sectionKey,
+          label: knownDef.label,
+          icon: knownDef.icon,
+          shortDesc: knownDef.shortDesc,
+          isCustom: false,
+          published: sec.published,
+        };
+      }
+
+      // Format custom or unconfigured sections with clean short label
+      let label = sec.title || sec.sectionKey;
+      if (label.toLowerCase().includes("scope") || label.toLowerCase().includes("domain")) {
+        label = "Research Scope";
+      } else if (label.length > 16) {
+        const words = label.split(/[\s&—:-]+/).filter(Boolean);
+        label = words.slice(0, 2).join(" ");
+      }
+
+      return {
+        key: sec.sectionKey,
+        label,
+        icon: FileText,
+        shortDesc: sec.subtitle || `${sec.title || sec.sectionKey} section`,
+        isCustom: !CORE_SECTION_KEYS.has(sec.sectionKey),
+        published: sec.published,
+      };
+    });
+  }, [activeTab, sections]);
+
+  // Matches across all sections for search guidance
+  const searchMatchesAcrossAll = useMemo(() => {
+    if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
     return sections.filter(
       (s) =>
@@ -470,6 +1006,48 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
         s.content?.toLowerCase().includes(q)
     );
   }, [sections, searchQuery]);
+
+  // Filtered sections by active section tab and search
+  const filteredSections = useMemo(() => {
+    let result = sections;
+
+    // When a section tab is selected, filter to only show that section
+    if (currentSectionKey) {
+      const match = result.filter((s) => s.sectionKey === currentSectionKey);
+      if (match.length > 0) {
+        result = match;
+      }
+    }
+
+    if (!searchQuery.trim()) return result;
+    const q = searchQuery.toLowerCase();
+    return result.filter(
+      (s) =>
+        s.title?.toLowerCase().includes(q) ||
+        s.subtitle?.toLowerCase().includes(q) ||
+        s.sectionKey?.toLowerCase().includes(q) ||
+        s.content?.toLowerCase().includes(q)
+    );
+  }, [sections, currentSectionKey, searchQuery]);
+
+  // Active section metadata and sequential navigation for the active page
+  const activeSectionMeta = useMemo(() => {
+    return pageSectionTabs.find((t) => t.key === currentSectionKey) || null;
+  }, [pageSectionTabs, currentSectionKey]);
+
+  const currentSectionIndex = useMemo(() => {
+    return sections.findIndex((s) => s.sectionKey === currentSectionKey);
+  }, [currentSectionKey, sections]);
+
+  const prevSectionKey = useMemo(() => {
+    if (currentSectionIndex <= 0) return null;
+    return sections[currentSectionIndex - 1]?.sectionKey || null;
+  }, [currentSectionIndex, sections]);
+
+  const nextSectionKey = useMemo(() => {
+    if (currentSectionIndex === -1 || currentSectionIndex >= sections.length - 1) return null;
+    return sections[currentSectionIndex + 1]?.sectionKey || null;
+  }, [currentSectionIndex, sections]);
 
   // Open Edit Modal
   const openEditModal = (section: PageContentDTO) => {
@@ -550,7 +1128,16 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
         toast.success(`Section "${payload.title}" updated successfully!`);
       }
 
+      // Broadcast visibility change to homepage in realtime
+      broadcastSectionVisibility(formPageKey, payload.sectionKey, formPublished);
+
       setIsEditModalOpen(false);
+      if (payload.sectionKey) {
+        setActiveSectionByPage((prev) => ({
+          ...prev,
+          [formPageKey]: payload.sectionKey,
+        }));
+      }
       fetchSections(activeTab);
     } catch (err: any) {
       toast.error(err.message || "Failed to save section.");
@@ -579,11 +1166,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
   // Toggle Publish Status
   const handleTogglePublish = async (section: PageContentDTO) => {
     try {
+      const nextPublished = !section.published;
       const updated = await contentApi.updateSection(section.pageKey, section.sectionKey, {
-        published: !section.published,
+        ...section,
+        published: nextPublished,
       });
+
+      // Update state locally immediately
+      setSections((prev) =>
+        prev.map((s) =>
+          s.pageKey === section.pageKey && s.sectionKey === section.sectionKey
+            ? { ...s, published: nextPublished }
+            : s
+        )
+      );
+
+      // Realtime broadcast to homepage and other tabs
+      broadcastSectionVisibility(section.pageKey, section.sectionKey, nextPublished);
+
       toast.success(
-        `Section is now ${updated.published ? "Published (Live)" : "Draft (Hidden)"}`
+        `Section "${section.title}" is now ${nextPublished ? "Visible (Live on page)" : "Hidden (Turned off in realtime)"}`
       );
       fetchSections(activeTab);
     } catch (err: any) {
@@ -634,16 +1236,74 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
 
 
+      {/* Reusable Section Tabs for all CMS Pages */}
+      {sections.length > 0 && (
+        <CmsSectionTabs
+          title={`${currentTabInfo.label} Sections`}
+          subtitle="Select a section tab to configure its layout, content, and visibility"
+          icon={currentTabInfo.icon || Layers}
+          tabs={pageSectionTabs}
+          activeTabKey={currentSectionKey}
+          onTabChange={setCurrentSectionKey}
+          currentIndex={currentSectionIndex}
+          totalCount={sections.length}
+        />
+      )}
+
       {/* Search & Filter Bar */}
       <DashboardSearchFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        placeholder={`Filter ${currentTabInfo.label} sections by title, key or content...`}
+        placeholder={
+          activeSectionMeta
+            ? `Filter within ${activeSectionMeta.label} or search content...`
+            : `Filter ${currentTabInfo.label} sections by title, key or content...`
+        }
       >
         <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
-          {filteredSections.length} Sections configured
+          {sections.length > 0
+            ? `Section ${currentSectionIndex >= 0 ? currentSectionIndex + 1 : 1} of ${sections.length}`
+            : "0 Sections"}
         </span>
       </DashboardSearchFilterBar>
+
+      {/* Search Guidance Banner when 0 results in current tab but found in other sections */}
+      {filteredSections.length === 0 && searchMatchesAcrossAll.length > 0 && (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 text-center shadow-xs">
+          <Search className="h-7 w-7 text-blue-500 mx-auto mb-2" />
+          <h4 className="text-xs font-bold text-slate-800">
+            No matching content in "{activeSectionMeta?.label || currentSectionKey}"
+          </h4>
+          <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+            Matching content found in other sections of {currentTabInfo.label}:
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            {searchMatchesAcrossAll.map((sec) => (
+              <button
+                key={sec.sectionKey}
+                type="button"
+                onClick={() => setCurrentSectionKey(sec.sectionKey)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-2xs transition-colors cursor-pointer"
+              >
+                <span>
+                  Switch to{" "}
+                  {ALL_PAGE_SECTION_CONFIGS[activeTab]?.[sec.sectionKey]?.label ||
+                    HOME_SECTION_CONFIG[sec.sectionKey]?.label ||
+                    sec.title ||
+                    sec.sectionKey}
+                </span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Clear Search
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Content Section List */}
       {loading ? (
@@ -678,196 +1338,373 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
           </div>
         </div>
       ) : (
-        <div className="space-y-3.5">
+        <>
+          <div className="space-y-3.5">
           {filteredSections.map((section, idx) => (
-            <div
-              key={section.id || `${section.pageKey}-${section.sectionKey}`}
-              className={cn(
-                "group rounded-2xl border bg-white p-5 transition-all duration-200 shadow-xs hover:shadow-md",
-                section.published
-                  ? "border-[color:var(--color-gb-border)] hover:border-blue-300"
-                  : "border-amber-200 bg-amber-50/20"
-              )}
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3 mb-3">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="flex items-center justify-center h-6 w-6 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold">
-                    #{section.displayOrder || idx + 1}
-                  </span>
-
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
-                    {section.sectionKey}
-                  </span>
-
-                  <button
-                    onClick={() => handleTogglePublish(section)}
-                    className={cn(
-                      "text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-colors cursor-pointer inline-flex items-center gap-1",
-                      section.published
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                        : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                    )}
-                    title={section.published ? "Click to unselect from page" : "Click to select and publish to page"}
-                  >
-                    <span
-                      className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        section.published ? "bg-emerald-500" : "bg-slate-400"
-                      )}
-                    />
-                    {section.published
-                      ? (activeTab === "home" ? "Selected on Home" : "Published (Live)")
-                      : (activeTab === "home" ? "Not Selected (Hidden)" : "Hidden (Draft)")}
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setPreviewSection(section)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-950 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    <Eye className="h-3.5 w-3.5 text-slate-500" />
-                    Preview
-                  </button>
-
-                  <button
-                    onClick={() => openEditModal(section)}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100/80 transition-colors cursor-pointer"
-                  >
-                    <Edit className="h-3.5 w-3.5 text-blue-600" />
-                    Edit Content
-                  </button>
-
-                  {/* For built-in sections: Unselect/Select toggle instead of permanent delete */}
-                  {CORE_SECTION_KEYS.has(section.sectionKey) ? (
-                    <button
-                      onClick={() => handleTogglePublish(section)}
-                      className={cn(
-                        "inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer",
-                        section.published
-                          ? "text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200"
-                          : "text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
-                      )}
-                      title={section.published ? "Unselect from homepage (keeps all content safe)" : "Select to show on homepage"}
-                    >
-                      {section.published ? (
-                        <>
-                          <EyeOff className="h-3.5 w-3.5 text-slate-500" />
-                          <span>Unselect</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
-                          <span>Select</span>
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    section.id && (
-                      <button
-                        onClick={() => setSectionToDelete(section)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                        title="Unselect & remove custom section"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )
+            <React.Fragment key={section.id || `${section.pageKey}-${section.sectionKey}`}>
+              {/* For homepage hero-main, hide the redundant static metadata card since the hero is exclusively driven by the Hero Carousel */}
+              {!(section.pageKey === "home" && section.sectionKey === "hero-main") && (
+                <div
+                  className={cn(
+                    "group rounded-2xl border bg-white p-5 transition-all duration-200 shadow-xs hover:shadow-md",
+                    section.published
+                      ? "border-[color:var(--color-gb-border)] hover:border-blue-300"
+                      : "border-amber-200 bg-amber-50/20"
                   )}
-                </div>
-              </div>
+                >
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3 mb-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="flex items-center justify-center h-6 w-6 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold">
+                        #{section.displayOrder || idx + 1}
+                      </span>
 
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 font-academic">
-                  {section.title}
-                </h4>
-                {section.subtitle && (
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    {section.subtitle}
-                  </p>
-                )}
+                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
+                        {section.sectionKey}
+                      </span>
 
-                {section.content && (
-                  <div className="mt-3 rounded-xl bg-slate-50/80 p-3 text-xs text-slate-700 leading-relaxed border border-slate-200/60 font-sans whitespace-pre-line line-clamp-3">
-                    {section.content}
-                  </div>
-                )}
-
-                {section.metaJson && (() => {
-                  try {
-                    const meta = JSON.parse(section.metaJson);
-                    const entries = Object.entries(meta).filter(
-                      ([k]) => k !== "selectedArticleIds" && k !== "featuredSlides"
-                    );
-                    if (entries.length === 0) return null;
-                    return (
-                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                        {entries.slice(0, 5).map(([k, v]) => (
+                      {/* Section Visibility Switch */}
+                      <div className="inline-flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                          {section.published ? (
+                            <Eye className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <EyeOff className="h-3 w-3 text-slate-400" />
+                          )}
+                          <span>Visibility:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePublish(section)}
+                          className={cn(
+                            "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                            section.published ? "bg-emerald-500" : "bg-slate-300"
+                          )}
+                          role="switch"
+                          aria-checked={section.published}
+                          title={section.published ? "Click to turn off and hide on live page in realtime" : "Click to turn on and show on live page in realtime"}
+                        >
                           <span
-                            key={k}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
-                          >
-                            <span className="text-slate-400 capitalize">
-                              {k.replace(/([A-Z])/g, " $1")}:
-                            </span>
-                            <span className="font-semibold text-slate-800 truncate max-w-[150px]">
-                              {Array.isArray(v) ? `${v.length} items` : String(v)}
-                            </span>
-                          </span>
-                        ))}
-                      </div>
-                    );
-                  } catch {
-                    return null;
-                  }
-                })()}
-
-                {section.pageKey === "home" && section.sectionKey === "hero-main" && (
-                  <div className="mt-3.5 p-3.5 rounded-xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                        <BookMarked className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900">
-                            Homepage Featured Research Carousel
-                          </h5>
-                          {(() => {
-                            try {
-                              const meta = section.metaJson ? JSON.parse(section.metaJson) : {};
-                              const count = Array.isArray(meta.selectedArticleIds)
-                                ? meta.selectedArticleIds.length
-                                : (Array.isArray(meta.featuredSlides) ? meta.featuredSlides.length : 4);
-                              return (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                                  {count} Publications Selected
-                                </span>
-                              );
-                            } catch {
-                              return null;
-                            }
-                          })()}
-                        </div>
-                        <p className="text-[11.5px] text-slate-500 mt-0.5">
-                          Controls the interactive 4-slide research visualizer on the main journal homepage.
-                        </p>
+                            className={cn(
+                              "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                              section.published ? "translate-x-3.5" : "translate-x-0"
+                            )}
+                          />
+                        </button>
+                        <span
+                          className={cn(
+                            "text-[10.5px] font-bold",
+                            section.published ? "text-emerald-700" : "text-slate-500"
+                          )}
+                        >
+                          {section.published ? "Visible" : "Hidden"}
+                        </span>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(section)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer shrink-0"
-                    >
-                      <Library className="h-3.5 w-3.5" />
-                      <span>Select Publications</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setPreviewSection(section)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-950 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-slate-500" />
+                        Preview
+                      </button>
+
+                      <button
+                        onClick={() => openEditModal(section)}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100/80 transition-colors cursor-pointer"
+                      >
+                        <Edit className="h-3.5 w-3.5 text-blue-600" />
+                        Edit Content
+                      </button>
+
+                      {!CORE_SECTION_KEYS.has(section.sectionKey) && section.id && (
+                        <button
+                          onClick={() => setSectionToDelete(section)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="Remove custom section"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 font-academic">
+                      {section.title}
+                    </h4>
+                    {section.subtitle && (
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                        {section.subtitle}
+                      </p>
+                    )}
+
+                    {section.content && (
+                      <div className="mt-3 rounded-xl bg-slate-50/80 p-3 text-xs text-slate-700 leading-relaxed border border-slate-200/60 font-sans whitespace-pre-line line-clamp-3">
+                        {section.content}
+                      </div>
+                    )}
+
+                    {section.metaJson && (() => {
+                      try {
+                        const meta = JSON.parse(section.metaJson);
+                        const entries = Object.entries(meta).filter(
+                          ([k]) => k !== "selectedArticleIds" && k !== "featuredSlides"
+                        );
+                        if (entries.length === 0) return null;
+                        return (
+                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                            {entries.slice(0, 5).map(([k, v]) => (
+                              <span
+                                key={k}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                              >
+                                <span className="text-slate-400 capitalize">
+                                  {k.replace(/([A-Z])/g, " $1")}:
+                                </span>
+                                <span className="font-semibold text-slate-800 truncate max-w-[150px]">
+                                  {Array.isArray(v) ? `${v.length} items` : String(v)}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      } catch {
+                        return null;
+                      }
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Dedicated Hero Carousel Publications Cards (Separate Cards, Not Crammed into Single Card) */}
+              {section.pageKey === "home" && section.sectionKey === "hero-main" && (() => {
+                const heroArticles = getHeroSelectedArticles(section);
+                return (
+                  <div className="space-y-3">
+                    {/* Publications Section Header Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <BookMarked className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">
+                              Selected Publications for Hero Carousel
+                            </h4>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                              {heroArticles.length} Slides Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Featured research manuscripts showcased in the 4-slide hero visualizer on the journal homepage.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(section)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Library className="h-3.5 w-3.5" />
+                          <span>Manage Selection</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Individual Publication Cards - Each publication in its own separate card */}
+                    {heroArticles.length === 0 ? (
+                      <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
+                        <BookOpen className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-slate-700">No publications selected for hero carousel</p>
+                        <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
+                          Select publications from your repository to display them in the homepage hero slides.
+                        </p>
+                        <div className="mt-3 flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(section)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            <span>Select Publications</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {heroArticles.map((art, artIdx) => (
+                          <div
+                            key={art.id}
+                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                          >
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                              {/* Left info: Slide number, Thumbnail image, Title, Authors, Badges */}
+                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                                <div className="flex flex-col items-center justify-center shrink-0">
+                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
+                                    {String(artIdx + 1).padStart(2, "0")}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
+                                    Slide
+                                  </span>
+                                </div>
+
+                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
+                                  <img
+                                    src={art.image}
+                                    alt=""
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
+                                      {art.topic}
+                                    </span>
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                      Open Access
+                                    </span>
+                                    {art.volume && (
+                                      <span className="text-[10.5px] text-slate-400 font-mono">
+                                        {art.volume}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                                    {art.title}
+                                  </h5>
+
+                                  <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
+                                    <span className="flex items-center gap-1 text-slate-600 truncate max-w-[320px]">
+                                      <Users className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span className="truncate">{art.authors}</span>
+                                    </span>
+                                    {art.doi && (
+                                      <span className="font-mono text-[10px] text-slate-400">
+                                        DOI: {art.doi}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right controls: Reorder Up/Down, Read/Preview link, Remove button */}
+                              <div className="flex items-center gap-1.5 self-end md:self-center shrink-0 border-t md:border-t-0 pt-2.5 md:pt-0 w-full md:w-auto justify-end">
+                                <div className="flex items-center bg-slate-100/90 rounded-xl p-0.5 border border-slate-200/70">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickReorderHeroArticle(section, artIdx, "up")}
+                                    disabled={artIdx === 0}
+                                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white disabled:opacity-25 transition-all cursor-pointer"
+                                    title="Move slide earlier in carousel"
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickReorderHeroArticle(section, artIdx, "down")}
+                                    disabled={artIdx === heroArticles.length - 1}
+                                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white disabled:opacity-25 transition-all cursor-pointer"
+                                    title="Move slide later in carousel"
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+
+                                <a
+                                  href={`/articles/${art.slug}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer"
+                                  title="View manuscript article page"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                                  <span className="hidden sm:inline">View</span>
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickRemoveHeroArticle(section, art.id)}
+                                  className="h-8 w-8 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-700 flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+                                  title="Remove from hero carousel (keeps article in repository)"
+                                  aria-label="Remove from hero carousel"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </React.Fragment>
           ))}
         </div>
+
+        {/* Sequential Navigation Footer across all CMS Pages */}
+        {sections.length > 1 && filteredSections.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200/80">
+            <div>
+              {prevSectionKey ? (
+                <button
+                  type="button"
+                  onClick={() => setCurrentSectionKey(prevSectionKey)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-2xs transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
+                  <span>
+                    Previous:{" "}
+                    {ALL_PAGE_SECTION_CONFIGS[activeTab]?.[prevSectionKey]?.label ||
+                      HOME_SECTION_CONFIG[prevSectionKey]?.label ||
+                      prevSectionKey}
+                  </span>
+                </button>
+              ) : (
+                <div />
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-semibold">
+                Section {currentSectionIndex + 1} of {sections.length}
+              </span>
+            </div>
+
+            <div>
+              {nextSectionKey ? (
+                <button
+                  type="button"
+                  onClick={() => setCurrentSectionKey(nextSectionKey)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-xs transition-all cursor-pointer"
+                >
+                  <span>
+                    Next:{" "}
+                    {ALL_PAGE_SECTION_CONFIGS[activeTab]?.[nextSectionKey]?.label ||
+                      HOME_SECTION_CONFIG[nextSectionKey]?.label ||
+                      nextSectionKey}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Final Section</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {/* Add / Edit Section Drawer */}
@@ -932,6 +1769,71 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             </div>
           </div>
 
+          {/* Dedicated Section Visibility Settings Card */}
+          <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-r from-slate-50 via-white to-slate-50 p-4 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-2xs",
+                    formPublished ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                  )}
+                >
+                  {formPublished ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                    <span>Section Visibility on Live Page</span>
+                    <span
+                      className={cn(
+                        "text-[10.5px] font-bold px-2 py-0.5 rounded-full border",
+                        formPublished
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-slate-100 text-slate-600 border-slate-200"
+                      )}
+                    >
+                      {formPublished ? "Visible (Turned On)" : "Hidden (Turned Off)"}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {formPublished
+                      ? "This section is currently visible to readers. Turn off and save to immediately hide it on the live page in realtime."
+                      : "This section is currently turned off and hidden from public visitors on the live page."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setFormPublished(!formPublished)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                    formPublished ? "bg-emerald-500" : "bg-slate-300"
+                  )}
+                  role="switch"
+                  aria-checked={formPublished}
+                  title={formPublished ? "Turn off visibility" : "Turn on visibility"}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                      formPublished ? "translate-x-4" : "translate-x-0"
+                    )}
+                  />
+                </button>
+                <span
+                  className={cn(
+                    "text-xs font-bold w-14",
+                    formPublished ? "text-emerald-700" : "text-slate-500"
+                  )}
+                >
+                  {formPublished ? "Visible" : "Hidden"}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Section Title <span className="text-rose-500">*</span>
@@ -979,15 +1881,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                     </p>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleLoadDefaultArticles}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
-                >
-                  <BookmarkCheck className="h-3.5 w-3.5 text-blue-600" />
-                  <span>Load Top 4 Defaults</span>
-                </button>
               </div>
 
               {/* Currently Selected Carousel Slides (Ordered 01, 02, 03, 04...) */}
@@ -1004,15 +1897,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                 {selectedArticleIds.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500">
                     <p className="font-medium text-slate-700">No publications selected yet.</p>
-                    <p className="text-[11px] text-slate-400 mt-1">The homepage will display default editorial highlights.</p>
-                    <button
-                      type="button"
-                      onClick={handleLoadDefaultArticles}
-                      className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
-                    >
-                      <BookmarkCheck className="h-3.5 w-3.5 text-blue-600" />
-                      <span>Click to load 4 recommended papers from publications repository</span>
-                    </button>
+                    <p className="text-[11px] text-slate-400 mt-1">Select articles from the repository below to display them on the homepage.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1063,11 +1948,11 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                             <button
                               type="button"
                               onClick={() => handleRemoveArticleFromCarousel(artId)}
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer ml-1"
+                              className="h-7 w-7 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-700 flex items-center justify-center transition-colors cursor-pointer ml-1"
                               title="Unselect from homepage hero (publication remains safely in repository)"
+                              aria-label="Unselect from carousel"
                             >
-                              <X className="h-3 w-3 text-slate-400" />
-                              <span>Unselect</span>
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1917,15 +2802,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                 onChange={(e) => setFormDisplayOrder(Number(e.target.value))}
                 onWheel={(e) => e.currentTarget.blur()}
                 className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-hidden"
-              />
-            </div>
-
-            <div className="flex items-center sm:pt-6">
-              <CustomCheckbox
-                id="formPublished"
-                checked={formPublished}
-                onChange={setFormPublished}
-                label="Publish Immediately (Visible to Public)"
               />
             </div>
           </div>
