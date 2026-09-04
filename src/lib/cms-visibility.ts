@@ -60,77 +60,141 @@ export function broadcastSectionOrderChange(pageKey: string) {
  * React hook consumed by the homepage to track published sections in realtime.
  * If an admin turns off a section, it immediately returns false and hides it from the UI.
  */
-export function useHomeSectionVisibility() {
-  const [publishedMap, setPublishedMap] = useState<Record<string, boolean>>({
-    "hero-main": true,
-    "featured-research": true,
-    "latest-research": true,
-    "current-issue": true,
-    "most-read": true,
-    "explore-topics": true,
-    "topics": true,
-    "featured-journals": true,
-    "call-for-papers": true,
-    "research-community": true,
-    "home-faq": true,
-    "faq": true,
-    "journal-stats": true,
-    "scope-tracks": true,
+export const CMS_HOME_CACHE_KEY = "gbj_cms_home_sections_cache";
+
+export const KNOWN_HOME_SECTION_KEYS = [
+  "hero-main",
+  "featured-research",
+  "latest-research",
+  "current-issue",
+  "most-read",
+  "explore-topics",
+  "topics",
+  "featured-journals",
+  "call-for-papers",
+  "calls-for-papers",
+  "research-community",
+  "home-faq",
+  "faq",
+  "journal-stats",
+  "scope-tracks",
+];
+
+export function syncKeyAliases(key: string, val: boolean, map: Record<string, boolean>) {
+  const k = key.toLowerCase();
+  map[k] = val;
+  if (k === "hero-main" || k === "featured-research") {
+    map["hero-main"] = val;
+    map["featured-research"] = val;
+  }
+  if (k === "explore-topics" || k === "topics" || k === "scope-tracks") {
+    map["explore-topics"] = val;
+    map["topics"] = val;
+    map["scope-tracks"] = val;
+  }
+  if (k === "home-faq" || k === "faq") {
+    map["home-faq"] = val;
+    map["faq"] = val;
+  }
+  if (k === "call-for-papers" || k === "calls-for-papers") {
+    map["call-for-papers"] = val;
+    map["calls-for-papers"] = val;
+  }
+}
+
+export function sortHomeSections(data: PageContentDTO[]): PageContentDTO[] {
+  return [...data].sort(
+    (a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+  );
+}
+
+export function buildPublishedMap(sections: PageContentDTO[]): Record<string, boolean> {
+  const map: Record<string, boolean> = {};
+  KNOWN_HOME_SECTION_KEYS.forEach((k) => {
+    map[k] = false;
+  });
+  sections.forEach((s) => {
+    if (s.sectionKey) {
+      syncKeyAliases(s.sectionKey.toLowerCase(), s.published !== false, map);
+    }
+  });
+  return map;
+}
+
+/**
+ * React hook consumed by the homepage to track published sections in realtime.
+ * Accepts initialSections from SSR for immediate 0-latency display order on refresh.
+ */
+export function useHomeSectionVisibility(initialSections?: PageContentDTO[]) {
+  const getInitialSections = (): PageContentDTO[] => {
+    if (initialSections && initialSections.length > 0) {
+      return sortHomeSections(initialSections);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(CMS_HOME_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return sortHomeSections(parsed);
+          }
+        }
+      } catch {}
+    }
+    return [];
+  };
+
+  const [sections, setSections] = useState<PageContentDTO[]>(() => getInitialSections());
+  const [loaded, setLoaded] = useState<boolean>(() => {
+    if (initialSections && initialSections.length > 0) return true;
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(CMS_HOME_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return true;
+        }
+      } catch {}
+    }
+    return false;
   });
 
-  const [sections, setSections] = useState<PageContentDTO[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [publishedMap, setPublishedMap] = useState<Record<string, boolean>>(() => {
+    const start = getInitialSections();
+    if (start.length > 0) {
+      return buildPublishedMap(start);
+    }
+    const defaultMap: Record<string, boolean> = {};
+    KNOWN_HOME_SECTION_KEYS.forEach((k) => {
+      defaultMap[k] = true;
+    });
+    return defaultMap;
+  });
 
-  const syncKeyAliases = (key: string, val: boolean, map: Record<string, boolean>) => {
-    map[key] = val;
-    if (key === "hero-main") map["featured-research"] = val;
-    if (key === "featured-research") map["hero-main"] = val;
-    if (key === "explore-topics") map["topics"] = val;
-    if (key === "topics") map["explore-topics"] = val;
-    if (key === "home-faq") map["faq"] = val;
-    if (key === "faq") map["home-faq"] = val;
-    if (key === "call-for-papers") map["calls-for-papers"] = val;
-  };
+  // Keep state in sync if initialSections prop updates
+  useEffect(() => {
+    if (initialSections && initialSections.length > 0) {
+      const sorted = sortHomeSections(initialSections);
+      setSections(sorted);
+      setLoaded(true);
+      setPublishedMap(buildPublishedMap(sorted));
+      try {
+        localStorage.setItem(CMS_HOME_CACHE_KEY, JSON.stringify(sorted));
+      } catch {}
+    }
+  }, [initialSections]);
 
   const fetchPublished = useCallback(async () => {
     try {
       const data = await contentApi.getPublished("home");
       if (Array.isArray(data)) {
-        const sorted = [...data].sort(
-          (a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
-        );
+        const sorted = sortHomeSections(data);
         setSections(sorted);
         if (data.length > 0) {
-          const newMap: Record<string, boolean> = {};
-          // Mark all known keys as false unless they appear in the published list
-          [
-            "hero-main",
-            "featured-research",
-            "latest-research",
-            "current-issue",
-            "most-read",
-            "explore-topics",
-            "topics",
-            "featured-journals",
-            "call-for-papers",
-            "calls-for-papers",
-            "research-community",
-            "home-faq",
-            "faq",
-            "journal-stats",
-            "scope-tracks",
-          ].forEach((k) => {
-            newMap[k] = false;
-          });
-
-          data.forEach((s) => {
-            if (s.sectionKey) {
-              const k = s.sectionKey.toLowerCase();
-              syncKeyAliases(k, s.published !== false, newMap);
-            }
-          });
-
-          setPublishedMap(newMap);
+          setPublishedMap(buildPublishedMap(sorted));
+          try {
+            localStorage.setItem(CMS_HOME_CACHE_KEY, JSON.stringify(sorted));
+          } catch {}
         }
       }
     } catch {

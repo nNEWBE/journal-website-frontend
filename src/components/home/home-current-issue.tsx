@@ -6,11 +6,18 @@ import Link from "next/link";
 import { BookOpen, FileText } from "lucide-react";
 import { FadeIn } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
-export function HomeCurrentIssue() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeCurrentIssue({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("current-issue");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -23,7 +30,7 @@ export function HomeCurrentIssue() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;

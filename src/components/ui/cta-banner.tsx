@@ -82,11 +82,7 @@ export function CtaBanner({
         <div className="max-w-3xl">
           {/* Status Eyebrow */}
           {badgeText && (
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-300/30 bg-amber-400/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-amber-300 backdrop-blur-md shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
-              </span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-amber-300 backdrop-blur-md shadow-2xs">
               <span>{badgeText}</span>
             </div>
           )}

@@ -31,6 +31,9 @@ export function SmoothScroll() {
 
     if (typeof window !== "undefined") {
       (window as any).__lenis = lenis;
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
     }
 
     let animationFrameId: number;

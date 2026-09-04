@@ -183,11 +183,8 @@ function WorkflowPreview({
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-slate-50/50 to-white px-3.5 py-2.5 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-              </span>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <span className="text-[9px] font-bold text-slate-600">
                 All required fields completed
               </span>

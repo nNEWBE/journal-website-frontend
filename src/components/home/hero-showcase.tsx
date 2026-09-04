@@ -13,8 +13,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { contentApi, articlesApi } from "@/lib/api";
+import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
 import { articles as initialArticles } from "@/lib/data";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface FeaturedSlide {
   id: string;
@@ -150,22 +151,49 @@ function getCoverImage(article: any): string {
 
 const AUTO_PLAY_INTERVAL = 8000;
 
-export function HeroShowcase() {
-  const [slides, setSlides] = useState<FeaturedSlide[]>(featuredSlides);
+export function parseHeroSlides(heroSection?: PageContentDTO | null): FeaturedSlide[] | null {
+  if (!heroSection?.metaJson) return null;
+  try {
+    const meta = JSON.parse(heroSection.metaJson);
+    if (Array.isArray(meta.featuredSlides) && meta.featuredSlides.length > 0) {
+      return meta.featuredSlides;
+    }
+  } catch {}
+  return null;
+}
+
+export function HeroShowcase({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("hero-main");
+  const heroSection = propSection || contextSection;
+
+  const [slides, setSlides] = useState<FeaturedSlide[]>(() => {
+    const parsed = parseHeroSlides(heroSection);
+    if (parsed && parsed.length > 0) return parsed;
+    return featuredSlides;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Dynamic fetch from Home CMS
+  // Synchronize when heroSection becomes available or updates
   useEffect(() => {
+    const parsed = parseHeroSlides(heroSection);
+    if (parsed && parsed.length > 0) {
+      setSlides(parsed);
+    }
+  }, [heroSection]);
+
+  // Dynamic fetch from Home CMS (fallback only if heroSection is missing)
+  useEffect(() => {
+    if (heroSection) return;
     let active = true;
     async function loadDynamicFeatured() {
       try {
         const sections = await contentApi.getPublished("home");
-        const heroSection = sections.find(
+        const found = sections.find(
           (s) => s.sectionKey === "hero-main" || s.sectionKey === "featured-research"
         );
-        if (heroSection?.metaJson) {
-          const meta = JSON.parse(heroSection.metaJson);
+        if (found?.metaJson) {
+          const meta = JSON.parse(found.metaJson);
           if (Array.isArray(meta.featuredSlides) && meta.featuredSlides.length > 0) {
             if (active) setSlides(meta.featuredSlides);
             return;
@@ -214,7 +242,7 @@ export function HeroShowcase() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [heroSection]);
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % (slides.length || 1));

@@ -479,8 +479,7 @@ export function BoardManagementPanel() {
                           External
                         </span>
                       )}
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="inline-flex items-center text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
                         Public
                       </span>
                     </div>

@@ -67,7 +67,7 @@ import { featuredJournals } from "@/components/home/home-featured-journals";
 import { communityArticles } from "@/components/home/home-research-community";
 import { FAQ_ITEMS } from "@/components/home/home-faq-section";
 import { CmsSectionTabs } from "./cms-section-tabs";
-import { broadcastSectionVisibility, broadcastSectionOrderChange } from "@/lib/cms-visibility";
+import { broadcastSectionVisibility, broadcastSectionOrderChange, CMS_HOME_CACHE_KEY } from "@/lib/cms-visibility";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
@@ -1600,6 +1600,12 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
       cmsCache[activeTab] = { data: sections, timestamp: Date.now() };
       setSavedSnapshot(generateSnapshot(sections));
 
+      if (activeTab === "home") {
+        try {
+          localStorage.setItem(CMS_HOME_CACHE_KEY, JSON.stringify(sections));
+        } catch {}
+      }
+
       toast.success("Page layout order and visibility changes saved successfully!");
     } catch (err: any) {
       toast.error(err.message || "Failed to save page changes.");
@@ -1640,6 +1646,12 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     try {
       setIsResetting(true);
       await contentApi.resetDefaults(activeTab);
+      if (activeTab === "home") {
+        try {
+          localStorage.removeItem(CMS_HOME_CACHE_KEY);
+        } catch {}
+      }
+      broadcastSectionOrderChange(activeTab);
       toast.success(`Default academic content restored for ${currentTabObj?.label}.`);
       setIsResetConfirmOpen(false);
       fetchSections(activeTab);
@@ -1833,9 +1845,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
               ? "Save Changes"
               : "Saved"}
           </span>
-          {hasPendingChanges && (
-            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-          )}
         </button>
       </DashboardHeaderActions>
 

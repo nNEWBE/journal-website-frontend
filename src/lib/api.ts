@@ -920,7 +920,9 @@ export interface PageContentDTO {
 
 export const contentApi = {
   getPublished: async (pageKey: string): Promise<PageContentDTO[]> => {
-    return request<PageContentDTO[]>(`/api/v1/content/${pageKey}`);
+    return request<PageContentDTO[]>(`/api/v1/content/${pageKey}`, {
+      cache: "no-store",
+    });
   },
 
   getAllPublished: async (): Promise<Record<string, PageContentDTO[]>> => {

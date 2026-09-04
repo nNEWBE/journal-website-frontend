@@ -458,9 +458,8 @@ export function ManuscriptPipelinePanel() {
                             {sub.reviewers.map((r, i) => (
                               <p
                                 key={i}
-                                className="text-[10px] font-semibold text-slate-700 whitespace-nowrap flex items-center gap-1"
+                                className="text-[10px] font-semibold text-slate-700 whitespace-nowrap"
                               >
-                                <span className="h-1 w-1 rounded-full bg-blue-500" />
                                 {r}
                               </p>
                             ))}

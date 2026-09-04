@@ -104,10 +104,6 @@ export default function IssuesPage() {
               </h2>
             </div>
             <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 border border-slate-200/90 shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
               <span className="font-mono text-xs font-bold text-slate-800">
                 {currentIssue.volume} · {currentIssue.issue} ({currentIssue.month})
               </span>
@@ -132,7 +128,6 @@ export default function IssuesPage() {
 
                 <div className="absolute top-3 right-3 z-20">
                   <span className="inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/40 px-2.5 py-1 text-[9.5px] font-mono font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Current Volume
                   </span>
                 </div>
@@ -407,8 +402,7 @@ export default function IssuesPage() {
                                       {iss.issue}
                                     </span>
                                     {isCurrent ? (
-                                      <span className="text-[9.5px] font-bold uppercase text-emerald-700 flex items-center gap-1">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      <span className="text-[9.5px] font-bold uppercase text-emerald-700">
                                         Current
                                       </span>
                                     ) : (

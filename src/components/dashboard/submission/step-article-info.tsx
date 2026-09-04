@@ -2,7 +2,7 @@
 
 import { CustomSelect } from "@/components/ui/custom-select";
 import { articleTypes, topics } from "@/lib/data";
-import { ClipboardCheck, Eye, FileText, FlaskConical, Library, Mail, MessageSquareText, PenLine, Scale } from "lucide-react";
+import { Check, ClipboardCheck, Eye, FileText, FlaskConical, Library, Mail, MessageSquareText, PenLine, Scale } from "lucide-react";
 
 interface StepArticleInfoProps {
   form: {
@@ -80,7 +80,7 @@ export function StepArticleInfo({ form, onChange }: StepArticleInfoProps) {
                       <IconComponent className="h-4 w-4" />
                     </span>
                     {isSelected && (
-                      <span className="h-2 w-2 rounded-full bg-[color:var(--color-gb-blue)]" />
+                      <Check className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
                     )}
                   </div>
                   <h4 className="mt-3 text-sm font-bold text-slate-900">{t}</h4>

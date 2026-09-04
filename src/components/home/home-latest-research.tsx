@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowUpRight, BookOpen, FileText } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
+import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface LatestArticle {
   id: string;
@@ -84,10 +85,16 @@ export const latestArticles: LatestArticle[] = [
   },
 ];
 
-export function HomeLatestResearch() {
-  const [section, setSection] = useState<PageContentDTO | null>(null);
+export function HomeLatestResearch({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+  const contextSection = useHomeSection("latest-research");
+  const activeSection = propSection || contextSection;
+  const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
 
   useEffect(() => {
+    if (activeSection) {
+      setSection(activeSection);
+      return;
+    }
     let active = true;
     contentApi
       .getPublished("home")
@@ -100,7 +107,7 @@ export function HomeLatestResearch() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeSection]);
 
   if (section && section.published === false) {
     return null;
