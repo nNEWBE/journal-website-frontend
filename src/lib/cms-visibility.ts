@@ -5,6 +5,8 @@ import { contentApi, type PageContentDTO } from "@/lib/api";
 
 export const CMS_VISIBILITY_EVENT = "cms-section-visibility-change";
 export const CMS_STORAGE_KEY = "gbj_cms_section_visibility_sync";
+export const CMS_ORDER_EVENT = "cms-section-order-change";
+export const CMS_ORDER_STORAGE_KEY = "gbj_cms_section_order_sync";
 
 export interface VisibilitySyncPayload {
   pageKey: string;
@@ -36,6 +38,21 @@ export function broadcastSectionVisibility(
   // Cross-tab/window broadcast
   try {
     localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(payload));
+  } catch {}
+}
+
+/**
+ * Broadcasts a section reordering update across window and tabs.
+ */
+export function broadcastSectionOrderChange(pageKey: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(CMS_ORDER_EVENT, {
+      detail: { pageKey: pageKey.toLowerCase(), timestamp: Date.now() },
+    })
+  );
+  try {
+    localStorage.setItem(CMS_ORDER_STORAGE_KEY, Date.now().toString());
   } catch {}
 }
 
@@ -79,7 +96,10 @@ export function useHomeSectionVisibility() {
     try {
       const data = await contentApi.getPublished("home");
       if (Array.isArray(data)) {
-        setSections(data);
+        const sorted = [...data].sort(
+          (a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+        );
+        setSections(sorted);
         if (data.length > 0) {
           const newMap: Record<string, boolean> = {};
           // Mark all known keys as false unless they appear in the published list
@@ -123,7 +143,7 @@ export function useHomeSectionVisibility() {
   useEffect(() => {
     fetchPublished();
 
-    // In-window realtime listener
+    // In-window realtime listener for visibility
     const handleCustomEvent = (e: Event) => {
       const customEvt = e as CustomEvent<VisibilitySyncPayload>;
       if (customEvt.detail && customEvt.detail.pageKey === "home") {
@@ -136,7 +156,7 @@ export function useHomeSectionVisibility() {
       }
     };
 
-    // Cross-tab realtime listener
+    // Cross-tab realtime listener for visibility
     const handleStorageEvent = (e: StorageEvent) => {
       if (e.key === CMS_STORAGE_KEY && e.newValue) {
         try {
@@ -150,14 +170,26 @@ export function useHomeSectionVisibility() {
             });
           }
         } catch {}
+      } else if (e.key === CMS_ORDER_STORAGE_KEY) {
+        fetchPublished();
+      }
+    };
+
+    // In-window realtime listener for section order
+    const handleOrderEvent = (e: Event) => {
+      const customEvt = e as CustomEvent<{ pageKey: string; timestamp: number }>;
+      if (customEvt.detail && customEvt.detail.pageKey === "home") {
+        fetchPublished();
       }
     };
 
     window.addEventListener(CMS_VISIBILITY_EVENT, handleCustomEvent);
+    window.addEventListener(CMS_ORDER_EVENT, handleOrderEvent);
     window.addEventListener("storage", handleStorageEvent);
 
     return () => {
       window.removeEventListener(CMS_VISIBILITY_EVENT, handleCustomEvent);
+      window.removeEventListener(CMS_ORDER_EVENT, handleOrderEvent);
       window.removeEventListener("storage", handleStorageEvent);
     };
   }, [fetchPublished]);

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { HeroShowcase } from "@/components/home/hero-showcase";
 import { HomeLatestResearch } from "@/components/home/home-latest-research";
 import { HomeCurrentIssue } from "@/components/home/home-current-issue";
@@ -15,82 +16,85 @@ import { FadeIn } from "@/components/layout/page-transition";
 import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 import { useHomeSectionVisibility } from "@/lib/cms-visibility";
 
+const CANONICAL_HOME_ORDER = [
+  "hero-main",
+  "latest-research",
+  "current-issue",
+  "most-read",
+  "explore-topics",
+  "featured-journals",
+  "call-for-papers",
+  "research-community",
+  "home-faq",
+  "journal-stats",
+];
+
+const SECTION_COMPONENTS: Record<string, React.ReactNode> = {
+  "hero-main": <HeroShowcase />,
+  "featured-research": <HeroShowcase />,
+  "latest-research": <HomeLatestResearch />,
+  "current-issue": <HomeCurrentIssue />,
+  "most-read": <HomeMostRead />,
+  "explore-topics": <HomeExploreTopics />,
+  "topics": <HomeExploreTopics />,
+  "featured-journals": <HomeFeaturedJournals />,
+  "call-for-papers": <HomeCallsForPapers />,
+  "calls-for-papers": <HomeCallsForPapers />,
+  "research-community": <HomeResearchCommunity />,
+  "home-faq": <HomeFaqSection />,
+  "faq": <HomeFaqSection />,
+  "journal-stats": <HomeMetricsNewsletter />,
+  "scope-tracks": <HomeExploreTopics />,
+};
+
 export default function Home() {
-  const { isSectionVisible } = useHomeSectionVisibility();
+  const { isSectionVisible, sections, loaded } = useHomeSectionVisibility();
+
+  // Compute rendered order: if backend sections are available, use their displayOrder
+  const orderedKeys = useMemo(() => {
+    if (!loaded || sections.length === 0) {
+      return CANONICAL_HOME_ORDER;
+    }
+
+    // Sort sections by displayOrder
+    const sorted = [...sections].sort(
+      (a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+    );
+
+    const keys: string[] = [];
+    sorted.forEach((s) => {
+      const k = s.sectionKey.toLowerCase();
+      if (!keys.includes(k) && SECTION_COMPONENTS[k]) {
+        keys.push(k);
+      }
+    });
+
+    // Ensure any standard sections not yet in database are appended in canonical order
+    CANONICAL_HOME_ORDER.forEach((k) => {
+      if (!keys.includes(k)) {
+        keys.push(k);
+      }
+    });
+
+    return keys;
+  }, [sections, loaded]);
 
   return (
     <PageShell>
       <AdminPageEditBadge pageKey="home" />
 
-      {/* Redesigned Academic Research Hero Showcase */}
-      {isSectionVisible("hero-main") && (
-        <FadeIn delay={0.05}>
-          <HeroShowcase />
-        </FadeIn>
-      )}
+      {orderedKeys.map((key, idx) => {
+        if (!isSectionVisible(key)) return null;
+        const ComponentNode = SECTION_COMPONENTS[key];
+        if (!ComponentNode) return null;
 
-      {/* Latest Research 4-Column Showcase */}
-      {isSectionVisible("latest-research") && (
-        <FadeIn delay={0.15}>
-          <HomeLatestResearch />
-        </FadeIn>
-      )}
-
-      {/* Current Issue Section */}
-      {isSectionVisible("current-issue") && (
-        <FadeIn delay={0.18}>
-          <HomeCurrentIssue />
-        </FadeIn>
-      )}
-
-      {/* Most Read Ranked Section */}
-      {isSectionVisible("most-read") && (
-        <FadeIn delay={0.2}>
-          <HomeMostRead />
-        </FadeIn>
-      )}
-
-      {/* Explore by Topic Grid */}
-      {(isSectionVisible("explore-topics") || isSectionVisible("topics")) && (
-        <FadeIn delay={0.22}>
-          <HomeExploreTopics />
-        </FadeIn>
-      )}
-
-      {/* Featured Journals 4-Column Section */}
-      {isSectionVisible("featured-journals") && (
-        <FadeIn delay={0.24}>
-          <HomeFeaturedJournals />
-        </FadeIn>
-      )}
-
-      {/* Calls for Papers / Special Issues */}
-      {(isSectionVisible("call-for-papers") || isSectionVisible("calls-for-papers")) && (
-        <FadeIn delay={0.26}>
-          <HomeCallsForPapers />
-        </FadeIn>
-      )}
-
-      {/* From Our Research Community */}
-      {isSectionVisible("research-community") && (
-        <FadeIn delay={0.28}>
-          <HomeResearchCommunity />
-        </FadeIn>
-      )}
-
-      {/* Frequently Asked Questions */}
-      {(isSectionVisible("home-faq") || isSectionVisible("faq")) && (
-        <FadeIn delay={0.3}>
-          <HomeFaqSection />
-        </FadeIn>
-      )}
-
-      {/* Research Metrics & Newsletter Box */}
-      {isSectionVisible("journal-stats") && (
-        <FadeIn delay={0.32}>
-          <HomeMetricsNewsletter />
-        </FadeIn>
-      )}
+        return (
+          <FadeIn key={key} delay={Math.min(0.05 * (idx + 1), 0.35)}>
+            {ComponentNode}
+          </FadeIn>
+        );
+      })}
     </PageShell>
   );
 }
+

@@ -67,7 +67,7 @@ import { featuredJournals } from "@/components/home/home-featured-journals";
 import { communityArticles } from "@/components/home/home-research-community";
 import { FAQ_ITEMS } from "@/components/home/home-faq-section";
 import { CmsSectionTabs } from "./cms-section-tabs";
-import { broadcastSectionVisibility } from "@/lib/cms-visibility";
+import { broadcastSectionVisibility, broadcastSectionOrderChange } from "@/lib/cms-visibility";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
@@ -603,6 +603,14 @@ export const sortSectionsByCanonicalOrder = (
 
   return [...sectionList]
     .sort((a, b) => {
+      const orderA = a.displayOrder;
+      const orderB = b.displayOrder;
+
+      // If displayOrder is explicitly set on both and they differ, prioritize displayOrder
+      if (typeof orderA === "number" && typeof orderB === "number" && orderA !== orderB) {
+        return orderA - orderB;
+      }
+
       const aKey = a.sectionKey;
       const bKey = b.sectionKey;
 
@@ -617,26 +625,143 @@ export const sortSectionsByCanonicalOrder = (
       if (aIdx !== -1) return -1;
       if (bIdx !== -1) return 1;
 
-      // Fall back to displayOrder or title
-      const orderA = a.displayOrder ?? 999;
-      const orderB = b.displayOrder ?? 999;
-      if (orderA !== orderB) return orderA - orderB;
+      // Fall back to title
       return (a.title || aKey).localeCompare(b.title || bKey);
     })
-    .map((sec, idx) => {
-      const canonIdx = canonicalList.indexOf(sec.sectionKey);
-      if (canonIdx !== -1) {
-        return {
-          ...sec,
-          displayOrder: canonIdx + 1,
-        };
-      }
-      return {
-        ...sec,
-        displayOrder: sec.displayOrder || idx + 1,
-      };
-    });
+    .map((sec, idx) => ({
+      ...sec,
+      displayOrder: typeof sec.displayOrder === "number" ? sec.displayOrder : idx + 1,
+    }));
 };
+
+interface SectionHeaderBarProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  badge?: React.ReactNode;
+  section: PageContentDTO;
+  secIndex: number;
+  totalSections: number;
+  onMoveOrder: (index: number, direction: "up" | "down") => void;
+  onTogglePublish: (section: PageContentDTO) => void;
+  onEdit: () => void;
+}
+
+function SectionHeaderBar({
+  icon: Icon,
+  title,
+  subtitle,
+  badge,
+  section,
+  secIndex,
+  totalSections,
+  onMoveOrder,
+  onTogglePublish,
+  onEdit,
+}: SectionHeaderBarProps) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10.5px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-100/80 text-blue-900 border border-blue-200">
+              #{secIndex >= 0 ? secIndex + 1 : 1}
+            </span>
+            <h4 className="text-sm font-bold text-slate-900 leading-snug">
+              {title}
+            </h4>
+            {badge}
+          </div>
+          {subtitle && (
+            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+        {/* Reorder Arrows (Move Up / Move Down) */}
+        <div className="flex items-center bg-white rounded-xl p-0.5 border border-slate-200/90 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => onMoveOrder(secIndex, "up")}
+            disabled={secIndex <= 0}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-25 transition-all cursor-pointer"
+            title="Move section up (earlier in page layout)"
+            aria-label="Move section up"
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMoveOrder(secIndex, "down")}
+            disabled={secIndex >= totalSections - 1}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-25 transition-all cursor-pointer"
+            title="Move section down (later in page layout)"
+            aria-label="Move section down"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Realtime Visibility Switch */}
+        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+            {section.published ? (
+              <Eye className="h-3 w-3 text-emerald-600" />
+            ) : (
+              <EyeOff className="h-3 w-3 text-slate-400" />
+            )}
+            <span>Visibility:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => onTogglePublish(section)}
+            className={cn(
+              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+              section.published ? "bg-emerald-500" : "bg-slate-300"
+            )}
+            role="switch"
+            aria-checked={section.published}
+            title={
+              section.published
+                ? "Click to turn off and hide on live page (save to apply)"
+                : "Click to turn on and show on live page (save to apply)"
+            }
+          >
+            <span
+              className={cn(
+                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+                section.published ? "translate-x-3.5" : "translate-x-0"
+              )}
+            />
+          </button>
+          <span
+            className={cn(
+              "text-[10.5px] font-bold",
+              section.published ? "text-emerald-700" : "text-slate-500"
+            )}
+          >
+            {section.published ? "Visible" : "Hidden"}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
+        >
+          <Edit className="h-3.5 w-3.5" />
+          <span>Edit Content</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const cmsCache: Record<string, { data: PageContentDTO[]; timestamp: number }> = {};
 
@@ -721,6 +846,25 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     topic: EditableTopic;
   } | null>(null);
   const [isSavingTopic, setIsSavingTopic] = useState<boolean>(false);
+
+  // Pending layout/visibility changes and Save button states
+  const [savedSnapshot, setSavedSnapshot] = useState<string>("");
+  const [isSavingPageChanges, setIsSavingPageChanges] = useState<boolean>(false);
+
+  const generateSnapshot = (secs: PageContentDTO[]) => {
+    return JSON.stringify(
+      secs.map((s) => ({
+        key: s.sectionKey,
+        published: s.published !== false,
+        displayOrder: typeof s.displayOrder === "number" ? s.displayOrder : 0,
+      }))
+    );
+  };
+
+  const hasPendingChanges = useMemo(() => {
+    if (!savedSnapshot || sections.length === 0) return false;
+    return generateSnapshot(sections) !== savedSnapshot;
+  }, [sections, savedSnapshot]);
 
   // Form fields
   const [formPageKey, setFormPageKey] = useState<string>("about");
@@ -1126,6 +1270,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     const cached = cmsCache[pageKey];
     if (cached?.data && !force) {
       setSections(cached.data);
+      setSavedSnapshot(generateSnapshot(cached.data));
       setLoading(false);
       if (Date.now() - cached.timestamp < 60000) {
         return;
@@ -1141,6 +1286,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
       const data = await contentApi.getAdminContent(pageKey);
       const sorted = sortSectionsByCanonicalOrder(pageKey, data || []);
       setSections(sorted);
+      setSavedSnapshot(generateSnapshot(sorted));
       cmsCache[pageKey] = { data: sorted, timestamp: Date.now() };
     } catch (err: any) {
       console.warn("Failed to fetch admin content, fetching public published fallback:", err.message);
@@ -1148,6 +1294,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
         const fallback = await contentApi.getPublished(pageKey);
         const sorted = sortSectionsByCanonicalOrder(pageKey, fallback || []);
         setSections(sorted);
+        setSavedSnapshot(generateSnapshot(sorted));
         cmsCache[pageKey] = { data: sorted, timestamp: Date.now() };
       } catch {
         if (!cached?.data) {
@@ -1372,34 +1519,118 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     }
   };
 
-  // Toggle Publish Status
-  const handleTogglePublish = async (section: PageContentDTO) => {
+  // Toggle Publish Status locally (Save button becomes active to persist)
+  const handleTogglePublish = (section: PageContentDTO) => {
+    const nextPublished = !section.published;
+    setSections((prev) =>
+      prev.map((s) =>
+        s.pageKey === section.pageKey && s.sectionKey === section.sectionKey
+          ? { ...s, published: nextPublished }
+          : s
+      )
+    );
+  };
+
+  // Reorder Sections locally (Save button becomes active to persist)
+  const handleMoveSectionOrder = (index: number, direction: "up" | "down") => {
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= sections.length) return;
+
+    const copy = [...sections];
+    const [moved] = copy.splice(index, 1);
+    copy.splice(targetIdx, 0, moved);
+
+    const reordered = copy.map((sec, i) => ({
+      ...sec,
+      displayOrder: i + 1,
+    }));
+
+    setSections(reordered);
+    setCurrentSectionKey(moved.sectionKey);
+  };
+
+  // Save Layout Order and Visibility Changes to Database
+  const handleSavePageChanges = async () => {
+    if (!hasPendingChanges || isSavingPageChanges) return;
+
     try {
-      const nextPublished = !section.published;
-      const updated = await contentApi.updateSection(section.pageKey, section.sectionKey, {
-        ...section,
-        published: nextPublished,
+      setIsSavingPageChanges(true);
+
+      let oldList: Array<{ key: string; published: boolean; displayOrder: number }> = [];
+      try {
+        oldList = JSON.parse(savedSnapshot);
+      } catch {}
+      const oldMap = new Map(oldList.map((item) => [item.key, item]));
+
+      // Identify changed sections
+      const changedSections = sections.filter((s) => {
+        const old = oldMap.get(s.sectionKey);
+        if (!old) return true;
+        return (
+          (s.published !== false) !== old.published ||
+          (s.displayOrder ?? 0) !== old.displayOrder
+        );
       });
 
-      // Update state locally immediately
-      setSections((prev) =>
-        prev.map((s) =>
-          s.pageKey === section.pageKey && s.sectionKey === section.sectionKey
-            ? { ...s, published: nextPublished }
-            : s
-        )
+      let orderChanged = false;
+
+      await Promise.all(
+        changedSections.map(async (sec) => {
+          await contentApi.updateSection(sec.pageKey, sec.sectionKey, {
+            ...sec,
+            published: sec.published !== false,
+            displayOrder: sec.displayOrder,
+          });
+
+          const old = oldMap.get(sec.sectionKey);
+          if (!old || (sec.published !== false) !== old.published) {
+            broadcastSectionVisibility(sec.pageKey, sec.sectionKey, sec.published !== false);
+          }
+          if (!old || (sec.displayOrder ?? 0) !== old.displayOrder) {
+            orderChanged = true;
+          }
+        })
       );
 
-      // Realtime broadcast to homepage and other tabs
-      broadcastSectionVisibility(section.pageKey, section.sectionKey, nextPublished);
+      if (orderChanged) {
+        broadcastSectionOrderChange(activeTab);
+      }
 
-      toast.success(
-        `Section "${section.title}" is now ${nextPublished ? "Visible (Live on page)" : "Hidden (Turned off in realtime)"}`
-      );
-      fetchSections(activeTab);
+      // Update local CMS cache and saved snapshot
+      cmsCache[activeTab] = { data: sections, timestamp: Date.now() };
+      setSavedSnapshot(generateSnapshot(sections));
+
+      toast.success("Page layout order and visibility changes saved successfully!");
     } catch (err: any) {
-      toast.error(err.message || "Failed to update status.");
+      toast.error(err.message || "Failed to save page changes.");
+    } finally {
+      setIsSavingPageChanges(false);
     }
+  };
+
+  // Discard Pending Changes
+  const handleDiscardPageChanges = () => {
+    if (!savedSnapshot) return;
+    try {
+      const list: Array<{ key: string; published: boolean; displayOrder: number }> =
+        JSON.parse(savedSnapshot);
+      const map = new Map(list.map((item) => [item.key, item]));
+
+      const restored = [...sections]
+        .map((s) => {
+          const orig = map.get(s.sectionKey);
+          if (!orig) return s;
+          return {
+            ...s,
+            published: orig.published,
+            displayOrder: orig.displayOrder,
+          };
+        })
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+
+      setSections(restored);
+      toast.info("Unsaved changes discarded.");
+    } catch {}
   };
 
   // Confirm and Execute Reset page to defaults
@@ -1566,21 +1797,45 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     <div className="space-y-6">
       {/* Top Header Actions */}
       <DashboardHeaderActions>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add New Section</span>
-        </button>
+        {hasPendingChanges && (
+          <button
+            type="button"
+            onClick={handleDiscardPageChanges}
+            disabled={isSavingPageChanges}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span>Discard</span>
+          </button>
+        )}
 
         <button
-          onClick={() => setIsResetConfirmOpen(true)}
-          title="Restore default academic template"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+          type="button"
+          onClick={handleSavePageChanges}
+          disabled={!hasPendingChanges || isSavingPageChanges}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-sm",
+            hasPendingChanges
+              ? "bg-[color:var(--color-gb-blue)] hover:bg-[color:var(--color-gb-blue-dark)] text-white cursor-pointer hover:shadow hover:-translate-y-0.5 ring-2 ring-blue-500/30"
+              : "bg-slate-100 text-slate-400 border border-slate-200/80 cursor-not-allowed opacity-75"
+          )}
+          title={
+            hasPendingChanges
+              ? "Click to save layout order and visibility changes"
+              : "No unsaved changes"
+          }
         >
-          <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
-          <span>Reset Defaults</span>
+          <Save className="h-4 w-4" />
+          <span>
+            {isSavingPageChanges
+              ? "Saving Changes..."
+              : hasPendingChanges
+              ? "Save Changes"
+              : "Saved"}
+          </span>
+          {hasPendingChanges && (
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          )}
         </button>
       </DashboardHeaderActions>
 
@@ -1690,95 +1945,45 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
       ) : (
         <>
           <div className="space-y-3.5">
-          {filteredSections.map((section, idx) => (
-            <React.Fragment key={section.id || `${section.pageKey}-${section.sectionKey}`}>
-              {/* 1. HERO BANNER & CAROUSEL SECTION */}
-              {section.pageKey === "home" && section.sectionKey === "hero-main" && (() => {
-                let meta: Record<string, any> = {};
-                try {
-                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
-                } catch {
-                  meta = {};
-                }
-                const heroArticles = getHeroSelectedArticles(section);
+          {filteredSections.map((section, idx) => {
+            const secIndex = sections.findIndex(
+              (s) => s.pageKey === section.pageKey && s.sectionKey === section.sectionKey
+            );
 
-                return (
-                  <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <BookMarked className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "Academic Research Hero Banner & Carousel"}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {heroArticles.length} Slides Active
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Main headline, ISSN badges, CTAs & featured research carousel."}
-                          </p>
-                        </div>
-                      </div>
+            return (
+              <React.Fragment key={section.id || `${section.pageKey}-${section.sectionKey}`}>
+                {/* 1. HERO BANNER & CAROUSEL SECTION */}
+                {section.pageKey === "home" && section.sectionKey === "hero-main" && (() => {
+                  let meta: Record<string, any> = {};
+                  try {
+                    meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                  } catch {
+                    meta = {};
+                  }
+                  const heroArticles = getHeroSelectedArticles(section);
 
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                  return (
+                    <div className="space-y-4">
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={BookMarked}
+                        title={section.title || "Academic Research Hero Banner & Carousel"}
+                        subtitle={
+                          section.subtitle ||
+                          "Main headline, ISSN badges, CTAs & featured research carousel."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {heroArticles.length} Slides Active
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4-Column Key Parameters */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2006,81 +2211,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
                 return (
                   <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "Latest Research"}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {latestArticles.length} Manuscripts Active
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Recent breakthroughs and peer-reviewed scholarly papers from our global community."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={FileText}
+                        title={section.title || "Latest Research"}
+                        subtitle={
+                          section.subtitle ||
+                          "Recent breakthroughs and peer-reviewed scholarly papers from our global community."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {latestArticles.length} Manuscripts Active
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4-Column Key Parameters */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2277,81 +2427,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
                 return (
                   <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <BookOpen className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "Current Issue — Active Edition"}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {volumeIssue}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Active volume, issue metadata, cover graphic, and PDF downloads."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={BookOpen}
+                        title={section.title || "Current Issue — Active Edition"}
+                        subtitle={
+                          section.subtitle ||
+                          "Active volume, issue metadata, cover graphic, and PDF downloads."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {volumeIssue}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4-Column Key Parameters */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2509,81 +2604,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
                 return (
                   <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <TrendingUp className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "Most Read — Trending Publications"}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {mostReadArticles.length} Ranked Manuscripts
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Trending manuscripts and highest cited publications across the academic network."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={TrendingUp}
+                        title={section.title || "Most Read — Trending Publications"}
+                        subtitle={
+                          section.subtitle ||
+                          "Trending manuscripts and highest cited publications across the academic network."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {mostReadArticles.length} Ranked Manuscripts
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4-Column Key Parameters */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2753,80 +2793,25 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   return (
                     <div className="space-y-4">
                       {/* Section Header Bar */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                            <Tag className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-bold text-slate-900">
-                                {section.title || "Explore by Topic — Academic Disciplines"}
-                              </h4>
-                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                                {topics.length} Research Tracks
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                              {section.subtitle ||
-                                "Discipline categories and research faculty tracks available for exploration."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2.5 shrink-0">
-                          {/* Realtime Visibility Switch */}
-                          <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                              {section.published ? (
-                                <Eye className="h-3 w-3 text-emerald-600" />
-                              ) : (
-                                <EyeOff className="h-3 w-3 text-slate-400" />
-                              )}
-                              <span>Visibility:</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleTogglePublish(section)}
-                              className={cn(
-                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                                section.published ? "bg-emerald-500" : "bg-slate-300"
-                              )}
-                              role="switch"
-                              aria-checked={section.published}
-                              title={
-                                section.published
-                                  ? "Click to turn off and hide on live page in realtime"
-                                  : "Click to turn on and show on live page in realtime"
-                              }
-                            >
-                              <span
-                                className={cn(
-                                  "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                  section.published ? "translate-x-3.5" : "translate-x-0"
-                                )}
-                              />
-                            </button>
-                            <span
-                              className={cn(
-                                "text-[10.5px] font-bold",
-                                section.published ? "text-emerald-700" : "text-slate-500"
-                              )}
-                            >
-                              {section.published ? "Visible" : "Hidden"}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(section)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                            <span>Edit Content</span>
-                          </button>
-                        </div>
-                      </div>
+                      <SectionHeaderBar
+                        icon={Tag}
+                        title={section.title || "Explore by Topic — Academic Disciplines"}
+                        subtitle={
+                          section.subtitle ||
+                          "Discipline categories and research faculty tracks available for exploration."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {topics.length} Research Tracks
+                          </span>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                       {/* 4-Column Key Parameters */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -3031,81 +3016,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
               {section.pageKey === "home" && section.sectionKey === "featured-journals" && (() => {
                 return (
                   <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <Library className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "Featured Journals — Specialized Editions"}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {featuredJournals.length} Active Journals
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Specialized biannual series and peer-reviewed journal editions."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={Library}
+                        title={section.title || "Featured Journals — Specialized Editions"}
+                        subtitle={
+                          section.subtitle ||
+                          "Specialized biannual series and peer-reviewed journal editions."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {featuredJournals.length} Active Journals
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4-Column Key Parameters */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -3272,80 +3202,25 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   return (
                     <div className="space-y-4">
                       {/* Section Header Bar */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                            <Megaphone className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-bold text-slate-900">
-                                {section.title || "Call for Papers — Upcoming Issue"}
-                              </h4>
-                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                                {badge}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                              {section.subtitle ||
-                                "Submission Deadline: October 31, 2026 | Fast-Track Review Available"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2.5 shrink-0">
-                          {/* Realtime Visibility Switch */}
-                          <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                              {section.published ? (
-                                <Eye className="h-3 w-3 text-emerald-600" />
-                              ) : (
-                                <EyeOff className="h-3 w-3 text-slate-400" />
-                              )}
-                              <span>Visibility:</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleTogglePublish(section)}
-                              className={cn(
-                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                                section.published ? "bg-emerald-500" : "bg-slate-300"
-                              )}
-                              role="switch"
-                              aria-checked={section.published}
-                              title={
-                                section.published
-                                  ? "Click to turn off and hide on live page in realtime"
-                                  : "Click to turn on and show on live page in realtime"
-                              }
-                            >
-                              <span
-                                className={cn(
-                                  "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                  section.published ? "translate-x-3.5" : "translate-x-0"
-                                )}
-                              />
-                            </button>
-                            <span
-                              className={cn(
-                                "text-[10.5px] font-bold",
-                                section.published ? "text-emerald-700" : "text-slate-500"
-                              )}
-                            >
-                              {section.published ? "Visible" : "Hidden"}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(section)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                            <span>Edit Content</span>
-                          </button>
-                        </div>
-                      </div>
+                      <SectionHeaderBar
+                        icon={Megaphone}
+                        title={section.title || "Call for Papers — Upcoming Issue"}
+                        subtitle={
+                          section.subtitle ||
+                          "Submission Deadline: October 31, 2026 | Fast-Track Review Available"
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {badge}
+                          </span>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                       {/* 4-Column Key Parameters Cards Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -3499,81 +3374,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
               {section.pageKey === "home" && section.sectionKey === "research-community" && (() => {
                 return (
                   <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <Users className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "From Our Research Community"}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              {communityArticles.length} Community Highlights
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Faculty spotlights, author interviews, and annual symposium announcements."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={Users}
+                        title={section.title || "From Our Research Community"}
+                        subtitle={
+                          section.subtitle ||
+                          "Faculty spotlights, author interviews, and annual symposium announcements."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {communityArticles.length} Community Highlights
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4-Column Key Parameters */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -3738,80 +3558,25 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   return (
                     <div className="space-y-4">
                       {/* Section Header Bar */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                            <HelpCircle className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-bold text-slate-900">
-                                {section.title || "Frequently Asked Questions — Author Guidance"}
-                              </h4>
-                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                                {FAQ_ITEMS.length} Questions & Answers
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                              {section.subtitle ||
-                                "Frequently asked questions for prospective authors, peer reviewers, and researchers."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2.5 shrink-0">
-                          {/* Realtime Visibility Switch */}
-                          <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                              {section.published ? (
-                                <Eye className="h-3 w-3 text-emerald-600" />
-                              ) : (
-                                <EyeOff className="h-3 w-3 text-slate-400" />
-                              )}
-                              <span>Visibility:</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleTogglePublish(section)}
-                              className={cn(
-                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                                section.published ? "bg-emerald-500" : "bg-slate-300"
-                              )}
-                              role="switch"
-                              aria-checked={section.published}
-                              title={
-                                section.published
-                                  ? "Click to turn off and hide on live page in realtime"
-                                  : "Click to turn on and show on live page in realtime"
-                              }
-                            >
-                              <span
-                                className={cn(
-                                  "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                  section.published ? "translate-x-3.5" : "translate-x-0"
-                                )}
-                              />
-                            </button>
-                            <span
-                              className={cn(
-                                "text-[10.5px] font-bold",
-                                section.published ? "text-emerald-700" : "text-slate-500"
-                              )}
-                            >
-                              {section.published ? "Visible" : "Hidden"}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(section)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                            <span>Edit Content</span>
-                          </button>
-                        </div>
-                      </div>
+                      <SectionHeaderBar
+                        icon={HelpCircle}
+                        title={section.title || "Frequently Asked Questions — Author Guidance"}
+                        subtitle={
+                          section.subtitle ||
+                          "Frequently asked questions for prospective authors, peer reviewers, and researchers."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            {FAQ_ITEMS.length} Questions & Answers
+                          </span>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                       {/* 4-Column Key Parameters */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -3961,81 +3726,26 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
                 return (
                   <div className="space-y-4">
-                    {/* Section Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-blue-200/90 bg-gradient-to-r from-blue-50/80 via-sky-50/40 to-white shadow-xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                          <BarChart2 className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">
-                              {section.title || "Advancing knowledge. Driving impact."}
-                            </h4>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                              Live Impact Metrics
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xl">
-                            {section.subtitle ||
-                              "Key highlights, editorial turnaround benchmarks & newsletter alert."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {/* Realtime Visibility Switch */}
-                        <div className="inline-flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                          <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                            {section.published ? (
-                              <Eye className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-slate-400" />
-                            )}
-                            <span>Visibility:</span>
+                      {/* Section Header Bar */}
+                      <SectionHeaderBar
+                        icon={BarChart2}
+                        title={section.title || "Advancing knowledge. Driving impact."}
+                        subtitle={
+                          section.subtitle ||
+                          "Key highlights, editorial turnaround benchmarks & newsletter alert."
+                        }
+                        badge={
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                            Live Impact Metrics
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(section)}
-                            className={cn(
-                              "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                              section.published ? "bg-emerald-500" : "bg-slate-300"
-                            )}
-                            role="switch"
-                            aria-checked={section.published}
-                            title={
-                              section.published
-                                ? "Click to turn off and hide on live page in realtime"
-                                : "Click to turn on and show on live page in realtime"
-                            }
-                          >
-                            <span
-                              className={cn(
-                                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                                section.published ? "translate-x-3.5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <span
-                            className={cn(
-                              "text-[10.5px] font-bold",
-                              section.published ? "text-emerald-700" : "text-slate-500"
-                            )}
-                          >
-                            {section.published ? "Visible" : "Hidden"}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(section)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Edit Content</span>
-                        </button>
-                      </div>
-                    </div>
+                        }
+                        section={section}
+                        secIndex={secIndex}
+                        totalSections={sections.length}
+                        onMoveOrder={handleMoveSectionOrder}
+                        onTogglePublish={handleTogglePublish}
+                        onEdit={() => openEditModal(section)}
+                      />
 
                     {/* 4 Live Key Metrics Cards Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -4204,7 +3914,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="flex items-center justify-center h-5 w-5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10.5px] font-bold">
-                            #{section.displayOrder || idx + 1}
+                            #{secIndex >= 0 ? secIndex + 1 : idx + 1}
                           </span>
                           <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
                             {section.sectionKey}
@@ -4222,6 +3932,30 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                      {/* Reorder Arrows (Move Up / Move Down) */}
+                      <div className="flex items-center bg-slate-50 rounded-xl p-0.5 border border-slate-200/90 shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveSectionOrder(secIndex, "up")}
+                          disabled={secIndex <= 0}
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 disabled:opacity-25 transition-all cursor-pointer"
+                          title="Move section up (earlier in page layout)"
+                          aria-label="Move section up"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveSectionOrder(secIndex, "down")}
+                          disabled={secIndex >= sections.length - 1}
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 disabled:opacity-25 transition-all cursor-pointer"
+                          title="Move section down (later in page layout)"
+                          aria-label="Move section down"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
                       {/* Section Visibility Switch */}
                       <div className="inline-flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
                         <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
@@ -4323,7 +4057,8 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                 </div>
               )}
             </React.Fragment>
-          ))}
+          );
+        })}
         </div>
 
         {/* Sequential Navigation Footer across all CMS Pages */}
