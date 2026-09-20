@@ -81,9 +81,9 @@ async function fetchArticleFromDb(slug: string): Promise<Article | null> {
 
     const sectionsList = Array.isArray(data.sections)
       ? data.sections.map((s: any) => ({
-          heading: s.heading || "",
-          body: s.body || "",
-        }))
+        heading: s.heading || "",
+        body: s.body || "",
+      }))
       : [];
 
     const mapped: Article = {
@@ -428,11 +428,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         aria-labelledby="article-title"
       >
         {/* Top gold-to-blue accent line */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-blue-500 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-amber-400 via-blue-500 to-transparent" />
 
         {/* Ambient glows */}
-        <div className="pointer-events-none absolute -top-36 -right-36 h-[560px] w-[560px] rounded-full bg-blue-600/10 blur-[100px]" />
-        <div className="pointer-events-none absolute -bottom-20 -left-16 h-[300px] w-[380px] rounded-full bg-amber-500/10 blur-[80px]" />
+        <div className="pointer-events-none absolute -top-36 -right-36 h-140 w-140 rounded-full bg-blue-600/10 blur-[100px]" />
+        <div className="pointer-events-none absolute -bottom-20 -left-16 h-80 w-90 rounded-full bg-amber-500/10 blur-[80px]" />
 
         <div className="container-x relative grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-10 lg:gap-14 items-center">
           {/* Left Column: Meta & Title */}
@@ -456,7 +456,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             {/* Title */}
             <h1
               id="article-title"
-              className="mt-5 font-academic text-2xl sm:text-3xl lg:text-[2.65rem] font-medium leading-[1.18] tracking-[-0.025em] text-white"
+              className="mt-5 font-academic text-2xl sm:text-3xl lg:text-[2.65rem] font-medium leading-[1.18] tracking-tight text-white"
             >
               {article.title}
             </h1>
@@ -501,7 +501,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
 
           {/* Right Column: Article Cover */}
-          <div className="relative aspect-[3/4] w-full max-w-[260px] mx-auto lg:mx-0 overflow-hidden bg-slate-950 border border-white/20 shadow-2xl">
+          <div className="relative aspect-3/4 w-full max-w-65 mx-auto lg:mx-0 overflow-hidden bg-slate-950 border border-white/20 shadow-2xl">
             <Image
               src={article.image ?? "/covers/medical.png"}
               alt={`${article.topic} article cover`}
@@ -511,8 +511,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               className="object-cover"
             />
             {/* 3D Spine overlay */}
-            <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-3 bg-gradient-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060e22] via-transparent to-transparent" />
+            <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-3 bg-linear-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
+            <div className="absolute inset-0 bg-linear-to-t from-[#060e22] via-transparent to-transparent" />
             <div className="absolute bottom-3 left-3 right-3 z-20 p-2.5 bg-slate-950/85 border border-white/15 backdrop-blur-md">
               <p className="text-[9px] font-bold uppercase tracking-wider text-amber-300">{article.department}</p>
               <p className="text-xs font-bold text-white mt-0.5">{article.volume} · {article.issue}</p>
@@ -726,7 +726,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     href={`/articles/${item.slug}`}
                     className="bg-white border border-slate-200/90 p-5 flex items-start gap-4 shadow-2xs hover:border-slate-300 transition-all group"
                   >
-                    <div className="relative aspect-[3/4] w-20 shrink-0 overflow-hidden bg-slate-950 border border-slate-200">
+                    <div className="relative aspect-3/4 w-20 shrink-0 overflow-hidden bg-slate-950 border border-slate-200">
                       <Image
                         src={item.image ?? "/covers/medical.png"}
                         alt={item.title}
@@ -762,7 +762,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <div className="container-x">
           <div className="relative overflow-hidden bg-[#060e22] text-white border border-slate-800 shadow-[0_20px_50px_rgba(3,8,22,0.45)] p-8 sm:p-12 lg:p-14">
             {/* Top gold-to-blue accent line */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-blue-500 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-amber-400 via-blue-500 to-transparent" />
 
             {/* Ambient background glow */}
             <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
@@ -776,7 +776,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   <span>CALL FOR PAPERS · VOL. 2026/2027</span>
                 </div>
 
-                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.025em] text-white leading-[1.15]">
+                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
                   Contribute Your Research to GB Journal
                 </h2>
 
@@ -820,7 +820,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               </div>
 
               {/* Right Column: Editorial Secretariat Contact Card */}
-              <div className="bg-white/[0.05] border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
+              <div className="bg-white/5 border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
                 <div>
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">
