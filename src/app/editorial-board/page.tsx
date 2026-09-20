@@ -189,7 +189,7 @@ export default async function EditorialBoardPage() {
                   <span>JOIN OUR ACADEMIC COMMUNITY</span>
                 </div>
 
-                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.025em] text-white leading-[1.15]">
+                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
                   Become a Peer Reviewer for GB Journal
                 </h2>
 
@@ -233,7 +233,7 @@ export default async function EditorialBoardPage() {
               </div>
 
               {/* Right Column: Editorial Secretariat Contact Card */}
-              <div className="bg-white/[0.05] border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
+              <div className="bg-white/5 border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
                 <div>
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">
