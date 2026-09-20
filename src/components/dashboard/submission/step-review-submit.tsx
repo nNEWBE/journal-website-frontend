@@ -47,7 +47,7 @@ export function StepReviewSubmit({
         </div>
         <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
           <div
-            className="h-full bg-[color:var(--color-gb-blue)] transition-all duration-500"
+            className="h-full bg-gb-blue transition-all duration-500"
             style={{ width: `${completeness}%` }}
           />
         </div>
@@ -64,20 +64,65 @@ export function StepReviewSubmit({
           </h4>
         </div>
 
-        {/* Authors Summary */}
+        {/* Keywords Summary */}
         <div className="border-t border-slate-100 pt-3">
           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
-            Authors ({authors.length})
+            Indexed Keywords
           </p>
-          <div className="flex flex-wrap gap-2">
-            {authors.map((a) => (
-              <span
-                key={a.id}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-800"
-              >
-                <User className="h-3 w-3 text-slate-400" />
-                {a.name} {a.isCorresponding && "(Corresponding)"}
+          <div className="flex flex-wrap gap-1.5">
+            {form.keywords ? (
+              form.keywords
+                .split(",")
+                .map((k) => k.trim())
+                .filter(Boolean)
+                .map((k, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center rounded-md bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-800 border border-blue-200"
+                  >
+                    #{k}
+                  </span>
+                ))
+            ) : (
+              <span className="text-xs text-red-500 font-semibold">
+                No keywords provided (Mandatory)
               </span>
+            )}
+          </div>
+        </div>
+
+        {/* Authors Summary */}
+        <div className="border-t border-slate-100 pt-3">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
+            Authors & Honorarium Accounts ({authors.length})
+          </p>
+          <div className="space-y-2">
+            {authors.map((a) => (
+              <div
+                key={a.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/60 p-2.5 sm:px-3 text-xs"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <User className="h-3.5 w-3.5 text-blue-700 shrink-0" />
+                  <span className="font-bold text-slate-900">{a.name}</span>
+                  {a.isCorresponding && (
+                    <span className="rounded bg-blue-100 px-1.5 py-0.2 text-[9px] font-bold text-blue-800 uppercase">
+                      Corresponding
+                    </span>
+                  )}
+                  <span className="text-slate-500 font-mono text-[11px]">({a.email})</span>
+                </div>
+
+                <div className="text-[11px] font-medium text-slate-600">
+                  {a.bankName || a.accountNumber ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      ✓ {a.bankName || "Bank"}: {a.accountNumber ? `••••${a.accountNumber.slice(-4)}` : "Account on file"}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 italic">No bank info added</span>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -111,8 +156,8 @@ export function StepReviewSubmit({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={isSubmitting || completeness < 50}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[color:var(--color-gb-blue-deep)] px-8 text-sm font-extrabold text-white shadow-lg hover:bg-[color:var(--color-gb-blue)] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          disabled={isSubmitting || completeness < 50 || !form.keywords.trim()}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gb-blue-deep px-8 text-sm font-extrabold text-white shadow-lg hover:bg-gb-blue transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           {isSubmitting ? (
             <span>Submitting Manuscript...</span>

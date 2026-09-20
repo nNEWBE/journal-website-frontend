@@ -6,7 +6,7 @@ import { CurrentIssueInteractive } from "@/components/issues/current-issue-inter
 import { getBackendUrl } from "@/lib/backend-url";
 import type { Article } from "@/lib/data";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Current Issue — GB Journal of Research",
@@ -22,7 +22,7 @@ async function getCurrentIssueFromDb(): Promise<{
   try {
     const backendUrl = getBackendUrl();
     const res = await fetch(`${backendUrl}/api/v1/issues`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     if (!res.ok) {

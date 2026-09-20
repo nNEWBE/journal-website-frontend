@@ -145,7 +145,7 @@ function RowActionsDropdown({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--color-gb-border)] bg-white text-[color:var(--color-gb-ink)] shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-ink) shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
         title="Actions options"
       >
         <MoreVertical className="h-4 w-4" />
@@ -165,7 +165,7 @@ function RowActionsDropdown({
               left: `${menuCoords.left}px`,
               zIndex: 999999,
             }}
-            className="w-52 rounded-xl border border-[color:var(--color-gb-border)] bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5"
+            className="w-52 rounded-xl border border-(--color-gb-border) bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5"
           >
             <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
               Actions · {sub.id}
@@ -227,8 +227,10 @@ function RowActionsDropdown({
   );
 }
 
+let pipelineCache: { data: Submission[]; timestamp: number } | null = null;
+
 export function ManuscriptPipelinePanel() {
-  const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>(() => pipelineCache?.data || seedSubmissions);
   const [mounted, setMounted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -242,10 +244,15 @@ export function ManuscriptPipelinePanel() {
   useEffect(() => {
     setMounted(true);
     async function loadData() {
+      if (pipelineCache && Date.now() - pipelineCache.timestamp < 45000) {
+        setSubmissions(pipelineCache.data);
+        return;
+      }
       try {
         const res = await editorApi.listSubmissions();
         if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
           setSubmissions(res.content);
+          pipelineCache = { data: res.content, timestamp: Date.now() };
         }
       } catch (err) {
         // Fallback to baseline seed data
@@ -260,6 +267,7 @@ export function ManuscriptPipelinePanel() {
       const res = await editorApi.listSubmissions();
       if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
         setSubmissions(res.content);
+        pipelineCache = { data: res.content, timestamp: Date.now() };
       }
       toast.success("Pipeline synchronized with backend");
     } catch {
@@ -339,7 +347,7 @@ export function ManuscriptPipelinePanel() {
         </button>
         <Link
           href="/dashboard/submissions/new"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-all cursor-pointer"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>New Submission</span>
@@ -350,15 +358,15 @@ export function ManuscriptPipelinePanel() {
       <DashboardStatsGrid submissions={submissions} />
 
       {/* Main Pipeline Table Card */}
-      <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white shadow-xs overflow-hidden">
+      <div className="rounded-2xl border border-(--color-gb-border) bg-white shadow-xs overflow-hidden">
         {/* Table Header Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[color:var(--color-gb-border)] px-4 sm:px-6 py-4 bg-slate-50/50">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 sm:px-6 py-4 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-[color:var(--color-gb-blue-soft)] flex items-center justify-center">
-              <ClipboardCheck className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
+            <div className="h-7 w-7 rounded-lg bg-gb-blue-soft flex items-center justify-center">
+              <ClipboardCheck className="h-4 w-4 text-gb-blue" />
             </div>
             <div>
-              <h2 className="text-xs font-bold text-[color:var(--color-gb-ink)] uppercase tracking-wider">
+              <h2 className="text-xs font-bold text-(--color-gb-ink) uppercase tracking-wider">
                 Active Manuscripts
               </h2>
               <p className="text-[11px] text-slate-500" suppressHydrationWarning>
@@ -368,7 +376,7 @@ export function ManuscriptPipelinePanel() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 rounded-xl border border-[color:var(--color-gb-border)] bg-white px-3 py-1.5 focus-within:border-[color:var(--color-gb-blue)] focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
+            <div className="flex items-center gap-1.5 rounded-xl border border-(--color-gb-border) bg-white px-3 py-1.5 focus-within:border-gb-blue focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
               <Search className="h-3.5 w-3.5 text-slate-400" />
               <input
                 value={searchQuery}
@@ -391,7 +399,7 @@ export function ManuscriptPipelinePanel() {
         {/* Content */}
         {!mounted ? (
           <div className="py-20 text-center text-xs text-slate-400 flex flex-col items-center justify-center">
-            <div className="h-6 w-6 rounded-full border-2 border-[color:var(--color-gb-blue)] border-t-transparent animate-spin mb-2.5" />
+            <div className="h-6 w-6 rounded-full border-2 border-gb-blue border-t-transparent animate-spin mb-2.5" />
             <span>Synchronizing manuscript pipeline...</span>
           </div>
         ) : filtered.length === 0 ? (
@@ -434,8 +442,8 @@ export function ManuscriptPipelinePanel() {
                 <TableBody>
                   {filtered.map((sub) => (
                     <TableRow key={sub.id} className="hover:bg-slate-50/60 transition-colors">
-                      <TableCell className="max-w-[300px]">
-                        <span className="font-mono text-[10px] font-black text-[color:var(--color-gb-red)]">
+                      <TableCell className="max-w-75">
+                        <span className="font-mono text-[10px] font-black text-gb-red">
                           {sub.id}
                         </span>
                         <p className="mt-0.5 text-xs font-bold text-slate-900 leading-snug line-clamp-2">
@@ -475,10 +483,10 @@ export function ManuscriptPipelinePanel() {
                           <div className="h-1.5 w-12 rounded-full bg-slate-100 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${sub.score >= 80
-                                  ? "bg-emerald-500"
-                                  : sub.score >= 60
-                                    ? "bg-amber-500"
-                                    : "bg-red-500"
+                                ? "bg-emerald-500"
+                                : sub.score >= 60
+                                  ? "bg-amber-500"
+                                  : "bg-red-500"
                                 }`}
                               style={{ width: `${sub.score}%` }}
                             />
@@ -605,7 +613,7 @@ export function ManuscriptPipelinePanel() {
             <button
               type="button"
               onClick={() => toast.success("Downloading manuscript package...")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
             >
               <Download className="h-3.5 w-3.5" />
               <span>Download All Files</span>

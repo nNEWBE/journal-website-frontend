@@ -11,9 +11,10 @@ import type { Submission } from "@/lib/data";
 
 interface DashboardStatsGridProps {
   submissions: Submission[];
+  isLoading?: boolean;
 }
 
-export function DashboardStatsGrid({ submissions }: DashboardStatsGridProps) {
+export function DashboardStatsGrid({ submissions, isLoading = false }: DashboardStatsGridProps) {
   const total = submissions.length;
   const underReview = submissions.filter(
     (s) => s.status === "Under Review" || s.status === "In Desk Review"
@@ -32,24 +33,28 @@ export function DashboardStatsGrid({ submissions }: DashboardStatsGridProps) {
         value={total}
         icon={Layers}
         accent="blue"
+        isLoading={isLoading}
       />
       <KpiStatCard
         label="In Peer Review"
         value={underReview}
         icon={Search}
         accent="indigo"
+        isLoading={isLoading}
       />
       <KpiStatCard
         label="Accepted / Published"
         value={accepted}
         icon={CheckCircle2}
         accent="emerald"
+        isLoading={isLoading}
       />
       <KpiStatCard
         label="Pending Revisions"
         value={revisions}
         icon={Clock}
         accent="amber"
+        isLoading={isLoading}
       />
     </div>
   );

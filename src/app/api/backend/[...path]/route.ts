@@ -94,6 +94,40 @@ async function tryRefreshToken(req: NextRequest): Promise<{
   }
 }
 
+interface CachedResponse {
+  data: any;
+  status: number;
+  contentType: string;
+  timestamp: number;
+}
+
+const proxyMemoryCache = new Map<string, CachedResponse>();
+const PROXY_CACHE_TTL_MS = 60 * 1000; // 60s in-memory TTL
+
+function isCacheablePublicEndpoint(endpoint: string): boolean {
+  return (
+    endpoint.startsWith("navigation") ||
+    endpoint.startsWith("content/") ||
+    endpoint.startsWith("editorial-board") ||
+    endpoint.startsWith("issues") ||
+    endpoint.startsWith("articles")
+  );
+}
+
+function invalidateProxyCache(endpoint: string) {
+  for (const key of proxyMemoryCache.keys()) {
+    if (
+      (endpoint.includes("content") && key.includes("content")) ||
+      (endpoint.includes("navigation") && key.includes("navigation")) ||
+      (endpoint.includes("board") && key.includes("editorial-board")) ||
+      (endpoint.includes("issue") && key.includes("issue")) ||
+      (endpoint.includes("article") && key.includes("article"))
+    ) {
+      proxyMemoryCache.delete(key);
+    }
+  }
+}
+
 /**
  * Makes a request to the Spring Boot backend with a 20-second timeout.
  * Returns null if the backend is unreachable (connection refused / timeout).
@@ -122,10 +156,29 @@ async function makeBackendRequest(
 
 async function handleProxy(req: NextRequest, endpoint: string, method: string) {
   try {
-    let accessToken = req.cookies.get("access_token")?.value;
-
     const url = new URL(req.url);
     const targetUrl = `${BACKEND_URL}/api/v1/${endpoint}${url.search}`;
+
+    // Fast-path: Return cached public GET response (< 1ms)
+    if (method === "GET" && isCacheablePublicEndpoint(endpoint)) {
+      const cached = proxyMemoryCache.get(targetUrl);
+      if (cached && Date.now() - cached.timestamp < PROXY_CACHE_TTL_MS) {
+        return NextResponse.json(cached.data, {
+          status: cached.status,
+          headers: {
+            "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+            "X-Proxy-Cache": "HIT",
+          },
+        });
+      }
+    }
+
+    // Invalidate cached endpoints on mutations
+    if (method !== "GET" && method !== "HEAD") {
+      invalidateProxyCache(endpoint);
+    }
+
+    let accessToken = req.cookies.get("access_token")?.value;
 
     const buildHeaders = (token: string | undefined): Record<string, string> => {
       const h: Record<string, string> = {};
@@ -207,6 +260,16 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
           if (text && text.trim().length > 0) {
             const data = JSON.parse(text);
             nextRes = NextResponse.json(data, { status: res.status });
+
+            // Populate proxy in-memory cache for public GET endpoints
+            if (method === "GET" && res.status === 200 && isCacheablePublicEndpoint(endpoint)) {
+              proxyMemoryCache.set(targetUrl, {
+                data,
+                status: res.status,
+                contentType: resContentType,
+                timestamp: Date.now(),
+              });
+            }
           } else {
             nextRes = new NextResponse(null, { status: res.status });
           }
@@ -225,6 +288,18 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
       // updates its stored HttpOnly cookies automatically
       for (const cookieHeader of refreshCookies) {
         nextRes.headers.append("Set-Cookie", cookieHeader);
+      }
+
+      // Add edge and client caching for public static GET endpoints (independent of login cookies)
+      if (
+        method === "GET" &&
+        res.status === 200 &&
+        isCacheablePublicEndpoint(endpoint)
+      ) {
+        nextRes.headers.set(
+          "Cache-Control",
+          "public, max-age=60, stale-while-revalidate=300"
+        );
       }
 
       return nextRes;

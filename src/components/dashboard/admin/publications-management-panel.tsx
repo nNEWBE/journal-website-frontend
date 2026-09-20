@@ -52,10 +52,16 @@ function getCoverImage(article: Article): string {
   return "/covers/medical.png";
 }
 
+let publicationsCache: {
+  articles: Article[];
+  issues: IssueData[];
+  timestamp: number;
+} | null = null;
+
 export function PublicationsManagementPanel() {
-  const [articlesList, setArticlesList] = useState<Article[]>(initialArticles);
-  const [issuesList, setIssuesList] = useState<IssueData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [articlesList, setArticlesList] = useState<Article[]>(() => publicationsCache?.articles || initialArticles);
+  const [issuesList, setIssuesList] = useState<IssueData[]>(() => publicationsCache?.issues || []);
+  const [loading, setLoading] = useState<boolean>(!publicationsCache);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
 
@@ -74,12 +80,21 @@ export function PublicationsManagementPanel() {
   const [citationFormat, setCitationFormat] = useState<"apa" | "harvard" | "vancouver" | "bibtex">("apa");
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
 
-  // Fetch publications from API or merge with defaults
+  // Fetch publications from API or merge with defaults (with SWR caching)
   const loadPublications = async (isManualRefresh = false) => {
-    if (isManualRefresh) {
+    const hasCache = !!publicationsCache;
+    if (hasCache && !isManualRefresh) {
+      setArticlesList(publicationsCache!.articles);
+      setIssuesList(publicationsCache!.issues);
+      setLoading(false);
+      if (Date.now() - publicationsCache!.timestamp < 60000) {
+        return;
+      }
       setIsRefreshing(true);
-    } else {
+    } else if (!hasCache) {
       setLoading(true);
+    } else {
+      setIsRefreshing(true);
     }
 
     try {
@@ -88,6 +103,9 @@ export function PublicationsManagementPanel() {
         articlesApi.list({ size: 100 }),
         issuesApi.list(),
       ]);
+
+      let finalArticles = initialArticles;
+      let finalIssues: IssueData[] = [];
 
       if (artRes.status === "fulfilled" && artRes.value?.content && artRes.value.content.length > 0) {
         // Harmonize backend articles with fallback data if needed
@@ -118,19 +136,25 @@ export function PublicationsManagementPanel() {
 
         // Merge: keep all backend articles, plus any initial static articles not yet in backend
         const existingSlugs = new Set(backendArticles.map((b) => b.slug));
-        const merged = [
+        finalArticles = [
           ...backendArticles,
           ...initialArticles.filter((init) => !existingSlugs.has(init.slug)),
         ];
-        setArticlesList(merged);
+        setArticlesList(finalArticles);
       } else {
-        // If backend returned empty or errored, use initialArticles
         setArticlesList(initialArticles);
       }
 
       if (issRes.status === "fulfilled" && Array.isArray(issRes.value)) {
-        setIssuesList(issRes.value);
+        finalIssues = issRes.value;
+        setIssuesList(finalIssues);
       }
+
+      publicationsCache = {
+        articles: finalArticles,
+        issues: finalIssues,
+        timestamp: Date.now(),
+      };
     } catch (err) {
       console.warn("Using offline publications repository:", err);
       setArticlesList(initialArticles);
@@ -443,7 +467,7 @@ export function PublicationsManagementPanel() {
           href="/articles"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[color:var(--color-gb-blue)] hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-gb-blue hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer"
         >
           <ExternalLink className="h-3.5 w-3.5" />
           <span>View Public Archive</span>
@@ -685,7 +709,7 @@ export function PublicationsManagementPanel() {
           </p>
           <button
             onClick={resetFilters}
-            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[color:var(--color-gb-blue)] hover:bg-blue-700 rounded-xl transition-all cursor-pointer shadow-xs"
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gb-blue hover:bg-blue-700 rounded-xl transition-all cursor-pointer shadow-xs"
           >
             Clear All Filters
           </button>
@@ -698,12 +722,12 @@ export function PublicationsManagementPanel() {
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4 w-12">#</th>
-                  <th className="py-3 px-4 min-w-[320px]">Publication Title & DOI</th>
-                  <th className="py-3 px-4 min-w-[200px]">Authors & Department</th>
-                  <th className="py-3 px-4 min-w-[150px]">Track & Type</th>
-                  <th className="py-3 px-4 min-w-[140px]">Issue / Date</th>
-                  <th className="py-3 px-4 min-w-[130px] text-center">Readership</th>
-                  <th className="py-3 px-4 text-right min-w-[140px]">Actions</th>
+                  <th className="py-3 px-4 min-w-75">Publication Title & DOI</th>
+                  <th className="py-3 px-4 min-w-50">Authors & Department</th>
+                  <th className="py-3 px-4 min-w-40">Track & Type</th>
+                  <th className="py-3 px-4 min-w-30">Issue / Date</th>
+                  <th className="py-3 px-4 min-w-30 text-center">Readership</th>
+                  <th className="py-3 px-4 text-right min-w-30">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -772,7 +796,7 @@ export function PublicationsManagementPanel() {
                       {/* 4. Track & Type */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-1">
-                          <span className="inline-block px-2 py-0.5 rounded-md bg-blue-50 text-[color:var(--color-gb-blue)] text-[11px] font-bold">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-blue-50 text-gb-blue text-[11px] font-bold">
                             {article.topic}
                           </span>
                           <div>
@@ -849,7 +873,7 @@ export function PublicationsManagementPanel() {
               >
                 <div className="space-y-3">
                   {/* Card Cover Image */}
-                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-slate-950 border border-slate-200/80 group-hover:border-blue-400 transition-all shadow-2xs">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 border border-slate-200/80 group-hover:border-blue-400 transition-all shadow-2xs">
                     <Image
                       src={getCoverImage(article)}
                       alt={article.title}
@@ -857,7 +881,7 @@ export function PublicationsManagementPanel() {
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
                     <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5">
                       <span className="px-2 py-0.5 rounded-md bg-white/95 backdrop-blur-xs text-slate-800 text-[10px] font-bold shadow-2xs">
                         {article.type}
@@ -971,7 +995,7 @@ export function PublicationsManagementPanel() {
                 <Link
                   href={`/articles/${inspectedArticle.slug}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer"
                 >
                   <span>Open Public Article</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
@@ -992,7 +1016,7 @@ export function PublicationsManagementPanel() {
                 sizes="(max-width: 768px) 100vw, 700px"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
               <div className="absolute bottom-3.5 left-4 right-4 flex items-center justify-between gap-2 flex-wrap">
                 <span className="px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-xs text-slate-900 text-xs font-bold shadow-xs">
                   {inspectedArticle.topic}
@@ -1006,7 +1030,7 @@ export function PublicationsManagementPanel() {
 
             {/* Badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-[color:var(--color-gb-blue)] text-xs font-bold">
+              <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-gb-blue text-xs font-bold">
                 {inspectedArticle.topic}
               </span>
               <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold">
@@ -1098,7 +1122,7 @@ export function PublicationsManagementPanel() {
                       className={cn(
                         "px-2 py-0.5 text-[10px] font-bold rounded uppercase cursor-pointer transition-all",
                         citationFormat === fmt
-                          ? "bg-[color:var(--color-gb-blue)] text-white shadow-xs"
+                          ? "bg-gb-blue text-white shadow-xs"
                           : "text-slate-500 hover:text-slate-800"
                       )}
                     >

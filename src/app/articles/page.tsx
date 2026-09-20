@@ -32,7 +32,7 @@ import {
 import { ArticlesHero } from "@/components/articles/articles-hero";
 import { getBackendUrl } from "@/lib/backend-url";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Articles & Research Archive — GB Journal of Research",
@@ -54,7 +54,7 @@ async function fetchArticlesFromDb(
     query.set("size", "100");
 
     const res = await fetch(`${backendUrl}/api/v1/articles?${query.toString()}`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     if (!res.ok) return [];

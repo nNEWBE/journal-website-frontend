@@ -79,6 +79,7 @@ export interface KpiStatCardProps {
   badge?: string;
   sublabel?: string;
   className?: string;
+  isLoading?: boolean;
 }
 
 export function KpiStatCard({
@@ -87,6 +88,7 @@ export function KpiStatCard({
   icon: Icon,
   accent = "blue",
   className,
+  isLoading = false,
 }: KpiStatCardProps) {
   const cfg = KPI_ACCENT_MAP[accent] || KPI_ACCENT_MAP.blue;
 
@@ -122,9 +124,13 @@ export function KpiStatCard({
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate font-sans">
             {label}
           </p>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-academic tabular-nums mt-0.5 leading-none">
-            {typeof value === "number" ? value.toLocaleString() : value}
-          </p>
+          {isLoading ? (
+            <div className="h-7 w-12 rounded-md bg-slate-200/80 animate-pulse mt-1" />
+          ) : (
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-academic tabular-nums mt-0.5 leading-none">
+              {typeof value === "number" ? value.toLocaleString() : value}
+            </p>
+          )}
         </div>
       </div>
     </div>

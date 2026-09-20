@@ -35,7 +35,7 @@ import { articles, findArticle } from "@/lib/data";
 import type { Article } from "@/lib/data";
 import { getBackendUrl } from "@/lib/backend-url";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -65,7 +65,7 @@ async function fetchArticleFromDb(slug: string): Promise<Article | null> {
     const backendUrl = getBackendUrl();
     const res = await fetch(
       `${backendUrl}/api/v1/articles/${encodeURIComponent(slug)}`,
-      { cache: "no-store" }
+      { next: { revalidate: 60 } }
     );
 
     if (!res.ok) {
@@ -133,7 +133,7 @@ async function getRelatedArticlesFromDb(
     const backendUrl = getBackendUrl();
     const res = await fetch(
       `${backendUrl}/api/v1/articles?topic=${encodeURIComponent(topic)}&size=4`,
-      { cache: "no-store" }
+      { next: { revalidate: 60 } }
     );
     if (!res.ok) return [];
     const data = await res.json();

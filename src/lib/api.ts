@@ -420,6 +420,11 @@ export interface CreateSubmissionPayload {
     orcid?: string;
     authorOrder: number;
     corresponding: boolean;
+    bankName?: string;
+    accountNumber?: string;
+    accountHolderName?: string;
+    branchName?: string;
+    routingNumber?: string;
   }[];
 }
 
@@ -930,7 +935,7 @@ export interface PageContentDTO {
 export const contentApi = {
   getPublished: async (pageKey: string): Promise<PageContentDTO[]> => {
     return request<PageContentDTO[]>(`/api/v1/content/${pageKey}`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
   },
 

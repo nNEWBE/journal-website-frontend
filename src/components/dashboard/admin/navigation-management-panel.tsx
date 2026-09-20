@@ -44,9 +44,11 @@ import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wr
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { cn } from "@/lib/utils";
 
+let navAdminCache: { data: NavItem[]; timestamp: number } | null = null;
+
 export function NavigationManagementPanel() {
   const { navItems, setNavItems, resetNavItems } = useNavigation();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!navAdminCache);
   const [isSavingDb, setIsSavingDb] = useState(false);
 
   // Expanded items state in tree
@@ -60,12 +62,21 @@ export function NavigationManagementPanel() {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Load from backend DB
-  const loadFromDb = async () => {
-    try {
+  // Load from backend DB (with SWR caching)
+  const loadFromDb = async (force = false) => {
+    if (navAdminCache && !force) {
+      setNavItems(navAdminCache.data);
+      setLoading(false);
+      if (Date.now() - navAdminCache.timestamp < 60000) {
+        return;
+      }
+    } else if (!navAdminCache) {
       setLoading(true);
+    }
+    try {
       const data = await navigationApi.getAllAdmin();
       if (Array.isArray(data) && data.length > 0) {
+        navAdminCache = { data, timestamp: Date.now() };
         setNavItems(data);
       }
     } catch (err: any) {
@@ -86,6 +97,7 @@ export function NavigationManagementPanel() {
       setIsSavingDb(true);
       const saved = await navigationApi.saveBulk(nextItems);
       if (Array.isArray(saved) && saved.length > 0) {
+        navAdminCache = { data: saved, timestamp: Date.now() };
         setNavItems(saved);
         broadcastNavUpdate(saved);
       }
@@ -506,7 +518,7 @@ export function NavigationManagementPanel() {
 
         <button
           onClick={handleOpenCreateItem}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
         >
           <Plus className="h-4 w-4" />
           <span>Add Nav Item</span>
@@ -545,7 +557,7 @@ export function NavigationManagementPanel() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-extrabold text-[color:var(--color-gb-ink)]">
+            <h3 className="text-sm font-extrabold text-gb-ink">
               Menu Items Sequence & Hierarchy
             </h3>
             <span className="text-xs text-slate-400">
@@ -568,7 +580,7 @@ export function NavigationManagementPanel() {
                   "rounded-xl border bg-white shadow-2xs transition-all overflow-hidden",
                   isHidden
                     ? "border-slate-200/80 bg-slate-50/60 opacity-60"
-                    : "border-[color:var(--color-gb-border)] hover:border-slate-300"
+                    : "border-gb-border hover:border-slate-300"
                 )}
               >
                 {/* Top Row Header */}
@@ -600,7 +612,7 @@ export function NavigationManagementPanel() {
                     {/* Label & Details */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-bold text-[color:var(--color-gb-ink)]">
+                        <h4 className="text-sm font-bold text-gb-ink">
                           {item.label}
                         </h4>
                         {hasDropdown ? (
@@ -642,7 +654,7 @@ export function NavigationManagementPanel() {
                       >
                         <MoveUp className="h-3.5 w-3.5" />
                       </button>
-                      <div className="w-[1px] h-4 bg-slate-200" />
+                      <div className="w-px h-4 bg-slate-200" />
                       <button
                         onClick={() => handleMoveItem(index, "down")}
                         disabled={index === navItems.length - 1 || isSavingDb}
@@ -672,7 +684,7 @@ export function NavigationManagementPanel() {
                     <button
                       onClick={() => handleOpenEditItem(item)}
                       disabled={isSavingDb}
-                      className="p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-blue-50 hover:text-[color:var(--color-gb-blue)] hover:border-blue-200 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-blue-50 hover:text-gb-blue hover:border-blue-200 transition-colors cursor-pointer"
                       title="Edit Nav Item"
                     >
                       <Edit className="h-3.5 w-3.5" />
@@ -682,7 +694,7 @@ export function NavigationManagementPanel() {
                     <button
                       onClick={() => handleOpenAddSubItem(itemKey)}
                       disabled={isSavingDb}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 text-xs font-bold text-[color:var(--color-gb-blue)] hover:bg-[color:var(--color-gb-blue)] hover:text-white transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 text-xs font-bold text-gb-blue hover:bg-gb-blue hover:text-white transition-all cursor-pointer"
                       title="Add sub-link inside this menu"
                     >
                       <Plus className="h-3 w-3" />
@@ -808,7 +820,7 @@ export function NavigationManagementPanel() {
                               <button
                                 onClick={() => handleOpenEditSubItem(itemKey, sub)}
                                 disabled={isSavingDb}
-                                className="p-1.5 rounded-md border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-[color:var(--color-gb-blue)] cursor-pointer"
+                                className="p-1.5 rounded-md border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-gb-blue cursor-pointer"
                                 title="Edit Sub-Link"
                               >
                                 <Edit className="h-3 w-3" />
@@ -863,7 +875,7 @@ export function NavigationManagementPanel() {
               type="submit"
               form="nav-item-form"
               disabled={isSavingDb || !isItemDirty}
-              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isSavingDb && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>{editingItem ? "Save to Database" : "Create Nav Item"}</span>
@@ -882,7 +894,7 @@ export function NavigationManagementPanel() {
               value={formItemLabel}
               onChange={(e) => setFormItemLabel(e.target.value)}
               placeholder="e.g. About & Governance, Conferences, Resources"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-medium text-slate-900 outline-none focus:border-gb-blue focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -896,7 +908,7 @@ export function NavigationManagementPanel() {
               value={formItemHref}
               onChange={(e) => setFormItemHref(e.target.value)}
               placeholder="e.g. /about, /conferences, https://..."
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-mono text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-mono text-slate-900 outline-none focus:border-gb-blue focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -937,7 +949,7 @@ export function NavigationManagementPanel() {
                   value={formDropdownHeader}
                   onChange={(e) => setFormDropdownHeader(e.target.value)}
                   placeholder="e.g. Overview & Governance"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)]"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-gb-blue"
                 />
               </div>
 
@@ -951,7 +963,7 @@ export function NavigationManagementPanel() {
                     value={formFooterLabel}
                     onChange={(e) => setFormFooterLabel(e.target.value)}
                     placeholder="e.g. View full journal overview"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)]"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-gb-blue"
                   />
                 </div>
                 <div>
@@ -963,7 +975,7 @@ export function NavigationManagementPanel() {
                     value={formFooterHref}
                     onChange={(e) => setFormFooterHref(e.target.value)}
                     placeholder="e.g. /about"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)]"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono text-slate-900 outline-none focus:border-gb-blue"
                   />
                 </div>
               </div>
@@ -993,7 +1005,7 @@ export function NavigationManagementPanel() {
               type="submit"
               form="nav-sub-item-form"
               disabled={isSavingDb || !isSubDirty}
-              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isSavingDb && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>{editingSubItem ? "Save Sub-Link to DB" : "Add Sub-Link to DB"}</span>
@@ -1013,7 +1025,7 @@ export function NavigationManagementPanel() {
                 value={formSubLabel}
                 onChange={(e) => setFormSubLabel(e.target.value)}
                 placeholder="e.g. Editorial Board"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)]"
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-medium text-slate-900 outline-none focus:border-gb-blue"
               />
             </div>
 
@@ -1027,7 +1039,7 @@ export function NavigationManagementPanel() {
                 value={formSubHref}
                 onChange={(e) => setFormSubHref(e.target.value)}
                 placeholder="e.g. /editorial-board"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-mono text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)]"
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-mono text-slate-900 outline-none focus:border-gb-blue"
               />
             </div>
           </div>
@@ -1041,7 +1053,7 @@ export function NavigationManagementPanel() {
               value={formSubDesc}
               onChange={(e) => setFormSubDesc(e.target.value)}
               placeholder="e.g. Academic leadership &amp; discipline chairs"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)]"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-gb-blue"
             />
           </div>
 
@@ -1164,7 +1176,7 @@ export function NavigationManagementPanel() {
             <button
               onClick={handleConfirmReset}
               disabled={isSavingDb}
-              className="rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              className="rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
               {isSavingDb && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>Restore Database Defaults</span>

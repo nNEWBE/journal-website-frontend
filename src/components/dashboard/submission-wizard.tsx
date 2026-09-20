@@ -83,10 +83,11 @@ export function SubmissionWizard() {
 
   const completeness = useMemo(() => {
     let score = 0;
-    if (form.type) score += 15;
-    if (form.title.trim().length >= 10) score += 20;
-    if (form.abstract.trim().length >= 30) score += 20;
-    if (authors.length > 0) score += 15;
+    if (form.type) score += 10;
+    if (form.title.trim().length >= 10) score += 15;
+    if (form.abstract.trim().length >= 30) score += 15;
+    if (form.keywords.trim().length >= 3) score += 15;
+    if (authors.length > 0 && authors.every((a) => a.name.trim() && a.email.trim())) score += 15;
     if (form.files.length > 0) score += 15;
 
     const decs = form.declarations;
@@ -113,7 +114,68 @@ export function SubmissionWizard() {
     }));
   }
 
+  function validateCurrentStep(currentStep: number): boolean {
+    if (currentStep === 0) {
+      if (!form.title.trim()) {
+        toast.error("Manuscript Title Required", {
+          description: "Please provide a descriptive title for your manuscript.",
+        });
+        return false;
+      }
+      if (!form.abstract.trim()) {
+        toast.error("Abstract Required", {
+          description: "Please provide a structured abstract (150-300 words).",
+        });
+        return false;
+      }
+      if (!form.keywords.trim()) {
+        toast.error("Keywords are Mandatory", {
+          description: "Please enter at least 1-3 comma-separated keywords for manuscript indexing.",
+        });
+        return false;
+      }
+    }
+
+    if (currentStep === 1) {
+      if (authors.length === 0) {
+        toast.error("Author Required", {
+          description: "Please add at least one contributing author.",
+        });
+        return false;
+      }
+      const missingEmailOrName = authors.find((a) => !a.name.trim() || !a.email.trim());
+      if (missingEmailOrName) {
+        toast.error("Incomplete Author Details", {
+          description: "Every author must have a valid full name and academic email.",
+        });
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function handleNextStep() {
+    if (validateCurrentStep(step)) {
+      setStep((prev) => Math.min(wizardSteps.length - 1, prev + 1));
+    }
+  }
+
+  function handleStepClick(idx: number) {
+    if (idx <= step) {
+      setStep(idx);
+    } else {
+      if (validateCurrentStep(step)) {
+        setStep(idx);
+      }
+    }
+  }
+
   async function handleSubmit() {
+    if (!validateCurrentStep(0) || !validateCurrentStep(1)) {
+      return;
+    }
+
     setIsSubmitting(true);
     const toastId = toast.loading("Submitting manuscript...", {
       description: "Creating submission draft and registering metadata...",
@@ -128,12 +190,17 @@ export function SubmissionWizard() {
         topic: form.topic || "General Medicine",
         copyrightAgreed: true,
         authors: authors.map((a, idx) => ({
-          name: a.name,
-          email: a.email,
-          affiliation: a.institution,
-          orcid: a.orcid,
+          name: a.name.trim(),
+          email: a.email.trim(),
+          affiliation: a.institution?.trim() || "Gono Bishwabidyalay",
+          orcid: a.orcid?.trim() || undefined,
           authorOrder: idx + 1,
           corresponding: !!a.isCorresponding,
+          bankName: a.bankName?.trim() || undefined,
+          accountNumber: a.accountNumber?.trim() || undefined,
+          accountHolderName: a.accountHolderName?.trim() || undefined,
+          branchName: a.branchName?.trim() || undefined,
+          routingNumber: a.routingNumber?.trim() || undefined,
         })),
       });
 
@@ -244,7 +311,7 @@ export function SubmissionWizard() {
             return (
               <button
                 key={s.id}
-                onClick={() => setStep(idx)}
+                onClick={() => handleStepClick(idx)}
                 className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${isActive
                   ? "bg-gb-blue text-white shadow-xs"
                   : isCompleted
@@ -315,7 +382,7 @@ export function SubmissionWizard() {
           {step < wizardSteps.length - 1 && (
             <button
               type="button"
-              onClick={() => setStep(step + 1)}
+              onClick={handleNextStep}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
             >
               Next Step

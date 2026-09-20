@@ -62,25 +62,23 @@ export function StepArticleInfo({ form, onChange }: StepArticleInfoProps) {
                 key={t}
                 type="button"
                 onClick={() => onChange("type", t)}
-                className={`group flex flex-col justify-between rounded-xl border p-4 text-left transition-all duration-200 cursor-pointer ${
-                  isSelected
-                    ? "border-[color:var(--color-gb-blue)] bg-blue-50/40 shadow-xs ring-1 ring-[color:var(--color-gb-blue)]"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                }`}
+                className={`group flex flex-col justify-between rounded-xl border p-4 text-left transition-all duration-200 cursor-pointer ${isSelected
+                  ? "border-gb-blue bg-blue-50/40 shadow-xs ring-1 ring-gb-blue"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  }`}
               >
                 <div>
                   <div className="flex items-center justify-between">
                     <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                        isSelected
-                          ? "bg-[color:var(--color-gb-blue)] text-white"
-                          : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
-                      }`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${isSelected
+                        ? "bg-gb-blue text-white"
+                        : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                        }`}
                     >
                       <IconComponent className="h-4 w-4" />
                     </span>
                     {isSelected && (
-                      <Check className="h-4 w-4 text-[color:var(--color-gb-blue)]" />
+                      <Check className="h-4 w-4 text-gb-blue" />
                     )}
                   </div>
                   <h4 className="mt-3 text-sm font-bold text-slate-900">{t}</h4>
@@ -117,7 +115,7 @@ export function StepArticleInfo({ form, onChange }: StepArticleInfoProps) {
           value={form.title}
           onChange={(e) => onChange("title", e.target.value)}
           placeholder="e.g. Primary Healthcare Access & Community Referral Patterns in Rural Savar"
-          className="w-full rounded-xl border border-slate-300 p-3 text-sm font-semibold text-slate-900 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-1 focus:ring-[color:var(--color-gb-blue)] transition-colors"
+          className="w-full rounded-xl border border-slate-300 p-3 text-sm font-semibold text-slate-900 outline-none focus:border-gb-blue focus:ring-1 focus:ring-gb-blue transition-colors"
         />
       </div>
 
@@ -131,22 +129,35 @@ export function StepArticleInfo({ form, onChange }: StepArticleInfoProps) {
           value={form.abstract}
           onChange={(e) => onChange("abstract", e.target.value)}
           placeholder="Provide background, methods, key results, and conclusion (150–300 words)..."
-          className="w-full rounded-xl border border-slate-300 p-3 text-sm font-normal text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-1 focus:ring-[color:var(--color-gb-blue)] transition-colors resize-y"
+          className="w-full rounded-xl border border-slate-300 p-3 text-sm font-normal text-slate-800 outline-none focus:border-gb-blue focus:ring-1 focus:ring-gb-blue transition-colors resize-y"
         />
       </div>
 
       {/* Keywords */}
       <div>
-        <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
-          Keywords (comma separated)
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+            Keywords (comma separated) <span className="text-red-500">*</span>
+          </label>
+          {form.keywords.trim() && (
+            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+              {form.keywords.split(",").filter((k) => k.trim().length > 0).length} keywords identified
+            </span>
+          )}
+        </div>
         <input
           type="text"
           value={form.keywords}
           onChange={(e) => onChange("keywords", e.target.value)}
-          placeholder="Public Health, Savar, Community Health, Healthcare Access"
-          className="w-full rounded-xl border border-slate-300 p-3 text-xs font-semibold text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] transition-colors"
+          placeholder="e.g. Primary Healthcare, Savar, Community Referral, Health Policy"
+          className={`w-full rounded-xl border p-3 text-xs font-semibold outline-none transition-colors ${!form.keywords.trim()
+            ? "border-slate-300 text-slate-800 focus:border-gb-blue"
+            : "border-blue-300 bg-blue-50/20 text-slate-900 focus:border-gb-blue"
+            }`}
         />
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          Mandatory for cross-referencing and indexing. Provide at least 3 to 6 keywords separated by commas.
+        </p>
       </div>
     </div>
   );

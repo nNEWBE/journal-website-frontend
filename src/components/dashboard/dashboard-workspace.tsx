@@ -381,6 +381,17 @@ function RowActionsDropdown({
   );
 }
 
+interface SubmissionsCacheEntry {
+  role: string;
+  data: Submission[];
+  timestamp: number;
+}
+export let globalSubmissionsCache: SubmissionsCacheEntry | null = null;
+
+export function invalidateSubmissionsCache() {
+  globalSubmissionsCache = null;
+}
+
 export function DashboardWorkspace({
   initialRole = "author",
   initialView = "analytics",
@@ -395,7 +406,7 @@ export function DashboardWorkspace({
 
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector((state) => state.auth.user);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => reduxUser || getSession());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -497,15 +508,22 @@ export function DashboardWorkspace({
       pathname.includes("/issues") ||
       pathname.includes("/board")
     ) {
-      return (currentUser?.role as Role) || "super-admin";
+      return (currentUser?.role as Role) || (reduxUser?.role as Role) || "super-admin";
     }
-    if (!mounted) return initialRole;
-    return (currentUser?.role as Role) || initialRole;
-  }, [pathname, currentUser?.role, initialRole, mounted]);
+    return (currentUser?.role as Role) || (reduxUser?.role as Role) || initialRole;
+  }, [pathname, currentUser?.role, reduxUser?.role, initialRole]);
 
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>(() => {
+    if (globalSubmissionsCache && globalSubmissionsCache.role === activeRole) {
+      return globalSubmissionsCache.data;
+    }
+    return [];
+  });
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(() => {
+    return !(globalSubmissionsCache && globalSubmissionsCache.role === activeRole && globalSubmissionsCache.data.length > 0);
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -539,8 +557,20 @@ export function DashboardWorkspace({
       }
     }
 
-    // Fetch real submissions from backend API
-    async function loadRealData() {
+    // Fetch real submissions from backend API (with SWR caching)
+    async function loadRealData(force = false) {
+      const hasCache = globalSubmissionsCache && globalSubmissionsCache.role === activeRole && globalSubmissionsCache.data.length > 0;
+      if (hasCache && !force) {
+        setSubmissions(globalSubmissionsCache!.data);
+        setIsDataLoading(false);
+        // If fresh (< 45s), do not block UI with redundant network query
+        if (Date.now() - globalSubmissionsCache!.timestamp < 45000) {
+          return;
+        }
+      } else if (!hasCache) {
+        setIsDataLoading(true);
+      }
+
       try {
         let liveSubs: Submission[] = [];
         if (activeRole === "reviewer") {
@@ -560,8 +590,15 @@ export function DashboardWorkspace({
           }
         }
         setSubmissions(liveSubs);
+        globalSubmissionsCache = {
+          role: activeRole,
+          data: liveSubs,
+          timestamp: Date.now(),
+        };
       } catch (err) {
         console.error("Failed to load submissions from API:", err);
+      } finally {
+        setIsDataLoading(false);
       }
     }
     loadRealData();
@@ -1805,7 +1842,10 @@ export function DashboardWorkspace({
 
                   <div>
                     <div className="p-4">
-                      <DashboardStatsGrid submissions={activeRole === "reviewer" || activeRole === "author" ? filtered : submissions} />
+                      <DashboardStatsGrid
+                        submissions={activeRole === "reviewer" || activeRole === "author" ? filtered : submissions}
+                        isLoading={isDataLoading && submissions.length === 0}
+                      />
                     </div>
 
                     <div className="px-4 pb-6 space-y-4">
@@ -1828,7 +1868,7 @@ export function DashboardWorkspace({
                                   Manuscript Pipeline
                                 </h2>
                                 <p className="text-[10px] text-(--color-gb-muted)" suppressHydrationWarning>
-                                  {mounted ? `${filtered.length} record${filtered.length !== 1 ? "s" : ""}` : "Manuscripts"} · double-blind peer review
+                                  {mounted && !isDataLoading ? `${filtered.length} record${filtered.length !== 1 ? "s" : ""}` : "Manuscripts"} · double-blind peer review
                                 </p>
                               </div>
                             </div>
@@ -1853,10 +1893,11 @@ export function DashboardWorkspace({
                             </div>
                           </div>
 
-                          {!mounted ? (
+                          {!mounted || (isDataLoading && submissions.length === 0) ? (
                             <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center" suppressHydrationWarning>
-                              <div className="h-5 w-5 rounded-full border-2 border-gb-blue border-t-transparent animate-spin mb-2" />
-                              <span>Synchronizing manuscript pipeline...</span>
+                              <div className="h-6 w-6 rounded-full border-2 border-gb-blue border-t-transparent animate-spin mb-3" />
+                              <span className="font-semibold text-slate-600">Loading manuscript pipeline…</span>
+                              <span className="text-[11px] text-slate-400 mt-0.5">Fetching latest records from research repository</span>
                             </div>
                           ) : filtered.length === 0 ? (
                             <div className="py-14 px-6 flex flex-col items-center justify-center text-center">

@@ -56,6 +56,21 @@ export type SubmissionReview = {
   reviewSubmittedAt?: string;
 };
 
+export type SubmissionAuthor = {
+  id?: number;
+  name: string;
+  email: string;
+  affiliation?: string;
+  orcid?: string;
+  authorOrder?: number;
+  corresponding?: boolean;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolderName?: string;
+  branchName?: string;
+  routingNumber?: string;
+};
+
 export type Submission = {
   id: string;
   rawId?: number;
@@ -65,6 +80,7 @@ export type Submission = {
   type: string;
   topic?: string;
   abstractText?: string;
+  keywords?: string;
   coverLetter?: string;
   author: string;
   status: string;
@@ -75,6 +91,7 @@ export type Submission = {
   score: number;
   files?: SubmissionFile[];
   reviews?: SubmissionReview[];
+  authors?: SubmissionAuthor[];
   submittingAuthor?: {
     id?: number;
     fullName?: string;

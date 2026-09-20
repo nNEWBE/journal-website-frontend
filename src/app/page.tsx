@@ -3,8 +3,7 @@ import { HomePageClient } from "@/components/home/home-page-client";
 import { getBackendUrl } from "@/lib/backend-url";
 import { type Article, type Issue } from "@/lib/data";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 async function fetchHomeData(): Promise<{
   sections: PageContentDTO[];
@@ -18,13 +17,13 @@ async function fetchHomeData(): Promise<{
 
   try {
     const [sectionsRes, articlesRes, currentIssueRes] = await Promise.all([
-      fetch(`${backendUrl}/api/v1/content/home`, { cache: "no-store" })
+      fetch(`${backendUrl}/api/v1/content/home`, { next: { revalidate: 60 } })
         .then((r) => (r.ok ? r.json() : []))
         .catch(() => []),
-      fetch(`${backendUrl}/api/v1/articles?size=20`, { cache: "no-store" })
+      fetch(`${backendUrl}/api/v1/articles?size=20`, { next: { revalidate: 60 } })
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
-      fetch(`${backendUrl}/api/v1/issues/current`, { cache: "no-store" })
+      fetch(`${backendUrl}/api/v1/issues/current`, { next: { revalidate: 60 } })
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
     ]);

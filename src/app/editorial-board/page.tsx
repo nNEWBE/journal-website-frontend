@@ -24,7 +24,7 @@ import { SectionEditorsGrid } from "@/components/editorial/section-editors-grid"
 import { AdvisoryCouncilSection } from "@/components/editorial/advisory-council-section";
 import { getBackendUrl } from "@/lib/backend-url";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Editorial Board & Governance — GB Journal of Research",
@@ -36,7 +36,7 @@ async function fetchBoardMembersFromDb(): Promise<BoardMember[]> {
   try {
     const backendUrl = getBackendUrl();
     const res = await fetch(`${backendUrl}/api/v1/editorial-board`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
     if (!res.ok) return [];
     return await res.json();
