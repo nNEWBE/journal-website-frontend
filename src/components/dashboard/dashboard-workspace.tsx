@@ -667,7 +667,7 @@ export function DashboardWorkspace({
           if (res && (res as any).content && Array.isArray((res as any).content)) {
             setSubmissions((res as any).content.map(mapDtoToSubmission));
           }
-        } catch {}
+        } catch { }
         return;
       } catch (err: any) {
         console.error("Failed to assign reviewer:", err);
@@ -784,7 +784,7 @@ export function DashboardWorkspace({
         if (assignments && Array.isArray(assignments)) {
           setSubmissions(assignments.map(mapDtoToSubmission));
         }
-      } catch {}
+      } catch { }
     } catch (err: any) {
       console.error("Failed to submit review:", err);
       toast.error(err?.message || "Failed to submit review.");
@@ -2220,11 +2220,11 @@ export function DashboardWorkspace({
 
             {/* Abstract */}
             {(selectedSubmission.abstractText || (selectedSubmission as any).abstract) && (
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Abstract
                 </h3>
-                <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200 wrap-break-word break-all">
                   {selectedSubmission.abstractText || (selectedSubmission as any).abstract}
                 </p>
               </div>

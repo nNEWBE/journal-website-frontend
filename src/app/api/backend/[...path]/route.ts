@@ -278,9 +278,16 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
         }
       } else {
         const buffer = await res.arrayBuffer();
+        const resHeaders: Record<string, string> = {
+          "content-type": resContentType || "application/octet-stream",
+        };
+        const disposition = res.headers.get("content-disposition");
+        if (disposition) {
+          resHeaders["content-disposition"] = disposition;
+        }
         nextRes = new NextResponse(buffer, {
           status: res.status,
-          headers: { "content-type": resContentType || "application/octet-stream" },
+          headers: resHeaders,
         });
       }
 

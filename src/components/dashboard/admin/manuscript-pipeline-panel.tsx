@@ -654,16 +654,61 @@ export function ManuscriptPipelinePanel() {
             </div>
 
             {/* Abstract */}
-            {(selectedSubmission as any).abstract && (
-              <div className="space-y-2">
+            {((selectedSubmission as any).abstractText || (selectedSubmission as any).abstract) && (
+              <div className="space-y-2 min-w-0">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Abstract
                 </h3>
-                <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  {(selectedSubmission as any).abstract}
+                <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200 wrap-break-word break-all whitespace-pre-wrap">
+                  {(selectedSubmission as any).abstractText || (selectedSubmission as any).abstract}
                 </p>
               </div>
             )}
+
+            {/* Attached Documents */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                Attached Documents ({selectedSubmission.files?.length || 0})
+              </h3>
+              {selectedSubmission.files && selectedSubmission.files.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedSubmission.files.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 shrink-0">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {file.originalFilename || "Manuscript Document"}
+                          </p>
+                          <span className="text-[10px] text-slate-500">
+                            {file.fileType || "PDF"} {file.sizeBytes ? `• ${(file.sizeBytes / 1024).toFixed(0)} KB` : ""}
+                          </span>
+                        </div>
+                      </div>
+                      {file.downloadUrl && (
+                        <a
+                          href={file.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition-colors shrink-0"
+                        >
+                          <span>Open PDF</span>
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  No document files attached.
+                </p>
+              )}
+            </div>
 
             {/* Reviewers Assigned */}
             <div className="space-y-2">

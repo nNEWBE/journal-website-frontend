@@ -1088,7 +1088,7 @@ export function PublicationsManagementPanel() {
             {/* Abstract */}
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Abstract</p>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100 wrap-break-word break-all">
                 {inspectedArticle.abstract}
               </p>
             </div>

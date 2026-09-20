@@ -23,11 +23,11 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
     <article className="editorial-card relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 lg:p-8 shadow-sm">
       <div className="relative mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-gb-blue-deep)] text-white shadow-xs">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gb-blue-deep text-white shadow-xs">
             <BookmarkCheck className="h-4 w-4" />
           </span>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-gb-gold-dark)]">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-(--color-gb-gold-dark)">
               Editor&apos;s selection
             </p>
             <p className="mt-0.5 text-xs font-semibold text-slate-500">
@@ -44,7 +44,7 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
       <div className="relative grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
         <Link
           href={`/articles/${featuredArticle.slug}`}
-          className="group/cover relative block h-full min-h-[340px] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-950 shadow-md focus-ring md:min-h-full"
+          className="group/cover relative block h-full min-h-85 w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-950 shadow-md focus-ring md:min-h-full"
         >
           <Image
             src={featuredArticle.image || "/covers/medical.png"}
@@ -54,7 +54,7 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
             sizes="(max-width: 767px) 100vw, 240px"
             className="object-cover transition-transform duration-700 ease-out group-hover/cover:scale-[1.05]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
           <span className="absolute bottom-3.5 left-3.5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/80 px-3 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-md shadow-md">
             <FileText className="h-3 w-3 text-amber-300" />
             {featuredArticle.type}
@@ -75,7 +75,7 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
             href={`/articles/${featuredArticle.slug}`}
             className="focus-ring rounded-sm"
           >
-            <h2 className="font-academic text-[1.65rem] font-bold leading-[1.17] tracking-[-0.025em] text-[color:var(--color-gb-blue-deep)] transition-colors duration-200 hover:text-[color:var(--color-gb-blue)] sm:text-3xl">
+            <h2 className="font-academic text-[1.65rem] font-bold leading-[1.17] tracking-tight text-gb-blue-deep transition-colors duration-200 hover:text-gb-blue sm:text-3xl">
               {featuredArticle.title}
             </h2>
           </Link>
@@ -90,11 +90,11 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
           </div>
 
           <div className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 sm:p-4 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[9.5px] font-black uppercase tracking-wider text-[color:var(--color-gb-blue)]">
+            <div className="flex items-center gap-1.5 text-[9.5px] font-black uppercase tracking-wider text-gb-blue">
               <Quote className="h-3.5 w-3.5 rotate-180" />
               Abstract Summary
             </div>
-            <p className="line-clamp-3 text-[12.5px] leading-relaxed text-slate-600 font-normal italic">
+            <p className="line-clamp-3 text-[12.5px] leading-relaxed text-slate-600 font-normal italic wrap-break-word break-all">
               &ldquo;{featuredArticle.abstract}&rdquo;
             </p>
           </div>
@@ -124,12 +124,12 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
                   className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
                 >
                   <div className="flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-                    <span className="text-sm font-black text-[color:var(--color-gb-blue-deep)]">
+                    <Icon className="h-3.5 w-3.5 text-gb-blue" />
+                    <span className="text-sm font-black text-gb-blue-deep">
                       {metric.value}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                  <p className="mt-0.5 text-[9px] font-bold uppercase tracking-widest text-slate-400">
                     {metric.label}
                   </p>
                 </div>
@@ -145,7 +145,7 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
               {featuredArticle.pdf && (
                 <a
                   href={featuredArticle.pdf}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-[11px] font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-xs hover:border-slate-300 transition-colors focus-ring"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-[11px] font-extrabold text-gb-blue-deep shadow-xs hover:border-slate-300 transition-colors focus-ring"
                   download
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -154,7 +154,7 @@ export function FeaturedArticleCard({ featuredArticle }: FeaturedArticleCardProp
               )}
               <Link
                 href={`/articles/${featuredArticle.slug}`}
-                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[color:var(--color-gb-blue-deep)] px-5 text-[11px] font-extrabold text-white shadow-xs hover:bg-[color:var(--color-gb-blue)] transition-colors focus-ring"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-gb-blue-deep px-5 text-[11px] font-extrabold text-white shadow-sm hover:bg-gb-blue transition-colors focus-ring"
               >
                 Read article
                 <ArrowUpRight className="h-3.5 w-3.5" />

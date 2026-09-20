@@ -101,7 +101,7 @@ export function CustomDrawer({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="fixed inset-0 z-[999999] flex justify-end overflow-hidden"
+          className="fixed inset-0 z-999999 flex justify-end overflow-hidden"
         >
           {/* Backdrop */}
           <div
@@ -162,7 +162,7 @@ export function CustomDrawer({
             <div
               data-lenis-prevent="true"
               className={cn(
-                "flex-1 min-h-0 overflow-y-auto p-6 text-slate-800 text-xs drawer-scroll overscroll-contain",
+                "flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6 text-slate-800 text-xs drawer-scroll overscroll-contain",
                 contentClassName
               )}
             >

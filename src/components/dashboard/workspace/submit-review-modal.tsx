@@ -87,9 +87,9 @@ export function SubmitReviewModal({
         </span>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-5 text-xs">
+      <form onSubmit={handleSubmit} className="space-y-5 text-xs min-w-0">
         {/* Manuscript Card */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3 min-w-0 overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
               <FileText className="h-3.5 w-3.5 text-blue-600" />
@@ -100,14 +100,16 @@ export function SubmitReviewModal({
             </span>
           </div>
 
-          <h4 className="font-academic text-sm font-bold text-slate-900 leading-snug">
+          <h4 className="font-academic text-sm font-bold text-slate-900 leading-snug break-all wrap-anywhere">
             {submission.title}
           </h4>
 
           {submission.abstractText && (
-            <div className="pt-2 border-t border-slate-200/60">
+            <div className="pt-2 border-t border-slate-200/60 min-w-0">
               <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Abstract Summary</p>
-              <p className="text-slate-600 line-clamp-3 leading-relaxed">{submission.abstractText}</p>
+              <p className="text-slate-600 line-clamp-3 leading-relaxed wrap-break-word break-all whitespace-pre-wrap">
+                {submission.abstractText}
+              </p>
             </div>
           )}
 
