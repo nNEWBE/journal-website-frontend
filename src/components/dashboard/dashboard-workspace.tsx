@@ -220,46 +220,37 @@ function RowActionsDropdown({
   const [menuCoords, setMenuCoords] = useState<{
     top: number;
     left: number;
-    openUp: boolean;
-  }>({ top: 0, left: 0, openUp: false });
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  }>({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const updateCoords = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 224;
+      const menuHeight = 220;
       const spaceBelow = window.innerHeight - rect.bottom;
-      const openUp = spaceBelow < 220;
-      const top = openUp ? rect.top : rect.bottom + 6;
-      const left = rect.right - 208;
-      setMenuCoords({ top, left: Math.max(16, left), openUp });
+      const openUp = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
+
+      const left = Math.max(12, Math.min(window.innerWidth - menuWidth - 12, rect.right - menuWidth));
+      const top = openUp
+        ? Math.max(8, rect.top - menuHeight - 6)
+        : Math.min(window.innerHeight - menuHeight - 8, rect.bottom + 6);
+
+      setMenuCoords({ top, left });
     }
   };
 
   useEffect(() => {
     if (!isOpen) return;
 
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
     function handleScrollOrResize() {
       setIsOpen(false);
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("scroll", handleScrollOrResize, true);
     window.addEventListener("resize", handleScrollOrResize);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
     };
@@ -267,6 +258,7 @@ function RowActionsDropdown({
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!isOpen) {
       updateCoords();
     }
@@ -279,8 +271,11 @@ function RowActionsDropdown({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-ink) shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
-        title="Actions options"
+        className={cn(
+          "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
+          isOpen && "bg-slate-100 text-slate-700 ring-2 ring-slate-200"
+        )}
+        title="Manuscript Actions"
       >
         <MoreVertical className="h-4 w-4" />
       </button>
@@ -288,96 +283,120 @@ function RowActionsDropdown({
       {isOpen &&
         typeof window !== "undefined" &&
         createPortal(
-          <div
-            ref={dropdownRef}
-            style={{
-              position: "fixed",
-              top: menuCoords.openUp ? "auto" : `${menuCoords.top}px`,
-              bottom: menuCoords.openUp
-                ? `${window.innerHeight - menuCoords.top + 6}px`
-                : "auto",
-              left: `${menuCoords.left}px`,
-              zIndex: 999999,
-            }}
-            className="w-52 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95"
-          >
-            <p className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
-              Manuscript Actions
-            </p>
+          <>
+            {/* Transparent backdrop to capture outside clicks */}
+            <div
+              className="fixed inset-0 z-9998 bg-black/5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+              onContextMenu={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+            />
 
-            {canAdvance && (
-              <>
+            {/* Menu Container */}
+            <div
+              style={{
+                position: "fixed",
+                top: `${menuCoords.top}px`,
+                left: `${menuCoords.left}px`,
+                zIndex: 9999,
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-56 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-1.5 shadow-xl shadow-slate-900/10 ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100 text-left font-sans"
+            >
+              {/* Header inside menu showing manuscript identity */}
+              <div className="flex items-center gap-2.5 px-2.5 py-2 border-b border-slate-100 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-600 font-bold text-xs">
+                  <FileText className="h-4 w-4 text-slate-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+                    {sub.title}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+                    {sub.id} · {sub.author}
+                  </p>
+                </div>
+              </div>
+
+              {canAdvance && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      advanceSubmission(sub.id);
+                      setIsOpen(false);
+                    }}
+                    className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 transition-colors cursor-pointer text-left"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                    <span>Advance Stage</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerAssignReviewer(sub);
+                      setIsOpen(false);
+                    }}
+                    className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 transition-colors cursor-pointer text-left"
+                  >
+                    <UserCheck className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                    <span>Assign Reviewer</span>
+                  </button>
+                </>
+              )}
+
+              {(activeRole === "author" || sub.status === "Revision Requested") && (
                 <button
                   type="button"
                   onClick={() => {
-                    advanceSubmission(sub.id);
+                    triggerUploadRevision(sub);
                     setIsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 transition-colors cursor-pointer text-left"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  Advance Stage
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerAssignReviewer(sub);
-                    setIsOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <UserCheck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  Assign Reviewer
-                </button>
-              </>
-            )}
-
-            {(activeRole === "author" || sub.status === "Revision Requested") && (
-              <button
-                type="button"
-                onClick={() => {
-                  triggerUploadRevision(sub);
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <Send className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                Upload Revision
-              </button>
-            )}
-
-            {(activeRole === "reviewer" ||
-              sub.status === "Under Review" ||
-              activeRole === "editor" ||
-              activeRole === "super-admin") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerSubmitReview(sub.id);
-                    setIsOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  Submit Review
+                  <Send className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                  <span>Upload Revision</span>
                 </button>
               )}
 
-            <div className="my-1 border-t border-slate-100" />
+              {(activeRole === "reviewer" ||
+                sub.status === "Under Review" ||
+                activeRole === "editor" ||
+                activeRole === "super-admin") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerSubmitReview(sub.id);
+                      setIsOpen(false);
+                    }}
+                    className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 transition-colors cursor-pointer text-left"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                    <span>Submit Review</span>
+                  </button>
+                )}
 
-            <button
-              type="button"
-              onClick={() => {
-                triggerViewInfo(sub);
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <Eye className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              View Manuscript Info
-            </button>
-          </div>,
+              <div className="my-1 border-t border-slate-100" />
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerViewInfo(sub);
+                  setIsOpen(false);
+                }}
+                className="group flex w-full items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+              >
+                <Eye className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>View Manuscript Info</span>
+              </button>
+            </div>
+          </>,
           document.body
         )}
     </div>
@@ -1820,12 +1839,12 @@ export function DashboardWorkspace({
                         activeRole === "author"
                           ? PenLine
                           : activeRole === "reviewer"
-                          ? UserCheck
-                          : activeRole === "editor"
-                          ? ClipboardCheck
-                          : activeRole === "admin"
-                          ? ShieldCheck
-                          : Crown
+                            ? UserCheck
+                            : activeRole === "editor"
+                              ? ClipboardCheck
+                              : activeRole === "admin"
+                                ? ShieldCheck
+                                : Crown
                       }
                       borderAccentClassName={roleAccent.border}
                       badgeClassName={roleAccent.badge}
@@ -1866,240 +1885,240 @@ export function DashboardWorkspace({
                             />
 
                             {filtered.length === 0 ? (
-                            <div className="py-14 px-6 flex flex-col items-center justify-center text-center">
-                              {searchQuery.trim() ? (
-                                <div className="flex flex-col items-center max-w-sm">
-                                  <div className="relative mb-4 flex items-center justify-center">
-                                    <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200/80 border border-slate-200 flex items-center justify-center shadow-inner">
-                                      <SearchX className="h-7 w-7 text-gb-blue" />
+                              <div className="py-14 px-6 flex flex-col items-center justify-center text-center">
+                                {searchQuery.trim() ? (
+                                  <div className="flex flex-col items-center max-w-sm">
+                                    <div className="relative mb-4 flex items-center justify-center">
+                                      <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200/80 border border-slate-200 flex items-center justify-center shadow-inner">
+                                        <SearchX className="h-7 w-7 text-gb-blue" />
+                                      </div>
+                                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs text-[10px] font-bold">
+                                        0
+                                      </span>
                                     </div>
-                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs text-[10px] font-bold">
-                                      0
-                                    </span>
+                                    <h3 className="text-sm font-extrabold text-gb-ink font-academic tracking-tight">
+                                      No Manuscripts Found
+                                    </h3>
+                                    <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
+                                      No records match <span className="font-semibold text-slate-800 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">&quot;{searchQuery}&quot;</span>. Try checking for typos or searching by author name or manuscript ID.
+                                    </p>
+                                    <button
+                                      onClick={() => setSearchQuery("")}
+                                      className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gb-blue-soft border border-gb-blue/20 px-3.5 py-1.5 text-xs font-bold text-gb-blue hover:bg-gb-blue hover:text-white transition-all shadow-xs cursor-pointer"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                      Clear Search Filter
+                                    </button>
                                   </div>
-                                  <h3 className="text-sm font-extrabold text-gb-ink font-academic tracking-tight">
-                                    No Manuscripts Found
-                                  </h3>
-                                  <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
-                                    No records match <span className="font-semibold text-slate-800 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">&quot;{searchQuery}&quot;</span>. Try checking for typos or searching by author name or manuscript ID.
-                                  </p>
-                                  <button
-                                    onClick={() => setSearchQuery("")}
-                                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gb-blue-soft border border-gb-blue/20 px-3.5 py-1.5 text-xs font-bold text-gb-blue hover:bg-gb-blue hover:text-white transition-all shadow-xs cursor-pointer"
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                    Clear Search Filter
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-center max-w-md">
-                                  <div className="relative mb-4 flex items-center justify-center">
-                                    <div className="absolute -inset-2 rounded-3xl bg-gb-blue/5 blur-lg" />
-                                    <div className="relative h-16 w-16 rounded-2xl bg-linear-to-b from-white via-slate-50 to-slate-100 border border-slate-200/90 flex items-center justify-center shadow-[0_8px_24px_rgba(17,27,82,0.06)]">
-                                      {activeRole === "author" && <PenLine className="h-7 w-7 text-gb-blue" />}
-                                      {activeRole === "reviewer" && <UserCheck className="h-7 w-7 text-purple-600" />}
-                                      {activeRole === "editor" && <ClipboardCheck className="h-7 w-7 text-emerald-600" />}
-                                      {(activeRole === "admin" || activeRole === "super-admin") && <Inbox className="h-7 w-7 text-amber-600" />}
+                                ) : (
+                                  <div className="flex flex-col items-center max-w-md">
+                                    <div className="relative mb-4 flex items-center justify-center">
+                                      <div className="absolute -inset-2 rounded-3xl bg-gb-blue/5 blur-lg" />
+                                      <div className="relative h-16 w-16 rounded-2xl bg-linear-to-b from-white via-slate-50 to-slate-100 border border-slate-200/90 flex items-center justify-center shadow-[0_8px_24px_rgba(17,27,82,0.06)]">
+                                        {activeRole === "author" && <PenLine className="h-7 w-7 text-gb-blue" />}
+                                        {activeRole === "reviewer" && <UserCheck className="h-7 w-7 text-purple-600" />}
+                                        {activeRole === "editor" && <ClipboardCheck className="h-7 w-7 text-emerald-600" />}
+                                        {(activeRole === "admin" || activeRole === "super-admin") && <Inbox className="h-7 w-7 text-amber-600" />}
+                                      </div>
                                     </div>
-                                  </div>
-                                  <h3 className="text-sm font-extrabold text-gb-ink font-academic tracking-tight">
-                                    {activeRole === "author" && "No Manuscripts Submitted Yet"}
-                                    {activeRole === "reviewer" && "No Manuscripts Assigned for Review"}
-                                    {activeRole === "editor" && "Editorial Pipeline is Clear"}
-                                    {(activeRole === "admin" || activeRole === "super-admin") && "No Active Manuscripts in Pipeline"}
-                                  </h3>
-                                  <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
-                                    {activeRole === "author" &&
-                                      "You haven't submitted any research papers to Gono Bishwabidyalay Journal yet. Start a new manuscript submission to begin peer review."}
-                                    {activeRole === "reviewer" &&
-                                      "You currently have no pending manuscripts awaiting evaluation. New double-blind peer review invitations will appear here."}
-                                    {activeRole === "editor" &&
-                                      "There are currently no active manuscripts in this editorial queue. New submissions will automatically populate here for desk evaluation and reviewer assignment."}
-                                    {(activeRole === "admin" || activeRole === "super-admin") &&
-                                      "The journal database currently has no active manuscripts under this filter. You can submit a new manuscript to test workflows."}
-                                  </p>
-                                  {(activeRole === "author" || activeRole === "admin" || activeRole === "super-admin") && (
-                                    <div className="mt-4">
-                                      <Link
-                                        href="/dashboard/submissions/new"
-                                        className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
-                                      >
-                                        <Plus className="h-3.5 w-3.5" />
-                                        New Manuscript Submission
-                                      </Link>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <>
-                              {/* Desktop Table View */}
-                              <div className="hidden md:block">
-                                <Table minWidth={780}>
-                                  <TableHeader>
-                                    <TableRow>
-                                      {[
-                                        "Manuscript",
-                                        "Status",
-                                        "Reviewers",
-                                        "Score",
-                                        "Due Date",
-                                        "Actions",
-                                      ].map((h) => (
-                                        <TableHead
-                                          key={h}
-                                          className={h === "Actions" ? "text-right" : ""}
+                                    <h3 className="text-sm font-extrabold text-gb-ink font-academic tracking-tight">
+                                      {activeRole === "author" && "No Manuscripts Submitted Yet"}
+                                      {activeRole === "reviewer" && "No Manuscripts Assigned for Review"}
+                                      {activeRole === "editor" && "Editorial Pipeline is Clear"}
+                                      {(activeRole === "admin" || activeRole === "super-admin") && "No Active Manuscripts in Pipeline"}
+                                    </h3>
+                                    <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
+                                      {activeRole === "author" &&
+                                        "You haven't submitted any research papers to Gono Bishwabidyalay Journal yet. Start a new manuscript submission to begin peer review."}
+                                      {activeRole === "reviewer" &&
+                                        "You currently have no pending manuscripts awaiting evaluation. New double-blind peer review invitations will appear here."}
+                                      {activeRole === "editor" &&
+                                        "There are currently no active manuscripts in this editorial queue. New submissions will automatically populate here for desk evaluation and reviewer assignment."}
+                                      {(activeRole === "admin" || activeRole === "super-admin") &&
+                                        "The journal database currently has no active manuscripts under this filter. You can submit a new manuscript to test workflows."}
+                                    </p>
+                                    {(activeRole === "author" || activeRole === "admin" || activeRole === "super-admin") && (
+                                      <div className="mt-4">
+                                        <Link
+                                          href="/dashboard/submissions/new"
+                                          className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
                                         >
-                                          {h}
-                                        </TableHead>
+                                          <Plus className="h-3.5 w-3.5" />
+                                          New Manuscript Submission
+                                        </Link>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block">
+                                  <Table minWidth={780}>
+                                    <TableHeader>
+                                      <TableRow>
+                                        {[
+                                          "Manuscript",
+                                          "Status",
+                                          "Reviewers",
+                                          "Score",
+                                          "Due Date",
+                                          "Actions",
+                                        ].map((h) => (
+                                          <TableHead
+                                            key={h}
+                                            className={h === "Actions" ? "text-right" : ""}
+                                          >
+                                            {h}
+                                          </TableHead>
+                                        ))}
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody suppressHydrationWarning>
+                                      {filtered.map((sub) => (
+                                        <TableRow key={sub.id}>
+                                          <TableCell className="max-w-70">
+                                            <span className="font-mono text-[10px] font-black text-gb-red">
+                                              {sub.id}
+                                            </span>
+                                            <p className="mt-0.5 text-[12px] font-bold text-gb-ink leading-snug line-clamp-2">
+                                              {sub.title}
+                                            </p>
+                                            <p className="mt-0.5 text-[10px] text-(--color-gb-muted)">
+                                              {sub.type} · {sub.author}
+                                            </p>
+                                          </TableCell>
+                                          <TableCell>
+                                            <StatusPill status={sub.status} />
+                                            <p
+                                              className="mt-1 text-[10px] text-(--color-gb-muted) flex items-center gap-1 font-medium whitespace-nowrap"
+                                              suppressHydrationWarning
+                                            >
+                                              <Clock className="h-2.5 w-2.5 shrink-0" />
+                                              {formatDateTime(sub.updated)}
+                                            </p>
+                                          </TableCell>
+                                          <TableCell>
+                                            {sub.reviewers.length ? (
+                                              <div className="space-y-0.5">
+                                                {sub.reviewers.map((r, i) => (
+                                                  <p
+                                                    key={i}
+                                                    className="text-[10px] font-semibold text-gb-ink whitespace-nowrap"
+                                                  >
+                                                    · {r}
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <span className="text-[10px] italic text-(--color-gb-muted)">
+                                                Unassigned
+                                              </span>
+                                            )}
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex items-center gap-2">
+                                              <div className="h-1.5 w-12 rounded-full bg-slate-100 overflow-hidden">
+                                                <div
+                                                  className={`h-full rounded-full transition-all ${sub.score >= 80
+                                                    ? "bg-emerald-500"
+                                                    : sub.score >= 60
+                                                      ? "bg-amber-500"
+                                                      : "bg-red-500"
+                                                    }`}
+                                                  style={{ width: `${sub.score}%` }}
+                                                />
+                                              </div>
+                                              <span className="text-[11px] font-black text-gb-ink">
+                                                {sub.score}
+                                              </span>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            {canEditDates ? (
+                                              <CustomDatePicker
+                                                value={sub.due}
+                                                onChange={(d) => updateDueDate(sub.id, d)}
+                                              />
+                                            ) : (
+                                              <span className="font-mono text-[11px] font-bold text-(--color-gb-muted)">
+                                                {sub.due}
+                                              </span>
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-right">
+                                            <RowActionsDropdown
+                                              sub={sub}
+                                              canAdvance={canAdvance}
+                                              activeRole={activeRole}
+                                              advanceSubmission={advanceSubmission}
+                                              triggerAssignReviewer={triggerAssignReviewer}
+                                              triggerUploadRevision={
+                                                triggerUploadRevisionModal
+                                              }
+                                              triggerSubmitReview={triggerSubmitReview}
+                                              triggerViewInfo={triggerViewInfo}
+                                            />
+                                          </TableCell>
+                                        </TableRow>
                                       ))}
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody suppressHydrationWarning>
-                                    {filtered.map((sub) => (
-                                      <TableRow key={sub.id}>
-                                        <TableCell className="max-w-70">
+                                    </TableBody>
+                                  </Table>
+                                </div>
+
+                                {/* Mobile Card List View */}
+                                <div className="md:hidden divide-y divide-(--color-gb-border)">
+                                  {filtered.map((sub) => (
+                                    <div key={sub.id} className="p-4 space-y-3">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
                                           <span className="font-mono text-[10px] font-black text-gb-red">
                                             {sub.id}
                                           </span>
-                                          <p className="mt-0.5 text-[12px] font-bold text-gb-ink leading-snug line-clamp-2">
+                                          <h4 className="mt-0.5 text-xs font-bold text-gb-ink leading-snug">
                                             {sub.title}
-                                          </p>
+                                          </h4>
                                           <p className="mt-0.5 text-[10px] text-(--color-gb-muted)">
                                             {sub.type} · {sub.author}
                                           </p>
-                                        </TableCell>
-                                        <TableCell>
-                                          <StatusPill status={sub.status} />
-                                          <p
-                                            className="mt-1 text-[10px] text-(--color-gb-muted) flex items-center gap-1 font-medium whitespace-nowrap"
-                                            suppressHydrationWarning
-                                          >
-                                            <Clock className="h-2.5 w-2.5 shrink-0" />
-                                            {formatDateTime(sub.updated)}
-                                          </p>
-                                        </TableCell>
-                                        <TableCell>
-                                          {sub.reviewers.length ? (
-                                            <div className="space-y-0.5">
-                                              {sub.reviewers.map((r, i) => (
-                                                <p
-                                                  key={i}
-                                                  className="text-[10px] font-semibold text-gb-ink whitespace-nowrap"
-                                                >
-                                                  · {r}
-                                                </p>
-                                              ))}
-                                            </div>
-                                          ) : (
-                                            <span className="text-[10px] italic text-(--color-gb-muted)">
-                                              Unassigned
-                                            </span>
-                                          )}
-                                        </TableCell>
-                                        <TableCell>
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-1.5 w-12 rounded-full bg-slate-100 overflow-hidden">
-                                              <div
-                                                className={`h-full rounded-full transition-all ${sub.score >= 80
-                                                  ? "bg-emerald-500"
-                                                  : sub.score >= 60
-                                                    ? "bg-amber-500"
-                                                    : "bg-red-500"
-                                                  }`}
-                                                style={{ width: `${sub.score}%` }}
-                                              />
-                                            </div>
-                                            <span className="text-[11px] font-black text-gb-ink">
-                                              {sub.score}
-                                            </span>
-                                          </div>
-                                        </TableCell>
-                                        <TableCell>
-                                          {canEditDates ? (
-                                            <CustomDatePicker
-                                              value={sub.due}
-                                              onChange={(d) => updateDueDate(sub.id, d)}
-                                            />
-                                          ) : (
-                                            <span className="font-mono text-[11px] font-bold text-(--color-gb-muted)">
-                                              {sub.due}
-                                            </span>
-                                          )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          <RowActionsDropdown
-                                            sub={sub}
-                                            canAdvance={canAdvance}
-                                            activeRole={activeRole}
-                                            advanceSubmission={advanceSubmission}
-                                            triggerAssignReviewer={triggerAssignReviewer}
-                                            triggerUploadRevision={
-                                              triggerUploadRevisionModal
-                                            }
-                                            triggerSubmitReview={triggerSubmitReview}
-                                            triggerViewInfo={triggerViewInfo}
-                                          />
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
+                                        </div>
+                                        <StatusPill status={sub.status} />
+                                      </div>
 
-                              {/* Mobile Card List View */}
-                              <div className="md:hidden divide-y divide-(--color-gb-border)">
-                                {filtered.map((sub) => (
-                                  <div key={sub.id} className="p-4 space-y-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="min-w-0 flex-1">
-                                        <span className="font-mono text-[10px] font-black text-gb-red">
-                                          {sub.id}
+                                      <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-(--color-gb-muted) border-t border-slate-100">
+                                        <span className="flex items-center gap-1 font-medium" suppressHydrationWarning>
+                                          <Clock className="h-3 w-3 shrink-0" />
+                                          {formatDateTime(sub.updated)}
                                         </span>
-                                        <h4 className="mt-0.5 text-xs font-bold text-gb-ink leading-snug">
-                                          {sub.title}
-                                        </h4>
-                                        <p className="mt-0.5 text-[10px] text-(--color-gb-muted)">
-                                          {sub.type} · {sub.author}
-                                        </p>
+                                        <div className="flex items-center gap-2 font-mono">
+                                          <span>Score: <strong className="text-slate-800 font-sans">{sub.score}</strong></span>
+                                          <span suppressHydrationWarning>Due: {formatDate(sub.due)}</span>
+                                        </div>
                                       </div>
-                                      <StatusPill status={sub.status} />
-                                    </div>
 
-                                    <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-(--color-gb-muted) border-t border-slate-100">
-                                      <span className="flex items-center gap-1 font-medium" suppressHydrationWarning>
-                                        <Clock className="h-3 w-3 shrink-0" />
-                                        {formatDateTime(sub.updated)}
-                                      </span>
-                                      <div className="flex items-center gap-2 font-mono">
-                                        <span>Score: <strong className="text-slate-800 font-sans">{sub.score}</strong></span>
-                                        <span suppressHydrationWarning>Due: {formatDate(sub.due)}</span>
+                                      <div className="flex items-center justify-end pt-1">
+                                        <RowActionsDropdown
+                                          sub={sub}
+                                          canAdvance={canAdvance}
+                                          activeRole={activeRole}
+                                          advanceSubmission={advanceSubmission}
+                                          triggerAssignReviewer={triggerAssignReviewer}
+                                          triggerUploadRevision={
+                                            triggerUploadRevisionModal
+                                          }
+                                          triggerSubmitReview={triggerSubmitReview}
+                                          triggerViewInfo={triggerViewInfo}
+                                        />
                                       </div>
                                     </div>
-
-                                    <div className="flex items-center justify-end pt-1">
-                                      <RowActionsDropdown
-                                        sub={sub}
-                                        canAdvance={canAdvance}
-                                        activeRole={activeRole}
-                                        advanceSubmission={advanceSubmission}
-                                        triggerAssignReviewer={triggerAssignReviewer}
-                                        triggerUploadRevision={
-                                          triggerUploadRevisionModal
-                                        }
-                                        triggerSubmitReview={triggerSubmitReview}
-                                        triggerViewInfo={triggerViewInfo}
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </motion.div>
-                      </AnimatePresence>
-                    )}
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </motion.div>
+                        </AnimatePresence>
+                      )}
 
                     </div>
                   </div>

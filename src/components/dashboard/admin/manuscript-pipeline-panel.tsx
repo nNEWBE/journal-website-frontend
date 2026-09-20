@@ -40,7 +40,7 @@ import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
-import { formatDateTime, formatDate } from "@/lib/utils";
+import { formatDateTime, formatDate, cn } from "@/lib/utils";
 import {
   Table,
   TableHeader,
@@ -90,46 +90,37 @@ function RowActionsDropdown({
   const [menuCoords, setMenuCoords] = useState<{
     top: number;
     left: number;
-    openUp: boolean;
-  }>({ top: 0, left: 0, openUp: false });
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  }>({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const updateCoords = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 224;
+      const menuHeight = 220;
       const spaceBelow = window.innerHeight - rect.bottom;
-      const openUp = spaceBelow < 220;
-      const top = openUp ? rect.top : rect.bottom + 6;
-      const left = rect.right - 208;
-      setMenuCoords({ top, left: Math.max(16, left), openUp });
+      const openUp = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
+
+      const left = Math.max(12, Math.min(window.innerWidth - menuWidth - 12, rect.right - menuWidth));
+      const top = openUp
+        ? Math.max(8, rect.top - menuHeight - 6)
+        : Math.min(window.innerHeight - menuHeight - 8, rect.bottom + 6);
+
+      setMenuCoords({ top, left });
     }
   };
 
   useEffect(() => {
     if (!isOpen) return;
 
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
     function handleScrollOrResize() {
       setIsOpen(false);
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("scroll", handleScrollOrResize, true);
     window.addEventListener("resize", handleScrollOrResize);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
     };
@@ -137,6 +128,7 @@ function RowActionsDropdown({
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!isOpen) {
       updateCoords();
     }
@@ -149,8 +141,11 @@ function RowActionsDropdown({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-ink) shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
-        title="Actions options"
+        className={cn(
+          "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
+          isOpen && "bg-slate-100 text-slate-700 ring-2 ring-slate-200"
+        )}
+        title="Manuscript Actions"
       >
         <MoreVertical className="h-4 w-4" />
       </button>
@@ -158,73 +153,102 @@ function RowActionsDropdown({
       {isOpen &&
         typeof window !== "undefined" &&
         createPortal(
-          <div
-            ref={dropdownRef}
-            style={{
-              position: "fixed",
-              top: menuCoords.openUp ? "auto" : `${menuCoords.top}px`,
-              bottom: menuCoords.openUp
-                ? `${window.innerHeight - menuCoords.top + 6}px`
-                : "auto",
-              left: `${menuCoords.left}px`,
-              zIndex: 999999,
-            }}
-            className="w-52 rounded-xl border border-(--color-gb-border) bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5"
-          >
-            <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
-              Actions · {sub.id}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
+          <>
+            {/* Transparent backdrop to capture outside clicks */}
+            <div
+              className="fixed inset-0 z-9998 bg-black/5"
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsOpen(false);
-                triggerViewInfo(sub);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors cursor-pointer"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              <span>Inspect Manuscript</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
+              onContextMenu={(e) => {
+                e.stopPropagation();
                 setIsOpen(false);
-                triggerAssignReviewer(sub);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors cursor-pointer"
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-              <span>Assign Reviewers</span>
-            </button>
+            />
 
-            {canAdvance && (
+            {/* Menu Container */}
+            <div
+              style={{
+                position: "fixed",
+                top: `${menuCoords.top}px`,
+                left: `${menuCoords.left}px`,
+                zIndex: 9999,
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-56 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-1.5 shadow-xl shadow-slate-900/10 ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100 text-left font-sans"
+            >
+              {/* Header inside menu showing manuscript identity */}
+              <div className="flex items-center gap-2.5 px-2.5 py-2 border-b border-slate-100 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-600 font-bold text-xs">
+                  <FileText className="h-4 w-4 text-slate-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+                    {sub.title}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+                    {sub.id} · {sub.author}
+                  </p>
+                </div>
+              </div>
+
+              {/* Inspect Manuscript */}
               <button
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
-                  advanceSubmission(sub.id);
+                  triggerViewInfo(sub);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
               >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Advance Workflow</span>
+                <Eye className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>Inspect Manuscript</span>
               </button>
-            )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                toast.success(`Downloading assets for ${sub.id}...`);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer border-t border-slate-100 mt-1 pt-1.5"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Download Files</span>
-            </button>
-          </div>,
+              {/* Assign Reviewers */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  triggerAssignReviewer(sub);
+                }}
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+              >
+                <UserCheck className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>Assign Reviewers</span>
+              </button>
+
+              {/* Advance Workflow */}
+              {canAdvance && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    advanceSubmission(sub.id);
+                  }}
+                  className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <CheckCircle2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                  <span>Advance Workflow</span>
+                </button>
+              )}
+
+              {/* Download Files */}
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  toast.success(`Downloading assets for ${sub.id}...`);
+                }}
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+              >
+                <Download className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>Download Files</span>
+              </button>
+            </div>
+          </>,
           document.body
         )}
     </div>
