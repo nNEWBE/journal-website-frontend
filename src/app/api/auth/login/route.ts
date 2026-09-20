@@ -3,89 +3,59 @@ import { getBackendUrl } from "@/lib/backend-url";
 
 const BACKEND_URL = getBackendUrl();
 
-function base64UrlEncode(str: string): string {
-  return Buffer.from(str)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
-function generateDevJwt(payload: Record<string, any>, expiresInSec: number): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  const fullPayload = {
-    ...payload,
-    iat: now,
-    exp: now + expiresInSec,
-  };
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload));
-  const signature = base64UrlEncode(`gb_secret_sig_${now}`);
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { email, password } = body;
 
-    let accessToken: string | null = null;
-    let refreshToken: string | null = null;
-    let user: any = null;
+    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
+      return NextResponse.json(
+        { message: "Institutional email address and password are required." },
+        { status: 400 }
+      );
+    }
 
+    let backendRes: Response;
     try {
-      const backendRes = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
+      backendRes = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         signal: AbortSignal.timeout(15000),
       });
-
-      if (backendRes.ok) {
-        const data = await backendRes.json();
-        accessToken = data.accessToken;
-        refreshToken = data.refreshToken;
-        user = data.user;
-      }
-    } catch {
-      // Backend offline / local dev fallback
+    } catch (networkErr: any) {
+      console.error("[auth/login] Backend network error:", networkErr?.message);
+      return NextResponse.json(
+        { message: "Authentication service is temporarily unavailable. Please check your connection and try again." },
+        { status: 503 }
+      );
     }
 
-    // If backend did not return user (e.g. offline dev mode), provide standard user profile and generate signed tokens
-    if (!user) {
-      const role = email.includes("admin")
-        ? "admin"
-        : email.includes("editor")
-        ? "editor"
-        : email.includes("reviewer")
-        ? "reviewer"
-        : "author";
+    if (!backendRes.ok) {
+      let errorMessage = "Invalid email or password. Please check your credentials.";
+      try {
+        const errorData = await backendRes.json();
+        if (errorData.message) errorMessage = errorData.message;
+        else if (errorData.error) errorMessage = errorData.error;
+      } catch {}
 
-      user = {
-        id: "usr_" + Math.random().toString(36).substring(2, 9),
-        email: email || "author@gonouniversity.edu.bd",
-        name: email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Academic Researcher",
-        fullName: email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Academic Researcher",
-        role: role,
-        title: "Academic Member",
-        department: "Department of Pharmacy",
-        institution: "Gono Bishwabidyalay",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-          email
-        )}&mouth=default,smile&eyes=default&eyebrows=defaultNatural,default&clothing=blazerAndShirt,blazerAndSweater,collarAndSweater`,
-      };
-
-      accessToken = generateDevJwt(
-        { sub: user.email, role: user.role, name: user.name, id: user.id },
-        60 * 60 * 24 // 1 day
+      return NextResponse.json(
+        { message: errorMessage },
+        { status: backendRes.status === 400 || backendRes.status === 401 ? 401 : backendRes.status }
       );
-      refreshToken = generateDevJwt(
-        { sub: user.email, type: "refresh", id: user.id },
-        60 * 60 * 24 * 7 // 7 days
+    }
+
+    const data = await backendRes.json();
+    const accessToken = data.accessToken;
+    const refreshToken = data.refreshToken;
+    const user = data.user;
+
+    if (!accessToken || !user) {
+      return NextResponse.json(
+        { message: "Authentication failed. The authentication server returned an invalid response." },
+        { status: 401 }
       );
     }
 
@@ -99,7 +69,7 @@ export async function POST(req: NextRequest) {
         name: user?.fullName || user?.name,
         role: user?.role,
         title: user?.title || "Academic Member",
-        department: user?.department || "Department of Pharmacy",
+        department: user?.department || "Academic Department",
         institution: user?.institution || "Gono Bishwabidyalay",
         avatar: user?.avatarUrl || user?.avatar,
       },
@@ -107,20 +77,17 @@ export async function POST(req: NextRequest) {
 
     const isProduction = process.env.NODE_ENV === "production";
 
-    // Set secure Access Token cookie
-    if (accessToken) {
-      response.cookies.set("access_token", accessToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24, // 1 day
-      });
-      // Purge redundant legacy cookie if present
-      response.cookies.delete("gb_access_token");
-    }
+    // Set secure HttpOnly Access Token cookie
+    response.cookies.set("access_token", accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
+    response.cookies.delete("gb_access_token");
 
-    // Set secure Refresh Token cookie
+    // Set secure HttpOnly Refresh Token cookie
     if (refreshToken) {
       response.cookies.set("refresh_token", refreshToken, {
         httpOnly: true,
@@ -129,11 +96,10 @@ export async function POST(req: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
-      // Purge redundant legacy cookie if present
       response.cookies.delete("gb_refresh_token");
     }
 
-    // Set client session cookie for synchronous UI hydration
+    // Set client session cookie for UI hydration
     response.cookies.set(
       "gb_journal_user_session",
       encodeURIComponent(
@@ -142,7 +108,7 @@ export async function POST(req: NextRequest) {
           name: user?.fullName || user?.name,
           role: user?.role,
           title: user?.title || "Academic Member",
-          department: user?.department || "Department of Pharmacy",
+          department: user?.department || "Academic Department",
           institution: user?.institution || "Gono Bishwabidyalay",
           avatar: user?.avatarUrl || user?.avatar,
         })
@@ -159,7 +125,7 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error: any) {
     return NextResponse.json(
-      { message: error.message || "Authentication error" },
+      { message: error.message || "An unexpected error occurred during login." },
       { status: 500 }
     );
   }

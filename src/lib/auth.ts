@@ -80,22 +80,6 @@ if (typeof window !== "undefined") {
   }
 }
 
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
-
 export function getSession(): User | null {
   if (typeof window === "undefined") return null;
   if (inMemoryUser) return inMemoryUser;
@@ -105,32 +89,6 @@ export function getSession(): User | null {
     if (sessionCookie) {
       inMemoryUser = JSON.parse(sessionCookie);
       return inMemoryUser;
-    }
-  } catch (e) {
-    // Fallback
-  }
-
-  try {
-    const token = parseCookie("access_token");
-    if (token) {
-      const jwt = parseJwt(token);
-      if (jwt && jwt.sub) {
-        const user: User = {
-          email: jwt.sub,
-          name:
-            jwt.name ||
-            jwt.sub
-              .split("@")[0]
-              .replace(/[._]/g, " ")
-              .replace(/\b\w/g, (c: string) => c.toUpperCase()),
-          role: jwt.role || "author",
-          title: "Academic Member",
-          department: "Department of Pharmacy",
-          institution: "Gono Bishwabidyalay",
-        };
-        inMemoryUser = user;
-        return inMemoryUser;
-      }
     }
   } catch (e) {
     // Fallback

@@ -106,6 +106,14 @@ function LoginForm() {
       setTimeout(() => {
         window.location.href = target;
       }, 400);
+    } else if (loginUser.rejected.match(resultAction)) {
+      const err = (resultAction.payload as string) || "Invalid email or password. Access denied.";
+      setLocalError(err);
+      setPassword("");
+      toast.error("Authentication Failed", {
+        description: err,
+        duration: 5000,
+      });
     }
   }
 
@@ -262,6 +270,7 @@ function LoginForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  suppressHydrationWarning
                   className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 font-mono"
                   placeholder="author@gonobishwabidyalay.edu.bd"
                 />
@@ -280,6 +289,7 @@ function LoginForm() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  suppressHydrationWarning
                   className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 font-mono"
                   placeholder="••••••••"
                 />

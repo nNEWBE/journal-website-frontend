@@ -115,6 +115,10 @@ export function SubmissionWizard() {
 
   async function handleSubmit() {
     setIsSubmitting(true);
+    const toastId = toast.loading("Submitting manuscript...", {
+      description: "Creating submission draft and registering metadata...",
+    });
+
     try {
       const draft = await submissionsApi.createDraft({
         title: form.title || "Untitled Manuscript",
@@ -133,17 +137,43 @@ export function SubmissionWizard() {
         })),
       });
 
+      // Upload attached files to Supabase Storage via backend
+      if (form.files && form.files.length > 0) {
+        for (const item of form.files) {
+          if (item.file) {
+            toast.loading(`Uploading ${item.name} to secure storage...`, { id: toastId });
+            try {
+              await submissionsApi.uploadFile(draft.id, item.file, "MANUSCRIPT");
+            } catch (uploadErr: any) {
+              console.error("Failed to upload file:", item.name, uploadErr);
+            }
+          }
+        }
+      }
+
+      toast.loading("Finalizing submission and notifying editorial office...", { id: toastId });
       const result = await submissionsApi.submit(draft.id);
-      const generatedId = String(result?.id || draft?.id || `GBJ-2026-${Math.floor(100 + Math.random() * 900)}`);
+      const generatedId = String(
+        (result as any)?.submissionId ||
+        result?.id ||
+        (draft as any)?.submissionId ||
+        draft?.id ||
+        "SUB-NEW"
+      );
       setNewSubId(generatedId);
       setSubmitted(true);
-      toast.success(`Manuscript ${generatedId} submitted successfully!`);
+      toast.success(`Manuscript ${generatedId} submitted successfully!`, {
+        id: toastId,
+        description: "Your manuscript is now in the editorial screening queue.",
+        duration: 5000,
+      });
     } catch (err: any) {
-      console.error("Backend submission notice:", err);
-      const generatedId = `GBJ-2026-${Math.floor(100 + Math.random() * 900)}`;
-      setNewSubId(generatedId);
-      setSubmitted(true);
-      toast.success(`Manuscript ${generatedId} submitted successfully!`);
+      console.error("Backend submission error:", err);
+      toast.error("Submission Failed", {
+        id: toastId,
+        description: err?.message || "Failed to submit manuscript. Please try again.",
+        duration: 6000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -175,7 +205,7 @@ export function SubmissionWizard() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
             <Link
               href="/dashboard/author"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-6 text-xs font-extrabold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-gb-blue px-6 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-colors"
             >
               Go to Author Dashboard
             </Link>
@@ -215,13 +245,12 @@ export function SubmissionWizard() {
               <button
                 key={s.id}
                 onClick={() => setStep(idx)}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? "bg-[color:var(--color-gb-blue)] text-white shadow-xs"
-                    : isCompleted
+                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${isActive
+                  ? "bg-gb-blue text-white shadow-xs"
+                  : isCompleted
                     ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                }`}
+                  }`}
               >
                 <span>{s.short}</span>
                 {isCompleted && <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -287,7 +316,7 @@ export function SubmissionWizard() {
             <button
               type="button"
               onClick={() => setStep(step + 1)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
             >
               Next Step
               <ArrowUpRight className="h-4 w-4" />

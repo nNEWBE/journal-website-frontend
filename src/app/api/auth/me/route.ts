@@ -3,16 +3,6 @@ import { getBackendUrl } from "@/lib/backend-url";
 
 const BACKEND_URL = getBackendUrl();
 
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(Buffer.from(base64, "base64").toString("utf-8"));
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(req: NextRequest) {
   try {
     let accessToken =
@@ -103,33 +93,17 @@ export async function GET(req: NextRequest) {
       return response;
     }
 
-    // Try decoding from JWT
-    if (accessToken) {
-      const jwtPayload = parseJwt(accessToken);
-      if (jwtPayload && jwtPayload.sub) {
-        const response = NextResponse.json({
-          authenticated: true,
-          user: {
-            id: jwtPayload.id || "usr_jwt",
-            email: jwtPayload.sub,
-            name: jwtPayload.name || jwtPayload.sub.split("@")[0],
-            role: jwtPayload.role || "author",
-            title: "Academic Member",
-            department: "Department of Pharmacy",
-            institution: "Gono Bishwabidyalay",
-          },
-        });
-        for (const cookie of refreshCookies) {
-          response.headers.append("Set-Cookie", cookie);
-        }
-        return response;
-      }
-    }
-
-    return NextResponse.json(
-      { user: null, authenticated: false },
+    // Backend did not authenticate user — purge invalid cookies and return 401
+    const unauthResponse = NextResponse.json(
+      { user: null, authenticated: false, message: "Unauthorized or session expired." },
       { status: 401 }
     );
+    unauthResponse.cookies.delete("access_token");
+    unauthResponse.cookies.delete("refresh_token");
+    unauthResponse.cookies.delete("gb_access_token");
+    unauthResponse.cookies.delete("gb_refresh_token");
+    unauthResponse.cookies.delete("gb_journal_user_session");
+    return unauthResponse;
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message || "Failed to verify session" },

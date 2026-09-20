@@ -83,12 +83,20 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
       </div>
 
       {/* Grid of Section Editors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEditors.map((editor) => (
-          <div
-            key={editor.id}
-            className="bg-white border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
-          >
+      {filteredEditors.length === 0 ? (
+        <div className="bg-white border border-dashed border-slate-300 p-8 text-center">
+          <Users className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+          <p className="text-xs text-slate-500">
+            No section editors currently assigned in this category.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEditors.map((editor) => (
+            <div
+              key={editor.id}
+              className="bg-white border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
+            >
             <div>
               <div className="flex items-start gap-4">
                 {editor.image ? (
@@ -164,7 +172,8 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -185,6 +185,7 @@ export function HomeMetricsNewsletter({ section: propSection }: { section?: Page
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email address"
+                        suppressHydrationWarning
                         className="w-full bg-slate-50/50 border border-slate-300 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#1e40af] focus:outline-hidden transition-colors"
                       />
                     </div>

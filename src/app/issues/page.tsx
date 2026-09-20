@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
-import { issues } from "@/lib/data";
+import { issues, type Article } from "@/lib/data";
 import { IssuesHero } from "@/components/issues/issues-hero";
 
 export default function IssuesPage() {
@@ -58,7 +58,7 @@ export default function IssuesPage() {
         iss.month.toLowerCase().includes(q) ||
         iss.year.includes(q) ||
         iss.articles.some(
-          (a) => a.title.toLowerCase().includes(q) || a.topic.toLowerCase().includes(q)
+          (a: Article) => a.title.toLowerCase().includes(q) || a.topic.toLowerCase().includes(q)
         );
 
       return matchesYear && matchesSearch;
@@ -83,142 +83,161 @@ export default function IssuesPage() {
         <IssuesHero
           totalIssues={issues.length}
           totalArticles={totalArticles}
-          currentVolume={`${currentIssue.volume} · ${currentIssue.issue}`}
+          currentVolume={currentIssue ? `${currentIssue.volume} · ${currentIssue.issue}` : "Volume Archive"}
           totalYears={allYears.length}
         />
       </FadeIn>
 
       {/* ── 2. Featured Edition: Current Issue Showcase ── */}
-      <section
-        aria-label="Current Issue Featured Showcase"
-        className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
-      >
-        <div className="container-x">
-          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-                FEATURED EDITION
-              </p>
-              <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
-                Latest Published Issue
-              </h2>
-            </div>
-            <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 border border-slate-200/90 shadow-2xs">
-              <span className="font-mono text-xs font-bold text-slate-800">
-                {currentIssue.volume} · {currentIssue.issue} ({currentIssue.month})
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-10 bg-white border border-slate-200/90 p-6 sm:p-8 lg:p-10 shadow-2xs">
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 lg:gap-10 items-start">
-              {/* Journal 3D Cover Thumbnail */}
-              <div className="relative aspect-[3/4] w-full max-w-[260px] mx-auto lg:mx-0 overflow-hidden bg-slate-950 shadow-sm border border-slate-200/80">
-                <Image
-                  src={currentIssue.articles[0]?.image || "/covers/medical.png"}
-                  alt={currentIssue.theme}
-                  fill
-                  priority
-                  sizes="(max-width: 1023px) 260px, 260px"
-                  className="object-cover"
-                />
-                {/* 3D Spine effect */}
-                <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-4 bg-gradient-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
-                <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-
-                <div className="absolute top-3 right-3 z-20">
-                  <span className="inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/40 px-2.5 py-1 text-[9.5px] font-mono font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
-                    Current Volume
-                  </span>
-                </div>
-
-                <div className="absolute bottom-3 left-3 right-3 z-20 bg-slate-950/85 p-2.5 border border-white/15 backdrop-blur-md">
-                  <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-slate-300">
-                    {currentIssue.volume} · {currentIssue.issue}
-                  </p>
-                  <p className="text-xs font-bold text-white mt-0.5">{currentIssue.month}</p>
-                </div>
+      {currentIssue ? (
+        <section
+          aria-label="Current Issue Featured Showcase"
+          className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
+        >
+          <div className="container-x">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+                  FEATURED EDITION
+                </p>
+                <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
+                  Latest Published Issue
+                </h2>
               </div>
+              <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 border border-slate-200/90 shadow-2xs">
+                <span className="font-mono text-xs font-bold text-slate-800">
+                  {currentIssue.volume} · {currentIssue.issue} ({currentIssue.month})
+                </span>
+              </div>
+            </div>
 
-              {/* Content Details */}
-              <div className="flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e40af] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-                      <BookOpen className="h-3 w-3" />
-                      Now Publishing
-                    </span>
-                    <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider border border-slate-200/80">
-                      ISSN 2959-1082
-                    </span>
-                    <span className="bg-amber-50 text-amber-900 px-2.5 py-0.5 font-mono text-[10px] font-bold border border-amber-200">
-                      {currentIssue.articleCount} Peer-Reviewed Articles
+            <div className="mt-10 bg-white border border-slate-200/90 p-6 sm:p-8 lg:p-10 shadow-2xs">
+              <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 lg:gap-10 items-start">
+                {/* Journal 3D Cover Thumbnail */}
+                <div className="relative aspect-3/4 w-full max-w-65 mx-auto lg:mx-0 overflow-hidden bg-slate-950 shadow-sm border border-slate-200/80">
+                  <Image
+                    src={currentIssue.articles[0]?.image || "/covers/medical.png"}
+                    alt={currentIssue.theme}
+                    fill
+                    priority
+                    sizes="(max-width: 1023px) 260px, 260px"
+                    className="object-cover"
+                  />
+                  {/* 3D Spine effect */}
+                  <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-4 bg-linear-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
+                  <div className="absolute inset-0 z-10 bg-linear-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+
+                  <div className="absolute top-3 right-3 z-20">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/40 px-2.5 py-1 text-[9.5px] font-mono font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
+                      Current Volume
                     </span>
                   </div>
 
-                  <Link href="/issues/current" className="group/title inline-block">
-                    <h3 className="mt-3.5 font-academic text-2xl sm:text-3xl font-medium leading-tight text-slate-950 group-hover/title:text-[#1e40af] transition-colors">
-                      {currentIssue.theme}
-                    </h3>
-                  </Link>
+                  <div className="absolute bottom-3 left-3 right-3 z-20 bg-slate-950/85 p-2.5 border border-white/15 backdrop-blur-md">
+                    <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-slate-300">
+                      {currentIssue.volume} · {currentIssue.issue}
+                    </p>
+                    <p className="text-xs font-bold text-white mt-0.5">{currentIssue.month}</p>
+                  </div>
+                </div>
 
-                  <p className="mt-3.5 text-xs sm:text-sm leading-relaxed text-slate-600 max-w-3xl">
-                    Explore a curated multidisciplinary volume featuring empirical contributions, clinical investigations, and theoretical syntheses in community healthcare access, pharmacy stewardship, resilient agriculture, and public welfare.
-                  </p>
-
-                  {/* Included Articles Preview */}
-                  {currentIssue.articles && currentIssue.articles.length > 0 && (
-                    <div className="mt-5 bg-slate-50/70 border border-slate-200/80 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                        Selected Articles in this Issue:
-                      </p>
-                      <div className="space-y-2">
-                        {currentIssue.articles.slice(0, 3).map((art) => (
-                          <Link
-                            key={art.id}
-                            href={`/articles/${art.slug}`}
-                            className="group/art flex items-start justify-between gap-3 text-xs font-semibold text-slate-700 hover:text-[#1e40af] transition-colors"
-                          >
-                            <span className="flex items-start gap-2 line-clamp-1">
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 bg-[#1e40af]" />
-                              <span className="group-hover/art:underline">{art.title}</span>
-                            </span>
-                            <span className="shrink-0 font-mono text-[10.5px] text-slate-400">
-                              {art.type}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
+                {/* Content Details */}
+                <div className="flex flex-col justify-between h-full">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e40af] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
+                        <BookOpen className="h-3 w-3" />
+                        Now Publishing
+                      </span>
+                      <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider border border-slate-200/80">
+                        ISSN 2959-1082
+                      </span>
+                      <span className="bg-amber-50 text-amber-900 px-2.5 py-0.5 font-mono text-[10px] font-bold border border-amber-200">
+                        {currentIssue.articleCount} Peer-Reviewed Articles
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                {/* Action Row */}
-                <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
-                    <span className="flex items-center gap-1.5">
-                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                      Double-blind Reviewed
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Globe2 className="h-4 w-4 text-[#1e40af]" />
-                      Open Access (CC BY 4.0)
-                    </span>
+                    <Link href="/issues/current" className="group/title inline-block">
+                      <h3 className="mt-3.5 font-academic text-2xl sm:text-3xl font-medium leading-tight text-slate-950 group-hover/title:text-[#1e40af] transition-colors">
+                        {currentIssue.theme}
+                      </h3>
+                    </Link>
+
+                    <p className="mt-3.5 text-xs sm:text-sm leading-relaxed text-slate-600 max-w-3xl">
+                      Explore a curated multidisciplinary volume featuring empirical contributions, clinical investigations, and theoretical syntheses in community healthcare access, pharmacy stewardship, resilient agriculture, and public welfare.
+                    </p>
+
+                    {/* Included Articles Preview */}
+                    {currentIssue.articles && currentIssue.articles.length > 0 && (
+                      <div className="mt-5 bg-slate-50/70 border border-slate-200/80 p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                          Selected Articles in this Issue:
+                        </p>
+                        <div className="space-y-2">
+                          {currentIssue.articles.slice(0, 3).map((art: Article) => (
+                            <Link
+                              key={art.id}
+                              href={`/articles/${art.slug}`}
+                              className="group/art flex items-start justify-between gap-3 text-xs font-semibold text-slate-700 hover:text-[#1e40af] transition-colors"
+                            >
+                              <span className="flex items-start gap-2 line-clamp-1">
+                                <span className="mt-1 h-1.5 w-1.5 shrink-0 bg-[#1e40af]" />
+                                <span className="group-hover/art:underline">{art.title}</span>
+                              </span>
+                              <span className="shrink-0 font-mono text-[10.5px] text-slate-400">
+                                {art.type}
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <Link
-                    href="/issues/current"
-                    className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
-                  >
-                    <span>Read Full Issue</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
+                  {/* Action Row */}
+                  <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                        Double-blind Reviewed
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Globe2 className="h-4 w-4 text-[#1e40af]" />
+                        Open Access (CC BY 4.0)
+                      </span>
+                    </div>
+
+                    <Link
+                      href="/issues/current"
+                      className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                    >
+                      <span>Read Full Issue</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section
+          aria-label="No Current Issue"
+          className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
+        >
+          <div className="container-x">
+            <div className="bg-white border border-slate-200/90 p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-2xs">
+              <BookOpen className="h-10 w-10 text-slate-400 mx-auto mb-3" />
+              <h3 className="font-academic text-xl sm:text-2xl font-medium text-slate-900">
+                No Published Issues Available
+              </h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                There are currently no published journal editions in the repository. New issues and curated volumes will appear here once compiled and published by the editorial team.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── 3. Volume & Year Archive Directory ── */}
       <section
@@ -248,11 +267,10 @@ export default function IssuesPage() {
               <button
                 type="button"
                 onClick={() => setSelectedYear("all")}
-                className={`px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all cursor-pointer border ${
-                  selectedYear === "all"
-                    ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
-                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
-                }`}
+                className={`px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all cursor-pointer border ${selectedYear === "all"
+                  ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
               >
                 All Years ({issues.length})
               </button>
@@ -263,11 +281,10 @@ export default function IssuesPage() {
                     key={year}
                     type="button"
                     onClick={() => setSelectedYear(year)}
-                    className={`px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all cursor-pointer border ${
-                      selectedYear === year
-                        ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                    className={`px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all cursor-pointer border ${selectedYear === year
+                      ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
                   >
                     {year} ({count})
                   </button>
@@ -302,9 +319,8 @@ export default function IssuesPage() {
                   type="button"
                   onClick={() => setViewMode("grid")}
                   title="Grid View"
-                  className={`p-1.5 transition-colors ${
-                    viewMode === "grid" ? "bg-slate-100 text-[#0b1b3d]" : "text-slate-500 hover:text-slate-900"
-                  }`}
+                  className={`p-1.5 transition-colors ${viewMode === "grid" ? "bg-slate-100 text-[#0b1b3d]" : "text-slate-500 hover:text-slate-900"
+                    }`}
                 >
                   <Grid className="h-4 w-4" />
                 </button>
@@ -312,9 +328,8 @@ export default function IssuesPage() {
                   type="button"
                   onClick={() => setViewMode("list")}
                   title="List View"
-                  className={`p-1.5 transition-colors ${
-                    viewMode === "list" ? "bg-slate-100 text-[#0b1b3d]" : "text-slate-500 hover:text-slate-900"
-                  }`}
+                  className={`p-1.5 transition-colors ${viewMode === "list" ? "bg-slate-100 text-[#0b1b3d]" : "text-slate-500 hover:text-slate-900"
+                    }`}
                 >
                   <ListIcon className="h-4 w-4" />
                 </button>
@@ -376,7 +391,7 @@ export default function IssuesPage() {
                   {viewMode === "grid" ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       {yearIssues.map((iss) => {
-                        const isCurrent = iss.id === currentIssue.id;
+                        const isCurrent = currentIssue ? iss.id === currentIssue.id : false;
                         return (
                           <Link
                             key={iss.id}
@@ -385,7 +400,7 @@ export default function IssuesPage() {
                           >
                             <div>
                               <div className="flex items-start gap-4">
-                                <div className="relative aspect-[3/4] w-24 shrink-0 overflow-hidden bg-slate-950 border border-slate-200/90 shadow-2xs">
+                                <div className="relative aspect-3/4 w-24 shrink-0 overflow-hidden bg-slate-950 border border-slate-200/90 shadow-2xs">
                                   <Image
                                     src={iss.articles[0]?.image || "/covers/medical.png"}
                                     alt={iss.theme}
@@ -393,7 +408,7 @@ export default function IssuesPage() {
                                     sizes="96px"
                                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                                   />
-                                  <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-2.5 bg-gradient-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
+                                  <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-2.5 bg-linear-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
@@ -440,7 +455,7 @@ export default function IssuesPage() {
                     /* Compact List View */
                     <div className="space-y-3">
                       {yearIssues.map((iss) => {
-                        const isCurrent = iss.id === currentIssue.id;
+                        const isCurrent = currentIssue ? iss.id === currentIssue.id : false;
                         return (
                           <Link
                             key={iss.id}
@@ -448,7 +463,7 @@ export default function IssuesPage() {
                             className="bg-white border border-slate-200/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs hover:border-slate-300 transition-all group"
                           >
                             <div className="flex items-center gap-4">
-                              <div className="relative aspect-[3/4] h-14 overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
+                              <div className="relative aspect-3/4 h-14 overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
                                 <Image
                                   src={iss.articles[0]?.image || "/covers/medical.png"}
                                   alt={iss.theme}
@@ -568,7 +583,7 @@ export default function IssuesPage() {
         <div className="container-x">
           <div className="relative overflow-hidden bg-[#060e22] text-white border border-slate-800 shadow-[0_20px_50px_rgba(3,8,22,0.45)] p-8 sm:p-12 lg:p-14">
             {/* Top gold-to-blue accent line */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-blue-500 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-amber-400 via-blue-500 to-transparent" />
 
             {/* Ambient background glow */}
             <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
@@ -582,7 +597,7 @@ export default function IssuesPage() {
                   <span>CALL FOR PAPERS · VOL. 2026/2027</span>
                 </div>
 
-                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.025em] text-white leading-[1.15]">
+                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
                   Submit Your Research for the Upcoming Volume
                 </h2>
 
@@ -626,7 +641,7 @@ export default function IssuesPage() {
               </div>
 
               {/* Right Column: Editorial Secretariat Contact Card */}
-              <div className="bg-white/[0.05] border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
+              <div className="bg-white/5 border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
                 <div>
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">

@@ -14,11 +14,40 @@ import {
 import type { BoardMember } from "@/lib/data";
 
 interface EditorInChiefCardProps {
-  chief: BoardMember;
+  chief?: BoardMember;
   managing?: BoardMember;
 }
 
 export function EditorInChiefCard({ chief, managing }: EditorInChiefCardProps) {
+  if (!chief && !managing) {
+    return (
+      <section aria-label="Executive Editorial Leadership" className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-6 border-b border-slate-200/80">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+              EXECUTIVE LEADERSHIP
+            </p>
+            <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.4rem] font-medium tracking-[-0.02em] text-slate-950">
+              Executive Editorial Leadership
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-600 max-w-md">
+            Senior academic leaders steering journal strategy, ethical compliance, and double-blind appraisal standards.
+          </p>
+        </div>
+        <div className="bg-white border border-dashed border-slate-300 p-8 text-center">
+          <Users className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+          <h3 className="font-academic text-lg font-medium text-slate-800">
+            Editorial Leadership Roster Updating
+          </h3>
+          <p className="mt-1 text-xs text-slate-500 max-w-md mx-auto">
+            The editorial executive committee appointments are currently being updated for the upcoming publication cycle. Please contact the editorial office for inquiries.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section aria-label="Executive Editorial Leadership" className="space-y-8">
       {/* Section Header matching Home/About design */}
@@ -38,7 +67,8 @@ export function EditorInChiefCard({ chief, managing }: EditorInChiefCardProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Editor-in-Chief Card */}
-        <div className="bg-white border border-slate-200/90 p-6 sm:p-8 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all">
+        {chief && (
+          <div className="bg-white border border-slate-200/90 p-6 sm:p-8 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-start gap-5">
               {chief.image ? (
@@ -109,6 +139,7 @@ export function EditorInChiefCard({ chief, managing }: EditorInChiefCardProps) {
             </Link>
           </div>
         </div>
+        )}
 
         {/* Managing Editor Card */}
         {managing && (

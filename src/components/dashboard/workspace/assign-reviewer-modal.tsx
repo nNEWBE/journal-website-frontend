@@ -1,25 +1,24 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { UserCheck, FileText, User, ShieldAlert, CheckCircle2 } from "lucide-react";
 import type { Submission } from "@/lib/data";
+import { editorApi } from "@/lib/api";
+
+interface ReviewerUser {
+  id: number;
+  fullName: string;
+  email: string;
+  institution?: string;
+  department?: string;
+}
 
 interface AssignReviewerModalProps {
   isOpen: boolean;
   onClose: () => void;
   submission: Submission | null;
-  onAssign: (subId: string, reviewerName: string) => void;
+  onAssign: (subId: string, reviewerName: string, reviewerId?: number) => void;
 }
-
-const availableReviewers = [
-  "Dr. Salma Khatun",
-  "Prof. Md. Kabir Hossain",
-  "Dr. Ananya Roy",
-  "Dr. Tanvir Ahmed",
-  "Prof. Nasrin Sultana",
-];
 
 export function AssignReviewerModal({
   isOpen,
@@ -27,14 +26,48 @@ export function AssignReviewerModal({
   submission,
   onAssign,
 }: AssignReviewerModalProps) {
-  const [selectedReviewer, setSelectedReviewer] = useState(availableReviewers[0]);
+  const [reviewersList, setReviewersList] = useState<ReviewerUser[]>([]);
+  const [selectedReviewerName, setSelectedReviewerName] = useState<string>("");
   const [invitationNote, setInvitationNote] = useState("");
+  const [loadingReviewers, setLoadingReviewers] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    async function loadReviewers() {
+      setLoadingReviewers(true);
+      try {
+        const users = await editorApi.getReviewers();
+        if (users && Array.isArray(users) && users.length > 0) {
+          const mapped: ReviewerUser[] = users.map((u: any) => ({
+            id: u.id,
+            fullName: u.fullName || u.name || u.email,
+            email: u.email,
+            institution: u.institution,
+            department: u.department,
+          }));
+          setReviewersList(mapped);
+          setSelectedReviewerName(mapped[0].fullName);
+        } else {
+          setReviewersList([]);
+          setSelectedReviewerName("");
+        }
+      } catch (err) {
+        console.error("Failed to load reviewers:", err);
+      } finally {
+        setLoadingReviewers(false);
+      }
+    }
+
+    loadReviewers();
+  }, [isOpen]);
 
   if (!submission) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAssign(submission.id, selectedReviewer);
+    const matched = reviewersList.find((r) => r.fullName === selectedReviewerName);
+    onAssign(submission.id, selectedReviewerName, matched?.id);
     onClose();
   };
 
@@ -99,10 +132,14 @@ export function AssignReviewerModal({
           </label>
           <CustomSelect
             size="form"
-            options={availableReviewers}
-            value={selectedReviewer}
-            onChange={setSelectedReviewer}
-            placeholder="Choose an active reviewer"
+            options={
+              reviewersList.length > 0
+                ? reviewersList.map((r) => r.fullName)
+                : [loadingReviewers ? "Loading reviewers..." : "No reviewers registered"]
+            }
+            value={selectedReviewerName}
+            onChange={setSelectedReviewerName}
+            placeholder={loadingReviewers ? "Loading active reviewers..." : "Choose a reviewer"}
           />
           <p className="text-[11px] text-slate-400 mt-1">
             Reviewers will receive a double-blind appraisal invitation link via email.
@@ -136,7 +173,7 @@ export function AssignReviewerModal({
           </button>
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gb-blue px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
           >
             <UserCheck className="h-4 w-4" />
             <span>Confirm & Assign</span>

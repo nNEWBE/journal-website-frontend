@@ -58,7 +58,7 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
+  if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -121,9 +121,17 @@ async function request<T>(
 
       let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
       try {
-        const errorJson = await res.json();
-        if (errorJson.message) errorMessage = errorJson.message;
-        else if (errorJson.error) errorMessage = errorJson.error;
+        const errText = await res.text();
+        if (errText && errText.trim()) {
+          try {
+            const errorJson = JSON.parse(errText);
+            if (errorJson.message) errorMessage = errorJson.message;
+            else if (errorJson.error) errorMessage = errorJson.error;
+            else errorMessage = errText;
+          } catch {
+            errorMessage = errText;
+          }
+        }
       } catch {
         // Fallback
       }
@@ -458,11 +466,12 @@ export const submissionsApi = {
   uploadFile: async (
     id: number | string,
     file: File,
-    fileType: "MANUSCRIPT_PRIMARY" | "FIGURE" | "SUPPLEMENTARY" | "COVER_LETTER"
+    fileType: "MANUSCRIPT" | "MANUSCRIPT_PRIMARY" | "FIGURE" | "TABLE" | "SUPPLEMENTARY" | "COVER_LETTER" | string = "MANUSCRIPT"
   ): Promise<Submission> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("fileType", fileType);
+    const backendType = fileType === "MANUSCRIPT_PRIMARY" ? "MANUSCRIPT" : fileType;
+    formData.append("fileType", backendType);
 
     return request<Submission>(`/api/v1/submissions/${id}/files`, {
       method: "POST",

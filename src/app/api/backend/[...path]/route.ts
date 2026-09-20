@@ -138,11 +138,21 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
     // Read body once — body streams can only be consumed once
     let body: any = undefined;
     if (method !== "GET" && method !== "HEAD") {
-      const contentType = req.headers.get("content-type");
-      if (contentType?.includes("application/json")) {
-        body = JSON.stringify(await req.json());
-      } else {
+      const contentType = req.headers.get("content-type") || "";
+      if (
+        contentType.includes("multipart/form-data") ||
+        contentType.includes("application/octet-stream")
+      ) {
         body = await req.arrayBuffer();
+      } else {
+        try {
+          const text = await req.text();
+          if (text && text.trim().length > 0) {
+            body = text;
+          }
+        } catch {
+          // Empty body
+        }
       }
     }
 
@@ -192,8 +202,17 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
       let nextRes: NextResponse;
 
       if (resContentType?.includes("application/json")) {
-        const data = await res.json();
-        nextRes = NextResponse.json(data, { status: res.status });
+        try {
+          const text = await res.text();
+          if (text && text.trim().length > 0) {
+            const data = JSON.parse(text);
+            nextRes = NextResponse.json(data, { status: res.status });
+          } else {
+            nextRes = new NextResponse(null, { status: res.status });
+          }
+        } catch {
+          nextRes = new NextResponse(null, { status: res.status });
+        }
       } else {
         const buffer = await res.arrayBuffer();
         nextRes = new NextResponse(buffer, {

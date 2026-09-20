@@ -24,6 +24,7 @@ import {
   Clock,
   Crown,
   Download,
+  ExternalLink,
   Eye,
   FileCheck2,
   FileText,
@@ -78,7 +79,7 @@ import {
   type Submission,
 } from "@/lib/data";
 import { getSession, clearSession, deleteCookie, type User } from "@/lib/auth";
-import { submissionsApi } from "@/lib/api";
+import { submissionsApi, reviewerApi, editorApi } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/authSlice";
 
@@ -86,6 +87,7 @@ import { roleNotes, roleAccentMap, statusConfig } from "./workspace/workspace-da
 import { DashboardStatsGrid } from "./workspace/dashboard-stats-grid";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
+import { SubmitReviewModal } from "./workspace/submit-review-modal";
 import { UserManagementPanel } from "./admin/user-management-panel";
 import { MailingCenterPanel } from "./admin/mailing-center-panel";
 import { IssueManagementPanel } from "./admin/issue-management-panel";
@@ -97,6 +99,55 @@ function getStatusConfig(status: string) {
     label: status,
     classes: "bg-slate-50 text-slate-600 border-slate-200",
     icon: FileText,
+  };
+}
+
+function mapDtoToSubmission(dto: any): Submission {
+  if (dto.author && Array.isArray(dto.reviewers) && dto.rawId !== undefined) return dto;
+  const statusMap: Record<string, string> = {
+    DRAFT: "Draft",
+    SUBMITTED: "Submitted",
+    INITIAL_CHECK: "In Desk Review",
+    WITH_EDITOR: "In Desk Review",
+    REVIEWER_INVITATION: "Under Review",
+    UNDER_REVIEW: "Under Review",
+    REVIEWS_COMPLETE: "Under Review",
+    REVISION_REQUESTED: "Revisions Requested",
+    REVISION_SUBMITTED: "Under Review",
+    ACCEPTED: "Accepted",
+    COPYEDITING: "Accepted",
+    PROOFING: "Accepted",
+    SCHEDULED: "Published",
+    PUBLISHED: "Published",
+    REJECTED: "Rejected",
+    WITHDRAWN: "Archived",
+  };
+  const reviewersList = Array.isArray(dto.reviews)
+    ? dto.reviews.map((r: any) => r.reviewerName || r.reviewerEmail || r.name).filter(Boolean)
+    : Array.isArray(dto.reviewers)
+      ? dto.reviewers
+      : [];
+
+  return {
+    id: dto.submissionId || (dto.id ? `GBJ-2026-${dto.id}` : "GBJ-000"),
+    rawId: dto.id,
+    submissionId: dto.submissionId,
+    title: dto.title || "Untitled Manuscript",
+    runningTitle: dto.runningTitle,
+    type: dto.type || "Research Article",
+    topic: dto.topic,
+    abstractText: dto.abstractText,
+    coverLetter: dto.coverLetter,
+    author: dto.submittingAuthor?.fullName || dto.author || dto.submittingAuthor?.email || "Author",
+    status: statusMap[dto.status] || dto.status || "Submitted",
+    editor: dto.assignedEditor?.fullName || dto.editor || "Unassigned",
+    reviewers: reviewersList,
+    updated: dto.updatedAt ? new Date(dto.updatedAt).toLocaleDateString() : "Recently",
+    due: dto.reviews?.[0]?.dueDate ? new Date(dto.reviews[0].dueDate).toLocaleDateString() : "14 days",
+    score: dto.reviewScore || 0,
+    files: dto.files || [],
+    reviews: dto.reviews || [],
+    submittingAuthor: dto.submittingAuthor,
   };
 }
 
@@ -225,7 +276,7 @@ function RowActionsDropdown({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--color-gb-border)] bg-white text-[color:var(--color-gb-ink)] shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-ink) shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
         title="Actions options"
       >
         <MoreVertical className="h-4 w-4" />
@@ -422,7 +473,7 @@ export function DashboardWorkspace({
     });
     try {
       await dispatch(logoutUser());
-    } catch {}
+    } catch { }
     clearSession();
     setTimeout(() => {
       window.location.href = "/login";
@@ -454,7 +505,7 @@ export function DashboardWorkspace({
 
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
-  const [submissions, setSubmissions] = useState<Submission[]>(seedSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -491,12 +542,26 @@ export function DashboardWorkspace({
     // Fetch real submissions from backend API
     async function loadRealData() {
       try {
-        const liveSubs = await submissionsApi.getMySubmissions();
-        if (liveSubs && Array.isArray(liveSubs) && liveSubs.length > 0) {
-          setSubmissions(liveSubs);
+        let liveSubs: Submission[] = [];
+        if (activeRole === "reviewer") {
+          const assignments = await reviewerApi.getMyAssignments();
+          if (assignments && Array.isArray(assignments)) {
+            liveSubs = assignments.map(mapDtoToSubmission);
+          }
+        } else if (activeRole === "editor" || activeRole === "admin" || activeRole === "super-admin") {
+          const res = await editorApi.listSubmissions();
+          if (res && (res as any).content && Array.isArray((res as any).content)) {
+            liveSubs = (res as any).content.map(mapDtoToSubmission);
+          }
+        } else {
+          const authorSubs = await submissionsApi.getMySubmissions();
+          if (authorSubs && Array.isArray(authorSubs)) {
+            liveSubs = authorSubs.map(mapDtoToSubmission);
+          }
         }
+        setSubmissions(liveSubs);
       } catch (err) {
-        // Fallback to baseline in-memory data if backend is still initializing
+        console.error("Failed to load submissions from API:", err);
       }
     }
     loadRealData();
@@ -508,7 +573,7 @@ export function DashboardWorkspace({
         setIsSidebarCollapsed(true);
       }
     }
-  }, []);
+  }, [activeRole, reduxUser]);
 
   const toggleSidebar = () => {
     const nextState = !isSidebarCollapsed;
@@ -520,24 +585,9 @@ export function DashboardWorkspace({
   };
 
   const filtered = useMemo(() => {
-    let result = submissions;
-    if (currentUser) {
-      if (activeRole === "author") {
-        result = submissions.filter(
-          (s) =>
-            s.author.toLowerCase() === currentUser.name.toLowerCase() ||
-            s.author === "Ayesha Siddique"
-        );
-      } else if (activeRole === "reviewer") {
-        result = submissions.filter(
-          (s) =>
-            s.reviewers.includes(currentUser.name) ||
-            s.reviewers.includes("Dr. Salma Khatun")
-        );
-      }
-    }
-    return result.filter((s) =>
-      [s.id, s.title, s.status, s.author]
+    if (!searchQuery.trim()) return submissions;
+    return submissions.filter((s) =>
+      [s.id, s.title, s.status, s.author, s.type]
         .join(" ")
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
@@ -567,7 +617,28 @@ export function DashboardWorkspace({
     toast.success(`Status advanced to "${nextStatus}".`);
   }
 
-  function handleAssignReviewerSubmit(subId: string, reviewerName: string) {
+  async function handleAssignReviewerSubmit(subId: string, reviewerName: string, reviewerId?: number) {
+    const sub = submissions.find((s) => s.id === subId);
+    const targetNumericId = sub?.rawId;
+
+    if (targetNumericId && reviewerId) {
+      try {
+        await editorApi.assignReviewer(targetNumericId, reviewerId);
+        toast.success(`Assigned ${reviewerName} to ${subId}.`);
+        try {
+          const res = await editorApi.listSubmissions();
+          if (res && (res as any).content && Array.isArray((res as any).content)) {
+            setSubmissions((res as any).content.map(mapDtoToSubmission));
+          }
+        } catch {}
+        return;
+      } catch (err: any) {
+        console.error("Failed to assign reviewer:", err);
+        toast.error(err?.message || "Failed to assign reviewer on server.");
+        return;
+      }
+    }
+
     const newSubs = submissions.map((s) => {
       if (s.id !== subId) return s;
       const reviewers = Array.from(new Set([...s.reviewers, reviewerName]));
@@ -658,23 +729,29 @@ export function DashboardWorkspace({
     setIsReviewModalOpen(true);
   }
 
-  function handleReviewSubmit() {
-    const scoreVal = parseInt(reviewScore) || 80;
-    const newSubs = submissions.map((s) =>
-      s.id === reviewSubId
-        ? {
-          ...s,
-          status: "Reviews Complete",
-          score: scoreVal,
-          updated: "Just now",
+  async function handleReviewSubmit(payload: {
+    recommendation: "ACCEPT" | "MINOR_REVISION" | "MAJOR_REVISION" | "REJECT";
+    score: number;
+    reviewComments: string;
+    confidentialComments?: string;
+  }) {
+    const sub = submissions.find((s) => s.id === reviewSubId) || selectedSubmission;
+    const targetId = sub?.rawId || reviewSubId;
+
+    try {
+      await reviewerApi.submitReview(targetId, payload);
+      toast.success(`Review submitted successfully!`);
+      setIsReviewModalOpen(false);
+      try {
+        const assignments = await reviewerApi.getMyAssignments();
+        if (assignments && Array.isArray(assignments)) {
+          setSubmissions(assignments.map(mapDtoToSubmission));
         }
-        : s
-    );
-    updateSubmissionsState(newSubs);
-    setIsReviewModalOpen(false);
-    toast.success(
-      `Review logged for ${reviewSubId}. Recommendation: ${reviewRec}.`
-    );
+      } catch {}
+    } catch (err: any) {
+      console.error("Failed to submit review:", err);
+      toast.error(err?.message || "Failed to submit review.");
+    }
   }
 
   function handleBuildIssue() {
@@ -732,7 +809,7 @@ export function DashboardWorkspace({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col bg-[#070e24] border-r border-white/[0.08] shadow-2xl lg:hidden text-white overflow-hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-70 max-w-[85vw] flex-col bg-[#070e24] border-r border-white/8 shadow-2xl lg:hidden text-white overflow-hidden"
               data-lenis-prevent="true"
             >
               {/* Header */}
@@ -808,7 +885,7 @@ export function DashboardWorkspace({
                                   "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
                                   isActive
                                     ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                                    : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                                    : "text-slate-300 hover:bg-white/6 hover:text-white border-l-transparent"
                                 )}
                               >
                                 <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
@@ -828,7 +905,7 @@ export function DashboardWorkspace({
                           "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
                           activeView === "analytics" && !pathname.includes("/profile")
                             ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
-                            : "text-slate-300 hover:bg-white/[0.06] hover:text-white border-l-transparent"
+                            : "text-slate-300 hover:bg-white/6 hover:text-white border-l-transparent"
                         )}
                       >
                         <BarChart2 className={cn("h-4 w-4 shrink-0", activeView === "analytics" && !pathname.includes("/profile") ? "text-[#60a5fa]" : "text-slate-400")} />
@@ -872,7 +949,7 @@ export function DashboardWorkspace({
                                 "flex w-full items-center rounded-xl text-left text-xs transition-colors h-9 px-3 gap-3 cursor-pointer",
                                 isTabActive
                                   ? "bg-blue-600/20 text-white font-bold"
-                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                                  : "text-slate-300 hover:bg-white/6 hover:text-white"
                               )}
                             >
                               <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-blue-400" : "text-slate-400")} />
@@ -919,7 +996,7 @@ export function DashboardWorkspace({
                                 "flex w-full items-center rounded-xl text-left text-xs transition-colors h-9 px-3 gap-3 cursor-pointer",
                                 isTabActive
                                   ? "bg-blue-600/20 text-white font-bold"
-                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                                  : "text-slate-300 hover:bg-white/6 hover:text-white"
                               )}
                             >
                               <Icon className={cn("h-4 w-4 shrink-0", isTabActive ? "text-blue-400" : "text-slate-400")} />
@@ -967,7 +1044,7 @@ export function DashboardWorkspace({
                                   "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
                                   isActive
                                     ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
-                                    : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border-l-transparent"
+                                    : "text-slate-400 hover:bg-white/4 hover:text-slate-200 border-l-transparent"
                                 )}
                               >
                                 <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
@@ -983,11 +1060,11 @@ export function DashboardWorkspace({
 
               {/* Mobile Footer with Profile & Sign Out */}
               {mounted && currentUser && (
-                <div className="mt-auto border-t border-white/[0.08] p-3 bg-[#050b1d] space-y-2">
+                <div className="mt-auto border-t border-white/8 p-3 bg-[#050b1d] space-y-2">
                   <Link
                     href="/dashboard/profile"
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+                    className="flex items-center gap-2.5 p-2 rounded-xl bg-white/4 hover:bg-white/8 border border-white/8 transition-colors"
                   >
                     <div className="relative shrink-0">
                       {currentUser.avatar ? (
@@ -997,7 +1074,7 @@ export function DashboardWorkspace({
                           className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs">
+                        <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs">
                           {currentUser.name.charAt(0)}
                         </div>
                       )}
@@ -1015,7 +1092,7 @@ export function DashboardWorkspace({
                   <Link
                     href="/"
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className="flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-xs font-medium transition-colors border border-white/[0.06]"
+                    className="flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl bg-white/4 hover:bg-white/8 text-slate-300 hover:text-white text-xs font-medium transition-colors border border-white/6"
                   >
                     <BookOpen className="h-3.5 w-3.5 text-slate-400" />
                     <span>Public Homepage</span>
@@ -1044,7 +1121,7 @@ export function DashboardWorkspace({
         data-lenis-prevent="true"
         className={cn(
           "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] h-full overflow-hidden z-30",
-          mounted && isSidebarCollapsed ? "w-[68px]" : "w-[270px]"
+          mounted && isSidebarCollapsed ? "w-17" : "w-67.5"
         )}
       >
         <div className="flex h-full min-h-0 flex-col">
@@ -1127,7 +1204,7 @@ export function DashboardWorkspace({
                                 "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                                 isActive
                                   ? "bg-blue-600/20 text-white font-bold shadow-xs"
-                                  : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                                  : "text-slate-300 hover:bg-white/6 hover:text-white"
                               )}
                             >
                               {isActive && (
@@ -1170,7 +1247,7 @@ export function DashboardWorkspace({
                         "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                         activeView === "analytics" && !pathname.includes("/profile")
                           ? "bg-blue-600/20 text-white font-bold shadow-xs"
-                          : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                          : "text-slate-300 hover:bg-white/6 hover:text-white"
                       )}
                     >
                       {activeView === "analytics" && !pathname.includes("/profile") && (
@@ -1237,7 +1314,7 @@ export function DashboardWorkspace({
                               "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                               isTabActive
                                 ? "bg-blue-600/20 text-white font-bold shadow-xs"
-                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                                : "text-slate-300 hover:bg-white/6 hover:text-white"
                             )}
                           >
                             {isTabActive && (
@@ -1307,7 +1384,7 @@ export function DashboardWorkspace({
                               "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
                               isTabActive
                                 ? "bg-blue-600/20 text-white font-bold shadow-xs"
-                                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                                : "text-slate-300 hover:bg-white/6 hover:text-white"
                             )}
                           >
                             {isTabActive && (
@@ -1373,7 +1450,7 @@ export function DashboardWorkspace({
                                 setIsMobileSidebarOpen(false);
                                 router.push(item.href);
                               }}
-                              className="flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                              className="flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group text-slate-400 hover:bg-white/4 hover:text-slate-200"
                             >
                               <div className="w-10 h-10 flex items-center justify-center shrink-0">
                                 <Icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-200" />
@@ -1401,7 +1478,7 @@ export function DashboardWorkspace({
           {/* Footer Controls: User Card Trigger with Profile & Sign Out Popover */}
           <div
             ref={userMenuRef}
-            className="mt-auto border-t border-white/[0.08] relative shrink-0 bg-[#050b1d] p-3 transition-colors"
+            className="mt-auto border-t border-white/8 relative shrink-0 bg-[#050b1d] p-3 transition-colors"
           >
             {/* Popover Menu */}
             <AnimatePresence>
@@ -1412,14 +1489,14 @@ export function DashboardWorkspace({
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   className={cn(
-                    "absolute z-50 rounded-2xl bg-[#09122c] border border-white/[0.12] p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.7)] text-white backdrop-blur-2xl ring-1 ring-white/10",
+                    "absolute z-50 rounded-2xl bg-[#09122c] border border-white/12 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.7)] text-white backdrop-blur-2xl ring-1 ring-white/10",
                     isSidebarCollapsed
                       ? "left-full bottom-2 ml-3 w-64"
                       : "bottom-full left-2.5 right-2.5 mb-2.5"
                   )}
                 >
                   {/* User info header card */}
-                  <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-1 space-y-2">
+                  <div className="px-3 py-2.5 rounded-xl bg-white/3 border border-white/6 mb-1 space-y-2">
                     <div className="flex items-center gap-2.5">
                       <div className="relative shrink-0">
                         {currentUser.avatar ? (
@@ -1429,7 +1506,7 @@ export function DashboardWorkspace({
                             className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/20"
                           />
                         ) : (
-                          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15">
+                          <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15">
                             {currentUser.name.charAt(0)}
                           </div>
                         )}
@@ -1462,7 +1539,7 @@ export function DashboardWorkspace({
                     </div>
 
                     {currentUser.department && (
-                      <div className="pt-1.5 border-t border-white/[0.06] flex items-center gap-1.5 text-[9.5px] text-slate-400 truncate">
+                      <div className="pt-1.5 border-t border-white/6 flex items-center gap-1.5 text-[9.5px] text-slate-400 truncate">
                         <Building2 className="h-3 w-3 text-slate-400 shrink-0" />
                         <span className="truncate">{currentUser.department}</span>
                       </div>
@@ -1474,7 +1551,7 @@ export function DashboardWorkspace({
                     <Link
                       href="/dashboard/profile"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/8 transition-all group cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
                         <UserIcon className="h-4 w-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
@@ -1483,12 +1560,12 @@ export function DashboardWorkspace({
                       <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
                     </Link>
 
-                    <div className="my-1 border-t border-white/[0.08]" />
+                    <div className="my-1 border-t border-white/8" />
 
                     <Link
                       href="/"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all group cursor-pointer"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/8 transition-all group cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
                         <BookOpen className="h-4 w-4 text-slate-400 group-hover:text-amber-400 transition-colors" />
@@ -1497,7 +1574,7 @@ export function DashboardWorkspace({
                       <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5" />
                     </Link>
 
-                    <div className="my-1 border-t border-white/[0.08]" />
+                    <div className="my-1 border-t border-white/8" />
 
                     <button
                       type="button"
@@ -1526,7 +1603,7 @@ export function DashboardWorkspace({
                   "flex items-center rounded-xl transition-all duration-150 cursor-pointer border group h-11 w-full overflow-hidden",
                   isUserMenuOpen
                     ? "bg-white/10 border-white/20 shadow-md ring-1 ring-white/10"
-                    : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.07] hover:border-white/15"
+                    : "bg-white/3 border-white/8 hover:bg-white/7 hover:border-white/15"
                 )}
                 title={`${currentUser.name} (${currentUser.role}) — Click for options`}
               >
@@ -1539,7 +1616,7 @@ export function DashboardWorkspace({
                       className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15 shadow-inner">
+                    <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15 shadow-inner">
                       {currentUser.name.charAt(0)}
                     </div>
                   )}
@@ -1574,18 +1651,18 @@ export function DashboardWorkspace({
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
-        <header className="shrink-0 z-20 flex h-12 items-center justify-between border-b border-[color:var(--color-gb-border)] bg-white/95 backdrop-blur-md px-4 shadow-xs">
+        <header className="shrink-0 z-20 flex h-12 items-center justify-between border-b border-(--color-gb-border) bg-white/95 backdrop-blur-md px-4 shadow-xs">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--color-gb-border)] bg-white text-[color:var(--color-gb-muted)] hover:bg-slate-50 transition-colors"
+              className="lg:hidden flex h-7 w-7 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-muted) hover:bg-slate-50 transition-colors"
             >
               <Menu className="h-4 w-4" />
             </button>
 
             <button
               onClick={toggleSidebar}
-              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--color-gb-border)] bg-white text-[color:var(--color-gb-muted)] hover:bg-slate-50 transition-colors cursor-pointer"
+              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-muted) hover:bg-slate-50 transition-colors cursor-pointer"
               title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isSidebarCollapsed ? (
@@ -1595,33 +1672,33 @@ export function DashboardWorkspace({
               )}
             </button>
 
-            <nav className="flex items-center gap-1.5 text-[11px] text-[color:var(--color-gb-muted)] ml-1.5">
-              <Link href="/dashboard" className="font-medium hover:text-[color:var(--color-gb-blue)] transition-colors">
+            <nav className="flex items-center gap-1.5 text-[11px] text-(--color-gb-muted) ml-1.5">
+              <Link href="/dashboard" className="font-medium hover:text-gb-blue transition-colors">
                 Dashboard
               </Link>
               <ChevronRight className="h-3 w-3" />
               {pathname.includes("/profile") ? (
-                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                <span className="font-bold text-gb-blue">
                   Academic Profile
                 </span>
               ) : pathname.includes("/submissions/new") ? (
-                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                <span className="font-bold text-gb-blue">
                   New Submission
                 </span>
               ) : pathname.includes("/cms") ? (
-                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                <span className="font-bold text-gb-blue">
                   Site &amp; Pages CMS
                 </span>
               ) : pathname.includes("/navigation") ? (
-                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                <span className="font-bold text-gb-blue">
                   Menu &amp; Nav Manager
                 </span>
               ) : pathname.includes("/publications") ? (
-                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                <span className="font-bold text-gb-blue">
                   All Publications
                 </span>
               ) : activeView === "analytics" ? (
-                <span className="font-bold text-[color:var(--color-gb-blue)]">
+                <span className="font-bold text-gb-blue">
                   Analytics
                 </span>
               ) : (
@@ -1635,14 +1712,14 @@ export function DashboardWorkspace({
           <div className="flex items-center gap-2">
             <button
               onClick={() => toast.info("No pending notifications.")}
-              className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--color-gb-border)] bg-white text-[color:var(--color-gb-muted)] hover:bg-slate-50 transition-colors cursor-pointer"
+              className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-muted) hover:bg-slate-50 transition-colors cursor-pointer"
             >
               <Bell className="h-3.5 w-3.5" />
             </button>
             {activeRole === "author" && !pathname.includes("/profile") && (
               <Link
                 href="/dashboard/submissions/new"
-                className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue)] px-3 text-[11px] font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-colors"
+                className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-gb-blue px-3 text-[11px] font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-colors"
               >
                 <Plus className="h-3 w-3" />
                 New Submission
@@ -1653,15 +1730,15 @@ export function DashboardWorkspace({
 
         <main className="flex-1 min-h-0 overflow-y-auto">
           {pathname.includes("/submissions/new") ||
-          pathname.includes("/profile") ||
-          pathname.includes("/cms") ||
-          pathname.includes("/navigation") ||
-          pathname.includes("/publications") ||
-          pathname.includes("/pipeline") ||
-          pathname.includes("/users") ||
-          pathname.includes("/mailing") ||
-          pathname.includes("/issues") ||
-          pathname.includes("/board") ? (
+            pathname.includes("/profile") ||
+            pathname.includes("/cms") ||
+            pathname.includes("/navigation") ||
+            pathname.includes("/publications") ||
+            pathname.includes("/pipeline") ||
+            pathname.includes("/users") ||
+            pathname.includes("/mailing") ||
+            pathname.includes("/issues") ||
+            pathname.includes("/board") ? (
             children
           ) : (
             <>
@@ -1679,7 +1756,7 @@ export function DashboardWorkspace({
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.2 }}
                       className={cn(
-                        "flex items-center justify-between border-b border-l-4 border-[color:var(--color-gb-border)] px-5 py-4 bg-white/70 backdrop-blur-sm shadow-[inset_0_-1px_0_rgba(17,27,82,0.02)] transition-all duration-300",
+                        "flex items-center justify-between border-b border-l-4 border-(--color-gb-border) px-5 py-4 bg-white/70 backdrop-blur-sm shadow-[inset_0_-1px_0_rgba(17,27,82,0.02)] transition-all duration-300",
                         roleAccent.border
                       )}
                     >
@@ -1715,10 +1792,10 @@ export function DashboardWorkspace({
                               Active Workspace
                             </span>
                           </div>
-                          <h1 className="mt-1.5 text-sm font-extrabold text-[color:var(--color-gb-ink)] tracking-tight font-academic">
+                          <h1 className="mt-1.5 text-sm font-extrabold text-(--color-gb-ink) tracking-tight font-academic">
                             {roleAccent.label} Suite
                           </h1>
-                          <p className="mt-1 max-w-2xl text-[11px] text-[color:var(--color-gb-muted)] leading-relaxed">
+                          <p className="mt-1 max-w-2xl text-[11px] text-(--color-gb-muted) leading-relaxed">
                             {roleNotes[activeRole]}
                           </p>
                         </div>
@@ -1728,7 +1805,7 @@ export function DashboardWorkspace({
 
                   <div>
                     <div className="p-4">
-                      <DashboardStatsGrid submissions={submissions} />
+                      <DashboardStatsGrid submissions={activeRole === "reviewer" || activeRole === "author" ? filtered : submissions} />
                     </div>
 
                     <div className="px-4 pb-6 space-y-4">
@@ -1739,35 +1816,35 @@ export function DashboardWorkspace({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.25 }}
-                          className="h-fit rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm"
+                          className="h-fit rounded-xl border border-(--color-gb-border) bg-white shadow-sm"
                         >
-                          <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-gb-border)] px-4 py-3 rounded-t-xl">
+                          <div className="flex items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 py-3 rounded-t-xl">
                             <div className="flex items-center gap-2.5">
-                              <div className="h-6 w-6 rounded-md bg-[color:var(--color-gb-blue-soft)] flex items-center justify-center">
-                                <ClipboardCheck className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+                              <div className="h-6 w-6 rounded-md bg-gb-blue-soft flex items-center justify-center">
+                                <ClipboardCheck className="h-3.5 w-3.5 text-gb-blue" />
                               </div>
                               <div>
-                                <h2 className="text-[13px] font-black text-[color:var(--color-gb-ink)]">
+                                <h2 className="text-[13px] font-black text-gb-ink">
                                   Manuscript Pipeline
                                 </h2>
-                                <p className="text-[10px] text-[color:var(--color-gb-muted)]" suppressHydrationWarning>
+                                <p className="text-[10px] text-(--color-gb-muted)" suppressHydrationWarning>
                                   {mounted ? `${filtered.length} record${filtered.length !== 1 ? "s" : ""}` : "Manuscripts"} · double-blind peer review
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 rounded-lg border border-[color:var(--color-gb-border)] bg-[#f9fafc] px-3 py-1.5 focus-within:border-[color:var(--color-gb-blue)] focus-within:bg-white transition-all">
-                                <Search className="h-3.5 w-3.5 text-[color:var(--color-gb-muted)]" />
+                              <div className="flex items-center gap-1.5 rounded-lg border border-(--color-gb-border) bg-[#f9fafc] px-3 py-1.5 focus-within:border-gb-blue focus-within:bg-white transition-all">
+                                <Search className="h-3.5 w-3.5 text-(--color-gb-muted)" />
                                 <input
                                   value={searchQuery}
                                   onChange={(e) => setSearchQuery(e.target.value)}
                                   placeholder="Search…"
-                                  className="w-32 bg-transparent text-[12px] font-medium text-[color:var(--color-gb-ink)] outline-none placeholder:text-[color:var(--color-gb-muted)]"
+                                  className="w-32 bg-transparent text-[12px] font-medium text-gb-ink outline-none placeholder:text-(--color-gb-muted)"
                                 />
                                 {searchQuery && (
                                   <button
                                     onClick={() => setSearchQuery("")}
-                                    className="text-[color:var(--color-gb-muted)] hover:text-[color:var(--color-gb-ink)] cursor-pointer"
+                                    className="text-(--color-gb-muted) hover:text-gb-ink cursor-pointer"
                                   >
                                     <X className="h-3 w-3" />
                                   </button>
@@ -1778,7 +1855,7 @@ export function DashboardWorkspace({
 
                           {!mounted ? (
                             <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center" suppressHydrationWarning>
-                              <div className="h-5 w-5 rounded-full border-2 border-[color:var(--color-gb-blue)] border-t-transparent animate-spin mb-2" />
+                              <div className="h-5 w-5 rounded-full border-2 border-gb-blue border-t-transparent animate-spin mb-2" />
                               <span>Synchronizing manuscript pipeline...</span>
                             </div>
                           ) : filtered.length === 0 ? (
@@ -1786,22 +1863,22 @@ export function DashboardWorkspace({
                               {searchQuery.trim() ? (
                                 <div className="flex flex-col items-center max-w-sm">
                                   <div className="relative mb-4 flex items-center justify-center">
-                                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200/80 border border-slate-200 flex items-center justify-center shadow-inner">
-                                      <SearchX className="h-7 w-7 text-[color:var(--color-gb-blue)]" />
+                                    <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200/80 border border-slate-200 flex items-center justify-center shadow-inner">
+                                      <SearchX className="h-7 w-7 text-gb-blue" />
                                     </div>
                                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs text-[10px] font-bold">
                                       0
                                     </span>
                                   </div>
-                                  <h3 className="text-sm font-extrabold text-[color:var(--color-gb-ink)] font-academic tracking-tight">
+                                  <h3 className="text-sm font-extrabold text-gb-ink font-academic tracking-tight">
                                     No Manuscripts Found
                                   </h3>
-                                  <p className="mt-1.5 text-xs text-[color:var(--color-gb-muted)] leading-relaxed">
+                                  <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
                                     No records match <span className="font-semibold text-slate-800 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">&quot;{searchQuery}&quot;</span>. Try checking for typos or searching by author name or manuscript ID.
                                   </p>
                                   <button
                                     onClick={() => setSearchQuery("")}
-                                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-soft)] border border-[color:var(--color-gb-blue)]/20 px-3.5 py-1.5 text-xs font-bold text-[color:var(--color-gb-blue)] hover:bg-[color:var(--color-gb-blue)] hover:text-white transition-all shadow-xs cursor-pointer"
+                                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gb-blue-soft border border-gb-blue/20 px-3.5 py-1.5 text-xs font-bold text-gb-blue hover:bg-gb-blue hover:text-white transition-all shadow-xs cursor-pointer"
                                   >
                                     <X className="h-3.5 w-3.5" />
                                     Clear Search Filter
@@ -1810,21 +1887,21 @@ export function DashboardWorkspace({
                               ) : (
                                 <div className="flex flex-col items-center max-w-md">
                                   <div className="relative mb-4 flex items-center justify-center">
-                                    <div className="absolute -inset-2 rounded-3xl bg-[color:var(--color-gb-blue)]/5 blur-lg" />
-                                    <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-b from-white via-slate-50 to-slate-100 border border-slate-200/90 flex items-center justify-center shadow-[0_8px_24px_rgba(17,27,82,0.06)]">
-                                      {activeRole === "author" && <PenLine className="h-7 w-7 text-[color:var(--color-gb-blue)]" />}
+                                    <div className="absolute -inset-2 rounded-3xl bg-gb-blue/5 blur-lg" />
+                                    <div className="relative h-16 w-16 rounded-2xl bg-linear-to-b from-white via-slate-50 to-slate-100 border border-slate-200/90 flex items-center justify-center shadow-[0_8px_24px_rgba(17,27,82,0.06)]">
+                                      {activeRole === "author" && <PenLine className="h-7 w-7 text-gb-blue" />}
                                       {activeRole === "reviewer" && <UserCheck className="h-7 w-7 text-purple-600" />}
                                       {activeRole === "editor" && <ClipboardCheck className="h-7 w-7 text-emerald-600" />}
                                       {(activeRole === "admin" || activeRole === "super-admin") && <Inbox className="h-7 w-7 text-amber-600" />}
                                     </div>
                                   </div>
-                                  <h3 className="text-sm font-extrabold text-[color:var(--color-gb-ink)] font-academic tracking-tight">
+                                  <h3 className="text-sm font-extrabold text-gb-ink font-academic tracking-tight">
                                     {activeRole === "author" && "No Manuscripts Submitted Yet"}
                                     {activeRole === "reviewer" && "No Manuscripts Assigned for Review"}
                                     {activeRole === "editor" && "Editorial Pipeline is Clear"}
                                     {(activeRole === "admin" || activeRole === "super-admin") && "No Active Manuscripts in Pipeline"}
                                   </h3>
-                                  <p className="mt-1.5 text-xs text-[color:var(--color-gb-muted)] leading-relaxed">
+                                  <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
                                     {activeRole === "author" &&
                                       "You haven't submitted any research papers to Gono Bishwabidyalay Journal yet. Start a new manuscript submission to begin peer review."}
                                     {activeRole === "reviewer" &&
@@ -1838,7 +1915,7 @@ export function DashboardWorkspace({
                                     <div className="mt-4">
                                       <Link
                                         href="/dashboard/submissions/new"
-                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer"
                                       >
                                         <Plus className="h-3.5 w-3.5" />
                                         New Manuscript Submission
@@ -1875,20 +1952,20 @@ export function DashboardWorkspace({
                                   <TableBody suppressHydrationWarning>
                                     {filtered.map((sub) => (
                                       <TableRow key={sub.id}>
-                                        <TableCell className="max-w-[280px]">
-                                          <span className="font-mono text-[10px] font-black text-[color:var(--color-gb-red)]">
+                                        <TableCell className="max-w-70">
+                                          <span className="font-mono text-[10px] font-black text-gb-red">
                                             {sub.id}
                                           </span>
-                                          <p className="mt-0.5 text-[12px] font-bold text-[color:var(--color-gb-ink)] leading-snug line-clamp-2">
+                                          <p className="mt-0.5 text-[12px] font-bold text-gb-ink leading-snug line-clamp-2">
                                             {sub.title}
                                           </p>
-                                          <p className="mt-0.5 text-[10px] text-[color:var(--color-gb-muted)]">
+                                          <p className="mt-0.5 text-[10px] text-(--color-gb-muted)">
                                             {sub.type} · {sub.author}
                                           </p>
                                         </TableCell>
                                         <TableCell>
                                           <StatusPill status={sub.status} />
-                                          <p className="mt-1 text-[10px] text-[color:var(--color-gb-muted)] flex items-center gap-1">
+                                          <p className="mt-1 text-[10px] text-(--color-gb-muted) flex items-center gap-1">
                                             <Clock className="h-2.5 w-2.5" />
                                             {sub.updated}
                                           </p>
@@ -1899,14 +1976,14 @@ export function DashboardWorkspace({
                                               {sub.reviewers.map((r, i) => (
                                                 <p
                                                   key={i}
-                                                  className="text-[10px] font-semibold text-[color:var(--color-gb-ink)] whitespace-nowrap"
+                                                  className="text-[10px] font-semibold text-gb-ink whitespace-nowrap"
                                                 >
                                                   · {r}
                                                 </p>
                                               ))}
                                             </div>
                                           ) : (
-                                            <span className="text-[10px] italic text-[color:var(--color-gb-muted)]">
+                                            <span className="text-[10px] italic text-(--color-gb-muted)">
                                               Unassigned
                                             </span>
                                           )}
@@ -1915,17 +1992,16 @@ export function DashboardWorkspace({
                                           <div className="flex items-center gap-2">
                                             <div className="h-1.5 w-12 rounded-full bg-slate-100 overflow-hidden">
                                               <div
-                                                className={`h-full rounded-full transition-all ${
-                                                  sub.score >= 80
-                                                    ? "bg-emerald-500"
-                                                    : sub.score >= 60
+                                                className={`h-full rounded-full transition-all ${sub.score >= 80
+                                                  ? "bg-emerald-500"
+                                                  : sub.score >= 60
                                                     ? "bg-amber-500"
                                                     : "bg-red-500"
-                                                }`}
+                                                  }`}
                                                 style={{ width: `${sub.score}%` }}
                                               />
                                             </div>
-                                            <span className="text-[11px] font-black text-[color:var(--color-gb-ink)]">
+                                            <span className="text-[11px] font-black text-gb-ink">
                                               {sub.score}
                                             </span>
                                           </div>
@@ -1937,7 +2013,7 @@ export function DashboardWorkspace({
                                               onChange={(d) => updateDueDate(sub.id, d)}
                                             />
                                           ) : (
-                                            <span className="font-mono text-[11px] font-bold text-[color:var(--color-gb-muted)]">
+                                            <span className="font-mono text-[11px] font-bold text-(--color-gb-muted)">
                                               {sub.due}
                                             </span>
                                           )}
@@ -1963,25 +2039,25 @@ export function DashboardWorkspace({
                               </div>
 
                               {/* Mobile Card List View */}
-                              <div className="md:hidden divide-y divide-[color:var(--color-gb-border)]">
+                              <div className="md:hidden divide-y divide-(--color-gb-border)">
                                 {filtered.map((sub) => (
                                   <div key={sub.id} className="p-4 space-y-3">
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="min-w-0 flex-1">
-                                        <span className="font-mono text-[10px] font-black text-[color:var(--color-gb-red)]">
+                                        <span className="font-mono text-[10px] font-black text-gb-red">
                                           {sub.id}
                                         </span>
-                                        <h4 className="mt-0.5 text-xs font-bold text-[color:var(--color-gb-ink)] leading-snug">
+                                        <h4 className="mt-0.5 text-xs font-bold text-gb-ink leading-snug">
                                           {sub.title}
                                         </h4>
-                                        <p className="mt-0.5 text-[10px] text-[color:var(--color-gb-muted)]">
+                                        <p className="mt-0.5 text-[10px] text-(--color-gb-muted)">
                                           {sub.type} · {sub.author}
                                         </p>
                                       </div>
                                       <StatusPill status={sub.status} />
                                     </div>
 
-                                    <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-[color:var(--color-gb-muted)] border-t border-slate-100">
+                                    <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-(--color-gb-muted) border-t border-slate-100">
                                       <span className="flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
                                         {sub.updated}
@@ -2061,7 +2137,7 @@ export function DashboardWorkspace({
             <button
               type="button"
               onClick={() => toast.success("Downloading manuscript package...")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
             >
               <Download className="h-3.5 w-3.5" />
               <span>Download All Files</span>
@@ -2102,16 +2178,62 @@ export function DashboardWorkspace({
             </div>
 
             {/* Abstract */}
-            {(selectedSubmission as any).abstract && (
+            {(selectedSubmission.abstractText || (selectedSubmission as any).abstract) && (
               <div className="space-y-2">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Abstract
                 </h3>
                 <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  {(selectedSubmission as any).abstract}
+                  {selectedSubmission.abstractText || (selectedSubmission as any).abstract}
                 </p>
               </div>
             )}
+
+            {/* Attached Documents (Supabase Storage) */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                Attached Documents ({selectedSubmission.files?.length || 0})
+              </h3>
+              {selectedSubmission.files && selectedSubmission.files.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedSubmission.files.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 shrink-0">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {file.originalFilename || "Manuscript Document"}
+                          </p>
+                          <span className="text-[10px] text-slate-500">
+                            {file.fileType || "PDF"} {file.sizeBytes ? `• ${(file.sizeBytes / 1024).toFixed(0)} KB` : ""}
+                          </span>
+                        </div>
+                      </div>
+                      {file.downloadUrl && (
+                        <a
+                          href={file.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition-colors shrink-0"
+                        >
+                          <span>Open PDF</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  No document files attached.
+                </p>
+              )}
+            </div>
 
             {/* Reviewers Assigned */}
             <div className="space-y-2">
@@ -2136,16 +2258,73 @@ export function DashboardWorkspace({
                 )}
               </div>
             </div>
+
+            {/* Peer Review Feedback & Comments */}
+            {selectedSubmission.reviews && selectedSubmission.reviews.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-slate-200">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                  Peer Review Evaluations ({selectedSubmission.reviews.length})
+                </h3>
+                <div className="space-y-3">
+                  {selectedSubmission.reviews.map((rev, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4 text-emerald-600" />
+                          <span className="text-xs font-bold text-slate-900">
+                            {rev.reviewerName || "Reviewer"}
+                          </span>
+                          <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            {rev.status}
+                          </span>
+                        </div>
+                        {rev.score !== undefined && rev.score !== null && (
+                          <span className="font-mono text-xs font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                            Score: {rev.score}/100
+                          </span>
+                        )}
+                      </div>
+
+                      {rev.recommendation && (
+                        <p className="text-xs font-semibold text-slate-700">
+                          Recommendation: <span className="font-bold text-emerald-700">{rev.recommendation}</span>
+                        </p>
+                      )}
+
+                      {rev.reviewComments && (
+                        <div className="rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700 border border-slate-200">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            Reviewer Remarks
+                          </p>
+                          <p className="whitespace-pre-line leading-relaxed">{rev.reviewComments}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CustomDrawer>
 
-      {/* Assign Modal */}
+      {/* Assign Reviewer Modal */}
       <AssignReviewerModal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         submission={selectedSubmission}
         onAssign={handleAssignReviewerSubmit}
+      />
+
+      {/* Submit Review Modal */}
+      <SubmitReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        submission={selectedSubmission}
+        onSubmit={handleReviewSubmit}
       />
 
       {/* Logout Confirmation Modal */}
@@ -2191,7 +2370,7 @@ export function DashboardWorkspace({
       {/* Real-time Logout Loading Overlay */}
       {isLoggingOut && (
         <div
-          className="fixed inset-0 z-[999999] flex items-center justify-center bg-white animate-in fade-in duration-200"
+          className="fixed inset-0 z-999999 flex items-center justify-center bg-white animate-in fade-in duration-200"
           data-lenis-prevent="true"
         >
           <PremiumLoader text="Signing out & securing session..." fullScreen={false} />

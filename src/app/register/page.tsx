@@ -284,6 +284,7 @@ function RegisterForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@university.edu.bd"
+                    suppressHydrationWarning
                     className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 font-mono"
                   />
                 </div>

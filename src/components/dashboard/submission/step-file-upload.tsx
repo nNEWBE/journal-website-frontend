@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FileCheck2, FileText, Trash2, UploadCloud } from "lucide-react";
 
 export interface ManuscriptFile {
@@ -8,6 +8,7 @@ export interface ManuscriptFile {
   size: string;
   type: string;
   date: string;
+  file?: File;
 }
 
 interface StepFileUploadProps {
@@ -17,15 +18,43 @@ interface StepFileUploadProps {
 
 export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSimulatedDrop = () => {
-    const newFile: ManuscriptFile = {
-      name: `manuscript-${Date.now().toString().slice(-4)}.docx`,
-      size: "2.8 MB",
-      type: files.length === 0 ? "Blinded Copy" : "Supplementary Data",
-      date: "Just now",
-    };
-    setFiles([...files, newFile]);
+  const processFiles = (fileList: FileList | File[]) => {
+    const incoming = Array.from(fileList);
+    if (incoming.length === 0) return;
+
+    const newFiles: ManuscriptFile[] = incoming.map((file, idx) => {
+      const sizeStr =
+        file.size > 1024 * 1024
+          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.round(file.size / 1024)} KB`;
+
+      return {
+        name: file.name,
+        size: sizeStr,
+        type: files.length + idx === 0 ? "Blinded Manuscript" : "Supplementary Material",
+        date: "Just now",
+        file: file,
+      };
+    });
+
+    setFiles((prev) => [...prev, ...newFiles]);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files);
+      e.target.value = "";
+    }
   };
 
   const removeFile = (index: number) => {
@@ -43,6 +72,16 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
         </p>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.xlsx,.zip"
+        multiple
+        className="hidden"
+        onChange={handleInputChange}
+      />
+
       {/* Drag and Drop Zone */}
       <div
         onDragOver={(e) => {
@@ -50,12 +89,8 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          handleSimulatedDrop();
-        }}
-        onClick={handleSimulatedDrop}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
         className={`relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
           isDragging
             ? "border-blue-500 bg-blue-50/80 scale-[0.99]"

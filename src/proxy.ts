@@ -58,8 +58,9 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Verify token validity
+    // Verify token validity with backend
     let isValid = false;
+    let backendChecked = false;
 
     try {
       const verifyRes = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
@@ -67,20 +68,19 @@ export async function proxy(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(4000),
       });
 
+      backendChecked = true;
       if (verifyRes.ok) {
         isValid = true;
       }
     } catch {
-      // Backend offline fallback - verify JWT structure & expiry locally
-      if (isLikelyValidJwt(accessToken)) {
-        isValid = true;
-      }
+      // Backend temporarily offline
     }
 
-    if (!isValid && !isLikelyValidJwt(accessToken)) {
+    // If backend was reached and rejected the token, or if backend was unreachable and JWT structure/expiry is invalid:
+    if (backendChecked ? !isValid : !isLikelyValidJwt(accessToken)) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("redirect", pathname);

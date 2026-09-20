@@ -139,6 +139,8 @@ export const authSlice = createSlice({
     builder.addCase(loginUser.rejected, (state, action) => {
       state.isLoading = false;
       state.error = action.payload || "Login failed";
+      state.isAuthenticated = false;
+      state.user = null;
     });
 
     // Register

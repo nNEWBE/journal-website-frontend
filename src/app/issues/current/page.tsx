@@ -33,20 +33,20 @@ import { issues, type Article } from "@/lib/data";
 
 export default function CurrentIssuePage() {
   const currentIssue = issues[0];
-  const allArticles = currentIssue.articles;
+  const allArticles: Article[] = useMemo(() => currentIssue?.articles ?? [], [currentIssue]);
 
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
 
   // Extract unique topics in this issue
-  const issueTopics = useMemo(() => {
-    return Array.from(new Set(allArticles.map((a) => a.topic)));
+  const issueTopics: string[] = useMemo(() => {
+    return Array.from(new Set(allArticles.map((a: Article) => a.topic)));
   }, [allArticles]);
 
   // Filter articles
   const filteredArticles = useMemo(() => {
-    return allArticles.filter((article) => {
+    return allArticles.filter((article: Article) => {
       const matchesTopic =
         selectedTopic === "all" || article.topic === selectedTopic;
       const q = searchQuery.toLowerCase().trim();
@@ -54,7 +54,7 @@ export default function CurrentIssuePage() {
         !q ||
         article.title.toLowerCase().includes(q) ||
         article.abstract.toLowerCase().includes(q) ||
-        article.authors.some((author) => author.toLowerCase().includes(q)) ||
+        article.authors.some((author: string) => author.toLowerCase().includes(q)) ||
         article.topic.toLowerCase().includes(q);
 
       return matchesTopic && matchesSearch;
@@ -62,21 +62,58 @@ export default function CurrentIssuePage() {
   }, [allArticles, selectedTopic, searchQuery]);
 
   const totalViews = useMemo(
-    () => allArticles.reduce((sum, a) => sum + (a.metrics?.views || 0), 0),
+    () => allArticles.reduce((sum: number, a: Article) => sum + (a.metrics?.views || 0), 0),
     [allArticles]
   );
   const totalDownloads = useMemo(
-    () => allArticles.reduce((sum, a) => sum + (a.metrics?.downloads || 0), 0),
+    () => allArticles.reduce((sum: number, a: Article) => sum + (a.metrics?.downloads || 0), 0),
     [allArticles]
   );
 
-  const citationText = `Gono Bishwabidyalay Journal of Research. (${currentIssue.year}). ${currentIssue.theme}. Vol. 4, No. 2, pp. 1-84. https://doi.org/10.5555/gbj.${currentIssue.year}.${currentIssue.id}`;
+  const citationText = currentIssue
+    ? `Gono Bishwabidyalay Journal of Research. (${currentIssue.year}). ${currentIssue.theme}. Vol. 4, No. 2, pp. 1-84. https://doi.org/10.5555/gbj.${currentIssue.year}.${currentIssue.id}`
+    : "";
 
   const handleCopyCitation = () => {
+    if (!citationText) return;
     navigator.clipboard.writeText(citationText);
     setCopiedCitation(true);
     setTimeout(() => setCopiedCitation(false), 2500);
   };
+
+  if (!currentIssue) {
+    return (
+      <PageShell>
+        <div className="bg-[#fbfcff] py-20 border-b border-slate-200/80 min-h-[60vh] flex items-center justify-center">
+          <div className="container-x max-w-lg text-center">
+            <div className="bg-white border border-slate-200/90 p-8 sm:p-12 shadow-2xs">
+              <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+              <h1 className="font-academic text-2xl font-medium text-slate-900">
+                No Current Issue Published
+              </h1>
+              <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                The editorial board is currently preparing the next journal issue. Please check back soon or explore our past archives and author guidelines.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/issues"
+                  className="bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                >
+                  Browse Archives
+                </Link>
+                <Link
+                  href="/authors"
+                  className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                >
+                  Author Guidelines
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
@@ -85,7 +122,7 @@ export default function CurrentIssuePage() {
       ───────────────────────────────────────────────────────────── */}
       <section className="bg-white border-b border-slate-200/80 pt-8 pb-12 sm:pt-10 sm:pb-16">
         <div className="container-x">
-          
+
           {/* Breadcrumb Navigation */}
           <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mb-6">
             <Link href="/" className="hover:text-[#1e40af] transition-colors">Home</Link>
@@ -110,10 +147,10 @@ export default function CurrentIssuePage() {
 
           {/* 2-Column Split: Magazine Cover + Metadata Specs */}
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-8 lg:gap-12 items-center">
-            
+
             {/* Left Column: Magazine Issue Cover Card */}
             <FadeIn direction="up" delay={0.1}>
-              <div className="relative mx-auto lg:mx-0 w-full max-w-[270px] sm:max-w-[285px] aspect-[3/4] overflow-hidden bg-[#061026] text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] border border-slate-200/80 group">
+              <div className="relative mx-auto lg:mx-0 w-full max-w-67.5 sm:max-w-71.25 aspect-3/4 overflow-hidden bg-[#061026] text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] border border-slate-200/80 group">
                 <div className="absolute inset-0">
                   <Image
                     src="/images/hero/molecular_inhibitors.jpg"
@@ -123,7 +160,7 @@ export default function CurrentIssuePage() {
                     sizes="290px"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#061026]/90 via-[#061026]/25 to-[#061026]/95" />
+                  <div className="absolute inset-0 bg-linear-to-b from-[#061026]/90 via-[#061026]/25 to-[#061026]/95" />
                 </div>
 
                 {/* Cover Header */}
@@ -270,9 +307,9 @@ export default function CurrentIssuePage() {
       ───────────────────────────────────────────────────────────── */}
       <section id="table-of-contents" className="bg-[#fbfcff] py-10 sm:py-14 border-b border-slate-200/80">
         <div className="container-x">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-8 items-start">
-            
+
             {/* ── Left Column: Articles List ── */}
             <div>
               {/* Header Bar */}
@@ -321,11 +358,10 @@ export default function CurrentIssuePage() {
                   <button
                     type="button"
                     onClick={() => setSelectedTopic("all")}
-                    className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors border cursor-pointer ${
-                      selectedTopic === "all"
-                        ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                    }`}
+                    className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors border cursor-pointer ${selectedTopic === "all"
+                      ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                      }`}
                   >
                     All ({allArticles.length})
                   </button>
@@ -334,11 +370,10 @@ export default function CurrentIssuePage() {
                       key={topic}
                       type="button"
                       onClick={() => setSelectedTopic(topic)}
-                      className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors border cursor-pointer ${
-                        selectedTopic === topic
-                          ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors border cursor-pointer ${selectedTopic === topic
+                        ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
                     >
                       {topic}
                     </button>
@@ -369,15 +404,15 @@ export default function CurrentIssuePage() {
                 </div>
               ) : (
                 <StaggerContainer className="flex flex-col gap-5">
-                  {filteredArticles.map((article, idx) => (
+                  {filteredArticles.map((article: Article, idx: number) => (
                     <StaggerItem key={article.id}>
                       <article className="bg-white border border-slate-200/90 p-4 sm:p-5 shadow-2xs hover:border-slate-300 transition-all group">
                         <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-5 items-start">
-                          
+
                           {/* Article Image Container */}
                           <Link
                             href={`/articles/${article.slug}`}
-                            className="relative aspect-[4/3] sm:aspect-[3/4] w-full overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 block"
+                            className="relative aspect-4/3 sm:aspect-3/4 w-full overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 block"
                           >
                             <Image
                               src={article.image || "/covers/medical.png"}
@@ -386,7 +421,7 @@ export default function CurrentIssuePage() {
                               sizes="(max-width: 639px) 100vw, 160px"
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent" />
                             <span className="absolute top-2 left-2 bg-slate-900/90 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 text-[9px] font-mono font-bold">
                               {String(idx + 1).padStart(2, "0")}
                             </span>
@@ -440,7 +475,7 @@ export default function CurrentIssuePage() {
                                   {article.metrics?.downloads.toLocaleString()} pdfs
                                 </span>
                                 <span className="text-slate-400 hidden sm:inline">|</span>
-                                <span className="text-slate-500 hidden sm:inline truncate max-w-[140px]">
+                                <span className="text-slate-500 hidden sm:inline truncate max-w-35">
                                   DOI: {article.doi}
                                 </span>
                               </div>
@@ -468,7 +503,7 @@ export default function CurrentIssuePage() {
 
             {/* ── Right Column: Sticky Sidebar ── */}
             <aside className="space-y-6 lg:sticky lg:top-24">
-              
+
               {/* Journal Specifications */}
               <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
                 <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3 flex items-center gap-1.5">

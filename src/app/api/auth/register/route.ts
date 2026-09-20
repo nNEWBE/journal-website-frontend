@@ -3,39 +3,20 @@ import { getBackendUrl } from "@/lib/backend-url";
 
 const BACKEND_URL = getBackendUrl();
 
-function base64UrlEncode(str: string): string {
-  return Buffer.from(str)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
-function generateDevJwt(payload: Record<string, any>, expiresInSec: number): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  const fullPayload = {
-    ...payload,
-    iat: now,
-    exp: now + expiresInSec,
-  };
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload));
-  const signature = base64UrlEncode(`gb_secret_sig_${now}`);
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    let accessToken: string | null = null;
-    let refreshToken: string | null = null;
-    let user: any = null;
+    if (!body.email || !body.password || !body.fullName) {
+      return NextResponse.json(
+        { message: "Full name, email, and password are required for registration." },
+        { status: 400 }
+      );
+    }
 
+    let backendRes: Response;
     try {
-      const backendRes = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
+      backendRes = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,41 +24,32 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(15000),
       });
-
-      if (backendRes.ok) {
-        const data = await backendRes.json();
-        accessToken = data.accessToken;
-        refreshToken = data.refreshToken;
-        user = data.user;
-      }
-    } catch {
-      // Backend offline fallback
-    }
-
-    if (!user) {
-      user = {
-        id: "usr_" + Math.random().toString(36).substring(2, 9),
-        email: body.email,
-        name: body.fullName || body.name || "Academic Author",
-        fullName: body.fullName || body.name || "Academic Author",
-        role: body.role || "author",
-        title: body.title || "Author",
-        department: body.department || "Department of Pharmacy",
-        institution: body.institution || "Gono Bishwabidyalay",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-          body.email
-        )}&mouth=default,smile&eyes=default&eyebrows=defaultNatural,default&clothing=blazerAndShirt,blazerAndSweater,collarAndSweater`,
-      };
-
-      accessToken = generateDevJwt(
-        { sub: user.email, role: user.role, name: user.name, id: user.id },
-        60 * 60 * 24
-      );
-      refreshToken = generateDevJwt(
-        { sub: user.email, type: "refresh", id: user.id },
-        60 * 60 * 24 * 7
+    } catch (networkErr: any) {
+      console.error("[auth/register] Backend network error:", networkErr?.message);
+      return NextResponse.json(
+        { message: "Registration service is temporarily unavailable. Please try again shortly." },
+        { status: 503 }
       );
     }
+
+    if (!backendRes.ok) {
+      let errorMessage = "Registration failed. Please check your details and try again.";
+      try {
+        const errorData = await backendRes.json();
+        if (errorData.message) errorMessage = errorData.message;
+        else if (errorData.error) errorMessage = errorData.error;
+      } catch {}
+
+      return NextResponse.json(
+        { message: errorMessage },
+        { status: backendRes.status }
+      );
+    }
+
+    const data = await backendRes.json();
+    const accessToken = data.accessToken;
+    const refreshToken = data.refreshToken;
+    const user = data.user;
 
     const response = NextResponse.json({
       success: true,

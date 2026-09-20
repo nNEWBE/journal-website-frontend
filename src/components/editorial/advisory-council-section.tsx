@@ -30,12 +30,20 @@ export function AdvisoryCouncilSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {advisoryCouncil.map((member) => (
-          <div
-            key={member.id}
-            className="bg-white border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
-          >
+      {advisoryCouncil.length === 0 ? (
+        <div className="bg-white border border-dashed border-slate-300 p-8 text-center">
+          <Globe2 className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+          <p className="text-xs text-slate-500">
+            Advisory council appointments will be announced for the upcoming publication term.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {advisoryCouncil.map((member) => (
+            <div
+              key={member.id}
+              className="bg-white border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
+            >
             <div>
               <div className="flex items-center justify-between">
                 {member.image ? (
@@ -79,7 +87,8 @@ export function AdvisoryCouncilSection() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
