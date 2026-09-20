@@ -27,6 +27,7 @@ import {
   DashboardBannerHeader,
   type DashboardBannerHeaderProps,
 } from "./dashboard-banner-header";
+import { DashboardPageSkeleton } from "./dashboard-page-skeleton";
 
 export type DashboardPageHeaderProps = DashboardBannerHeaderProps;
 
@@ -270,9 +271,11 @@ export function DashboardPageWrapper({
 
   if (!isAuthorized || !user) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center p-8">
-        <div className="h-8 w-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-      </div>
+      <DashboardPageSkeleton
+        header={header}
+        pathname={pathname}
+        className={className}
+      />
     );
   }
 

@@ -73,7 +73,7 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime, formatDate } from "@/lib/utils";
 import {
   submissions as seedSubmissions,
   type Role,
@@ -144,8 +144,8 @@ function mapDtoToSubmission(dto: any): Submission {
     status: statusMap[dto.status] || dto.status || "Submitted",
     editor: dto.assignedEditor?.fullName || dto.editor || "Unassigned",
     reviewers: reviewersList,
-    updated: dto.updatedAt ? new Date(dto.updatedAt).toLocaleDateString() : "Recently",
-    due: dto.reviews?.[0]?.dueDate ? new Date(dto.reviews[0].dueDate).toLocaleDateString() : "14 days",
+    updated: dto.updatedAt ? formatDateTime(dto.updatedAt) : "Recently",
+    due: dto.reviews?.[0]?.dueDate ? formatDate(dto.reviews[0].dueDate) : "14 days",
     score: dto.reviewScore || 0,
     files: dto.files || [],
     reviews: dto.reviews || [],
@@ -397,10 +397,12 @@ export function invalidateSubmissionsCache() {
 export function DashboardWorkspace({
   initialRole = "author",
   initialView = "analytics",
+  initialUser = null,
   children,
 }: {
   initialRole?: Role;
   initialView?: "workspace" | "analytics";
+  initialUser?: User | null;
   children?: React.ReactNode;
 } = {}) {
   const router = useRouter();
@@ -408,7 +410,7 @@ export function DashboardWorkspace({
 
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector((state) => state.auth.user);
-  const [currentUser, setCurrentUser] = useState<User | null>(() => reduxUser || getSession());
+  const [currentUser, setCurrentUser] = useState<User | null>(() => reduxUser || initialUser || getSession());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -416,7 +418,7 @@ export function DashboardWorkspace({
     if (reduxUser) {
       setCurrentUser(reduxUser);
     } else {
-      const session = getSession();
+      const session = initialUser || getSession();
       if (session) {
         setCurrentUser(session);
         dispatch(setUser(session));
@@ -428,7 +430,7 @@ export function DashboardWorkspace({
         });
       }
     }
-  }, [reduxUser, dispatch]);
+  }, [reduxUser, dispatch, initialUser]);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCoreExpanded, setIsCoreExpanded] = useState(true);
@@ -514,6 +516,13 @@ export function DashboardWorkspace({
     }
     return (currentUser?.role as Role) || (reduxUser?.role as Role) || initialRole;
   }, [pathname, currentUser?.role, reduxUser?.role, initialRole]);
+
+  const isAdminOrSuperAdmin = Boolean(
+    currentUser?.role === "super-admin" ||
+    currentUser?.role === "admin" ||
+    activeRole === "admin" ||
+    activeRole === "super-admin"
+  );
 
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
@@ -958,7 +967,7 @@ export function DashboardWorkspace({
                 </div>
 
                 {/* Administration Management Tools */}
-                {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+                {isAdminOrSuperAdmin && (
                   <div>
                     <button
                       type="button"
@@ -1005,7 +1014,7 @@ export function DashboardWorkspace({
                 )}
 
                 {/* Pages CMS Category */}
-                {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+                {isAdminOrSuperAdmin && (
                   <div>
                     <button
                       type="button"
@@ -1052,7 +1061,7 @@ export function DashboardWorkspace({
                 )}
 
                 {/* Role Suites */}
-                {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
+                {isAdminOrSuperAdmin && (
                   <div>
                     <button
                       type="button"
@@ -1158,6 +1167,7 @@ export function DashboardWorkspace({
       {/* Desktop Sidebar */}
       <aside
         data-lenis-prevent="true"
+        suppressHydrationWarning
         className={cn(
           "hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shrink-0 bg-[#070e24] border-r border-white/[0.07] shadow-[4px_0_40px_rgba(0,0,0,0.35)] h-full overflow-hidden z-30",
           mounted && isSidebarCollapsed ? "w-17" : "w-67.5"
@@ -1315,7 +1325,7 @@ export function DashboardWorkspace({
             </div>
 
             {/* Administration Management Tools (Desktop) */}
-            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+            {isAdminOrSuperAdmin && (
               <div>
                 <div
                   onClick={() => !isSidebarCollapsed && setIsManagementExpanded(!isManagementExpanded)}
@@ -1385,7 +1395,7 @@ export function DashboardWorkspace({
             )}
 
             {/* Pages CMS Category */}
-            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin" || activeRole === "admin" || activeRole === "super-admin") && (
+            {isAdminOrSuperAdmin && (
               <div>
                 <div
                   onClick={() => !isSidebarCollapsed && setIsCmsExpanded(!isCmsExpanded)}
@@ -1455,7 +1465,7 @@ export function DashboardWorkspace({
             )}
 
             {/* Role Views Switcher (if admin or super-admin) */}
-            {mounted && (currentUser?.role === "super-admin" || currentUser?.role === "admin") && (
+            {isAdminOrSuperAdmin && (
               <div>
                 <div
                   onClick={() => !isSidebarCollapsed && setIsRoleSuitesExpanded(!isRoleSuitesExpanded)}
@@ -1517,11 +1527,12 @@ export function DashboardWorkspace({
           {/* Footer Controls: User Card Trigger with Profile & Sign Out Popover */}
           <div
             ref={userMenuRef}
+            suppressHydrationWarning
             className="mt-auto border-t border-white/8 relative shrink-0 bg-[#050b1d] p-3 transition-colors"
           >
             {/* Popover Menu */}
             <AnimatePresence>
-              {isUserMenuOpen && mounted && currentUser && (
+              {isUserMenuOpen && currentUser && (
                 <motion.div
                   initial={{ opacity: 0, y: 8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1634,9 +1645,10 @@ export function DashboardWorkspace({
             </AnimatePresence>
 
             {/* Trigger Button showing user image, name, and role */}
-            {mounted && currentUser && (
+            {currentUser ? (
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className={cn(
                   "flex items-center rounded-xl transition-all duration-150 cursor-pointer border group h-11 w-full overflow-hidden",
@@ -1683,6 +1695,14 @@ export function DashboardWorkspace({
                   )} />
                 </div>
               </button>
+            ) : (
+              <div suppressHydrationWarning className="flex items-center rounded-xl border border-white/8 bg-white/3 h-11 w-full px-2 gap-2 animate-pulse">
+                <div className="h-8 w-8 rounded-lg bg-white/10 shrink-0" />
+                <div className="flex-1 space-y-1">
+                  <div className="h-3 w-20 rounded bg-white/10" />
+                  <div className="h-2 w-12 rounded bg-white/10" />
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1777,7 +1797,9 @@ export function DashboardWorkspace({
             pathname.includes("/users") ||
             pathname.includes("/mailing") ||
             pathname.includes("/issues") ||
-            pathname.includes("/board") ? (
+            pathname.includes("/board") ||
+            pathname.includes("/super-admin") ||
+            pathname.includes("/admin") ? (
             children
           ) : (
             <>
@@ -1973,9 +1995,12 @@ export function DashboardWorkspace({
                                         </TableCell>
                                         <TableCell>
                                           <StatusPill status={sub.status} />
-                                          <p className="mt-1 text-[10px] text-(--color-gb-muted) flex items-center gap-1">
-                                            <Clock className="h-2.5 w-2.5" />
-                                            {sub.updated}
+                                          <p
+                                            className="mt-1 text-[10px] text-(--color-gb-muted) flex items-center gap-1 font-medium whitespace-nowrap"
+                                            suppressHydrationWarning
+                                          >
+                                            <Clock className="h-2.5 w-2.5 shrink-0" />
+                                            {formatDateTime(sub.updated)}
                                           </p>
                                         </TableCell>
                                         <TableCell>
@@ -2066,13 +2091,13 @@ export function DashboardWorkspace({
                                     </div>
 
                                     <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-(--color-gb-muted) border-t border-slate-100">
-                                      <span className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3" />
-                                        {sub.updated}
+                                      <span className="flex items-center gap-1 font-medium" suppressHydrationWarning>
+                                        <Clock className="h-3 w-3 shrink-0" />
+                                        {formatDateTime(sub.updated)}
                                       </span>
                                       <div className="flex items-center gap-2 font-mono">
                                         <span>Score: <strong className="text-slate-800 font-sans">{sub.score}</strong></span>
-                                        <span>Due: {sub.due}</span>
+                                        <span suppressHydrationWarning>Due: {formatDate(sub.due)}</span>
                                       </div>
                                     </div>
 
@@ -2177,10 +2202,10 @@ export function DashboardWorkspace({
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Submitted Date
+                    Last Updated / Submitted
                   </p>
-                  <p className="text-xs font-extrabold text-slate-800">
-                    {(selectedSubmission as any).submittedDate || selectedSubmission.updated}
+                  <p className="text-xs font-extrabold text-slate-800" suppressHydrationWarning>
+                    {formatDateTime((selectedSubmission as any).submittedDate || selectedSubmission.updated)}
                   </p>
                 </div>
               </div>

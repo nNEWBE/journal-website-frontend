@@ -38,6 +38,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "../workspace/assign-reviewer-modal";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { formatDateTime, formatDate } from "@/lib/utils";
 import {
   Table,
   TableHeader,
@@ -255,8 +256,13 @@ export function ManuscriptPipelinePanel() {
       try {
         const res = await editorApi.listSubmissions();
         if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
-          setSubmissions(res.content);
-          pipelineCache = { data: res.content, timestamp: Date.now() };
+          const formatted = res.content.map((item: any) => ({
+            ...item,
+            updated: formatDateTime(item.updated || item.updatedAt || item.createdAt),
+            due: formatDate(item.due),
+          }));
+          setSubmissions(formatted);
+          pipelineCache = { data: formatted, timestamp: Date.now() };
         } else if (!pipelineCache) {
           setSubmissions(seedSubmissions);
         }
@@ -276,8 +282,13 @@ export function ManuscriptPipelinePanel() {
     try {
       const res = await editorApi.listSubmissions();
       if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
-        setSubmissions(res.content);
-        pipelineCache = { data: res.content, timestamp: Date.now() };
+        const formatted = res.content.map((item: any) => ({
+          ...item,
+          updated: formatDateTime(item.updated || item.updatedAt || item.createdAt),
+          due: formatDate(item.due),
+        }));
+        setSubmissions(formatted);
+        pipelineCache = { data: formatted, timestamp: Date.now() };
       }
       toast.success("Pipeline synchronized with backend");
     } catch {
@@ -463,9 +474,12 @@ export function ManuscriptPipelinePanel() {
                       </TableCell>
                       <TableCell>
                         <StatusPill status={sub.status} />
-                        <p className="mt-1 text-[10px] text-slate-400 flex items-center gap-1 font-medium">
-                          <Clock className="h-2.5 w-2.5" />
-                          {sub.updated}
+                        <p
+                          className="mt-1 text-[10px] text-slate-500 flex items-center gap-1 font-medium whitespace-nowrap"
+                          suppressHydrationWarning
+                        >
+                          <Clock className="h-2.5 w-2.5 text-slate-400 shrink-0" />
+                          {formatDateTime(sub.updated || (sub as any).updatedAt || (sub as any).createdAt)}
                         </p>
                       </TableCell>
                       <TableCell>
@@ -551,13 +565,13 @@ export function ManuscriptPipelinePanel() {
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-slate-500 border-t border-slate-100">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {sub.updated}
+                    <span className="flex items-center gap-1 font-medium" suppressHydrationWarning>
+                      <Clock className="h-3 w-3 text-slate-400 shrink-0" />
+                      {formatDateTime(sub.updated || (sub as any).updatedAt || (sub as any).createdAt)}
                     </span>
                     <div className="flex items-center gap-2 font-mono">
                       <span>Score: <strong className="text-slate-800 font-sans">{sub.score}</strong></span>
-                      <span>Due: {sub.due}</span>
+                      <span suppressHydrationWarning>Due: {formatDate(sub.due)}</span>
                     </div>
                   </div>
 
@@ -653,10 +667,10 @@ export function ManuscriptPipelinePanel() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Submitted Date
+                    Last Updated / Submitted
                   </p>
-                  <p className="text-xs font-extrabold text-slate-800">
-                    {(selectedSubmission as any).submittedDate || selectedSubmission.updated}
+                  <p className="text-xs font-extrabold text-slate-800" suppressHydrationWarning>
+                    {formatDateTime((selectedSubmission as any).submittedDate || selectedSubmission.updated || (selectedSubmission as any).updatedAt || (selectedSubmission as any).createdAt)}
                   </p>
                 </div>
               </div>
