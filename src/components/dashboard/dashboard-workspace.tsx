@@ -1958,6 +1958,7 @@ export function DashboardWorkspace({
                                   <Table minWidth={780}>
                                     <TableHeader>
                                       <TableRow>
+                                        <TableHead className="w-12 text-slate-400 font-mono text-[11px]">#</TableHead>
                                         {[
                                           "Manuscript",
                                           "Status",
@@ -1978,11 +1979,11 @@ export function DashboardWorkspace({
                                     <TableBody suppressHydrationWarning>
                                       {filtered.map((sub, idx) => (
                                         <TableRow key={sub.id}>
+                                          <TableCell className="text-slate-400 font-mono text-[11px] w-12">
+                                            {idx + 1}
+                                          </TableCell>
                                           <TableCell className="max-w-70">
-                                            <span className="font-mono text-[10px] font-black text-gb-red">
-                                              {idx + 1}
-                                            </span>
-                                            <p className="mt-0.5 text-[12px] font-bold text-gb-ink leading-snug line-clamp-2">
+                                            <p className="text-[12px] font-bold text-gb-ink leading-snug line-clamp-2">
                                               {sub.title}
                                             </p>
                                             <p className="mt-0.5 text-[10px] text-(--color-gb-muted)">
@@ -2073,8 +2074,8 @@ export function DashboardWorkspace({
                                     <div key={sub.id} className="p-4 space-y-3">
                                       <div className="flex items-start justify-between gap-2">
                                         <div className="min-w-0 flex-1">
-                                          <span className="font-mono text-[10px] font-black text-gb-red">
-                                            {idx + 1}
+                                          <span className="font-mono text-[11px] font-semibold text-slate-400">
+                                            #{idx + 1}
                                           </span>
                                           <h4 className="mt-0.5 text-xs font-bold text-gb-ink leading-snug">
                                             {sub.title}

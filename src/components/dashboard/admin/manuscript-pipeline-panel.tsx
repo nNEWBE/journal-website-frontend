@@ -505,6 +505,7 @@ export function ManuscriptPipelinePanel() {
               <Table minWidth={780}>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12 text-slate-400 font-mono text-[11px]">#</TableHead>
                     {["Manuscript", "Status", "Reviewers", "Score", "Due Date", "Actions"].map((h) => (
                       <TableHead
                         key={h}
@@ -518,11 +519,11 @@ export function ManuscriptPipelinePanel() {
                 <TableBody>
                   {filtered.map((sub, idx) => (
                     <TableRow key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                      <TableCell className="text-slate-400 font-mono text-[11px] w-12">
+                        {idx + 1}
+                      </TableCell>
                       <TableCell className="max-w-75">
-                        <span className="font-mono text-[10px] font-black text-gb-red">
-                          {idx + 1}
-                        </span>
-                        <p className="mt-0.5 text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                        <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                           {sub.title}
                         </p>
                         <p className="mt-0.5 text-[10px] text-slate-500">
@@ -608,8 +609,8 @@ export function ManuscriptPipelinePanel() {
                 <div key={sub.id} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <span className="font-mono text-[10px] font-black text-red-600">
-                        {idx + 1}
+                      <span className="font-mono text-[11px] font-semibold text-slate-400">
+                        #{idx + 1}
                       </span>
                       <h4 className="mt-0.5 text-xs font-bold text-slate-900 leading-snug">
                         {sub.title}

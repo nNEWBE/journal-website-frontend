@@ -211,7 +211,7 @@ export default function PoliciesPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="border-l-3 border-[#1e40af] pl-4 py-1 bg-white p-4 border shadow-2xs">
+              <div className="border-l-3 border-[#1e40af] pl-5 py-3 bg-white shadow-2xs">
                 <p className="font-academic text-lg sm:text-xl font-medium text-slate-950 leading-snug">
                   Research integrity is a shared institutional covenant upheld by authors, peer reviewers, handling editors, and university leadership.
                 </p>
