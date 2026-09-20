@@ -27,14 +27,75 @@ import {
   articleTypes,
   filterArticles,
   topics,
+  type Article,
 } from "@/lib/data";
 import { ArticlesHero } from "@/components/articles/articles-hero";
+import { getBackendUrl } from "@/lib/backend-url";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Articles & Research Archive — GB Journal of Research",
   description:
     "Explore peer-reviewed research articles across health, pharmacy, agriculture, law, computing, and social welfare from the Gono Bishwabidyalay Journal of Research.",
 };
+
+async function fetchArticlesFromDb(
+  q?: string,
+  type?: string,
+  topic?: string
+): Promise<Article[]> {
+  try {
+    const backendUrl = getBackendUrl();
+    const query = new URLSearchParams();
+    if (q) query.set("query", q);
+    if (type && type !== "All Categories") query.set("type", type);
+    if (topic && topic !== "All Topics") query.set("topic", topic);
+    query.set("size", "100");
+
+    const res = await fetch(`${backendUrl}/api/v1/articles?${query.toString()}`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data.content || [];
+
+    return items.map((item: any) => {
+      const authorsList: string[] = Array.isArray(item.authors)
+        ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
+        : [];
+
+      return {
+        id: item.articleId || String(item.id || item.slug),
+        slug: item.slug,
+        title: item.title,
+        type: item.type || "Research Article",
+        topic: item.topic || "General",
+        department: item.department || "Academic Research",
+        authors: authorsList,
+        abstract: item.abstract || item.abstractText || "",
+        issue: item.issue || item.issueLabel || "Current Issue",
+        volume: item.volume || item.volumeLabel || "Volume 4",
+        pages: item.pages || "1-10",
+        doi: item.doi || "10.5555/gbj.2026.001",
+        publishedAt: item.publishedAt || "2026",
+        metrics: {
+          views: item.metrics?.views ?? 0,
+          downloads: item.metrics?.downloads ?? 0,
+          citations: item.metrics?.citations ?? 0,
+        },
+        keywords: Array.isArray(item.keywords) ? item.keywords : [],
+        sections: [],
+        image: item.image || item.imageUrl || "/covers/medical.png",
+        pdf: item.pdf || item.pdfUrl || "",
+      };
+    });
+  } catch (err) {
+    console.error("Failed to fetch articles from DB:", err);
+    return [];
+  }
+}
 
 export default async function ArticlesPage({
   searchParams,
@@ -45,7 +106,7 @@ export default async function ArticlesPage({
   const q = String(params.q ?? "");
   const type = String(params.type ?? "");
   const topic = String(params.topic ?? "");
-  const results = filterArticles(q, type, topic);
+  const results = await fetchArticlesFromDb(q, type, topic);
   const hasFilters = Boolean(q || type || topic);
 
   return (
@@ -53,7 +114,7 @@ export default async function ArticlesPage({
       {/* ── 1. Hero Header ── */}
       <FadeIn delay={0.05}>
         <ArticlesHero
-          totalArticles={articles.length}
+          totalArticles={results.length}
           totalTopics={topics.length}
         />
       </FadeIn>

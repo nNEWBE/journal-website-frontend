@@ -17,17 +17,34 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
-import { boardMembers } from "@/lib/data";
+import { boardMembers, type BoardMember } from "@/lib/data";
 import { EditorialBoardHero } from "@/components/editorial/editorial-board-hero";
 import { EditorInChiefCard } from "@/components/editorial/editor-in-chief-card";
 import { SectionEditorsGrid } from "@/components/editorial/section-editors-grid";
 import { AdvisoryCouncilSection } from "@/components/editorial/advisory-council-section";
+import { getBackendUrl } from "@/lib/backend-url";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Editorial Board & Governance — GB Journal of Research",
   description:
     "Meet the academic leadership, section editors, and international advisory council of the Gono Bishwabidyalay Journal of Research. Discover our COPE-aligned governance charter and double-blind peer review oversight.",
 };
+
+async function fetchBoardMembersFromDb(): Promise<BoardMember[]> {
+  try {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(`${backendUrl}/api/v1/editorial-board`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.error("Failed to fetch board members from DB:", err);
+    return [];
+  }
+}
 
 const GOVERNANCE_PILLARS = [
   {
@@ -60,12 +77,14 @@ const GOVERNANCE_PILLARS = [
   },
 ];
 
-export default function EditorialBoardPage() {
+export default async function EditorialBoardPage() {
+  const dbMembers = await fetchBoardMembersFromDb();
+  const members = dbMembers.length > 0 ? dbMembers : boardMembers;
   const chief =
-    boardMembers.find((m) => m.role === "Editor-in-Chief") || boardMembers[0];
+    members.find((m) => m.role === "Editor-in-Chief") || members[0];
   const managing =
-    boardMembers.find((m) => m.role === "Managing Editor") || boardMembers[1];
-  const sectionEditors = boardMembers.filter(
+    members.find((m) => m.role === "Managing Editor") || members[1];
+  const sectionEditors = members.filter(
     (m) => m.role !== "Editor-in-Chief" && m.role !== "Managing Editor"
   );
 

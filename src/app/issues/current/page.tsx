@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -30,10 +30,56 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { issues, type Article } from "@/lib/data";
+import { issuesApi, type IssueData } from "@/lib/api";
 
 export default function CurrentIssuePage() {
-  const currentIssue = issues[0];
-  const allArticles: Article[] = useMemo(() => currentIssue?.articles ?? [], [currentIssue]);
+  const [issueList, setIssueList] = useState<IssueData[]>([]);
+
+  useEffect(() => {
+    issuesApi.list().then((res) => {
+      if (Array.isArray(res) && res.length > 0) {
+        setIssueList(res);
+      }
+    }).catch(console.error);
+  }, []);
+
+  const rawCurrent = issueList.find((i) => i.current || i.isCurrent) || issueList[0];
+  const currentIssue = rawCurrent
+    ? {
+        ...rawCurrent,
+        volume: rawCurrent.volumeLabel || (rawCurrent.volume ? `Volume ${rawCurrent.volume}` : "Volume 4"),
+        issue: rawCurrent.issueLabel || (rawCurrent.number ? `Issue ${rawCurrent.number}` : "Issue 1"),
+      }
+    : null;
+  const allArticles: Article[] = useMemo(() => {
+    if (!currentIssue?.articles) return [];
+    return currentIssue.articles.map((item: any) => ({
+      id: item.articleId || String(item.id || item.slug),
+      slug: item.slug,
+      title: item.title,
+      type: item.type || "Research Article",
+      topic: item.topic || "General",
+      department: item.department || "Academic Research",
+      authors: Array.isArray(item.authors)
+        ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
+        : [],
+      abstract: item.abstract || item.abstractText || "",
+      issue: item.issue || item.issueLabel || "Current Issue",
+      volume: item.volume || item.volumeLabel || "Volume 4",
+      pages: item.pages || "1-10",
+      doi: item.doi || "10.5555/gbj.2026.001",
+      publishedAt: item.publishedAt || "2026",
+      metrics: {
+        views: item.metrics?.views ?? 0,
+        downloads: item.metrics?.downloads ?? 0,
+        citations: item.metrics?.citations ?? 0,
+      },
+      keywords: Array.isArray(item.keywords) ? item.keywords : [],
+      sections: [],
+      image: item.image || item.imageUrl || "/covers/medical.png",
+      pdf: item.pdf || item.pdfUrl || "",
+    }));
+  }, [currentIssue]);
 
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -603,7 +649,7 @@ export default function CurrentIssuePage() {
                   </Link>
                 </div>
                 <div className="space-y-2 text-xs">
-                  {issues.slice(1, 4).map((past) => (
+                  {issueList.slice(1, 4).map((past: any) => (
                     <Link
                       key={past.id}
                       href="/issues"

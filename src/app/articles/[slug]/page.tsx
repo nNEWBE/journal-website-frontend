@@ -33,6 +33,9 @@ import { ArticleActions } from "@/components/articles/article-actions";
 import { ArticleContents } from "@/components/articles/article-contents";
 import { articles, findArticle } from "@/lib/data";
 import type { Article } from "@/lib/data";
+import { getBackendUrl } from "@/lib/backend-url";
+
+export const dynamic = "force-dynamic";
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -54,15 +57,122 @@ function publicationDateIso(publishedAt: string) {
     : parsedDate.toISOString();
 }
 
-export function generateStaticParams() {
-  return articles.map((article) => ({ slug: article.slug }));
+async function fetchArticleFromDb(slug: string): Promise<Article | null> {
+  const local = findArticle(slug);
+  if (local) return local;
+
+  try {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(
+      `${backendUrl}/api/v1/articles/${encodeURIComponent(slug)}`,
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+    if (!data || !data.title) return null;
+
+    const authorsList: string[] = Array.isArray(data.authors)
+      ? data.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
+      : [];
+
+    const sectionsList = Array.isArray(data.sections)
+      ? data.sections.map((s: any) => ({
+          heading: s.heading || "",
+          body: s.body || "",
+        }))
+      : [];
+
+    const mapped: Article = {
+      id: data.articleId || String(data.id || slug),
+      slug: data.slug || slug,
+      title: data.title,
+      type: data.type || "Research Article",
+      topic: data.topic || "General",
+      department: data.department || "Academic Research",
+      authors: authorsList,
+      abstract: data.abstract || data.abstractText || "",
+      issue: data.issue || data.issueLabel || "Current Issue",
+      volume: data.volume || data.volumeLabel || "Volume 4",
+      pages: data.pages || "1-10",
+      doi: data.doi || "10.5555/gbj.2026.001",
+      publishedAt: data.publishedAt || "2026",
+      metrics: {
+        views: data.metrics?.views ?? 0,
+        downloads: data.metrics?.downloads ?? 0,
+        citations: data.metrics?.citations ?? 0,
+      },
+      keywords: Array.isArray(data.keywords) ? data.keywords : [],
+      sections:
+        sectionsList.length > 0
+          ? sectionsList
+          : [{ heading: "Abstract", body: data.abstract || data.abstractText || "" }],
+      image: data.image || data.imageUrl || "/covers/medical.png",
+      pdf: data.pdf || data.pdfUrl || "",
+    };
+
+    return mapped;
+  } catch (err) {
+    console.error("Error fetching article from database:", err);
+    return null;
+  }
+}
+
+async function getRelatedArticlesFromDb(
+  topic: string,
+  currentSlug: string
+): Promise<Article[]> {
+  try {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(
+      `${backendUrl}/api/v1/articles?topic=${encodeURIComponent(topic)}&size=4`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data.content || [];
+    return items
+      .filter((art: any) => art.slug !== currentSlug)
+      .slice(0, 2)
+      .map((art: any) => ({
+        id: art.articleId || String(art.id || art.slug),
+        slug: art.slug,
+        title: art.title,
+        type: art.type || "Research Article",
+        topic: art.topic || "General",
+        department: art.department || "Academic Research",
+        authors: Array.isArray(art.authors)
+          ? art.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
+          : [],
+        abstract: art.abstract || art.abstractText || "",
+        issue: art.issue || art.issueLabel || "Current Issue",
+        volume: art.volume || art.volumeLabel || "Volume 4",
+        pages: art.pages || "1-10",
+        doi: art.doi || "10.5555/gbj.2026.001",
+        publishedAt: art.publishedAt || "2026",
+        metrics: {
+          views: art.metrics?.views ?? 0,
+          downloads: art.metrics?.downloads ?? 0,
+          citations: art.metrics?.citations ?? 0,
+        },
+        keywords: Array.isArray(art.keywords) ? art.keywords : [],
+        sections: [],
+        image: art.image || art.imageUrl || "/covers/medical.png",
+        pdf: art.pdf || art.pdfUrl || "",
+      }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({
   params,
 }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = findArticle(slug);
+  const article = await fetchArticleFromDb(slug);
 
   if (!article) {
     return {
@@ -253,7 +363,7 @@ function ArticleRecord({ article }: { article: Article }) {
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = findArticle(slug);
+  const article = await fetchArticleFromDb(slug);
 
   if (!article) {
     notFound();
@@ -266,18 +376,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     (section) => section.heading.toLowerCase() !== "abstract",
   );
   const references = getArticleReferences(article.slug);
-  const topicRelated = articles
-    .filter(
-      (candidate) =>
-        candidate.topic === article.topic && candidate.slug !== article.slug,
-    )
-    .slice(0, 2);
-  const recommended =
-    topicRelated.length > 0
-      ? topicRelated
-      : articles
-        .filter((candidate) => candidate.slug !== article.slug)
-        .slice(0, 2);
+  const recommended = await getRelatedArticlesFromDb(article.topic, article.slug);
 
   const siteOrigin = getSiteOrigin();
   const articleUrl = `${siteOrigin}/articles/${article.slug}`;

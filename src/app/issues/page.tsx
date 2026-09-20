@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -30,16 +30,66 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
-import { issues, type Article } from "@/lib/data";
+import { issues as fallbackIssues, type Article, type Issue } from "@/lib/data";
 import { IssuesHero } from "@/components/issues/issues-hero";
+import { issuesApi } from "@/lib/api";
 
 export default function IssuesPage() {
-  const currentIssue = issues[0];
+  const [dbIssues, setDbIssues] = useState<Issue[]>([]);
+
+  useEffect(() => {
+    issuesApi.list().then((res) => {
+      if (Array.isArray(res) && res.length > 0) {
+        const mapped: Issue[] = res.map((iss: any) => ({
+          id: String(iss.id || iss.issueKey),
+          volume: iss.volumeLabel || (iss.volume ? `Volume ${iss.volume}` : "Volume 4"),
+          issue: iss.issueLabel || (iss.number ? `Issue ${iss.number}` : "Issue 1"),
+          year: String(iss.year || "2026"),
+          month: iss.month || "July",
+          theme: iss.theme || iss.title || "Scholarly Research",
+          coverImage: iss.coverImageUrl || "/covers/medical.png",
+          articleCount: iss.articleCount || (iss.articles ? iss.articles.length : 0),
+          articles: Array.isArray(iss.articles)
+            ? iss.articles.map((item: any) => ({
+                id: item.articleId || String(item.id || item.slug),
+                slug: item.slug,
+                title: item.title,
+                type: item.type || "Research Article",
+                topic: item.topic || "General",
+                department: item.department || "Academic Research",
+                authors: Array.isArray(item.authors)
+                  ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
+                  : [],
+                abstract: item.abstract || item.abstractText || "",
+                issue: item.issue || item.issueLabel || "Current Issue",
+                volume: item.volume || item.volumeLabel || "Volume 4",
+                pages: item.pages || "1-10",
+                doi: item.doi || "10.5555/gbj.2026.001",
+                publishedAt: item.publishedAt || "2026",
+                metrics: {
+                  views: item.metrics?.views ?? 0,
+                  downloads: item.metrics?.downloads ?? 0,
+                  citations: item.metrics?.citations ?? 0,
+                },
+                keywords: Array.isArray(item.keywords) ? item.keywords : [],
+                sections: [],
+                image: item.image || item.imageUrl || "/covers/medical.png",
+                pdf: item.pdf || item.pdfUrl || "",
+              }))
+            : [],
+        }));
+        setDbIssues(mapped);
+      }
+    }).catch(console.error);
+  }, []);
+
+  const issuesList = dbIssues.length > 0 ? dbIssues : fallbackIssues;
+  const currentIssue = issuesList[0];
   const allYears = useMemo(
-    () => [...new Set(issues.map((i) => i.year))].sort((a, b) => Number(b) - Number(a)),
-    []
+    () => [...new Set(issuesList.map((i) => i.year))].sort((a, b) => Number(b) - Number(a)),
+    [issuesList]
   );
-  const totalArticles = issues.reduce((sum, i) => sum + i.articleCount, 0);
+  const totalArticles = issuesList.reduce((sum, i) => sum + i.articleCount, 0);
 
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -47,7 +97,7 @@ export default function IssuesPage() {
 
   // Filter issues based on selected year and search query
   const filteredIssues = useMemo(() => {
-    return issues.filter((iss) => {
+    return issuesList.filter((iss) => {
       const matchesYear = selectedYear === "all" || iss.year === selectedYear;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
@@ -57,13 +107,15 @@ export default function IssuesPage() {
         iss.issue.toLowerCase().includes(q) ||
         iss.month.toLowerCase().includes(q) ||
         iss.year.includes(q) ||
-        iss.articles.some(
-          (a: Article) => a.title.toLowerCase().includes(q) || a.topic.toLowerCase().includes(q)
+        (iss.articles || []).some(
+          (a: Article) =>
+            (a.title || "").toLowerCase().includes(q) ||
+            (a.topic || "").toLowerCase().includes(q)
         );
 
       return matchesYear && matchesSearch;
     });
-  }, [selectedYear, searchQuery]);
+  }, [issuesList, selectedYear, searchQuery]);
 
   // Group filtered issues by year
   const groupedIssuesByYear = useMemo(() => {
@@ -81,7 +133,7 @@ export default function IssuesPage() {
       {/* ── 1. Hero Header ── */}
       <FadeIn delay={0.05}>
         <IssuesHero
-          totalIssues={issues.length}
+          totalIssues={issuesList.length}
           totalArticles={totalArticles}
           currentVolume={currentIssue ? `${currentIssue.volume} · ${currentIssue.issue}` : "Volume Archive"}
           totalYears={allYears.length}
@@ -272,10 +324,10 @@ export default function IssuesPage() {
                   : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                   }`}
               >
-                All Years ({issues.length})
+                All Years ({issuesList.length})
               </button>
               {allYears.map((year) => {
-                const count = issues.filter((i) => i.year === year).length;
+                const count = issuesList.filter((i) => i.year === year).length;
                 return (
                   <button
                     key={year}
