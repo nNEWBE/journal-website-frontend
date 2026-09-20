@@ -33,6 +33,7 @@ import {
 import { editorApi } from "@/lib/api";
 import { statusConfig } from "../workspace/workspace-data";
 import { DashboardStatsGrid } from "../workspace/dashboard-stats-grid";
+import { PipelineContentSkeleton } from "../workspace/pipeline-content-skeleton";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "../workspace/assign-reviewer-modal";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
@@ -230,7 +231,8 @@ function RowActionsDropdown({
 let pipelineCache: { data: Submission[]; timestamp: number } | null = null;
 
 export function ManuscriptPipelinePanel() {
-  const [submissions, setSubmissions] = useState<Submission[]>(() => pipelineCache?.data || seedSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>(() => pipelineCache?.data || []);
+  const [isLoading, setIsLoading] = useState(() => !pipelineCache);
   const [mounted, setMounted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -246,16 +248,24 @@ export function ManuscriptPipelinePanel() {
     async function loadData() {
       if (pipelineCache && Date.now() - pipelineCache.timestamp < 45000) {
         setSubmissions(pipelineCache.data);
+        setIsLoading(false);
         return;
       }
+      setIsLoading(true);
       try {
         const res = await editorApi.listSubmissions();
         if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
           setSubmissions(res.content);
           pipelineCache = { data: res.content, timestamp: Date.now() };
+        } else if (!pipelineCache) {
+          setSubmissions(seedSubmissions);
         }
       } catch (err) {
-        // Fallback to baseline seed data
+        if (!pipelineCache) {
+          setSubmissions(seedSubmissions);
+        }
+      } finally {
+        setIsLoading(false);
       }
     }
     loadData();
@@ -355,54 +365,52 @@ export function ManuscriptPipelinePanel() {
       </DashboardHeaderActions>
 
       {/* KPI Stats Cards */}
-      <DashboardStatsGrid submissions={submissions} />
+      <DashboardStatsGrid submissions={submissions} isLoading={!mounted || isLoading} />
 
       {/* Main Pipeline Table Card */}
-      <div className="rounded-2xl border border-(--color-gb-border) bg-white shadow-xs overflow-hidden">
-        {/* Table Header Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 sm:px-6 py-4 bg-slate-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-gb-blue-soft flex items-center justify-center">
-              <ClipboardCheck className="h-4 w-4 text-gb-blue" />
+      {!mounted || (isLoading && submissions.length === 0) ? (
+        <PipelineContentSkeleton rows={6} />
+      ) : (
+        <div className="rounded-2xl border border-(--color-gb-border) bg-white shadow-xs overflow-hidden">
+          {/* Table Header Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 sm:px-6 py-4 bg-slate-50/50">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-gb-blue-soft flex items-center justify-center">
+                <ClipboardCheck className="h-4 w-4 text-gb-blue" />
+              </div>
+              <div>
+                <h2 className="text-xs font-bold text-(--color-gb-ink) uppercase tracking-wider">
+                  Active Manuscripts
+                </h2>
+                <p className="text-[11px] text-slate-500" suppressHydrationWarning>
+                  {`${filtered.length} record${filtered.length !== 1 ? "s" : ""}`} · double-blind peer review
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xs font-bold text-(--color-gb-ink) uppercase tracking-wider">
-                Active Manuscripts
-              </h2>
-              <p className="text-[11px] text-slate-500" suppressHydrationWarning>
-                {mounted ? `${filtered.length} record${filtered.length !== 1 ? "s" : ""}` : "Loading..."} · double-blind peer review
-              </p>
+
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 rounded-xl border border-(--color-gb-border) bg-white px-3 py-1.5 focus-within:border-gb-blue focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
+                <Search className="h-3.5 w-3.5 text-slate-400" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search manuscripts, authors, IDs..."
+                  className="w-48 sm:w-64 bg-transparent text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 rounded-xl border border-(--color-gb-border) bg-white px-3 py-1.5 focus-within:border-gb-blue focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
-              <Search className="h-3.5 w-3.5 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search manuscripts, authors, IDs..."
-                className="w-48 sm:w-64 bg-transparent text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-slate-400 hover:text-slate-700 cursor-pointer"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        {!mounted ? (
-          <div className="py-20 text-center text-xs text-slate-400 flex flex-col items-center justify-center">
-            <div className="h-6 w-6 rounded-full border-2 border-gb-blue border-t-transparent animate-spin mb-2.5" />
-            <span>Synchronizing manuscript pipeline...</span>
-          </div>
-        ) : filtered.length === 0 ? (
+          {/* Content */}
+          {filtered.length === 0 ? (
           <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
             <div className="h-14 w-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-3">
               <SearchX className="h-6 w-6" />
@@ -574,6 +582,7 @@ export function ManuscriptPipelinePanel() {
           </>
         )}
       </div>
+      )}
 
       {/* Manuscript Detail Drawer */}
       <CustomDrawer

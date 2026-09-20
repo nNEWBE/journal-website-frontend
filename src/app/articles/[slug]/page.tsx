@@ -31,6 +31,7 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { ArticleActions } from "@/components/articles/article-actions";
 import { ArticleContents } from "@/components/articles/article-contents";
+import { ArticleViewTracker } from "@/components/articles/article-view-tracker";
 import { articles, findArticle } from "@/lib/data";
 import type { Article } from "@/lib/data";
 import { getBackendUrl } from "@/lib/backend-url";
@@ -419,6 +420,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <PageShell>
+      <ArticleViewTracker slug={article.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

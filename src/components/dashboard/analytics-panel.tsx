@@ -22,6 +22,7 @@ import { ChartContainer } from "@/components/ui/chart";
 import { AcceptanceRateCard } from "@/components/dashboard/analytics/acceptance-rate-card";
 import { ReviewerWorkloadTable } from "@/components/dashboard/analytics/reviewer-workload-table";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
+import { DashboardBannerHeader } from "@/components/dashboard/dashboard-banner-header";
 
 const C = {
   navy: "#1f2f82",
@@ -38,7 +39,7 @@ function GlassTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl text-white text-xs min-w-[150px] space-y-2 z-50 pointer-events-none">
+    <div className="rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl text-white text-xs min-w-37.5 space-y-2 z-50 pointer-events-none">
       {label && <p className="font-extrabold text-slate-300 border-b border-slate-800 pb-1.5">{label}</p>}
       <div className="space-y-1.5">
         {payload.map((item: any, idx: number) => {
@@ -73,8 +74,8 @@ function PremiumStatCard({
         </div>
         {trend && (
           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wide ${trendUp
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
-              : "bg-rose-50 text-rose-600 border border-rose-200/70"
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
+            : "bg-rose-50 text-rose-600 border border-rose-200/70"
             }`}>
             {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {trend}
@@ -258,169 +259,163 @@ export function AnalyticsPanel({
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Top Header */}
-      <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-[10px] font-black uppercase text-blue-900 border border-blue-200">
-              Executive Telemetry
-            </span>
-            <span className="text-xs text-slate-400 font-mono">ISSN 2959-1082</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-            Journal Analytics & Insights
-          </h1>
-          <p className="mt-1 text-xs text-slate-500 font-medium">
-            Real-time peer-review performance, editorial velocity, and indexing metrics.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Time range pills */}
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-100 p-1">
-            {(["30D", "90D", "12M", "ALL"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setTimeRange(r)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                  timeRange === r
+    <div className="min-h-full flex flex-col">
+      <DashboardBannerHeader
+        title="Journal Analytics & Insights"
+        subtitle="Real-time peer-review performance, editorial velocity, and indexing metrics (ISSN 2959-1082)."
+        badge="Executive Telemetry"
+        icon={BarChart2}
+        borderAccentClassName="border-l-indigo-600"
+        badgeClassName="bg-indigo-50 text-indigo-700 border-indigo-200/60"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Time range pills */}
+            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-100 p-1">
+              {(["30D", "90D", "12M", "ALL"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setTimeRange(r)}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${timeRange === r
                     ? "bg-white text-slate-900 shadow-xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
+                    }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
 
-          <button
-            onClick={handleExportPDF}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--color-gb-blue)] px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[color:var(--color-gb-blue-dark)] transition-colors cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export Report
-          </button>
+            <button
+              onClick={handleExportPDF}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export Report
+            </button>
+          </div>
+        }
+      />
+
+      <div className="mx-auto max-w-7xl w-full space-y-6 p-4 sm:p-6 lg:p-8 flex-1">
+
+        {/* Top Metric Cards Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+          <KpiStatCard
+            label="Total Submissions"
+            value={s.total}
+            icon={FileText}
+            accent="blue"
+          />
+          <KpiStatCard
+            label="Avg. Turnaround"
+            value={s.turnaround}
+            icon={Clock}
+            accent="emerald"
+          />
+          <KpiStatCard
+            label="Published Papers"
+            value={s.published}
+            icon={BookOpen}
+            accent="purple"
+          />
+          <KpiStatCard
+            label="Peer Reviewers"
+            value="48 Active"
+            icon={Users}
+            accent="amber"
+          />
         </div>
-      </div>
 
-      {/* Top Metric Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        <KpiStatCard
-          label="Total Submissions"
-          value={s.total}
-          icon={FileText}
-          accent="blue"
-        />
-        <KpiStatCard
-          label="Avg. Turnaround"
-          value={s.turnaround}
-          icon={Clock}
-          accent="emerald"
-        />
-        <KpiStatCard
-          label="Published Papers"
-          value={s.published}
-          icon={BookOpen}
-          accent="purple"
-        />
-        <KpiStatCard
-          label="Peer Reviewers"
-          value="48 Active"
-          icon={Users}
-          accent="amber"
-        />
-      </div>
+        {/* Main Tabs Section */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 max-w-md bg-slate-100 p-1 rounded-xl">
+            <TabsTrigger value="overview" className="text-xs font-extrabold">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="reviewers" className="text-xs font-extrabold">
+              Reviewers
+            </TabsTrigger>
+            <TabsTrigger value="editorial" className="text-xs font-extrabold">
+              Editorial
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Main Tabs Section */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-md bg-slate-100 p-1 rounded-xl">
-          <TabsTrigger value="overview" className="text-xs font-extrabold">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="reviewers" className="text-xs font-extrabold">
-            Reviewers
-          </TabsTrigger>
-          <TabsTrigger value="editorial" className="text-xs font-extrabold">
-            Editorial
-          </TabsTrigger>
-        </TabsList>
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="grid gap-6 lg:grid-cols-12">
+              {/* Chart Column */}
+              <div className="lg:col-span-8 space-y-6">
+                <Card className="border border-slate-200/90 shadow-xs">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-black text-slate-900 flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-[#1f2f82]" />
+                      Submission & Publishing Velocity ({cfg.label})
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Monthly volume of received manuscripts versus accepted/published papers
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-70 pt-4">
+                    <ChartContainer className="h-full w-full">
+                      <AreaChart data={s.monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={C.navy} stopOpacity={0.4} />
+                            <stop offset="95%" stopColor={C.navy} stopOpacity={0.0} />
+                          </linearGradient>
+                          <linearGradient id="gradEmerald" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={C.emerald} stopOpacity={0.4} />
+                            <stop offset="95%" stopColor={C.emerald} stopOpacity={0.0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                        <Tooltip content={<GlassTooltip />} />
+                        <Area type="monotone" dataKey="Submitted" stroke={C.navy} strokeWidth={2.5} fillOpacity={1} fill="url(#gradBlue)" />
+                        <Area type="monotone" dataKey="Published" stroke={C.emerald} strokeWidth={2.5} fillOpacity={1} fill="url(#gradEmerald)" />
+                      </AreaChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              </div>
 
-        <TabsContent value="overview" className="space-y-6 mt-6">
-          <div className="grid gap-6 lg:grid-cols-12">
-            {/* Chart Column */}
-            <div className="lg:col-span-8 space-y-6">
-              <Card className="border border-slate-200/90 shadow-xs">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-black text-slate-900 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-[#1f2f82]" />
-                    Submission & Publishing Velocity ({cfg.label})
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Monthly volume of received manuscripts versus accepted/published papers
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[280px] pt-4">
-                  <ChartContainer className="h-full w-full">
-                    <AreaChart data={s.monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={C.navy} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={C.navy} stopOpacity={0.0} />
-                        </linearGradient>
-                        <linearGradient id="gradEmerald" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={C.emerald} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={C.emerald} stopOpacity={0.0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<GlassTooltip />} />
-                      <Area type="monotone" dataKey="Submitted" stroke={C.navy} strokeWidth={2.5} fillOpacity={1} fill="url(#gradBlue)" />
-                      <Area type="monotone" dataKey="Published" stroke={C.emerald} strokeWidth={2.5} fillOpacity={1} fill="url(#gradEmerald)" />
-                    </AreaChart>
-                  </ChartContainer>
-                </CardContent>
-              </Card>
+              {/* Right Widget Column */}
+              <div className="lg:col-span-4 space-y-6">
+                <AcceptanceRateCard submissions={submissions} />
+              </div>
             </div>
+          </TabsContent>
 
-            {/* Right Widget Column */}
-            <div className="lg:col-span-4 space-y-6">
-              <AcceptanceRateCard submissions={submissions} />
-            </div>
-          </div>
-        </TabsContent>
+          <TabsContent value="reviewers" className="space-y-6 mt-6">
+            <ReviewerWorkloadTable />
+          </TabsContent>
 
-        <TabsContent value="reviewers" className="space-y-6 mt-6">
-          <ReviewerWorkloadTable />
-        </TabsContent>
-
-        <TabsContent value="editorial" className="space-y-6 mt-6">
-          <Card className="border border-slate-200/90 shadow-xs">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-black text-slate-900 flex items-center gap-2">
-                <BarChart2 className="h-4 w-4 text-[#1f2f82]" />
-                Editor Workload & Submissions by Discipline
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Assigned manuscripts per section editor and subject track
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[280px] pt-2">
-              <ChartContainer className="h-full w-full">
-                <BarChart data={s.editorData} layout="vertical" margin={{ top: 10, right: 15, left: 35, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: "#334155", fontWeight: 700 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<GlassTooltip />} />
-                  <Bar dataKey="count" fill={C.navy} radius={[0, 8, 8, 0]} barSize={24} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="editorial" className="space-y-6 mt-6">
+            <Card className="border border-slate-200/90 shadow-xs">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <BarChart2 className="h-4 w-4 text-[#1f2f82]" />
+                  Editor Workload & Submissions by Discipline
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Assigned manuscripts per section editor and subject track
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-70 pt-2">
+                <ChartContainer className="h-full w-full">
+                  <BarChart data={s.editorData} layout="vertical" margin={{ top: 10, right: 15, left: 35, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: "#334155", fontWeight: 700 }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<GlassTooltip />} />
+                    <Bar dataKey="count" fill={C.navy} radius={[0, 8, 8, 0]} barSize={24} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

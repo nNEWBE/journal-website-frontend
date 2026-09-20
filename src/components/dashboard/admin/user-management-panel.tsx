@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Users,
   UserPlus,
@@ -20,10 +21,12 @@ import {
   PenLine,
   Crown,
   ShieldCheck,
+  UploadCloud,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { adminApi, boardApi, AuthResponseData } from "@/lib/api";
+import { adminApi, boardApi, filesApi, AuthResponseData } from "@/lib/api";
 import { BoardMember } from "@/lib/data";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
@@ -54,6 +57,39 @@ const ROLE_OPTIONS = [
   { value: "super-admin", label: "Super Admins" },
 ];
 
+const PRESET_AVATARS = [
+  {
+    id: "prof_rahman",
+    label: "Prof. Rahman",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfRahman&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=262e33",
+  },
+  {
+    id: "dr_fatima",
+    label: "Dr. Fatima",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrFatima&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
+  },
+  {
+    id: "prof_tariq",
+    label: "Prof. Tariq",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfTariq&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=25557c",
+  },
+  {
+    id: "dr_ayesha",
+    label: "Dr. Ayesha",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrAyesha&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
+  },
+  {
+    id: "prof_mahmud",
+    label: "Prof. Mahmud",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfMahmud&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=5199e4",
+  },
+  {
+    id: "dr_rehana",
+    label: "Dr. Rehana",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrRehana&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=25557c",
+  },
+];
+
 // Module-level cache for instant tab switching without loading delays
 let userCache: { data: UserItem[]; timestamp: number } | null = null;
 
@@ -74,20 +110,21 @@ export function UserManagementPanel({
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [activeUser, setActiveUser] = useState<UserItem | null>(null);
 
-  // Close action dropdown on outside click or scroll
+  // Close action dropdown on resize or window scroll when open
   useEffect(() => {
+    if (!actionMenuUserId) return;
     const handleClose = () => {
       setActionMenuUserId(null);
       setMenuPosition(null);
       setActiveUser(null);
     };
-    window.addEventListener("click", handleClose);
+    window.addEventListener("resize", handleClose);
     window.addEventListener("scroll", handleClose, true);
     return () => {
-      window.removeEventListener("click", handleClose);
+      window.removeEventListener("resize", handleClose);
       window.removeEventListener("scroll", handleClose, true);
     };
-  }, []);
+  }, [actionMenuUserId]);
 
   // Edit user modal state
   const [userToEdit, setUserToEdit] = useState<UserItem | null>(null);
@@ -98,11 +135,14 @@ export function UserManagementPanel({
   const [editDept, setEditDept] = useState("");
   const [editInst, setEditInst] = useState("");
   const [editOrcid, setEditOrcid] = useState("");
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  const [isUploadingEditAvatar, setIsUploadingEditAvatar] = useState(false);
   const [editPassword, setEditPassword] = useState("");
   const [editEnabled, setEditEnabled] = useState(true);
 
   const handleOpenMenu = (e: React.MouseEvent<HTMLButtonElement>, user: UserItem) => {
     e.stopPropagation();
+    e.preventDefault();
     if (actionMenuUserId === user.id) {
       setActionMenuUserId(null);
       setMenuPosition(null);
@@ -110,8 +150,8 @@ export function UserManagementPanel({
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
-    const menuWidth = 192;
-    const menuHeight = 145;
+    const menuWidth = 208;
+    const menuHeight = 180;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUpward = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
 
@@ -134,7 +174,67 @@ export function UserManagementPanel({
   const [formTitle, setFormTitle] = useState("Scholar");
   const [formDept, setFormDept] = useState("Department of Pharmacy");
   const [formInst, setFormInst] = useState("Gono Bishwabidyalay");
+  const [formAvatarUrl, setFormAvatarUrl] = useState("");
+  const [isUploadingFormAvatar, setIsUploadingFormAvatar] = useState(false);
   const [formPassword, setFormPassword] = useState("");
+
+  const handleEditAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (PNG, JPG, or WebP).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be under 5MB.");
+      return;
+    }
+
+    try {
+      setIsUploadingEditAvatar(true);
+      const res = await filesApi.uploadImage(file, "gbjournal/avatars");
+      if (res.url) {
+        setEditAvatarUrl(res.url);
+        toast.success("Scholar photograph uploaded successfully!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload photo. Please try again.");
+    } finally {
+      setIsUploadingEditAvatar(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleFormAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (PNG, JPG, or WebP).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be under 5MB.");
+      return;
+    }
+
+    try {
+      setIsUploadingFormAvatar(true);
+      const res = await filesApi.uploadImage(file, "gbjournal/avatars");
+      if (res.url) {
+        setFormAvatarUrl(res.url);
+        toast.success("Scholar photograph uploaded successfully!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload photo. Please try again.");
+    } finally {
+      setIsUploadingFormAvatar(false);
+      e.target.value = "";
+    }
+  };
 
   // Delete user modal state
   const [userToDelete, setUserToDelete] = useState<UserItem | null>(null);
@@ -275,6 +375,7 @@ export function UserManagementPanel({
         title: formTitle,
         department: formDept,
         institution: formInst,
+        avatarUrl: formAvatarUrl.trim() || undefined,
       });
 
       toast.success("User created successfully", {
@@ -286,6 +387,7 @@ export function UserManagementPanel({
       setFormName("");
       setFormEmail("");
       setFormPassword("");
+      setFormAvatarUrl("");
       loadUsers(true);
     } catch (err: any) {
       toast.error("Failed to create user", {
@@ -305,6 +407,7 @@ export function UserManagementPanel({
     setEditDept(u.department || "");
     setEditInst(u.institution || "");
     setEditOrcid((u as any).orcid || "");
+    setEditAvatarUrl(u.avatarUrl || (u as any).avatar || "");
     setEditPassword("");
     setEditEnabled((u as any).enabled !== false);
     setActionMenuUserId(null);
@@ -328,12 +431,17 @@ export function UserManagementPanel({
         department: editDept.trim() || undefined,
         institution: editInst.trim() || undefined,
         orcid: editOrcid.trim() || undefined,
+        avatarUrl: editAvatarUrl.trim() || "",
         password: editPassword.trim() || undefined,
         enabled: editEnabled,
       });
 
       setUsers((prev) => {
-        const next = prev.map((u) => (u.id === userToEdit.id ? { ...u, ...updated } : u));
+        const next = prev.map((u) =>
+          u.id === userToEdit.id
+            ? { ...u, ...updated, avatarUrl: updated.avatarUrl !== undefined ? updated.avatarUrl : editAvatarUrl }
+            : u
+        );
         userCache = { data: next, timestamp: Date.now() };
         return next;
       });
@@ -389,7 +497,7 @@ export function UserManagementPanel({
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
         >
           <UserPlus className="h-4 w-4" />
           <span>Add / Invite User</span>
@@ -449,7 +557,7 @@ export function UserManagementPanel({
       </DashboardSearchFilterBar>
 
       {/* Users Table */}
-      <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white shadow-sm">
+      <div className="rounded-xl border border-(--color-gb-border) bg-white shadow-sm">
         {loading ? (
           <AcademicDataLoader
             title="Loading Scholar Directory"
@@ -482,15 +590,15 @@ export function UserManagementPanel({
                   <TableRow key={u.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
-                          {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt={u.fullName} className="h-full w-full object-cover" />
+                        <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
+                          {u.avatarUrl || (u as any).avatar ? (
+                            <img src={u.avatarUrl || (u as any).avatar} alt={u.fullName} className="h-full w-full object-cover" />
                           ) : (
                             u.fullName?.charAt(0) || "U"
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-[color:var(--color-gb-ink)] truncate flex items-center gap-1.5">
+                          <p className="font-bold text-(--color-gb-ink) truncate flex items-center gap-1.5">
                             {u.fullName}
                             {isCurrent && (
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800">You</span>
@@ -502,8 +610,8 @@ export function UserManagementPanel({
                     </TableCell>
 
                     <TableCell>
-                      <p className="font-medium text-slate-700 truncate max-w-[200px]">{u.department || "Academic Faculty"}</p>
-                      <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{u.institution || "Gono Bishwabidyalay"}</p>
+                      <p className="font-medium text-slate-700 truncate max-w-50">{u.department || "Academic Faculty"}</p>
+                      <p className="text-[10px] text-slate-400 truncate max-w-50">{u.institution || "Gono Bishwabidyalay"}</p>
                     </TableCell>
 
                     <TableCell>
@@ -561,6 +669,7 @@ export function UserManagementPanel({
 
                     <TableCell className="text-right">
                       <button
+                        type="button"
                         onClick={(e) => handleOpenMenu(e, u)}
                         className={cn(
                           "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
@@ -589,6 +698,95 @@ export function UserManagementPanel({
         size="lg"
       >
         <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+          {/* Scholar Photograph / Avatar Section */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Scholar Photograph / Avatar</label>
+            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+              <div className="relative shrink-0">
+                <div className="h-14 w-14 rounded-xl bg-linear-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-base overflow-hidden shadow-xs border-2 border-white ring-1 ring-slate-200">
+                  {formAvatarUrl ? (
+                    <img
+                      src={formAvatarUrl}
+                      alt="Avatar preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {formName
+                        ? formName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase()
+                        : "GB"}
+                    </span>
+                  )}
+                </div>
+                {isUploadingFormAvatar && (
+                  <div className="absolute inset-0 bg-slate-950/60 rounded-xl flex items-center justify-center backdrop-blur-[1px]">
+                    <Loader2 className="h-4 w-4 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-all cursor-pointer">
+                    <UploadCloud className="h-3.5 w-3.5 text-blue-600" />
+                    <span>{formAvatarUrl ? "Change Photo" : "Upload Photo"}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleFormAvatarUpload}
+                      disabled={isUploadingFormAvatar}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {formAvatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormAvatarUrl("")}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  PNG, JPG, or WebP up to 5MB.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Preset Avatars Picker */}
+            <div className="mt-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Or select an academic preset avatar
+              </span>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {PRESET_AVATARS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    title={preset.label}
+                    onClick={() => setFormAvatarUrl(preset.url)}
+                    className={cn(
+                      "h-8 w-8 shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-pointer p-0.5 bg-white",
+                      formAvatarUrl === preset.url
+                        ? "border-blue-600 ring-2 ring-blue-100 scale-105"
+                        : "border-slate-200 hover:border-slate-300 opacity-80 hover:opacity-100"
+                    )}
+                  >
+                    <img src={preset.url} alt={preset.label} className="h-full w-full object-cover rounded-md" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
             <input
@@ -685,7 +883,7 @@ export function UserManagementPanel({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-gb-blue text-white font-bold hover:bg-gb-blue-dark shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? "Creating User..." : "Create User"}
             </button>
@@ -703,6 +901,95 @@ export function UserManagementPanel({
         size="lg"
       >
         <form onSubmit={handleUpdateUser} className="space-y-4 text-xs">
+          {/* Scholar Photograph / Avatar Section */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Scholar Photograph / Avatar</label>
+            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+              <div className="relative shrink-0">
+                <div className="h-14 w-14 rounded-xl bg-linear-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-base overflow-hidden shadow-xs border-2 border-white ring-1 ring-slate-200">
+                  {editAvatarUrl ? (
+                    <img
+                      src={editAvatarUrl}
+                      alt={editName || "Scholar avatar"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {editName
+                        ? editName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase()
+                        : "GB"}
+                    </span>
+                  )}
+                </div>
+                {isUploadingEditAvatar && (
+                  <div className="absolute inset-0 bg-slate-950/60 rounded-xl flex items-center justify-center backdrop-blur-[1px]">
+                    <Loader2 className="h-4 w-4 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-all cursor-pointer">
+                    <UploadCloud className="h-3.5 w-3.5 text-blue-600" />
+                    <span>{editAvatarUrl ? "Change Photo" : "Upload Photo"}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleEditAvatarUpload}
+                      disabled={isUploadingEditAvatar}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {editAvatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditAvatarUrl("")}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  PNG, JPG, or WebP up to 5MB. Photo will appear across publications, editorial boards, and scholar directory.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Preset Avatars Picker */}
+            <div className="mt-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Or select an academic preset avatar
+              </span>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {PRESET_AVATARS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    title={preset.label}
+                    onClick={() => setEditAvatarUrl(preset.url)}
+                    className={cn(
+                      "h-8 w-8 shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-pointer p-0.5 bg-white",
+                      editAvatarUrl === preset.url
+                        ? "border-blue-600 ring-2 ring-blue-100 scale-105"
+                        : "border-slate-200 hover:border-slate-300 opacity-80 hover:opacity-100"
+                    )}
+                  >
+                    <img src={preset.url} alt={preset.label} className="h-full w-full object-cover rounded-md" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
             <input
@@ -818,7 +1105,7 @@ export function UserManagementPanel({
             <button
               type="submit"
               disabled={isUpdating}
-              className="px-5 py-2.5 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-gb-blue text-white font-bold hover:bg-gb-blue-dark shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isUpdating ? "Saving Changes..." : "Save Changes"}
             </button>
@@ -858,82 +1145,123 @@ export function UserManagementPanel({
           </div>
         </div>
       </CustomModal>
-      {/* Floating Action Menu (Rendered Outside Table) */}
-      {actionMenuUserId && activeUser && menuPosition && (
-        <div
-          style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
-          onClick={(e) => e.stopPropagation()}
-          className="fixed w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl z-[9999] animate-in fade-in zoom-in-95 duration-100 text-left font-sans"
-        >
-          {/* Edit User */}
-          <button
-            onClick={() => {
-              openEditModal(activeUser);
-              setActionMenuUserId(null);
-              setMenuPosition(null);
-            }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
-          >
-            <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-            <span>Edit Profile</span>
-          </button>
+      {/* Floating Action Menu (Rendered via Portal into Document Body) */}
+      {typeof document !== "undefined" &&
+        actionMenuUserId &&
+        activeUser &&
+        menuPosition &&
+        createPortal(
+          <>
+            {/* Transparent backdrop to capture outside clicks cleanly */}
+            <div
+              className="fixed inset-0 z-9998 bg-black/5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActionMenuUserId(null);
+                setMenuPosition(null);
+                setActiveUser(null);
+              }}
+              onContextMenu={(e) => {
+                e.stopPropagation();
+                setActionMenuUserId(null);
+                setMenuPosition(null);
+                setActiveUser(null);
+              }}
+            />
 
-          {/* View or Appoint to Editorial Board */}
-          <Link
-            href="/dashboard/board"
-            onClick={() => {
-              setActionMenuUserId(null);
-              setMenuPosition(null);
-            }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
-          >
-            <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-            <span>Editorial Board</span>
-          </Link>
+            {/* Menu Container */}
+            <div
+              style={{
+                position: "fixed",
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+                zIndex: 9999,
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100 text-left font-sans"
+            >
+              {/* Header inside menu showing user name */}
+              <div className="px-2.5 py-1 border-b border-slate-100 mb-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">User Actions</p>
+                <p className="text-xs font-semibold text-slate-800 truncate">
+                  {activeUser.fullName || activeUser.name}
+                </p>
+              </div>
 
-          {/* Toggle Status */}
-          <button
-            onClick={() => {
-              const isUserActive = (activeUser as any).enabled !== false;
-              setActionMenuUserId(null);
-              setMenuPosition(null);
-              handleStatusToggle(activeUser.id, isUserActive);
-            }}
-            disabled={currentUser?.id === activeUser.id || currentUser?.email === activeUser.email}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {(activeUser as any).enabled !== false ? (
-              <>
-                <XCircle className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                <span>Deactivate Account</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                <span>Activate Account</span>
-              </>
-            )}
-          </button>
-
-          {/* Delete User */}
-          {currentUser?.id !== activeUser.id && currentUser?.email !== activeUser.email && (
-            <>
-              <div className="my-1 border-t border-slate-100" />
+              {/* Edit User */}
               <button
+                type="button"
+                onClick={() => {
+                  openEditModal(activeUser);
+                  setActionMenuUserId(null);
+                  setMenuPosition(null);
+                }}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
+              >
+                <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span>Edit Profile</span>
+              </button>
+
+              {/* View or Appoint to Editorial Board */}
+              <Link
+                href="/dashboard/board"
                 onClick={() => {
                   setActionMenuUserId(null);
                   setMenuPosition(null);
-                  setUserToDelete(activeUser);
                 }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
               >
-                <Trash2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                <span>Delete User</span>
+                <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <span>Editorial Board</span>
+              </Link>
+
+              {/* Toggle Status */}
+              <button
+                type="button"
+                onClick={() => {
+                  const isUserActive = (activeUser as any).enabled !== false;
+                  setActionMenuUserId(null);
+                  setMenuPosition(null);
+                  handleStatusToggle(activeUser.id, isUserActive);
+                }}
+                disabled={currentUser?.id === activeUser.id || currentUser?.email === activeUser.email}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {(activeUser as any).enabled !== false ? (
+                  <>
+                    <XCircle className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <span>Deactivate Account</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <span>Activate Account</span>
+                  </>
+                )}
               </button>
-            </>
-          )}
-        </div>
-      )}
+
+              {/* Delete User */}
+              {currentUser?.id !== activeUser.id && currentUser?.email !== activeUser.email && (
+                <>
+                  <div className="my-1 border-t border-slate-100" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionMenuUserId(null);
+                      setMenuPosition(null);
+                      setUserToDelete(activeUser);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                    <span>Delete User</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }

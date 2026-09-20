@@ -62,6 +62,7 @@ import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomModal } from "@/components/ui/modal";
 import { StatCard } from "@/components/ui/stat-card";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
+import { DashboardBannerHeader } from "@/components/dashboard/dashboard-banner-header";
 import { PremiumLoader } from "@/components/ui/loader";
 import { CustomTooltip } from "@/components/ui/tooltip";
 import {
@@ -85,6 +86,7 @@ import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/aut
 
 import { roleNotes, roleAccentMap, statusConfig } from "./workspace/workspace-data";
 import { DashboardStatsGrid } from "./workspace/dashboard-stats-grid";
+import { PipelineContentSkeleton } from "./workspace/pipeline-content-skeleton";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
 import { SubmitReviewModal } from "./workspace/submit-review-modal";
@@ -887,7 +889,7 @@ export function DashboardWorkspace({
               <div
                 data-lenis-prevent="true"
                 onWheel={(e) => e.stopPropagation()}
-                className="flex-1 min-h-0 sidebar-scroll p-3 space-y-4"
+                className="flex-1 min-h-0 sidebar-scroll no-scrollbar p-3 space-y-4"
               >
                 {/* Core Section */}
                 <div>
@@ -1198,7 +1200,7 @@ export function DashboardWorkspace({
           <div
             data-lenis-prevent="true"
             onWheel={(e) => e.stopPropagation()}
-            className="mt-3 flex-1 min-h-0 sidebar-scroll space-y-4 px-3"
+            className="mt-3 flex-1 min-h-0 sidebar-scroll no-scrollbar space-y-4 px-3"
           >
             {/* Core Section */}
             <div>
@@ -1786,58 +1788,26 @@ export function DashboardWorkspace({
               {activeView === "workspace" && (
                 <>
                   <AnimatePresence mode="wait">
-                    <motion.div
+                    <DashboardBannerHeader
                       key={activeRole}
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.2 }}
-                      className={cn(
-                        "flex items-center justify-between border-b border-l-4 border-(--color-gb-border) px-5 py-4 bg-white/70 backdrop-blur-sm shadow-[inset_0_-1px_0_rgba(17,27,82,0.02)] transition-all duration-300",
-                        roleAccent.border
-                      )}
-                    >
-                      <div className="flex items-start gap-3.5">
-                        <div
-                          className={cn(
-                            "p-2.5 rounded-xl border flex items-center justify-center shadow-sm shrink-0 mt-0.5",
-                            roleAccent.badge
-                          )}
-                        >
-                          {activeRole === "author" && <PenLine className="h-5 w-5" />}
-                          {activeRole === "reviewer" && (
-                            <UserCheck className="h-5 w-5" />
-                          )}
-                          {activeRole === "editor" && (
-                            <ClipboardCheck className="h-5 w-5" />
-                          )}
-                          {activeRole === "admin" && (
-                            <ShieldCheck className="h-5 w-5" />
-                          )}
-                          {activeRole === "super-admin" && (
-                            <Crown className="h-5 w-5" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn(
-                                "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border leading-none font-sans",
-                                roleAccent.badge
-                              )}
-                            >
-                              Active Workspace
-                            </span>
-                          </div>
-                          <h1 className="mt-1.5 text-sm font-extrabold text-(--color-gb-ink) tracking-tight font-academic">
-                            {roleAccent.label} Suite
-                          </h1>
-                          <p className="mt-1 max-w-2xl text-[11px] text-(--color-gb-muted) leading-relaxed">
-                            {roleNotes[activeRole]}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
+                      title={`${roleAccent.label} Suite`}
+                      subtitle={roleNotes[activeRole]}
+                      badge="Active Workspace"
+                      icon={
+                        activeRole === "author"
+                          ? PenLine
+                          : activeRole === "reviewer"
+                          ? UserCheck
+                          : activeRole === "editor"
+                          ? ClipboardCheck
+                          : activeRole === "admin"
+                          ? ShieldCheck
+                          : Crown
+                      }
+                      borderAccentClassName={roleAccent.border}
+                      badgeClassName={roleAccent.badge}
+                      animate
+                    />
                   </AnimatePresence>
 
                   <div>
@@ -1849,57 +1819,54 @@ export function DashboardWorkspace({
                     </div>
 
                     <div className="px-4 pb-6 space-y-4">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={`table-${activeRole}`}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.25 }}
-                          className="h-fit rounded-xl border border-(--color-gb-border) bg-white shadow-sm"
-                        >
-                          <div className="flex items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 py-3 rounded-t-xl">
-                            <div className="flex items-center gap-2.5">
-                              <div className="h-6 w-6 rounded-md bg-gb-blue-soft flex items-center justify-center">
-                                <ClipboardCheck className="h-3.5 w-3.5 text-gb-blue" />
+                      {!mounted || (isDataLoading && submissions.length === 0) ? (
+                        <PipelineContentSkeleton rows={6} />
+                      ) : (
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={`table-${activeRole}`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="h-fit rounded-xl border border-(--color-gb-border) bg-white shadow-sm"
+                          >
+                            <div className="flex items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 py-3 rounded-t-xl">
+                              <div className="flex items-center gap-2.5">
+                                <div className="h-6 w-6 rounded-md bg-gb-blue-soft flex items-center justify-center">
+                                  <ClipboardCheck className="h-3.5 w-3.5 text-gb-blue" />
+                                </div>
+                                <div>
+                                  <h2 className="text-[13px] font-black text-gb-ink">
+                                    Manuscript Pipeline
+                                  </h2>
+                                  <p className="text-[10px] text-(--color-gb-muted)" suppressHydrationWarning>
+                                    {`${filtered.length} record${filtered.length !== 1 ? "s" : ""}`} · double-blind peer review
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h2 className="text-[13px] font-black text-gb-ink">
-                                  Manuscript Pipeline
-                                </h2>
-                                <p className="text-[10px] text-(--color-gb-muted)" suppressHydrationWarning>
-                                  {mounted && !isDataLoading ? `${filtered.length} record${filtered.length !== 1 ? "s" : ""}` : "Manuscripts"} · double-blind peer review
-                                </p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 rounded-lg border border-(--color-gb-border) bg-[#f9fafc] px-3 py-1.5 focus-within:border-gb-blue focus-within:bg-white transition-all">
+                                  <Search className="h-3.5 w-3.5 text-(--color-gb-muted)" />
+                                  <input
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search…"
+                                    className="w-32 bg-transparent text-[12px] font-medium text-gb-ink outline-none placeholder:text-(--color-gb-muted)"
+                                  />
+                                  {searchQuery && (
+                                    <button
+                                      onClick={() => setSearchQuery("")}
+                                      className="text-(--color-gb-muted) hover:text-gb-ink cursor-pointer"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 rounded-lg border border-(--color-gb-border) bg-[#f9fafc] px-3 py-1.5 focus-within:border-gb-blue focus-within:bg-white transition-all">
-                                <Search className="h-3.5 w-3.5 text-(--color-gb-muted)" />
-                                <input
-                                  value={searchQuery}
-                                  onChange={(e) => setSearchQuery(e.target.value)}
-                                  placeholder="Search…"
-                                  className="w-32 bg-transparent text-[12px] font-medium text-gb-ink outline-none placeholder:text-(--color-gb-muted)"
-                                />
-                                {searchQuery && (
-                                  <button
-                                    onClick={() => setSearchQuery("")}
-                                    className="text-(--color-gb-muted) hover:text-gb-ink cursor-pointer"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
 
-                          {!mounted || (isDataLoading && submissions.length === 0) ? (
-                            <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center" suppressHydrationWarning>
-                              <div className="h-6 w-6 rounded-full border-2 border-gb-blue border-t-transparent animate-spin mb-3" />
-                              <span className="font-semibold text-slate-600">Loading manuscript pipeline…</span>
-                              <span className="text-[11px] text-slate-400 mt-0.5">Fetching latest records from research repository</span>
-                            </div>
-                          ) : filtered.length === 0 ? (
+                            {filtered.length === 0 ? (
                             <div className="py-14 px-6 flex flex-col items-center justify-center text-center">
                               {searchQuery.trim() ? (
                                 <div className="flex flex-col items-center max-w-sm">
@@ -2130,6 +2097,7 @@ export function DashboardWorkspace({
                           )}
                         </motion.div>
                       </AnimatePresence>
+                    )}
 
                     </div>
                   </div>

@@ -23,14 +23,12 @@ import { getSession, type User } from "@/lib/auth";
 import { type Role } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-export interface DashboardPageHeaderProps {
-  title: string;
-  subtitle?: string;
-  badge?: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  actions?: React.ReactNode;
-  className?: string;
-}
+import {
+  DashboardBannerHeader,
+  type DashboardBannerHeaderProps,
+} from "./dashboard-banner-header";
+
+export type DashboardPageHeaderProps = DashboardBannerHeaderProps;
 
 /**
  * Default header definitions for all Management Tools links
@@ -41,101 +39,136 @@ export const MANAGEMENT_PAGE_HEADERS: Record<string, DashboardPageHeaderProps> =
     subtitle: "Monitor submissions, assign double-blind reviewers, and advance editorial workflows.",
     icon: ClipboardCheck,
     badge: "Editorial Workflow",
+    borderAccentClassName: "border-l-violet-600",
+    badgeClassName: "bg-violet-50 text-violet-700 border-violet-200/60",
   },
   "/dashboard/publications": {
     title: "All Publications Repository",
     subtitle: "Comprehensive directory of peer-reviewed articles, scholarly DOIs, and readership analytics.",
     icon: BookMarked,
+    badge: "Publications",
+    borderAccentClassName: "border-l-blue-600",
+    badgeClassName: "bg-blue-50 text-blue-700 border-blue-200/60",
   },
   "/dashboard/users": {
     title: "User Directory & Access Control",
     subtitle: "Manage academic scholar credentials, role privileges, and active user accounts.",
     icon: Users,
     badge: "Administration",
+    borderAccentClassName: "border-l-emerald-600",
+    badgeClassName: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
   },
   "/dashboard/mailing": {
     title: "Mailing & Scholar Broadcast",
     subtitle: "Dispatch announcements, call for papers, and updates directly to registered scholars.",
     icon: Mail,
     badge: "Communications Center",
+    borderAccentClassName: "border-l-sky-600",
+    badgeClassName: "bg-sky-50 text-sky-700 border-sky-200/60",
   },
   "/dashboard/issues": {
     title: "Volumes & Issue Releases",
     subtitle: "Organize accepted manuscripts into publication volumes, issues, and featured releases.",
     icon: BookOpen,
     badge: "Publishing & Archive",
+    borderAccentClassName: "border-l-indigo-600",
+    badgeClassName: "bg-indigo-50 text-indigo-700 border-indigo-200/60",
   },
   "/dashboard/board": {
     title: "Editorial Board Governance",
     subtitle: "Manage academic appointments, advisory scholars, and section editors displayed on the public portal.",
     icon: Crown,
     badge: "Academic Governance",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms": {
     title: "Pages CMS — Home Page",
     subtitle: "Configure hero showcase, carousel publications, research highlights, and metrics on the public homepage.",
     icon: HomeIcon,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/home": {
     title: "Pages CMS — Home Page",
     subtitle: "Configure hero showcase, carousel publications, research highlights, and metrics on the public homepage.",
     icon: HomeIcon,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/about": {
     title: "Pages CMS — About Journal",
     subtitle: "Manage journal overview, mission, indexing criteria, and aims & scope.",
     icon: BookOpen,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/editorial-board": {
     title: "Pages CMS — Editorial Board",
     subtitle: "Manage public academic leadership, section editors, governance charter, and advisory council.",
     icon: Users,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/authors": {
     title: "Pages CMS — Author Guidelines",
     subtitle: "Edit manuscript preparation instructions, submission checklists, templates, and APC waivers.",
     icon: PenLine,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/reviewers": {
     title: "Pages CMS — Reviewer Guidelines",
     subtitle: "Configure peer review protocol, evaluation rubrics, reviewer ethics, and academic recognition.",
     icon: CheckCircle2,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/policies": {
     title: "Pages CMS — Policies & Ethics",
     subtitle: "Manage anti-plagiarism screening, COPE compliance, double-blind review framework, and open access policies.",
     icon: Shield,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/issues": {
     title: "Pages CMS — Issues Archive",
     subtitle: "Configure public issue releases, volume archive text, and catalog headers.",
     icon: Layers,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/articles": {
     title: "Pages CMS — Articles Directory",
     subtitle: "Configure public paper listings, indexing metrics, PDF links, and DOI configurations.",
     icon: FileText,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/cms/contact": {
     title: "Pages CMS — Contact Office",
     subtitle: "Edit editorial secretariat details, campus location, help desk, and inquiry contacts.",
     icon: Phone,
     badge: "Pages CMS",
+    borderAccentClassName: "border-l-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 border-amber-200/60",
   },
   "/dashboard/navigation": {
     title: "Navigation & Menu Architecture",
     subtitle: "Add, edit, delete, reorder, and configure public top-level menu items, dropdown categories, and links in the database.",
     icon: Compass,
     badge: "PostgreSQL Database Sync",
+    borderAccentClassName: "border-l-teal-600",
+    badgeClassName: "bg-teal-50 text-teal-700 border-teal-200/60",
   },
 };
 
@@ -169,53 +202,8 @@ export function DashboardHeaderActions({ children }: { children: React.ReactNode
   return createPortal(children, portalTarget);
 }
 
-export function DashboardPageHeader({
-  title,
-  subtitle,
-  badge,
-  icon: Icon,
-  actions,
-  className,
-  portalRef,
-}: DashboardPageHeaderProps & { portalRef?: React.Ref<HTMLDivElement> }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs",
-        className
-      )}
-    >
-      <div className="flex items-center gap-3.5">
-        {Icon && (
-          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-blue-50 text-[color:var(--color-gb-blue)] border border-blue-100 flex items-center justify-center shadow-xs shrink-0">
-            <Icon className="h-5 w-5" />
-          </div>
-        )}
-        <div>
-          {badge && (
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-800 font-sans">
-                {badge}
-              </span>
-            </div>
-          )}
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-academic">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-              {subtitle}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-        {actions}
-        <div ref={portalRef} className="flex items-center gap-2 flex-wrap" />
-      </div>
-    </div>
-  );
+export function DashboardPageHeader(props: DashboardPageHeaderProps) {
+  return <DashboardBannerHeader {...props} />;
 }
 
 export interface DashboardPageWrapperProps {
@@ -237,6 +225,10 @@ export interface DashboardPageWrapperProps {
    */
   className?: string;
   /**
+   * Additional content wrapper className.
+   */
+  contentClassName?: string;
+  /**
    * Content to render once authenticated. Can be standard ReactNode or render prop receiving the authenticated User.
    */
   children: React.ReactNode | ((user: User) => React.ReactNode);
@@ -247,6 +239,7 @@ export function DashboardPageWrapper({
   header,
   fallbackRoute = "/dashboard/analytics",
   className,
+  contentClassName,
   children,
 }: DashboardPageWrapperProps) {
   const router = useRouter();
@@ -298,11 +291,18 @@ export function DashboardPageWrapper({
 
   return (
     <DashboardHeaderContext.Provider value={{ portalTarget }}>
-      <div className={cn("p-4 sm:p-6 space-y-6", className)}>
+      <div className={cn("min-h-full flex flex-col", className)}>
         {resolvedHeader && (
-          <DashboardPageHeader {...resolvedHeader} portalRef={setPortalTarget} />
+          <DashboardBannerHeader {...resolvedHeader} portalRef={setPortalTarget} />
         )}
-        {typeof children === "function" ? children(user) : children}
+        <div
+          className={cn(
+            resolvedHeader ? "p-4 sm:p-6 space-y-6 flex-1" : "flex-1",
+            contentClassName
+          )}
+        >
+          {typeof children === "function" ? children(user) : children}
+        </div>
       </div>
     </DashboardHeaderContext.Provider>
   );

@@ -79,29 +79,37 @@ export function PublicationsManagementPanel() {
   const [copiedDoi, setCopiedDoi] = useState<string | null>(null);
   const [citationFormat, setCitationFormat] = useState<"apa" | "harvard" | "vancouver" | "bibtex">("apa");
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
+  const [isMetricsUpdating, setIsMetricsUpdating] = useState<string | null>(null);
 
   // Fetch publications from API or merge with defaults (with SWR caching)
   const loadPublications = async (isManualRefresh = false) => {
-    const hasCache = !!publicationsCache;
-    if (hasCache && !isManualRefresh) {
-      setArticlesList(publicationsCache!.articles);
-      setIssuesList(publicationsCache!.issues);
-      setLoading(false);
-      if (Date.now() - publicationsCache!.timestamp < 60000) {
-        return;
-      }
+    if (isManualRefresh) {
+      publicationsCache = null;
       setIsRefreshing(true);
-    } else if (!hasCache) {
-      setLoading(true);
     } else {
-      setIsRefreshing(true);
+      const hasCache = !!publicationsCache;
+      if (hasCache) {
+        setArticlesList(publicationsCache!.articles);
+        setIssuesList(publicationsCache!.issues);
+        setLoading(false);
+        if (Date.now() - publicationsCache!.timestamp < 60000) {
+          return;
+        }
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
     }
 
     try {
-      // 1. Fetch articles from backend API
+      // 1. Fetch articles from backend API (bypass cache if manual refresh)
+      const fetchOptions: RequestInit = isManualRefresh
+        ? { cache: "no-store", headers: { "Cache-Control": "no-cache" } }
+        : {};
+
       const [artRes, issRes] = await Promise.allSettled([
-        articlesApi.list({ size: 100 }),
-        issuesApi.list(),
+        articlesApi.list({ size: 100 }, fetchOptions),
+        issuesApi.list(fetchOptions),
       ]);
 
       let finalArticles = initialArticles;
@@ -124,9 +132,9 @@ export function PublicationsManagementPanel() {
           doi: a.doi || `10.5555/gbj.2026.${a.slug}`,
           publishedAt: a.publishedAt || "July 2026",
           metrics: {
-            views: a.metrics?.views ?? a.views ?? 120,
-            downloads: a.metrics?.downloads ?? a.downloads ?? 45,
-            citations: a.metrics?.citations ?? a.citations ?? 2,
+            views: Number(a.metrics?.views ?? a.views ?? 0),
+            downloads: Number(a.metrics?.downloads ?? a.downloads ?? 0),
+            citations: Number(a.metrics?.citations ?? a.citations ?? 0),
           },
           keywords: Array.isArray(a.keywords) ? a.keywords : [],
           sections: a.sections || [],
@@ -134,14 +142,9 @@ export function PublicationsManagementPanel() {
           pdf: a.pdf || a.pdfUrl || "",
         }));
 
-        // Merge: keep all backend articles, plus any initial static articles not yet in backend
-        const existingSlugs = new Set(backendArticles.map((b) => b.slug));
-        finalArticles = [
-          ...backendArticles,
-          ...initialArticles.filter((init) => !existingSlugs.has(init.slug)),
-        ];
+        finalArticles = backendArticles;
         setArticlesList(finalArticles);
-      } else {
+      } else if (!publicationsCache) {
         setArticlesList(initialArticles);
       }
 
@@ -155,9 +158,18 @@ export function PublicationsManagementPanel() {
         issues: finalIssues,
         timestamp: Date.now(),
       };
+
+      if (isManualRefresh) {
+        toast.success("Publications repository refreshed from database");
+      }
     } catch (err) {
       console.warn("Using offline publications repository:", err);
-      setArticlesList(initialArticles);
+      if (!publicationsCache) {
+        setArticlesList(initialArticles);
+      }
+      if (isManualRefresh) {
+        toast.error("Failed to refresh publications repository");
+      }
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -440,6 +452,134 @@ export function PublicationsManagementPanel() {
     }
   };
 
+  // Readership telemetry handlers
+  const handleResetMetrics = async (slug: string) => {
+    try {
+      setIsMetricsUpdating(slug);
+      await articlesApi.resetMetrics(slug);
+      setArticlesList((prev) =>
+        prev.map((a) =>
+          a.slug === slug
+            ? { ...a, metrics: { views: 0, downloads: 0, citations: 0 } }
+            : a
+        )
+      );
+      if (inspectedArticle?.slug === slug) {
+        setInspectedArticle((prev) =>
+          prev ? { ...prev, metrics: { views: 0, downloads: 0, citations: 0 } } : null
+        );
+      }
+      publicationsCache = null;
+      toast.success("Readership metrics reset to 0 for this publication");
+    } catch (err: any) {
+      toast.error("Failed to reset metrics", { description: err?.message });
+    } finally {
+      setIsMetricsUpdating(null);
+    }
+  };
+
+  const handleResetAllMetrics = async () => {
+    try {
+      setIsMetricsUpdating("all");
+      await articlesApi.resetAllMetrics();
+      setArticlesList((prev) =>
+        prev.map((a) => ({
+          ...a,
+          metrics: { views: 0, downloads: 0, citations: 0 },
+        }))
+      );
+      if (inspectedArticle) {
+        setInspectedArticle((prev) =>
+          prev ? { ...prev, metrics: { views: 0, downloads: 0, citations: 0 } } : null
+        );
+      }
+      publicationsCache = null;
+      toast.success("All publication metrics successfully reset to 0!");
+    } catch (err: any) {
+      toast.error("Failed to reset all metrics", { description: err?.message });
+    } finally {
+      setIsMetricsUpdating(null);
+    }
+  };
+
+  const handleSimulateView = async (slug: string) => {
+    try {
+      setIsMetricsUpdating(slug);
+      await articlesApi.trackView(slug);
+      setArticlesList((prev) =>
+        prev.map((a) =>
+          a.slug === slug
+            ? {
+              ...a,
+              metrics: {
+                ...a.metrics,
+                views: (a.metrics?.views || 0) + 1,
+              },
+            }
+            : a
+        )
+      );
+      if (inspectedArticle?.slug === slug) {
+        setInspectedArticle((prev) =>
+          prev
+            ? {
+              ...prev,
+              metrics: {
+                ...prev.metrics,
+                views: (prev.metrics?.views || 0) + 1,
+              },
+            }
+            : null
+        );
+      }
+      publicationsCache = null;
+      toast.success("Telemetry test: +1 View recorded in live database");
+    } catch (err: any) {
+      toast.error("Failed to record view", { description: err?.message });
+    } finally {
+      setIsMetricsUpdating(null);
+    }
+  };
+
+  const handleSimulateDownload = async (slug: string) => {
+    try {
+      setIsMetricsUpdating(slug);
+      await articlesApi.trackDownload(slug);
+      setArticlesList((prev) =>
+        prev.map((a) =>
+          a.slug === slug
+            ? {
+              ...a,
+              metrics: {
+                ...a.metrics,
+                downloads: (a.metrics?.downloads || 0) + 1,
+              },
+            }
+            : a
+        )
+      );
+      if (inspectedArticle?.slug === slug) {
+        setInspectedArticle((prev) =>
+          prev
+            ? {
+              ...prev,
+              metrics: {
+                ...prev.metrics,
+                downloads: (prev.metrics?.downloads || 0) + 1,
+              },
+            }
+            : null
+        );
+      }
+      publicationsCache = null;
+      toast.success("Telemetry test: +1 PDF Download recorded in live database");
+    } catch (err: any) {
+      toast.error("Failed to record download", { description: err?.message });
+    } finally {
+      setIsMetricsUpdating(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Top Header Actions ── */}
@@ -452,6 +592,16 @@ export function PublicationsManagementPanel() {
         >
           <RotateCcw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-blue-600")} />
           <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+        </button>
+
+        <button
+          onClick={handleResetAllMetrics}
+          disabled={isMetricsUpdating === "all"}
+          title="Reset readership counts for all publications to 0"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
+        >
+          <RotateCcw className={cn("h-3.5 w-3.5", isMetricsUpdating === "all" && "animate-spin")} />
+          <span>{isMetricsUpdating === "all" ? "Resetting..." : "Reset Readership (0)"}</span>
         </button>
 
         <button
@@ -726,7 +876,7 @@ export function PublicationsManagementPanel() {
                   <th className="py-3 px-4 min-w-50">Authors & Department</th>
                   <th className="py-3 px-4 min-w-40">Track & Type</th>
                   <th className="py-3 px-4 min-w-30">Issue / Date</th>
-                  <th className="py-3 px-4 min-w-30 text-center">Readership</th>
+                  <th className="py-3 px-4 min-w-50 text-center">Readership & Impact</th>
                   <th className="py-3 px-4 text-right min-w-30">Actions</th>
                 </tr>
               </thead>
@@ -816,20 +966,43 @@ export function PublicationsManagementPanel() {
                       </td>
 
                       {/* 6. Readership Metrics */}
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="inline-flex items-center gap-2.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/50 text-[11px]">
-                          <span className="flex items-center gap-1 text-slate-600" title="Views">
-                            <Eye className="h-3 w-3 text-slate-400" />
-                            {article.metrics?.views || 0}
-                          </span>
-                          <span className="flex items-center gap-1 text-slate-600" title="Downloads">
-                            <FileDown className="h-3 w-3 text-slate-400" />
-                            {article.metrics?.downloads || 0}
-                          </span>
-                          <span className="flex items-center gap-1 font-bold text-emerald-700" title="Citations">
-                            <Quote className="h-3 w-3 text-emerald-500" />
-                            {article.metrics?.citations || 0}
-                          </span>
+                      <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                          {/* Views Pill */}
+                          <div
+                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-lg bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/70 text-blue-700 transition-colors cursor-default"
+                            title={`${article.metrics?.views || 0} Total Article Views`}
+                          >
+                            <Eye className="h-3 w-3 text-blue-500 shrink-0" />
+                            <span className="font-mono text-[11px] font-bold">
+                              {(article.metrics?.views || 0).toLocaleString()}
+                            </span>
+                            <span className="text-[9px] font-semibold text-blue-500 uppercase">reads</span>
+                          </div>
+
+                          {/* Downloads Pill */}
+                          <div
+                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-lg bg-emerald-50/90 hover:bg-emerald-100/90 border border-emerald-200/70 text-emerald-700 transition-colors cursor-default"
+                            title={`${article.metrics?.downloads || 0} Full PDF Downloads`}
+                          >
+                            <FileDown className="h-3 w-3 text-emerald-500 shrink-0" />
+                            <span className="font-mono text-[11px] font-bold">
+                              {(article.metrics?.downloads || 0).toLocaleString()}
+                            </span>
+                            <span className="text-[9px] font-semibold text-emerald-500 uppercase">pdf</span>
+                          </div>
+
+                          {/* Citations Pill */}
+                          <div
+                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-lg bg-purple-50/90 hover:bg-purple-100/90 border border-purple-200/70 text-purple-700 transition-colors cursor-default"
+                            title={`${article.metrics?.citations || 0} Academic Citations`}
+                          >
+                            <Quote className="h-3 w-3 text-purple-500 shrink-0" />
+                            <span className="font-mono text-[11px] font-bold">
+                              {(article.metrics?.citations || 0).toLocaleString()}
+                            </span>
+                            <span className="text-[9px] font-semibold text-purple-500 uppercase">cites</span>
+                          </div>
                         </div>
                       </td>
 
@@ -938,19 +1111,22 @@ export function PublicationsManagementPanel() {
                   </div>
 
                   {/* Metrics Bar */}
-                  <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600">
-                    <span className="flex items-center gap-1 text-[11px]" title="Total views">
-                      <Eye className="h-3 w-3 text-slate-400" />
-                      {article.metrics?.views || 0}
-                    </span>
-                    <span className="flex items-center gap-1 text-[11px]" title="PDF downloads">
-                      <FileDown className="h-3 w-3 text-slate-400" />
-                      {article.metrics?.downloads || 0}
-                    </span>
-                    <span className="flex items-center gap-1 text-[11px] text-emerald-700" title="Citations">
-                      <Quote className="h-3 w-3 text-emerald-500" />
-                      {article.metrics?.citations || 0} citations
-                    </span>
+                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-xs">
+                    <div className="flex items-center justify-center gap-1 py-1 px-1 rounded-lg bg-blue-50/80 border border-blue-200/50 text-blue-700" title="Total reads">
+                      <Eye className="h-3 w-3 text-blue-500 shrink-0" />
+                      <span className="font-mono text-[11px] font-bold">{(article.metrics?.views || 0).toLocaleString()}</span>
+                      <span className="text-[9px] text-blue-400 font-semibold uppercase">reads</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 py-1 px-1 rounded-lg bg-emerald-50/80 border border-emerald-200/50 text-emerald-700" title="PDF downloads">
+                      <FileDown className="h-3 w-3 text-emerald-500 shrink-0" />
+                      <span className="font-mono text-[11px] font-bold">{(article.metrics?.downloads || 0).toLocaleString()}</span>
+                      <span className="text-[9px] text-emerald-400 font-semibold uppercase">pdf</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 py-1 px-1 rounded-lg bg-purple-50/80 border border-purple-200/50 text-purple-700" title="Academic citations">
+                      <Quote className="h-3 w-3 text-purple-500 shrink-0" />
+                      <span className="font-mono text-[11px] font-bold">{(article.metrics?.citations || 0).toLocaleString()}</span>
+                      <span className="text-[9px] text-purple-400 font-semibold uppercase">cites</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1082,6 +1258,98 @@ export function PublicationsManagementPanel() {
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Readership & Live Telemetry Section */}
+            <div className="p-4 bg-linear-to-br from-slate-900 via-slate-850 to-slate-950 rounded-2xl text-white shadow-md border border-slate-800 space-y-3.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Live Readership & Impact Telemetry
+                  </span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
+                  Active Supabase Telemetry
+                </span>
+              </div>
+
+              {/* 3 Metric Cards */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-blue-300">
+                    <span className="text-[11px] font-semibold">Article Reads</span>
+                    <Eye className="h-3.5 w-3.5 text-blue-400" />
+                  </div>
+                  <p className="font-mono text-xl sm:text-2xl font-black mt-2 text-white">
+                    {(inspectedArticle.metrics?.views || 0).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Starts from 0</p>
+                </div>
+
+                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-emerald-300">
+                    <span className="text-[11px] font-semibold">PDF Downloads</span>
+                    <FileDown className="h-3.5 w-3.5 text-emerald-400" />
+                  </div>
+                  <p className="font-mono text-xl sm:text-2xl font-black mt-2 text-white">
+                    {(inspectedArticle.metrics?.downloads || 0).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Click tracked</p>
+                </div>
+
+                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-purple-300">
+                    <span className="text-[11px] font-semibold">Citations</span>
+                    <Quote className="h-3.5 w-3.5 text-purple-400" />
+                  </div>
+                  <p className="font-mono text-xl sm:text-2xl font-black mt-2 text-white">
+                    {(inspectedArticle.metrics?.citations || 0).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Academic impact</p>
+                </div>
+              </div>
+
+              {/* Telemetry Actions (Test Increment / Reset) */}
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateView(inspectedArticle.slug)}
+                    disabled={isMetricsUpdating === inspectedArticle.slug}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                    title="Simulate +1 view"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    <span>+1 View</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateDownload(inspectedArticle.slug)}
+                    disabled={isMetricsUpdating === inspectedArticle.slug}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                    title="Simulate +1 download"
+                  >
+                    <FileDown className="h-3.5 w-3.5" />
+                    <span>+1 Download</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleResetMetrics(inspectedArticle.slug)}
+                  disabled={isMetricsUpdating === inspectedArticle.slug}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                  title="Reset metrics for this publication to 0"
+                >
+                  <RotateCcw className={cn("h-3.5 w-3.5", isMetricsUpdating === inspectedArticle.slug && "animate-spin")} />
+                  <span>Reset to 0</span>
+                </button>
               </div>
             </div>
 

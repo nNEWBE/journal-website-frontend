@@ -125,7 +125,7 @@ export function KpiStatCard({
             {label}
           </p>
           {isLoading ? (
-            <div className="h-7 w-12 rounded-md bg-slate-200/80 animate-pulse mt-1" />
+            <div className="h-7 w-16 rounded-md border border-slate-200 bg-slate-100 animate-pulse mt-1" />
           ) : (
             <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-academic tabular-nums mt-0.5 leading-none">
               {typeof value === "number" ? value.toLocaleString() : value}

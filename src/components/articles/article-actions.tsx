@@ -4,6 +4,7 @@ import { Download, Quote, Share2, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Article } from "@/lib/data";
+import { articlesApi } from "@/lib/api";
 
 function formatApaAuthor(author: string) {
   const parts = author
@@ -37,6 +38,14 @@ export function ArticleActions({
 }) {
   const [copiedCite, setCopiedCite] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleDownload = () => {
+    if (article.slug) {
+      articlesApi.trackDownload(article.slug).catch((err) => {
+        console.warn("Could not record download metric:", err);
+      });
+    }
+  };
 
   const handleCite = async () => {
     const year = article.publishedAt.match(/\d{4}/)?.[0] ?? "2026";
@@ -73,6 +82,9 @@ export function ArticleActions({
       <div className="flex flex-wrap items-center gap-3">
         <a
           href={pdfUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleDownload}
           download={!!article.pdf}
           className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer"
         >
@@ -105,6 +117,9 @@ export function ArticleActions({
     <div className="flex flex-col gap-2.5">
       <a
         href={pdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={handleDownload}
         download={!!article.pdf}
         className="inline-flex w-full items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white py-3 text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs"
       >

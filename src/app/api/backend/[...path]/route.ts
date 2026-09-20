@@ -158,9 +158,16 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
   try {
     const url = new URL(req.url);
     const targetUrl = `${BACKEND_URL}/api/v1/${endpoint}${url.search}`;
+    const cacheControlHeader = req.headers.get("cache-control") || "";
+    const isCacheBypass =
+      cacheControlHeader.includes("no-cache") ||
+      cacheControlHeader.includes("no-store") ||
+      req.headers.get("pragma") === "no-cache" ||
+      url.searchParams.has("_t") ||
+      url.searchParams.has("fresh");
 
-    // Fast-path: Return cached public GET response (< 1ms)
-    if (method === "GET" && isCacheablePublicEndpoint(endpoint)) {
+    // Fast-path: Return cached public GET response (< 1ms) unless cache bypass is requested
+    if (method === "GET" && isCacheablePublicEndpoint(endpoint) && !isCacheBypass) {
       const cached = proxyMemoryCache.get(targetUrl);
       if (cached && Date.now() - cached.timestamp < PROXY_CACHE_TTL_MS) {
         return NextResponse.json(cached.data, {
@@ -303,10 +310,17 @@ async function handleProxy(req: NextRequest, endpoint: string, method: string) {
         res.status === 200 &&
         isCacheablePublicEndpoint(endpoint)
       ) {
-        nextRes.headers.set(
-          "Cache-Control",
-          "public, max-age=60, stale-while-revalidate=300"
-        );
+        if (isCacheBypass) {
+          nextRes.headers.set(
+            "Cache-Control",
+            "no-store, no-cache, must-revalidate"
+          );
+        } else {
+          nextRes.headers.set(
+            "Cache-Control",
+            "public, max-age=60, stale-while-revalidate=300"
+          );
+        }
       }
 
       return nextRes;

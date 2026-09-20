@@ -76,6 +76,13 @@ async function request<T>(
     targetUrl = `${API_BASE_URL}${endpoint}`;
   }
 
+  if (options.cache === "no-store" || (headers["Cache-Control"] && headers["Cache-Control"].includes("no-cache"))) {
+    headers["Cache-Control"] = "no-cache";
+    headers["Pragma"] = "no-cache";
+    const separator = targetUrl.includes("?") ? "&" : "?";
+    targetUrl = `${targetUrl}${separator}_t=${Date.now()}`;
+  }
+
   let res: Response;
   try {
     res = await fetch(targetUrl, {
@@ -293,7 +300,8 @@ export interface PageResult<T> {
 
 export const articlesApi = {
   list: async (
-    params: ArticleSearchParams = {}
+    params: ArticleSearchParams = {},
+    options: RequestInit = {}
   ): Promise<PageResult<Article>> => {
     const query = new URLSearchParams();
     if (params.query) query.set("query", params.query);
@@ -304,7 +312,7 @@ export const articlesApi = {
     if (params.size !== undefined) query.set("size", params.size.toString());
     if (params.sort) query.set("sort", params.sort);
 
-    return request<PageResult<Article>>(`/api/v1/articles?${query.toString()}`);
+    return request<PageResult<Article>>(`/api/v1/articles?${query.toString()}`, options);
   },
 
   getBySlug: async (slug: string): Promise<Article> => {
@@ -322,6 +330,24 @@ export const articlesApi = {
   trackDownload: async (slug: string): Promise<string> => {
     return request<string>(`/api/v1/articles/${slug}/download`, {
       method: "POST",
+    });
+  },
+
+  trackView: async (slug: string): Promise<void> => {
+    return request<void>(`/api/v1/articles/${slug}/view`, {
+      method: "POST",
+    });
+  },
+
+  resetMetrics: async (slug: string): Promise<Article> => {
+    return request<Article>(`/api/v1/articles/${slug}/metrics/reset`, {
+      method: "PUT",
+    });
+  },
+
+  resetAllMetrics: async (): Promise<void> => {
+    return request<void>("/api/v1/articles/metrics/reset-all", {
+      method: "PUT",
     });
   },
 };
@@ -354,8 +380,8 @@ export interface IssueData {
 }
 
 export const issuesApi = {
-  list: async (): Promise<IssueData[]> => {
-    return request<IssueData[]>("/api/v1/issues");
+  list: async (options: RequestInit = {}): Promise<IssueData[]> => {
+    return request<IssueData[]>("/api/v1/issues", options);
   },
 
   getAll: async (): Promise<IssueData[]> => {
@@ -674,6 +700,7 @@ export const adminApi = {
     department?: string;
     institution?: string;
     orcid?: string;
+    avatarUrl?: string;
   }): Promise<AuthResponseData["user"]> => {
     return request<AuthResponseData["user"]>("/api/v1/admin/users", {
       method: "POST",
@@ -690,6 +717,7 @@ export const adminApi = {
       department?: string;
       institution?: string;
       orcid?: string;
+      avatarUrl?: string;
       password?: string;
       enabled?: boolean;
     }
