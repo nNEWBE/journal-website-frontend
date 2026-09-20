@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/table";
 
 export const metadata: Metadata = {
-  title: "Reviewer Guidelines & Evaluation Rubric — GB Journal of Research",
+  title: "Reviewer Guidelines & Evaluation Rubric | GB Journal of Research",
   description:
     "Explore reviewer expectations, evaluation rubric, confidentiality protocols, and COPE-aligned standards for peer reviewers at the Gono Bishwabidyalay Journal of Research.",
 };
@@ -430,9 +430,9 @@ export default function ReviewersPage() {
             <Table minWidth={760}>
               <TableHeader>
                 <TableRow className="border-b border-slate-200 bg-slate-100/80 text-[10.5px] font-bold uppercase tracking-wider text-slate-700">
-                  <TableHead className="px-6 py-3.5 w-[320px] sm:w-[360px] text-slate-700">Evaluation Dimension</TableHead>
+                  <TableHead className="px-6 py-3.5 w-[320px] sm:w-90 text-slate-700">Evaluation Dimension</TableHead>
                   <TableHead className="px-6 py-3.5 text-slate-700">Assessment Focus & Verification Guidelines</TableHead>
-                  <TableHead className="px-6 py-3.5 text-right w-64 min-w-[220px] text-slate-700">Rating Benchmark</TableHead>
+                  <TableHead className="px-6 py-3.5 text-right w-64 min-w-55 text-slate-700">Rating Benchmark</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-slate-200/90">
@@ -470,11 +470,10 @@ export default function ReviewersPage() {
                       <TableCell className="px-6 py-5 align-top text-right">
                         <div className="flex flex-col items-end gap-1.5">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold font-mono border shadow-2xs ${
-                              isEthics
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : "bg-blue-50 text-[#1e40af] border-blue-200"
-                            }`}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold font-mono border shadow-2xs ${isEthics
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : "bg-blue-50 text-[#1e40af] border-blue-200"
+                              }`}
                           >
                             {isEthics && <ShieldCheck className="h-3 w-3 text-emerald-600" />}
                             <span>{criterion.scale}</span>
@@ -560,7 +559,7 @@ export default function ReviewersPage() {
         <div className="container-x">
           <div className="relative overflow-hidden bg-[#060e22] text-white border border-slate-800 shadow-[0_20px_50px_rgba(3,8,22,0.45)] p-8 sm:p-12 lg:p-14">
             {/* Top gold-to-blue accent line */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-blue-500 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-amber-400 via-blue-500 to-transparent" />
 
             {/* Ambient background glow */}
             <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
@@ -574,7 +573,7 @@ export default function ReviewersPage() {
                   <span>JOIN THE REVIEWER PANEL</span>
                 </div>
 
-                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.025em] text-white leading-[1.15]">
+                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
                   Apply to Join Our Expert Referee Network
                 </h2>
 
@@ -618,7 +617,7 @@ export default function ReviewersPage() {
               </div>
 
               {/* Right Column: Editorial Secretariat Contact Card */}
-              <div className="bg-white/[0.05] border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
+              <div className="bg-white/5 border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
                 <div>
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">

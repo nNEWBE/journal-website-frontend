@@ -35,7 +35,7 @@ import { getBackendUrl } from "@/lib/backend-url";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Articles & Research Archive — GB Journal of Research",
+  title: "Articles & Research Archive | GB Journal of Research",
   description:
     "Explore peer-reviewed research articles across health, pharmacy, agriculture, law, computing, and social welfare from the Gono Bishwabidyalay Journal of Research.",
 };

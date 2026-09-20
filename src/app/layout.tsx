@@ -38,7 +38,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gono Bishwabidyalay Journal Portal",
+  title: "Gono Bishwabidyalay Journal Portal | GB Journal",
   description:
     "A peer-reviewed interdisciplinary journal portal for Gono Bishwabidyalay featuring manuscript discovery, author guidelines, peer review, and editorial management.",
   icons: "/gb-logo-official.png",

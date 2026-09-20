@@ -9,7 +9,7 @@ import type { Article } from "@/lib/data";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Current Issue — GB Journal of Research",
+  title: "Current Issue | GB Journal of Research",
   description:
     "Explore the latest peer-reviewed research volume, editorial insights, and multidisciplinary scholarship published in the current edition of the Gono Bishwabidyalay Journal of Research.",
 };

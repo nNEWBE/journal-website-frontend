@@ -6,7 +6,7 @@ import { type Issue } from "@/lib/data";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Issues Archive — GB Journal of Research",
+  title: "Issues Archive | GB Journal of Research",
   description:
     "Explore past published editions, thematic volumes, and research archives of the Gono Bishwabidyalay Journal of Research.",
 };

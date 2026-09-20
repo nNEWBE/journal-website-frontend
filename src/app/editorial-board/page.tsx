@@ -27,7 +27,7 @@ import { getBackendUrl } from "@/lib/backend-url";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Editorial Board & Governance — GB Journal of Research",
+  title: "Editorial Board & Governance | GB Journal of Research",
   description:
     "Meet the academic leadership, section editors, and international advisory council of the Gono Bishwabidyalay Journal of Research. Discover our COPE-aligned governance charter and double-blind peer review oversight.",
 };

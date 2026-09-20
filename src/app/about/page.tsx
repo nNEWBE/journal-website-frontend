@@ -6,7 +6,7 @@ import { AboutJournalStory } from "@/components/about/about-journal-story";
 import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 export const metadata: Metadata = {
-  title: "About the Journal — GB Journal of Research",
+  title: "About the Journal | GB Journal of Research",
   description:
     "Learn about the mission, scope, double-blind peer review, publishing charter, indexing, and academic stewardship of the Gono Bishwabidyalay Journal of Research.",
 };

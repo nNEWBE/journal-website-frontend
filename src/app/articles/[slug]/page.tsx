@@ -191,7 +191,7 @@ export async function generateMetadata({
   const publishedTime = publicationDateIso(article.publishedAt);
 
   return {
-    title: `${article.title} — ${journalTitle}`,
+    title: `${article.title} | ${journalTitle}`,
     description: article.abstract,
     keywords: article.keywords,
     authors: article.authors.map((name) => ({ name })),
