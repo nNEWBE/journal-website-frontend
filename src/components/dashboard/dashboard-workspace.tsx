@@ -1855,8 +1855,8 @@ export function DashboardWorkspace({
                           >
                             <div className="flex items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 py-3 rounded-t-xl">
                               <div className="flex items-center gap-2.5">
-                                <div className="h-6 w-6 rounded-md bg-gb-blue-soft flex items-center justify-center">
-                                  <ClipboardCheck className="h-3.5 w-3.5 text-gb-blue" />
+                                <div className="h-8.5 w-8.5 rounded-lg bg-gb-blue-soft flex items-center justify-center shrink-0">
+                                  <ClipboardCheck className="h-5 w-5 text-gb-blue" />
                                 </div>
                                 <div>
                                   <h2 className="text-[13px] font-black text-gb-ink">

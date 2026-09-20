@@ -511,30 +511,35 @@ export function UserManagementPanel({
           value={stats.total}
           icon={Users}
           accent="blue"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Authors"
           value={stats.authors}
           icon={PenLine}
           accent="sky"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Reviewers"
           value={stats.reviewers}
           icon={UserCheck}
           accent="amber"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Editors"
           value={stats.editors}
           icon={Shield}
           accent="purple"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Admins"
           value={stats.admins}
           icon={Crown}
           accent="emerald"
+          isLoading={loading}
         />
       </div>
 

@@ -90,6 +90,25 @@ export function KpiStatCard({
   className,
   isLoading = false,
 }: KpiStatCardProps) {
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition-all",
+          className
+        )}
+      >
+        <div className="flex items-center gap-3.5 sm:gap-4">
+          <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border border-slate-200/80 bg-slate-100 animate-pulse shrink-0" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-3 w-24 rounded border border-slate-200/70 bg-slate-100 animate-pulse" />
+            <div className="h-6.5 w-14 rounded border border-slate-200/70 bg-slate-100 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const cfg = KPI_ACCENT_MAP[accent] || KPI_ACCENT_MAP.blue;
 
   return (
@@ -124,13 +143,9 @@ export function KpiStatCard({
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate font-sans">
             {label}
           </p>
-          {isLoading ? (
-            <div className="h-7 w-16 rounded-md border border-slate-200 bg-slate-100 animate-pulse mt-1" />
-          ) : (
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-academic tabular-nums mt-0.5 leading-none">
-              {typeof value === "number" ? value.toLocaleString() : value}
-            </p>
-          )}
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-academic tabular-nums mt-0.5 leading-none">
+            {typeof value === "number" ? value.toLocaleString() : value}
+          </p>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ interface CustomSelectProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  triggerClassName?: string;
   placeholder?: string;
   variant?: "default" | "dark";
   direction?: "auto" | "down" | "up";
@@ -28,6 +29,7 @@ export function CustomSelect({
   value,
   onChange,
   className,
+  triggerClassName,
   placeholder = "Select option",
   variant = "default",
   direction = "down",
@@ -80,7 +82,7 @@ export function CustomSelect({
   const displayLabel = selectedOption ? selectedOption.label : value || placeholder;
 
   return (
-    <div ref={containerRef} className={cn("relative w-full", isSm ? "min-w-[120px]" : "min-w-[140px]", className)}>
+    <div ref={containerRef} className={cn("relative w-full", isSm ? "min-w-30" : "min-w-35", className)}>
       <button
         type="button"
         disabled={disabled}
@@ -88,16 +90,17 @@ export function CustomSelect({
         className={cn(
           "select-trigger flex w-full items-center justify-between gap-2 shadow-xs transition-all outline-none text-left",
           isForm
-            ? "h-[38px] min-h-[38px] px-3 py-2 rounded-lg text-xs font-normal text-slate-800"
+            ? "h-9.5 min-h-9.5 px-3 py-2 rounded-lg text-xs font-normal text-slate-800"
             : isSm
-            ? "min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold"
-            : "min-h-[42px] px-3.5 py-2.5 rounded-xl text-xs font-semibold",
+              ? "min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold"
+              : "min-h-10.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold",
           disabled && "opacity-50 cursor-not-allowed pointer-events-none",
           isDark
             ? "border border-white/15 bg-white/10 text-white hover:bg-white/15 hover:border-white/30 focus:outline-none focus:ring-0"
             : isForm
-            ? "border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-500 focus:outline-none"
-            : "border border-slate-200 bg-white font-bold text-slate-800 hover:border-slate-300 focus:border-slate-300 focus:outline-none focus:ring-0"
+              ? "border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-500 focus:outline-none"
+              : "border border-slate-200 bg-white font-bold text-slate-800 hover:border-slate-300 focus:border-slate-300 focus:outline-none focus:ring-0",
+          triggerClassName
         )}
       >
         <span className="truncate">{displayLabel}</span>
@@ -113,10 +116,10 @@ export function CustomSelect({
       {isOpen && !disabled && (
         <div
           className={cn(
-            "absolute z-[100] w-full min-w-[140px] max-h-60 overflow-y-auto rounded-xl shadow-2xl animate-fade p-1.5",
+            "absolute z-100 w-full min-w-35 max-h-60 overflow-y-auto rounded-xl shadow-2xl animate-fade p-1.5",
             isDark
               ? "border border-white/15 bg-[#0c1338] text-white backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
-              : "border border-[color:var(--border)] bg-white",
+              : "border border-(--border) bg-white",
             openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5"
           )}
         >
@@ -137,8 +140,8 @@ export function CustomSelect({
                       ? "bg-white/20 text-white font-bold"
                       : "text-white/80 hover:bg-white/10 hover:text-white"
                     : isSelected
-                    ? "bg-[color:var(--green-soft)] text-[color:var(--green-dark)] hover:bg-[color:var(--green-soft)]"
-                    : "text-slate-700 hover:bg-slate-50"
+                      ? "bg-color-green-soft text-(--color-green-dark) hover:bg-color-green-soft"
+                      : "text-slate-700 hover:bg-slate-50"
                 )}
               >
                 <span className="truncate capitalize">{option.label}</span>
@@ -146,7 +149,7 @@ export function CustomSelect({
                   <Check
                     className={cn(
                       "h-3.5 w-3.5 shrink-0 ml-2",
-                      isDark ? "text-amber-400" : "text-[color:var(--university-green)]"
+                      isDark ? "text-amber-400" : "text-(--color-gb-university-green)"
                     )}
                   />
                 )}

@@ -9,7 +9,6 @@ import {
   Filter,
   ArrowUpDown,
   Download,
-  ExternalLink,
   Copy,
   Check,
   RotateCcw,
@@ -19,6 +18,7 @@ import {
   FileText,
   FileCheck2,
   Calendar,
+  CalendarDays,
   Layers,
   Quote,
   Share2,
@@ -585,43 +585,25 @@ export function PublicationsManagementPanel() {
       {/* ── Top Header Actions ── */}
       <DashboardHeaderActions>
         <button
+          type="button"
           onClick={() => loadPublications(true)}
           disabled={isRefreshing}
           title="Refresh database records"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50"
         >
-          <RotateCcw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-blue-600")} />
+          <RotateCcw className={cn("h-3.5 w-3.5 text-slate-500", isRefreshing && "animate-spin text-blue-600")} />
           <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
         </button>
 
         <button
-          onClick={handleResetAllMetrics}
-          disabled={isMetricsUpdating === "all"}
-          title="Reset readership counts for all publications to 0"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
-        >
-          <RotateCcw className={cn("h-3.5 w-3.5", isMetricsUpdating === "all" && "animate-spin")} />
-          <span>{isMetricsUpdating === "all" ? "Resetting..." : "Reset Readership (0)"}</span>
-        </button>
-
-        <button
+          type="button"
           onClick={handleExportCSV}
           title="Export filtered records as CSV"
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-xs"
+          className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-semibold text-white bg-gb-blue hover:bg-gb-blue-dark border border-gb-blue rounded-xl transition-all cursor-pointer shadow-2xs"
         >
-          <Download className="h-3.5 w-3.5" />
+          <Download className="h-3.5 w-3.5 text-white" />
           <span>Export CSV</span>
         </button>
-
-        <Link
-          href="/articles"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-gb-blue hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          <span>View Public Archive</span>
-        </Link>
       </DashboardHeaderActions>
 
       {/* ── KPI Metric Badges ── */}
@@ -631,85 +613,35 @@ export function PublicationsManagementPanel() {
           value={stats.totalPubs}
           icon={FileText}
           accent="blue"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Total Citations"
           value={stats.totalCitations}
           icon={Quote}
           accent="emerald"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Full Downloads"
           value={stats.totalDownloads}
           icon={FileDown}
           accent="amber"
+          isLoading={loading}
         />
         <KpiStatCard
           label="Total Reads"
           value={stats.totalViews}
           icon={Eye}
           accent="indigo"
+          isLoading={loading}
         />
       </div>
 
-      {/* ── Filter & Search Control Center ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-4">
-        {/* Top Filter Row: Search + View Toggle */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Main Search Input */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title, author name, DOI (e.g. 10.5555), abstract keyword, or article ID..."
-              className="w-full pl-10 pr-9 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs sm:text-sm font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
-                title="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Layout Switcher (Grid vs Table) */}
-          <div className="flex items-center gap-1.5 self-end md:self-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
-            <button
-              onClick={() => setViewMode("table")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                viewMode === "table"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              )}
-              title="Dense Table View"
-            >
-              <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Table</span>
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                viewMode === "grid"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              )}
-              title="Card Grid View"
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grid</span>
-            </button>
-          </div>
-        </div>
-
+      {/* ── Filter Dropdowns Center ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-3">
         {/* Filter Dropdowns Row using CustomSelect */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {/* 1. Research Discipline */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
@@ -793,7 +725,11 @@ export function PublicationsManagementPanel() {
             {searchQuery && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-semibold">
                 <span>Keyword: &ldquo;{searchQuery}&rdquo;</span>
-                <button onClick={() => setSearchQuery("")} className="hover:text-blue-900 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="hover:text-blue-900 cursor-pointer"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -802,7 +738,11 @@ export function PublicationsManagementPanel() {
             {selectedTopic !== "all" && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-semibold">
                 <span>Discipline: {selectedTopic}</span>
-                <button onClick={() => setSelectedTopic("all")} className="hover:text-indigo-900 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTopic("all")}
+                  className="hover:text-indigo-900 cursor-pointer"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -811,7 +751,11 @@ export function PublicationsManagementPanel() {
             {selectedType !== "all" && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold">
                 <span>Type: {selectedType}</span>
-                <button onClick={() => setSelectedType("all")} className="hover:text-amber-950 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSelectedType("all")}
+                  className="hover:text-amber-950 cursor-pointer"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -820,7 +764,11 @@ export function PublicationsManagementPanel() {
             {selectedIssue !== "all" && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 text-[11px] font-semibold">
                 <span>Issue: {selectedIssue}</span>
-                <button onClick={() => setSelectedIssue("all")} className="hover:text-teal-900 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSelectedIssue("all")}
+                  className="hover:text-teal-900 cursor-pointer"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -829,7 +777,11 @@ export function PublicationsManagementPanel() {
             {selectedYear !== "all" && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold">
                 <span>Year: {selectedYear}</span>
-                <button onClick={() => setSelectedYear("all")} className="hover:text-slate-900 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSelectedYear("all")}
+                  className="hover:text-slate-900 cursor-pointer"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -838,6 +790,7 @@ export function PublicationsManagementPanel() {
 
           {activeFiltersCount > 0 && (
             <button
+              type="button"
               onClick={resetFilters}
               className="text-xs font-semibold text-red-600 hover:text-red-700 cursor-pointer hover:underline"
             >
@@ -847,26 +800,105 @@ export function PublicationsManagementPanel() {
         </div>
       </div>
 
-      {/* ── Publications Content ── */}
-      {filteredArticles.length === 0 ? (
-        <div className="bg-white p-12 text-center rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-            <Search className="h-6 w-6" />
+      {/* ── Main Publications Section Card ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        {/* Table / Grid Header Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-b border-slate-200/80 px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50/50">
+          {/* Left: Icon + Title + Record Count */}
+          <div className="flex items-center gap-2.5">
+            <div className="h-8.5 w-8.5 rounded-lg bg-gb-blue-soft flex items-center justify-center shrink-0">
+              <BookMarked className="h-5 w-5 text-gb-blue" />
+            </div>
+            <div>
+              <h2 className="text-xs font-bold text-(--color-gb-ink) uppercase tracking-wider">
+                Published Manuscripts
+              </h2>
+              <p className="text-[11px] text-slate-500" suppressHydrationWarning>
+                {`${filteredArticles.length} record${filteredArticles.length !== 1 ? "s" : ""}`} · double-blind peer review
+              </p>
+            </div>
           </div>
-          <h3 className="text-base font-bold text-slate-800">No matching publications found</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Try adjusting your search criteria, clearing discipline or type filters, or reset the filters to view all published articles.
-          </p>
-          <button
-            onClick={resetFilters}
-            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gb-blue hover:bg-blue-700 rounded-xl transition-all cursor-pointer shadow-xs"
-          >
-            Clear All Filters
-          </button>
+
+          {/* Right Controls: Searchbar + Table/Grid Switcher */}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-60 md:w-72">
+              <div className="flex items-center gap-2 h-9 rounded-xl border border-slate-200/90 bg-white px-3 focus-within:border-gb-blue focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
+                <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search title, author, DOI..."
+                  className="w-full bg-transparent text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                    title="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Table / Grid Switcher */}
+            <div className="flex items-center h-9 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                  viewMode === "table"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+                title="Dense Table View"
+              >
+                <List className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                  viewMode === "grid"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+                title="Card Grid View"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+            </div>
+          </div>
         </div>
-      ) : viewMode === "table" ? (
-        /* ── TABLE VIEW ── */
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+
+        {/* Content Body */}
+        {filteredArticles.length === 0 ? (
+          <div className="p-12 text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <Search className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">No matching publications found</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Try adjusting your search criteria, clearing discipline or type filters, or reset the filters to view all published articles.
+            </p>
+            <button
+              onClick={resetFilters}
+              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gb-blue hover:bg-blue-700 rounded-xl transition-all cursor-pointer shadow-xs"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        ) : viewMode === "table" ? (
+          /* ── TABLE VIEW ── */
+
           <div className="overflow-x-auto overflow-y-visible overscroll-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -1033,107 +1065,100 @@ export function PublicationsManagementPanel() {
               </tbody>
             </table>
           </div>
-        </div>
-      ) : (
-        /* ── CARD GRID VIEW ── */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        ) : (
+          /* ── EDITORIAL CARD VIEW (2 SIDE BY SIDE) ── */
+          <div className="p-4 sm:p-5 bg-slate-50/40">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredArticles.map((article) => {
+            const imageUrl = getCoverImage(article);
             return (
-              <div
+              <article
                 key={article.id || article.slug}
                 onClick={() => setInspectedArticle(article)}
-                className="bg-white rounded-2xl border border-slate-200/80 hover:border-blue-400/80 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between p-5 cursor-pointer group"
+                className="bg-white border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer group"
               >
-                <div className="space-y-3">
-                  {/* Card Cover Image */}
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 border border-slate-200/80 group-hover:border-blue-400 transition-all shadow-2xs">
+                <div className="grid grid-cols-1 sm:grid-cols-[135px_1fr] lg:grid-cols-[145px_1fr] gap-3.5 sm:gap-4 items-start">
+                  {/* Article Image Container */}
+                  <div className="relative aspect-4/3 sm:aspect-3/4 w-full overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 block">
                     <Image
-                      src={getCoverImage(article)}
+                      src={imageUrl}
                       alt={article.title}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      sizes="(max-width: 639px) 100vw, 145px"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
-                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5">
-                      <span className="px-2 py-0.5 rounded-md bg-white/95 backdrop-blur-xs text-slate-800 text-[10px] font-bold shadow-2xs">
-                        {article.type}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1 shadow-2xs">
-                        <ShieldCheck className="h-3 w-3" />
-                        Open Access
-                      </span>
-                    </div>
-                    <div className="absolute bottom-2.5 left-2.5">
-                      <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider">
-                        {article.topic}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
-                    {article.title}
-                  </h3>
-
-                  {/* Authors */}
-                  <p className="text-xs text-slate-600 line-clamp-1 flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                    <span className="font-medium">{article.authors.join(", ")}</span>
-                  </p>
-
-                  {/* Abstract preview */}
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                    {article.abstract || "Published scientific manuscript."}
-                  </p>
-                </div>
-
-                {/* Card Footer */}
-                <div className="mt-4 pt-3 border-t border-slate-100 space-y-2.5">
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span className="font-semibold text-slate-700">
-                      {article.volume} • {article.issue}
+                    <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 left-2 right-2 inline-block bg-slate-900/90 text-white px-2 py-0.5 text-center text-[9px] font-bold uppercase tracking-wider truncate">
+                      {article.topic}
                     </span>
-                    <div className="flex items-center gap-1.5 font-mono text-[10px]">
-                      <span>{article.doi}</span>
-                      <button
-                        onClick={(e) => handleCopyDoi(article.doi, e)}
-                        className="text-slate-400 hover:text-blue-600 cursor-pointer"
-                        title="Copy DOI"
-                      >
-                        {copiedDoi === article.doi ? (
-                          <Check className="h-3 w-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    </div>
                   </div>
 
-                  {/* Metrics Bar */}
-                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-xs">
-                    <div className="flex items-center justify-center gap-1 py-1 px-1 rounded-lg bg-blue-50/80 border border-blue-200/50 text-blue-700" title="Total reads">
-                      <Eye className="h-3 w-3 text-blue-500 shrink-0" />
-                      <span className="font-mono text-[11px] font-bold">{(article.metrics?.views || 0).toLocaleString()}</span>
-                      <span className="text-[9px] text-blue-400 font-semibold uppercase">reads</span>
+                  {/* Details */}
+                  <div className="flex flex-col justify-between h-full min-w-0">
+                    <div>
+                      {/* Type Badge & Date */}
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e40af] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider border border-blue-100">
+                          <FileText className="h-3 w-3" />
+                          {article.type}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-slate-500">
+                          <CalendarDays className="h-3 w-3 text-slate-400" />
+                          {article.publishedAt || "January 2026"}
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <h2 className="mt-1.5 font-academic text-[15px] sm:text-base font-medium leading-snug text-slate-950 group-hover:text-[#1e40af] transition-colors line-clamp-2">
+                        {article.title}
+                      </h2>
+
+                      {/* Authors */}
+                      <p className="mt-1 text-xs font-semibold text-slate-600 truncate">
+                        {article.authors.join(", ")}
+                      </p>
+
+                      {/* Abstract Preview */}
+                      {article.abstract && (
+                        <p className="mt-1.5 text-xs leading-relaxed text-slate-600 line-clamp-2">
+                          {article.abstract}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center justify-center gap-1 py-1 px-1 rounded-lg bg-emerald-50/80 border border-emerald-200/50 text-emerald-700" title="PDF downloads">
-                      <FileDown className="h-3 w-3 text-emerald-500 shrink-0" />
-                      <span className="font-mono text-[11px] font-bold">{(article.metrics?.downloads || 0).toLocaleString()}</span>
-                      <span className="text-[9px] text-emerald-400 font-semibold uppercase">pdf</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-1 py-1 px-1 rounded-lg bg-purple-50/80 border border-purple-200/50 text-purple-700" title="Academic citations">
-                      <Quote className="h-3 w-3 text-purple-500 shrink-0" />
-                      <span className="font-mono text-[11px] font-bold">{(article.metrics?.citations || 0).toLocaleString()}</span>
-                      <span className="text-[9px] text-purple-400 font-semibold uppercase">cites</span>
+
+                    {/* Footer: Metrics & Read Full Article */}
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 text-[10px] sm:text-[10.5px] font-mono text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3 text-slate-400" />
+                          {(article.metrics?.views || 0).toLocaleString()} views
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Download className="h-3 w-3 text-slate-400" />
+                          {(article.metrics?.downloads || 0).toLocaleString()} pdfs
+                        </span>
+                      </div>
+
+                      <Link
+                        href={`/articles/${article.slug}`}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Read ${article.title}`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline shrink-0"
+                      >
+                        <span>Read Full Article</span>
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
-        </div>
-      )}
+            </div>
+          </div>
+        )}
+      </div>
       {/* ── Article Inspection Drawer ── */}
       <CustomDrawer
         isOpen={Boolean(inspectedArticle)}
