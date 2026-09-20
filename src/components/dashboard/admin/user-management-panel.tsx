@@ -5,8 +5,6 @@ import { createPortal } from "react-dom";
 import {
   Users,
   UserPlus,
-  Search,
-  Filter,
   Shield,
   Trash2,
   CheckCircle2,
@@ -15,12 +13,9 @@ import {
   Pencil,
   AlertTriangle,
   RotateCcw,
-  Check,
-  X,
   UserCheck,
   PenLine,
   Crown,
-  ShieldCheck,
   UploadCloud,
   Loader2,
 } from "lucide-react";
@@ -35,7 +30,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
-import { DashboardSearchFilterBar } from "@/components/dashboard/dashboard-search-bar";
+import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import {
   Table,
   TableHeader,
@@ -57,38 +52,6 @@ const ROLE_OPTIONS = [
   { value: "super-admin", label: "Super Admins" },
 ];
 
-const PRESET_AVATARS = [
-  {
-    id: "prof_rahman",
-    label: "Prof. Rahman",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfRahman&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=262e33",
-  },
-  {
-    id: "dr_fatima",
-    label: "Dr. Fatima",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrFatima&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
-  },
-  {
-    id: "prof_tariq",
-    label: "Prof. Tariq",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfTariq&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=25557c",
-  },
-  {
-    id: "dr_ayesha",
-    label: "Dr. Ayesha",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrAyesha&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
-  },
-  {
-    id: "prof_mahmud",
-    label: "Prof. Mahmud",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfMahmud&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=5199e4",
-  },
-  {
-    id: "dr_rehana",
-    label: "Dr. Rehana",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrRehana&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=25557c",
-  },
-];
 
 // Module-level cache for instant tab switching without loading delays
 let userCache: { data: UserItem[]; timestamp: number } | null = null;
@@ -150,8 +113,8 @@ export function UserManagementPanel({
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
-    const menuWidth = 208;
-    const menuHeight = 180;
+    const menuWidth = 224;
+    const menuHeight = 220;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUpward = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
 
@@ -285,22 +248,43 @@ export function UserManagementPanel({
     loadUsers();
   }, []);
 
-  // Filtered users
+  // Filtered and role-priority serialized users
   const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
-      const matchSearch =
-        !searchQuery.trim() ||
-        u.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.institution?.toLowerCase().includes(searchQuery.toLowerCase());
+    const ROLE_PRIORITY: Record<string, number> = {
+      "super-admin": 1,
+      superadmin: 1,
+      "super_admin": 1,
+      admin: 2,
+      editor: 3,
+      reviewer: 4,
+      author: 5,
+    };
 
-      const matchRole =
-        roleFilter === "all" ||
-        u.role?.toLowerCase() === roleFilter.toLowerCase();
+    return users
+      .filter((u) => {
+        const matchSearch =
+          !searchQuery.trim() ||
+          u.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.institution?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchSearch && matchRole;
-    });
+        const matchRole =
+          roleFilter === "all" ||
+          u.role?.toLowerCase() === roleFilter.toLowerCase();
+
+        return matchSearch && matchRole;
+      })
+      .sort((a, b) => {
+        const roleA = (a.role || "author").toLowerCase().replace(/[\s_]/g, "-");
+        const roleB = (b.role || "author").toLowerCase().replace(/[\s_]/g, "-");
+        const priorityA = ROLE_PRIORITY[roleA] ?? 99;
+        const priorityB = ROLE_PRIORITY[roleB] ?? 99;
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+        return (a.fullName || "").localeCompare(b.fullName || "");
+      });
   }, [users, searchQuery, roleFilter]);
 
   // Role stats
@@ -543,26 +527,30 @@ export function UserManagementPanel({
         />
       </div>
 
-      {/* Search & Filter Bar */}
-      <DashboardSearchFilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        placeholder="Search by name, email, department, institution..."
-      >
-        <div className="w-full sm:w-52 shrink-0">
-          <CustomSelect
-            options={ROLE_OPTIONS}
-            value={roleFilter}
-            onChange={setRoleFilter}
-            size="sm"
-            className="w-full text-xs"
-            placeholder="Filter by Role"
-          />
-        </div>
-      </DashboardSearchFilterBar>
+      {/* Users Table Card with Unified DashboardTableHeader */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        <DashboardTableHeader
+          icon={Users}
+          title="Scholar Directory"
+          totalCount={filteredUsers.length}
+          subtitle="role-based directory"
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search by name, email, department, institution..."
+        >
+          <div className="w-full sm:w-48 shrink-0">
+            <CustomSelect
+              options={ROLE_OPTIONS}
+              value={roleFilter}
+              onChange={setRoleFilter}
+              size="form"
+              className="w-full"
+              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              placeholder="Filter by Role"
+            />
+          </div>
+        </DashboardTableHeader>
 
-      {/* Users Table */}
-      <div className="rounded-xl border border-(--color-gb-border) bg-white shadow-sm">
         {loading ? (
           <AcademicDataLoader
             title="Loading Scholar Directory"
@@ -575,11 +563,24 @@ export function UserManagementPanel({
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
               Try adjusting your search keywords or switching role filters.
             </p>
+            {(searchQuery || roleFilter !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setRoleFilter("all");
+                }}
+                className="mt-3.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         ) : (
           <Table minWidth={700}>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12 text-slate-400 font-mono text-[11px]">#</TableHead>
                 <TableHead>Scholar</TableHead>
                 <TableHead>Affiliation</TableHead>
                 <TableHead>Role Privilege</TableHead>
@@ -588,11 +589,14 @@ export function UserManagementPanel({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((u) => {
+              {filteredUsers.map((u, idx) => {
                 const isCurrent = currentUser?.id === u.id || currentUser?.email === u.email;
                 const isUserActive = (u as any).enabled !== false;
                 return (
                   <TableRow key={u.id}>
+                    <TableCell className="text-slate-400 font-mono text-[11px] w-12">
+                      {idx + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
@@ -766,30 +770,7 @@ export function UserManagementPanel({
               </div>
             </div>
 
-            {/* Quick Preset Avatars Picker */}
-            <div className="mt-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Or select an academic preset avatar
-              </span>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                {PRESET_AVATARS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    title={preset.label}
-                    onClick={() => setFormAvatarUrl(preset.url)}
-                    className={cn(
-                      "h-8 w-8 shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-pointer p-0.5 bg-white",
-                      formAvatarUrl === preset.url
-                        ? "border-blue-600 ring-2 ring-blue-100 scale-105"
-                        : "border-slate-200 hover:border-slate-300 opacity-80 hover:opacity-100"
-                    )}
-                  >
-                    <img src={preset.url} alt={preset.label} className="h-full w-full object-cover rounded-md" />
-                  </button>
-                ))}
-              </div>
-            </div>
+
           </div>
 
           <div>
@@ -969,30 +950,7 @@ export function UserManagementPanel({
               </div>
             </div>
 
-            {/* Quick Preset Avatars Picker */}
-            <div className="mt-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Or select an academic preset avatar
-              </span>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                {PRESET_AVATARS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    title={preset.label}
-                    onClick={() => setEditAvatarUrl(preset.url)}
-                    className={cn(
-                      "h-8 w-8 shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-pointer p-0.5 bg-white",
-                      editAvatarUrl === preset.url
-                        ? "border-blue-600 ring-2 ring-blue-100 scale-105"
-                        : "border-slate-200 hover:border-slate-300 opacity-80 hover:opacity-100"
-                    )}
-                  >
-                    <img src={preset.url} alt={preset.label} className="h-full w-full object-cover rounded-md" />
-                  </button>
-                ))}
-              </div>
-            </div>
+
           </div>
 
           <div>
@@ -1183,14 +1141,36 @@ export function UserManagementPanel({
                 zIndex: 9999,
               }}
               onClick={(e) => e.stopPropagation()}
-              className="w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100 text-left font-sans"
+              className="w-56 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-1.5 shadow-xl shadow-slate-900/10 ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100 text-left font-sans"
             >
-              {/* Header inside menu showing user name */}
-              <div className="px-2.5 py-1 border-b border-slate-100 mb-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">User Actions</p>
-                <p className="text-xs font-semibold text-slate-800 truncate">
-                  {activeUser.fullName || activeUser.name}
-                </p>
+              {/* Header inside menu showing user identity */}
+              <div className="flex items-center gap-2.5 px-2.5 py-2 border-b border-slate-100 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200/80 overflow-hidden flex items-center justify-center shrink-0 text-slate-600 font-bold text-xs">
+                  {activeUser.avatarUrl || (activeUser as any).avatar ? (
+                    <img
+                      src={activeUser.avatarUrl || (activeUser as any).avatar}
+                      alt={activeUser.fullName || activeUser.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {(activeUser.fullName || activeUser.name || "U")
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+                    {activeUser.fullName || activeUser.name}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+                    {activeUser.email}
+                  </p>
+                </div>
               </div>
 
               {/* Edit User */}
@@ -1201,9 +1181,9 @@ export function UserManagementPanel({
                   setActionMenuUserId(null);
                   setMenuPosition(null);
                 }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
               >
-                <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <Pencil className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
                 <span>Edit Profile</span>
               </button>
 
@@ -1214,9 +1194,9 @@ export function UserManagementPanel({
                   setActionMenuUserId(null);
                   setMenuPosition(null);
                 }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left"
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
               >
-                <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <Crown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
                 <span>Editorial Board</span>
               </Link>
 
@@ -1230,16 +1210,16 @@ export function UserManagementPanel({
                   handleStatusToggle(activeUser.id, isUserActive);
                 }}
                 disabled={currentUser?.id === activeUser.id || currentUser?.email === activeUser.email}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {(activeUser as any).enabled !== false ? (
                   <>
-                    <XCircle className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <XCircle className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
                     <span>Deactivate Account</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
                     <span>Activate Account</span>
                   </>
                 )}
@@ -1256,9 +1236,9 @@ export function UserManagementPanel({
                       setMenuPosition(null);
                       setUserToDelete(activeUser);
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left"
+                    className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-rose-600 hover:bg-rose-50/80 rounded-lg transition-colors cursor-pointer text-left"
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                    <Trash2 className="h-4 w-4 text-slate-400 group-hover:text-rose-500 transition-colors shrink-0" />
                     <span>Delete User</span>
                   </button>
                 </>

@@ -33,7 +33,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
-import { DashboardSearchFilterBar } from "@/components/dashboard/dashboard-search-bar";
+import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import { cn } from "@/lib/utils";
 
 const BOARD_ROLES = [
@@ -347,7 +347,7 @@ export function BoardManagementPanel() {
 
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
         >
           <UserPlus className="h-4 w-4" />
           <span>Add Board Member</span>
@@ -355,7 +355,7 @@ export function BoardManagementPanel() {
       </DashboardHeaderActions>
 
       {/* Editorial Board Governance Clarification Banner */}
-      <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/90 via-sky-50/40 to-white p-4 sm:p-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+      <div className="rounded-2xl border border-blue-200/80 bg-linear-to-r from-blue-50/90 via-sky-50/40 to-white p-4 sm:p-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-start gap-3 min-w-0 flex-1">
           <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
             <Crown className="h-4.5 w-4.5" />
@@ -399,159 +399,177 @@ export function BoardManagementPanel() {
         />
       </div>
 
-      {/* Search & Filter Bar */}
-      <DashboardSearchFilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        placeholder="Search by scholar name, department, institution, or role..."
-      >
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {[
-            { id: "ALL", label: "All Roles" },
-            { id: "CHIEF", label: "Chief & Managing" },
-            { id: "SECTION", label: "Section Editors" },
-            { id: "ADVISORY", label: "Advisory Council" },
-          ].map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setRoleFilter(r.id)}
-              className={cn(
-                "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap",
-                roleFilter === r.id
-                  ? "bg-[color:var(--color-gb-blue)] text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </DashboardSearchFilterBar>
+      {/* Editorial Board Grid Card with Unified DashboardTableHeader */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        <DashboardTableHeader
+          icon={Crown}
+          title="Editorial Board Members"
+          totalCount={filteredMembers.length}
+          subtitle="masthead & governance"
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search by scholar name, department, role..."
+        >
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {[
+              { id: "ALL", label: "All Roles" },
+              { id: "CHIEF", label: "Chief & Managing" },
+              { id: "SECTION", label: "Section Editors" },
+              { id: "ADVISORY", label: "Advisory Council" },
+            ].map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setRoleFilter(r.id)}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap",
+                  roleFilter === r.id
+                    ? "bg-gb-blue text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </DashboardTableHeader>
 
-      {/* Board Members Grid */}
-      {loading ? (
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white shadow-xs">
+        {loading ? (
           <AcademicDataLoader
             title="Loading Editorial Board"
             subtitle="Fetching listed scholars, professors, and section editors..."
           />
-        </div>
-      ) : filteredMembers.length === 0 ? (
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-12 text-center shadow-sm">
-          <Award className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-800">No Editorial Board Members Match</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            Try adjusting your search criteria or role filters above.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMembers.map((member) => {
-            const roleBadge = getRoleBadge(member.role);
-            const RoleIcon = roleBadge.icon;
-            const initials = getInitials(member.name || "Scholar");
-            const linkedUser = systemUsers.find(
-              (u) => (member.userId && String(u.id) === String(member.userId)) || u.fullName?.toLowerCase() === member.name?.toLowerCase()
-            );
-            const isLinked = Boolean(linkedUser);
-
-            return (
-              <div
-                key={member.id}
-                className="group relative rounded-2xl border border-[color:var(--color-gb-border)] bg-white p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between overflow-hidden"
+        ) : filteredMembers.length === 0 ? (
+          <div className="p-12 text-center">
+            <Award className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+            <h3 className="text-sm font-bold text-slate-800">No Editorial Board Members Match</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Try adjusting your search criteria or role filters above.
+            </p>
+            {(searchQuery || roleFilter !== "ALL") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setRoleFilter("ALL");
+                }}
+                className="mt-3.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                <div>
-                  {/* Top Role Header */}
-                  <div className="flex items-center justify-between gap-2 mb-3.5">
-                    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border", roleBadge.bg)}>
-                      <RoleIcon className="h-3 w-3 shrink-0" />
-                      {roleBadge.label}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {isLinked ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/80" title={`Linked to registered user account (${linkedUser?.email})`}>
-                          <CheckCircle2 className="h-2.5 w-2.5 text-blue-600" />
-                          Platform User
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/80" title="External honorary scholar without system login account">
-                          <Globe className="h-2.5 w-2.5 text-slate-400" />
-                          External
-                        </span>
-                      )}
-                      <span className="inline-flex items-center text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                        Public
-                      </span>
-                    </div>
-                  </div>
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 sm:p-5 bg-slate-50/40">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMembers.map((member) => {
+                const roleBadge = getRoleBadge(member.role);
+                const RoleIcon = roleBadge.icon;
+                const initials = getInitials(member.name || "Scholar");
+                const linkedUser = systemUsers.find(
+                  (u) => (member.userId && String(u.id) === String(member.userId)) || u.fullName?.toLowerCase() === member.name?.toLowerCase()
+                );
+                const isLinked = Boolean(linkedUser);
 
-                  {/* Profile Header */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="relative shrink-0">
-                      <div className="h-13 w-13 rounded-2xl bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] text-white flex items-center justify-center font-bold text-sm overflow-hidden shadow-xs border-2 border-white">
-                        {member.avatarUrl ? (
-                          <img src={member.avatarUrl} alt={member.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="tracking-wider">{initials}</span>
-                        )}
+                return (
+                  <div
+                    key={member.id}
+                    className="group relative rounded-2xl border border-(--color-gb-border) bg-white p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between overflow-hidden"
+                  >
+                    <div>
+                      {/* Top Role Header */}
+                      <div className="flex items-center justify-between gap-2 mb-3.5">
+                        <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border", roleBadge.bg)}>
+                          <RoleIcon className="h-3 w-3 shrink-0" />
+                          {roleBadge.label}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {isLinked ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/80" title={`Linked to registered user account (${linkedUser?.email})`}>
+                              <CheckCircle2 className="h-2.5 w-2.5 text-blue-600" />
+                              Platform User
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/80" title="External honorary scholar without system login account">
+                              <Globe className="h-2.5 w-2.5 text-slate-400" />
+                              External
+                            </span>
+                          )}
+                          <span className="inline-flex items-center text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                            Public
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Profile Header */}
+                      <div className="flex items-start gap-3.5">
+                        <div className="relative shrink-0">
+                          <div className="h-13 w-13 rounded-2xl bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] text-white flex items-center justify-center font-bold text-sm overflow-hidden shadow-xs border-2 border-white">
+                            {member.avatarUrl ? (
+                              <img src={member.avatarUrl} alt={member.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="tracking-wider">{initials}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-blue-900 transition-colors">
+                            {member.name}
+                          </h3>
+                          <p className="text-xs font-semibold text-gb-blue mt-0.5">
+                            {member.designation || "Distinguished Academic Member"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Affiliation Box */}
+                      <div className="mt-3.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100/90 text-xs text-slate-600 flex items-start gap-2">
+                        <Building className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
+                        <span className="line-clamp-2 leading-relaxed text-[11.5px]">
+                          {member.affiliation || "Gono Bishwabidyalay Academic & Research Council"}
+                        </span>
+                      </div>
+
+                      {/* Bio / Specialization snippet */}
+                      {member.bio && (
+                        <p className="text-[11px] text-slate-500 mt-2.5 line-clamp-2 leading-relaxed italic border-l-2 border-slate-200 pl-2.5">
+                          &quot;{member.bio}&quot;
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Card Actions Footer */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        ID #{member.id}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(member)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                          title="Edit Scholar Profile"
+                        >
+                          <Edit className="h-3 w-3" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setMemberToDelete(member)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Remove Member"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-blue-900 transition-colors">
-                        {member.name}
-                      </h3>
-                      <p className="text-xs font-semibold text-[color:var(--color-gb-blue)] mt-0.5">
-                        {member.designation || "Distinguished Academic Member"}
-                      </p>
-                    </div>
                   </div>
-
-                  {/* Affiliation Box */}
-                  <div className="mt-3.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100/90 text-xs text-slate-600 flex items-start gap-2">
-                    <Building className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
-                    <span className="line-clamp-2 leading-relaxed text-[11.5px]">
-                      {member.affiliation || "Gono Bishwabidyalay Academic & Research Council"}
-                    </span>
-                  </div>
-
-                  {/* Bio / Specialization snippet */}
-                  {member.bio && (
-                    <p className="text-[11px] text-slate-500 mt-2.5 line-clamp-2 leading-relaxed italic border-l-2 border-slate-200 pl-2.5">
-                      &quot;{member.bio}&quot;
-                    </p>
-                  )}
-                </div>
-
-                {/* Card Actions Footer */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ID #{member.id}
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => openEditModal(member)}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
-                      title="Edit Scholar Profile"
-                    >
-                      <Edit className="h-3 w-3" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setMemberToDelete(member)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Remove Member"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Add / Edit Drawer */}
       <CustomDrawer
@@ -574,7 +592,7 @@ export function BoardManagementPanel() {
               type="submit"
               form="board-member-form"
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-[color:var(--color-gb-blue)] text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-gb-blue text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
             >
               {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>{editingMember ? "Update Member" : "Add Member"}</span>
@@ -584,7 +602,7 @@ export function BoardManagementPanel() {
       >
         <form id="board-member-form" onSubmit={handleSave} className="space-y-4 text-xs">
           {/* User Account Linkage Section */}
-          <div className="rounded-xl border border-blue-200/90 bg-gradient-to-r from-blue-50/70 via-sky-50/30 to-white p-3.5 space-y-2">
+          <div className="rounded-xl border border-blue-200/90 bg-linear-to-r from-blue-50/70 via-sky-50/30 to-white p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 text-blue-600" />
@@ -619,7 +637,7 @@ export function BoardManagementPanel() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Prof. Dr. Laila Rahman"
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-gb-blue focus:ring-2 focus:ring-blue-100 transition-all font-medium"
             />
           </div>
 
@@ -630,7 +648,7 @@ export function BoardManagementPanel() {
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
                 placeholder="e.g. Professor & Dean"
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-gb-blue focus:ring-2 focus:ring-blue-100 transition-all font-medium"
               />
             </div>
 
@@ -652,7 +670,7 @@ export function BoardManagementPanel() {
               value={affiliation}
               onChange={(e) => setAffiliation(e.target.value)}
               placeholder="e.g. Department of Pharmacy, Gono Bishwabidyalay"
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-gb-blue focus:ring-2 focus:ring-blue-100 transition-all font-medium"
             />
           </div>
 
@@ -661,7 +679,7 @@ export function BoardManagementPanel() {
             <label className="block font-bold text-slate-700 mb-1.5">Scholar Photograph</label>
             <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200/90">
               <div className="relative shrink-0">
-                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-base overflow-hidden shadow-xs border-2 border-white">
+                <div className="h-14 w-14 rounded-xl bg-linear-to-br from-[#1e40af] to-[#0f172a] text-white flex items-center justify-center font-bold text-base overflow-hidden shadow-xs border-2 border-white">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Preview" className="h-full w-full object-cover" />
                   ) : (
@@ -714,7 +732,7 @@ export function BoardManagementPanel() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Brief biography or research background..."
-              className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-[color:var(--color-gb-blue)] focus:ring-2 focus:ring-blue-100 transition-all resize-y font-sans"
+              className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-800 outline-none focus:border-gb-blue focus:ring-2 focus:ring-blue-100 transition-all resize-y font-sans"
             />
           </div>
         </form>

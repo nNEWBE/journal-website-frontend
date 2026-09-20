@@ -63,6 +63,7 @@ import { CustomModal } from "@/components/ui/modal";
 import { StatCard } from "@/components/ui/stat-card";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { DashboardBannerHeader } from "@/components/dashboard/dashboard-banner-header";
+import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import { PremiumLoader } from "@/components/ui/loader";
 import { CustomTooltip } from "@/components/ui/tooltip";
 import {
@@ -1853,40 +1854,16 @@ export function DashboardWorkspace({
                             transition={{ duration: 0.25 }}
                             className="h-fit rounded-xl border border-(--color-gb-border) bg-white shadow-sm"
                           >
-                            <div className="flex items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 py-3 rounded-t-xl">
-                              <div className="flex items-center gap-2.5">
-                                <div className="h-8.5 w-8.5 rounded-lg bg-gb-blue-soft flex items-center justify-center shrink-0">
-                                  <ClipboardCheck className="h-5 w-5 text-gb-blue" />
-                                </div>
-                                <div>
-                                  <h2 className="text-[13px] font-black text-gb-ink">
-                                    Manuscript Pipeline
-                                  </h2>
-                                  <p className="text-[10px] text-(--color-gb-muted)" suppressHydrationWarning>
-                                    {`${filtered.length} record${filtered.length !== 1 ? "s" : ""}`} · double-blind peer review
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1.5 rounded-lg border border-(--color-gb-border) bg-[#f9fafc] px-3 py-1.5 focus-within:border-gb-blue focus-within:bg-white transition-all">
-                                  <Search className="h-3.5 w-3.5 text-(--color-gb-muted)" />
-                                  <input
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search…"
-                                    className="w-32 bg-transparent text-[12px] font-medium text-gb-ink outline-none placeholder:text-(--color-gb-muted)"
-                                  />
-                                  {searchQuery && (
-                                    <button
-                                      onClick={() => setSearchQuery("")}
-                                      className="text-(--color-gb-muted) hover:text-gb-ink cursor-pointer"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
+                            <DashboardTableHeader
+                              icon={ClipboardCheck}
+                              title="Manuscript Pipeline"
+                              totalCount={filtered.length}
+                              subtitle="double-blind peer review"
+                              searchQuery={searchQuery}
+                              onSearchChange={setSearchQuery}
+                              searchPlaceholder="Search manuscripts, authors, IDs..."
+                              searchWidth="w-48 sm:w-64"
+                            />
 
                             {filtered.length === 0 ? (
                             <div className="py-14 px-6 flex flex-col items-center justify-center text-center">

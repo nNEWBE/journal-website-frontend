@@ -38,6 +38,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
+import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import { cn } from "@/lib/utils";
 
 function getCoverImage(article: Article): string {
@@ -803,81 +804,17 @@ export function PublicationsManagementPanel() {
       {/* ── Main Publications Section Card ── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Table / Grid Header Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-b border-slate-200/80 px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50/50">
-          {/* Left: Icon + Title + Record Count */}
-          <div className="flex items-center gap-2.5">
-            <div className="h-8.5 w-8.5 rounded-lg bg-gb-blue-soft flex items-center justify-center shrink-0">
-              <BookMarked className="h-5 w-5 text-gb-blue" />
-            </div>
-            <div>
-              <h2 className="text-xs font-bold text-(--color-gb-ink) uppercase tracking-wider">
-                Published Manuscripts
-              </h2>
-              <p className="text-[11px] text-slate-500" suppressHydrationWarning>
-                {`${filteredArticles.length} record${filteredArticles.length !== 1 ? "s" : ""}`} · double-blind peer review
-              </p>
-            </div>
-          </div>
-
-          {/* Right Controls: Searchbar + Table/Grid Switcher */}
-          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-            {/* Search Input */}
-            <div className="relative w-full sm:w-60 md:w-72">
-              <div className="flex items-center gap-2 h-9 rounded-xl border border-slate-200/90 bg-white px-3 focus-within:border-gb-blue focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
-                <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search title, author, DOI..."
-                  className="w-full bg-transparent text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
-                    title="Clear search"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Table / Grid Switcher */}
-            <div className="flex items-center h-9 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 shrink-0">
-              <button
-                type="button"
-                onClick={() => setViewMode("table")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                  viewMode === "table"
-                    ? "bg-white text-slate-900 shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
-                )}
-                title="Dense Table View"
-              >
-                <List className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Table</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                  viewMode === "grid"
-                    ? "bg-white text-slate-900 shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
-                )}
-                title="Card Grid View"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Grid</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <DashboardTableHeader
+          icon={BookMarked}
+          title="Published Manuscripts"
+          totalCount={filteredArticles.length}
+          subtitle="double-blind peer review"
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search title, author, DOI..."
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
 
         {/* Content Body */}
         {filteredArticles.length === 0 ? (

@@ -38,6 +38,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "../workspace/assign-reviewer-modal";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { formatDateTime, formatDate } from "@/lib/utils";
 import {
@@ -421,57 +422,28 @@ export function ManuscriptPipelinePanel() {
       ) : (
         <div className="rounded-2xl border border-(--color-gb-border) bg-white shadow-xs overflow-hidden">
           {/* Table Header Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-(--color-gb-border) px-4 sm:px-6 py-4 bg-slate-50/50">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8.5 w-8.5 rounded-lg bg-gb-blue-soft flex items-center justify-center shrink-0">
-                <ClipboardCheck className="h-5 w-5 text-gb-blue" />
-              </div>
-              <div>
-                <h2 className="text-xs font-bold text-(--color-gb-ink) uppercase tracking-wider">
-                  Active Manuscripts
-                </h2>
-                <p className="text-[11px] text-slate-500" suppressHydrationWarning>
-                  {`${filtered.length} record${filtered.length !== 1 ? "s" : ""}`} · double-blind peer review
-                </p>
-              </div>
+          <DashboardTableHeader
+            icon={ClipboardCheck}
+            title="Active Manuscripts"
+            totalCount={filtered.length}
+            subtitle="double-blind peer review"
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search manuscripts, authors, IDs..."
+          >
+            {/* Status Filter Select */}
+            <div className="w-full sm:w-44 md:w-48 shrink-0">
+              <CustomSelect
+                options={statusOptions}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                size="form"
+                placeholder="All Statuses"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              />
             </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-              {/* Status Filter Select */}
-              <div className="w-full sm:w-44 md:w-48 shrink-0">
-                <CustomSelect
-                  options={statusOptions}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  size="form"
-                  placeholder="All Statuses"
-                  className="w-full"
-                  triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-                />
-              </div>
-
-              {/* Search Bar */}
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 h-9 focus-within:border-gb-blue focus-within:ring-2 focus-within:ring-blue-500/10 transition-all shadow-2xs">
-                <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search manuscripts, authors, IDs..."
-                  className="w-full sm:w-52 md:w-60 bg-transparent text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
-                    title="Clear search"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          </DashboardTableHeader>
 
           {/* Content */}
           {filtered.length === 0 ? (
