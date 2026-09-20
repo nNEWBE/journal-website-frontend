@@ -6,6 +6,7 @@ import { ArrowUpRight, Eye } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
 import { useHomeSection } from "@/lib/home-sections-context";
+import { type Article } from "@/lib/data";
 
 export interface MostReadItem {
   rank: string;
@@ -22,55 +23,21 @@ export const mostReadArticles: MostReadItem[] = [
     rank: "01",
     type: "RESEARCH ARTICLE",
     title:
-      "Machine learning-guided discovery of allosteric inhibitors targeting emergent viral polymerases",
-    journal: "Nexus Journal of Molecular Sciences",
-    date: "May 2025",
-    views: "12.4K views",
+      "Community healthcare access patterns around Savar: A mixed-method university catchment study",
+    journal: "GB Journal of Research",
+    date: "July 2026",
+    views: "2,846 views",
     href: "/articles/community-healthcare-access-savar",
-  },
-  {
-    rank: "02",
-    type: "RESEARCH ARTICLE",
-    title:
-      "Single-cell multi-omics reveals the cellular logic of tissue regeneration",
-    journal: "Nexus Journal of Cell Biology",
-    date: "April 2025",
-    views: "9.8K views",
-    href: "/articles/pharmacy-practice-antimicrobial-stewardship",
-  },
-  {
-    rank: "03",
-    type: "REVIEW ARTICLE",
-    title:
-      "Advances in mRNA vaccine design: From sequence to secure immunity",
-    journal: "Nexus Journal of Immunology",
-    date: "March 2025",
-    views: "8.1K views",
-    href: "/articles/climate-resilient-agriculture-manifolds",
-  },
-  {
-    rank: "04",
-    type: "RESEARCH ARTICLE",
-    title:
-      "A cryo-EM atlas of human protein complexes in health and disease",
-    journal: "Nexus Journal of Structural Biology",
-    date: "March 2025",
-    views: "6.7K views",
-    href: "/articles/legal-aid-university-clinic",
-  },
-  {
-    rank: "05",
-    type: "PERSPECTIVE",
-    title:
-      "Synthetic biology for a sustainable future: Opportunities and ethical considerations",
-    journal: "Nexus Journal of Biotechnology",
-    date: "February 2025",
-    views: "5.2K views",
-    href: "/articles/ai-assisted-learning-private-universities",
   },
 ];
 
-export function HomeMostRead({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+export function HomeMostRead({
+  section: propSection,
+  articles,
+}: {
+  section?: PageContentDTO | null;
+  articles?: Article[];
+} = {}) {
   const contextSection = useHomeSection("most-read");
   const activeSection = propSection || contextSection;
   const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
@@ -98,11 +65,27 @@ export function HomeMostRead({ section: propSection }: { section?: PageContentDT
     return null;
   }
 
-  const title = section?.title || "Most Read";
+  const itemsToDisplay: MostReadItem[] =
+    articles && articles.length > 0
+      ? [...articles]
+          .sort((a, b) => (b.metrics?.views ?? 0) - (a.metrics?.views ?? 0))
+          .slice(0, 5)
+          .map((art, idx) => ({
+            rank: String(idx + 1).padStart(2, "0"),
+            type: (art.type || "RESEARCH ARTICLE").toUpperCase(),
+            title: art.title,
+            journal: "GB Journal of Research",
+            date: art.publishedAt || "July 2026",
+            views: `${art.metrics?.views?.toLocaleString() ?? 0} views`,
+            href: `/articles/${art.slug}`,
+          }))
+      : mostReadArticles;
+
+  const title = section?.title || "Most Read Research";
 
   return (
     <section
-      aria-label="Most Read Articles"
+      aria-label="Most Read Research"
       className="py-14 sm:py-20 bg-white border-b border-slate-200/80"
     >
       <div className="container-x">
@@ -129,7 +112,7 @@ export function HomeMostRead({ section: propSection }: { section?: PageContentDT
 
         {/* Ranked Article Rows */}
         <StaggerContainer className="divide-y divide-slate-200/70">
-          {mostReadArticles.map((item) => (
+          {itemsToDisplay.map((item) => (
             <StaggerItem
               key={item.rank}
               className="py-6 sm:py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-8 group"

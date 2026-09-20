@@ -77,7 +77,11 @@ async function fetchArticleFromDb(slug: string): Promise<Article | null> {
 
     const authorsList: string[] = Array.isArray(data.authors)
       ? data.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
-      : [];
+      : typeof data.authors === "string"
+        ? (data.authors.includes(",")
+            ? data.authors.split(",").map((s: string) => s.trim())
+            : [data.authors.trim()])
+        : [];
 
     const sectionsList = Array.isArray(data.sections)
       ? data.sections.map((s: any) => ({

@@ -7,8 +7,15 @@ import { BookOpen, FileText } from "lucide-react";
 import { FadeIn } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
 import { useHomeSection } from "@/lib/home-sections-context";
+import { type Issue } from "@/lib/data";
 
-export function HomeCurrentIssue({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+export function HomeCurrentIssue({
+  section: propSection,
+  currentIssue,
+}: {
+  section?: PageContentDTO | null;
+  currentIssue?: Issue | null;
+} = {}) {
   const contextSection = useHomeSection("current-issue");
   const activeSection = propSection || contextSection;
   const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
@@ -26,7 +33,7 @@ export function HomeCurrentIssue({ section: propSection }: { section?: PageConte
         const s = sections.find((sec) => sec.sectionKey === "current-issue");
         if (s) setSection(s);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       active = false;
     };
@@ -45,19 +52,28 @@ export function HomeCurrentIssue({ section: propSection }: { section?: PageConte
   })();
 
   const title = section?.title || "Current Issue";
-  const journalName = meta.journalName || "Nexus Journal of Molecular Sciences";
-  const volumeIssue = meta.volumeIssue || "Vol. 12, No. 4";
-  const issueDate = meta.issueDate || section?.subtitle || "May 2025";
-  const publicationDate = meta.publicationDate || "May 15, 2025";
-  const issnPrint = meta.issnPrint || "2073-8447";
-  const issnOnline = meta.issnOnline || "2790-2188";
+  const journalName = "GB Journal of Research";
+  const volumeIssue = currentIssue
+    ? `${currentIssue.volume} · ${currentIssue.issue}`
+    : meta.volumeIssue || "Volume 4 · Issue 2";
+  const issueDate = currentIssue?.month || meta.issueDate || "July 2026";
+  const publicationDate = currentIssue?.month || meta.publicationDate || "July 2026";
+  const issnPrint = "2959-1082";
+  const issnOnline = "2959-1082";
   const featuredPaperTitle =
+    currentIssue?.articles?.[0]?.title ||
+    currentIssue?.theme ||
     meta.featuredPaperTitle ||
-    "Machine learning-guided discovery of allosteric inhibitors targeting emergent viral polymerases";
+    "Community Health, Stewardship, and Resilient Systems";
   const content =
+    currentIssue?.editorNote ||
     section?.content ||
-    "This issue features cutting-edge research at the intersection of molecular biology, chemical biology, and computational science. Highlighted studies explore emerging therapeutic targets, novel biomolecular mechanisms, and innovative methodologies advancing precision medicine and translational discovery.";
-  const browseHref = meta.browseHref || "/issues/current";
+    "This issue presents community-focused research that bridges applied scholarship with real-world public service in the Bangladeshi context.";
+  const browseHref = "/issues/current";
+  const coverImageSrc =
+    currentIssue?.articles?.[0]?.image ||
+    currentIssue?.coverImage ||
+    "/covers/medical.png";
 
   return (
     <section
@@ -82,11 +98,11 @@ export function HomeCurrentIssue({ section: propSection }: { section?: PageConte
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-8 lg:gap-12 xl:gap-16 items-center">
           {/* Left Column: Compact Magazine Issue Cover */}
           <FadeIn direction="up" delay={0.1}>
-            <div className="relative mx-auto lg:mx-0 w-full max-w-[270px] sm:max-w-[285px] aspect-[3/4] overflow-hidden bg-[#061026] text-white shadow-[0_18px_45px_rgba(15,23,42,0.2)] border border-slate-200/60 group">
+            <div className="relative mx-auto lg:mx-0 w-full max-w-67.5 sm:max-w-71.25 aspect-3/4 overflow-hidden bg-[#061026] text-white shadow-[0_18px_45px_rgba(15,23,42,0.2)] border border-slate-200/60 group">
               {/* Background Molecular Graphic */}
               <div className="absolute inset-0">
                 <Image
-                  src="/images/hero/molecular_inhibitors.jpg"
+                  src={coverImageSrc}
                   alt={`${journalName} Cover`}
                   fill
                   priority
@@ -94,7 +110,7 @@ export function HomeCurrentIssue({ section: propSection }: { section?: PageConte
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 {/* Vignette Gradients */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#061026]/90 via-[#061026]/25 to-[#061026]/95" />
+                <div className="absolute inset-0 bg-linear-to-b from-[#061026]/90 via-[#061026]/25 to-[#061026]/95" />
               </div>
 
               {/* Cover Top Header */}
@@ -103,7 +119,7 @@ export function HomeCurrentIssue({ section: propSection }: { section?: PageConte
                   <h3 className="font-academic text-xl sm:text-2xl font-bold tracking-wider text-white uppercase">
                     GBJ
                   </h3>
-                  <p className="text-[7.5px] font-bold uppercase tracking-[0.16em] text-cyan-300 mt-0.5 truncate max-w-[140px]">
+                  <p className="text-[7.5px] font-bold uppercase tracking-[0.16em] text-cyan-300 mt-0.5 truncate max-w-35">
                     {journalName}
                   </p>
                 </div>

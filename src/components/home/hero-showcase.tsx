@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
-import { articles as initialArticles } from "@/lib/data";
+import { articles as initialArticles, type Article } from "@/lib/data";
 import { useHomeSection } from "@/lib/home-sections-context";
 
 export interface FeaturedSlide {
@@ -162,11 +162,43 @@ export function parseHeroSlides(heroSection?: PageContentDTO | null): FeaturedSl
   return null;
 }
 
-export function HeroShowcase({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+export function mapArticlesToSlides(articleList: Article[]): FeaturedSlide[] {
+  return articleList.slice(0, 5).map((art, idx) => ({
+    id: art.slug || art.id,
+    num: String(idx + 1).padStart(2, "0"),
+    category: "FEATURED RESEARCH",
+    journalCategory: art.topic || "Multidisciplinary Science",
+    isOpenAccess: true,
+    title: art.title,
+    shortTitle: art.title,
+    authors: Array.isArray(art.authors) ? art.authors.join(", ") : (art.authors || "Editorial Research Group"),
+    journal: "GB Journal of Research",
+    journalHref: "/issues/current",
+    volumeIssue: art.volume ? `${art.volume}, ${art.issue || "Issue 2"}` : "Volume 4, Issue 2",
+    publishDate: art.publishedAt || "July 2026",
+    abstract: art.abstract || "",
+    doi: art.doi || "10.5555/gbj.2026.001",
+    doiHref: art.doi ? `https://doi.org/${art.doi}` : undefined,
+    image: getCoverImage(art),
+    articleHref: `/articles/${art.slug || art.id}`,
+    issueHref: "/issues/current",
+  }));
+}
+
+export function HeroShowcase({
+  section: propSection,
+  articles,
+}: {
+  section?: PageContentDTO | null;
+  articles?: Article[];
+} = {}) {
   const contextSection = useHomeSection("hero-main");
   const heroSection = propSection || contextSection;
 
   const [slides, setSlides] = useState<FeaturedSlide[]>(() => {
+    if (articles && articles.length > 0) {
+      return mapArticlesToSlides(articles);
+    }
     const parsed = parseHeroSlides(heroSection);
     if (parsed && parsed.length > 0) return parsed;
     return featuredSlides;
@@ -174,13 +206,17 @@ export function HeroShowcase({ section: propSection }: { section?: PageContentDT
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Synchronize when heroSection becomes available or updates
+  // Synchronize when articles or heroSection becomes available
   useEffect(() => {
+    if (articles && articles.length > 0) {
+      setSlides(mapArticlesToSlides(articles));
+      return;
+    }
     const parsed = parseHeroSlides(heroSection);
     if (parsed && parsed.length > 0) {
       setSlides(parsed);
     }
-  }, [heroSection]);
+  }, [heroSection, articles]);
 
   // Dynamic fetch from Home CMS (fallback only if heroSection is missing)
   useEffect(() => {

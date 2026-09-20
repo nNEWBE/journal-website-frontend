@@ -135,6 +135,7 @@ export type Issue = {
   coverImage?: string;
   articleCount: number;
   articles: Article[];
+  editorNote?: string;
 };
 
 export const issues: Issue[] = [];

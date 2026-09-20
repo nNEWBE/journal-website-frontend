@@ -9,11 +9,13 @@ import {
   BookOpen,
   CalendarDays,
   FileText,
+  Loader2,
   Search,
   Tag,
   X,
 } from "lucide-react";
-import { articles } from "@/lib/data";
+import { type Article } from "@/lib/data";
+import { articlesApi } from "@/lib/api";
 
 interface HeaderSearchModalProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ const categoryOptions = [
   "Public Health",
   "Pharmacy",
   "Agriculture",
+  "Law",
   "Technology",
 ];
 
@@ -39,8 +42,78 @@ const popularTerms = [
 export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [articleList, setArticleList] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch articles from database API (fetch once on mount or when modal opens)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadArticles() {
+      if (articleList.length > 0) return;
+      setLoading(true);
+      try {
+        const res = await articlesApi.list({ size: 100 });
+        if (!isMounted) return;
+
+        if (res?.content && Array.isArray(res.content)) {
+          const mapped: Article[] = res.content.map((item: any) => {
+            const authorsList: string[] = Array.isArray(item.authors)
+              ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
+              : typeof item.authors === "string"
+                ? (item.authors.includes(",")
+                    ? item.authors.split(",").map((s: string) => s.trim())
+                    : [item.authors.trim()])
+                : [];
+
+            const keywordsList: string[] = Array.isArray(item.keywords)
+              ? item.keywords
+              : typeof item.keywords === "string"
+                ? item.keywords.split(/\s+|,/).map((k: string) => k.trim()).filter(Boolean)
+                : [];
+
+            return {
+              id: item.articleId || String(item.id || item.slug),
+              slug: item.slug,
+              title: item.title || "",
+              type: item.type || "Research Article",
+              topic: item.topic || "General",
+              department: item.department || "Academic Research",
+              authors: authorsList,
+              abstract: item.abstract || item.abstractText || "",
+              issue: item.issue || item.issueLabel || "Current Issue",
+              volume: item.volume || item.volumeLabel || "Volume 4",
+              pages: item.pages || "1-10",
+              doi: item.doi || "10.5555/gbj.2026.001",
+              publishedAt: item.publishedAt || "2026",
+              metrics: {
+                views: item.metrics?.views ?? 0,
+                downloads: item.metrics?.downloads ?? 0,
+                citations: item.metrics?.citations ?? 0,
+              },
+              keywords: keywordsList,
+              sections: [],
+              image: item.image || item.imageUrl || "/covers/medical.png",
+              pdf: item.pdf || item.pdfUrl || "",
+            };
+          });
+          setArticleList(mapped);
+        }
+      } catch (err) {
+        console.error("Search modal failed to load articles from DB:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadArticles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [articleList.length]);
 
   // Prevent background scroll while modal is open & handle Escape key
   useEffect(() => {
@@ -78,21 +151,35 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
     const q = searchQuery.toLowerCase().trim();
     const isAll = selectedCategory === "All";
 
-    return articles.filter((art) => {
+    return articleList.filter((art) => {
+      const artTopic = (art.topic || "").toLowerCase();
+      const cat = selectedCategory.toLowerCase();
       const matchesCat =
-        isAll || art.topic.toLowerCase() === selectedCategory.toLowerCase();
+        isAll ||
+        artTopic.includes(cat) ||
+        (cat === "law" && artTopic.includes("law"));
+
       if (!q) return matchesCat;
 
-      const matchesText =
-        art.title.toLowerCase().includes(q) ||
-        art.authors.some((a) => a.toLowerCase().includes(q)) ||
-        art.topic.toLowerCase().includes(q) ||
-        art.doi.toLowerCase().includes(q) ||
-        art.type.toLowerCase().includes(q);
+      const words = q.split(/\s+/).filter(Boolean);
+      const searchable = [
+        art.title,
+        ...art.authors,
+        artTopic,
+        art.department,
+        art.doi,
+        art.type,
+        art.abstract,
+        ...art.keywords,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesText = words.every((w) => searchable.includes(w));
 
       return matchesCat && matchesText;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [articleList, searchQuery, selectedCategory]);
 
   if (!isOpen || typeof window === "undefined") return null;
 
@@ -198,7 +285,17 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
           </div>
 
           {/* Results List */}
-          {filteredArticles.length === 0 ? (
+          {loading && articleList.length === 0 ? (
+            <div className="py-16 text-center border border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center">
+              <Loader2 className="h-8 w-8 text-[#1e40af] animate-spin mb-3" />
+              <p className="text-sm font-bold text-slate-800 font-academic">
+                Loading indexed manuscripts...
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Connecting to repository database
+              </p>
+            </div>
+          ) : filteredArticles.length === 0 ? (
             <div className="py-12 text-center border border-dashed border-slate-200 bg-slate-50/50 p-6">
               <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
               <p className="text-sm font-bold text-slate-800 font-academic">

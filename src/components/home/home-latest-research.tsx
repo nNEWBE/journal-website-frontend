@@ -7,6 +7,7 @@ import { ArrowUpRight, BookOpen, FileText } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import { contentApi, type PageContentDTO } from "@/lib/api";
 import { useHomeSection } from "@/lib/home-sections-context";
+import { type Article } from "@/lib/data";
 
 export interface LatestArticle {
   id: string;
@@ -85,7 +86,13 @@ export const latestArticles: LatestArticle[] = [
   },
 ];
 
-export function HomeLatestResearch({ section: propSection }: { section?: PageContentDTO | null } = {}) {
+export function HomeLatestResearch({
+  section: propSection,
+  articles,
+}: {
+  section?: PageContentDTO | null;
+  articles?: Article[];
+} = {}) {
   const contextSection = useHomeSection("latest-research");
   const activeSection = propSection || contextSection;
   const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
@@ -103,7 +110,7 @@ export function HomeLatestResearch({ section: propSection }: { section?: PageCon
         const s = sections.find((sec) => sec.sectionKey === "latest-research");
         if (s) setSection(s);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       active = false;
     };
@@ -112,6 +119,25 @@ export function HomeLatestResearch({ section: propSection }: { section?: PageCon
   if (section && section.published === false) {
     return null;
   }
+
+  const itemsToDisplay: LatestArticle[] =
+    articles && articles.length > 0
+      ? articles.slice(0, 4).map((art) => ({
+        id: art.id,
+        slug: art.slug,
+        image: art.image || "/covers/medical.png",
+        tags: `${(art.topic || "RESEARCH").toUpperCase()} • ${(art.type || "ARTICLE").toUpperCase()}`,
+        title: art.title,
+        authors: Array.isArray(art.authors)
+          ? art.authors.join(", ")
+          : art.authors || "GB Journal Faculty",
+        journal: "GB Journal of Research",
+        journalHref: "/issues/current",
+        date: art.publishedAt || "July 2026",
+        articleHref: `/articles/${art.slug}`,
+        pdfHref: art.pdf || `/articles/${art.slug}`,
+      }))
+      : latestArticles;
 
   const meta = (() => {
     try {
@@ -154,14 +180,14 @@ export function HomeLatestResearch({ section: propSection }: { section?: PageCon
 
         {/* 4-Column Cards Grid */}
         <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-          {latestArticles.map((article) => (
+          {itemsToDisplay.map((article) => (
             <StaggerItem
               key={article.id}
               className="flex flex-col justify-between bg-white border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all group"
             >
               <div>
                 {/* Image Container */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 border border-slate-100">
+                <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100 border border-slate-100">
                   <Image
                     src={article.image}
                     alt={article.title}

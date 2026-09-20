@@ -58,11 +58,19 @@ function toCanonicalKey(key: string): string {
   return k;
 }
 
+import { type Article, type Issue } from "@/lib/data";
+
 interface HomePageClientProps {
   initialSections?: PageContentDTO[];
+  articles?: Article[];
+  currentIssue?: Issue | null;
 }
 
-export function HomePageClient({ initialSections }: HomePageClientProps) {
+export function HomePageClient({
+  initialSections,
+  articles,
+  currentIssue,
+}: HomePageClientProps) {
   const { isSectionVisible, sections, loaded } = useHomeSectionVisibility(initialSections);
 
   // Compute rendered order: if backend sections are available, use their displayOrder
@@ -78,10 +86,9 @@ export function HomePageClient({ initialSections }: HomePageClientProps) {
 
     const keys: string[] = [];
     sorted.forEach((s) => {
-      if (!s.sectionKey) return;
-      const canonicalKey = toCanonicalKey(s.sectionKey);
-      if (!keys.includes(canonicalKey) && SECTION_COMPONENTS[canonicalKey]) {
-        keys.push(canonicalKey);
+      const canonical = toCanonicalKey(s.sectionKey);
+      if (!keys.includes(canonical)) {
+        keys.push(canonical);
       }
     });
 
@@ -95,6 +102,34 @@ export function HomePageClient({ initialSections }: HomePageClientProps) {
     return keys;
   }, [sections, loaded]);
 
+  function renderSection(key: string): React.ReactNode {
+    const canonical = toCanonicalKey(key);
+    switch (canonical) {
+      case "hero-main":
+        return <HeroShowcase articles={articles} />;
+      case "latest-research":
+        return <HomeLatestResearch articles={articles} />;
+      case "current-issue":
+        return <HomeCurrentIssue currentIssue={currentIssue} />;
+      case "most-read":
+        return <HomeMostRead articles={articles} />;
+      case "explore-topics":
+        return <HomeExploreTopics />;
+      case "featured-journals":
+        return <HomeFeaturedJournals />;
+      case "call-for-papers":
+        return <HomeCallsForPapers />;
+      case "research-community":
+        return <HomeResearchCommunity />;
+      case "home-faq":
+        return <HomeFaqSection />;
+      case "journal-stats":
+        return <HomeMetricsNewsletter />;
+      default:
+        return null;
+    }
+  }
+
   return (
     <PageShell>
       <AdminPageEditBadge pageKey="home" />
@@ -102,7 +137,7 @@ export function HomePageClient({ initialSections }: HomePageClientProps) {
       <HomeSectionsProvider sections={sections}>
         {orderedKeys.map((key, idx) => {
           if (!isSectionVisible(key)) return null;
-          const ComponentNode = SECTION_COMPONENTS[key];
+          const ComponentNode = renderSection(key);
           if (!ComponentNode) return null;
 
           return (

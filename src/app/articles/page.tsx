@@ -64,7 +64,11 @@ async function fetchArticlesFromDb(
     return items.map((item: any) => {
       const authorsList: string[] = Array.isArray(item.authors)
         ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
-        : [];
+        : typeof item.authors === "string"
+          ? (item.authors.includes(",")
+              ? item.authors.split(",").map((s: string) => s.trim())
+              : [item.authors.trim()])
+          : [];
 
       return {
         id: item.articleId || String(item.id || item.slug),
