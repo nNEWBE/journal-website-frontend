@@ -21,7 +21,6 @@ import { boardMembers, type BoardMember } from "@/lib/data";
 import { EditorialBoardHero } from "@/components/editorial/editorial-board-hero";
 import { EditorInChiefCard } from "@/components/editorial/editor-in-chief-card";
 import { SectionEditorsGrid } from "@/components/editorial/section-editors-grid";
-import { AdvisoryCouncilSection } from "@/components/editorial/advisory-council-section";
 import { getBackendUrl } from "@/lib/backend-url";
 
 export const revalidate = 60;
@@ -29,7 +28,7 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "Editorial Board & Governance | GB Journal of Research",
   description:
-    "Meet the academic leadership, section editors, and international advisory council of the Gono Bishwabidyalay Journal of Research. Discover our COPE-aligned governance charter and double-blind peer review oversight.",
+    "Meet the academic leadership and section editors of the Gono Bishwabidyalay Journal of Research. Discover our COPE-aligned governance charter and double-blind peer review oversight.",
 };
 
 async function fetchBoardMembersFromDb(): Promise<BoardMember[]> {
@@ -107,10 +106,6 @@ export default async function EditorialBoardPage() {
             <SectionEditorsGrid editors={sectionEditors} />
           </FadeIn>
 
-          {/* ── 4. International Advisory Council ── */}
-          <FadeIn delay={0.2}>
-            <AdvisoryCouncilSection />
-          </FadeIn>
         </div>
       </div>
 

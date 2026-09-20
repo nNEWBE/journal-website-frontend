@@ -1976,11 +1976,11 @@ export function DashboardWorkspace({
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody suppressHydrationWarning>
-                                      {filtered.map((sub) => (
+                                      {filtered.map((sub, idx) => (
                                         <TableRow key={sub.id}>
                                           <TableCell className="max-w-70">
                                             <span className="font-mono text-[10px] font-black text-gb-red">
-                                              {sub.id}
+                                              {idx + 1}
                                             </span>
                                             <p className="mt-0.5 text-[12px] font-bold text-gb-ink leading-snug line-clamp-2">
                                               {sub.title}
@@ -2069,12 +2069,12 @@ export function DashboardWorkspace({
 
                                 {/* Mobile Card List View */}
                                 <div className="md:hidden divide-y divide-(--color-gb-border)">
-                                  {filtered.map((sub) => (
+                                  {filtered.map((sub, idx) => (
                                     <div key={sub.id} className="p-4 space-y-3">
                                       <div className="flex items-start justify-between gap-2">
                                         <div className="min-w-0 flex-1">
                                           <span className="font-mono text-[10px] font-black text-gb-red">
-                                            {sub.id}
+                                            {idx + 1}
                                           </span>
                                           <h4 className="mt-0.5 text-xs font-bold text-gb-ink leading-snug">
                                             {sub.title}

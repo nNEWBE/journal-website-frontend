@@ -516,11 +516,11 @@ export function ManuscriptPipelinePanel() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((sub) => (
+                  {filtered.map((sub, idx) => (
                     <TableRow key={sub.id} className="hover:bg-slate-50/60 transition-colors">
                       <TableCell className="max-w-75">
                         <span className="font-mono text-[10px] font-black text-gb-red">
-                          {sub.id}
+                          {idx + 1}
                         </span>
                         <p className="mt-0.5 text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                           {sub.title}
@@ -604,12 +604,12 @@ export function ManuscriptPipelinePanel() {
 
             {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-slate-100">
-              {filtered.map((sub) => (
+              {filtered.map((sub, idx) => (
                 <div key={sub.id} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <span className="font-mono text-[10px] font-black text-red-600">
-                        {sub.id}
+                        {idx + 1}
                       </span>
                       <h4 className="mt-0.5 text-xs font-bold text-slate-900 leading-snug">
                         {sub.title}
