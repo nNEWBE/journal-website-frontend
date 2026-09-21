@@ -199,6 +199,7 @@ export interface AuthResponseData {
     institution?: string;
     avatarUrl?: string;
     avatar?: string;
+    secondaryEmail?: string;
     emailVerified: boolean;
   };
 }
@@ -296,6 +297,23 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({ token, newPassword }),
     });
+  },
+
+  changeEmail: async (data: {
+    newEmail: string;
+    password: string;
+  }): Promise<AuthResponseData> => {
+    const res = await fetch("/api/auth/change-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to change email");
+    }
+    return json;
   },
 };
 
@@ -980,6 +998,8 @@ export const userApi = {
           ? dto.researchInterests.join(", ")
           : dto.researchInterests,
         avatarUrl: dto.avatar || dto.avatarUrl,
+        secondaryEmail:
+          dto.secondaryEmail !== undefined ? dto.secondaryEmail : undefined,
       }),
     });
   },

@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import { useAppDispatch } from "@/redux/hooks";
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useRouter } from "next/navigation";
-import { userApi, filesApi } from "@/lib/api";
+import { authApi, userApi, filesApi } from "@/lib/api";
 import { type User, setSession, clearSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -160,7 +160,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
   const [country, setCountry] = useState(user?.country || "Bangladesh");
   const [bio, setBio] = useState(
     user?.bio ||
-      "Academic researcher specializing in community healthcare protocols, clinical pharmacotherapy, and evidence-based pharmaceutical practices across South Asian healthcare systems."
+    "Academic researcher specializing in community healthcare protocols, clinical pharmacotherapy, and evidence-based pharmaceutical practices across South Asian healthcare systems."
   );
   const [avatar, setAvatar] = useState(user?.avatar || "");
 
@@ -210,6 +210,14 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [isChangingPass, setIsChangingPass] = useState(false);
+
+  // Email Change State
+  const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false);
+  const [newPrimaryEmail, setNewPrimaryEmail] = useState("");
+  const [emailChangePassword, setEmailChangePassword] = useState("");
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -594,10 +602,71 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
     }
   };
 
+  const handleChangeEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailChangeError(null);
+
+    const trimmedNewEmail = newPrimaryEmail.trim().toLowerCase();
+    if (!trimmedNewEmail) {
+      setEmailChangeError("Please enter a new institutional email address.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedNewEmail)) {
+      setEmailChangeError("Please enter a valid email address.");
+      return;
+    }
+
+    if (trimmedNewEmail === email.trim().toLowerCase()) {
+      setEmailChangeError("New email address must be different from your current email.");
+      return;
+    }
+
+    if (!emailChangePassword) {
+      setEmailChangeError("Please enter your current account password to confirm.");
+      return;
+    }
+
+    setIsChangingEmail(true);
+    try {
+      await authApi.changeEmail({
+        newEmail: trimmedNewEmail,
+        password: emailChangePassword,
+      });
+
+      // Update local state
+      setEmail(trimmedNewEmail);
+
+      // Update session and Redux store
+      if (user) {
+        const updatedUser: User = {
+          ...user,
+          email: trimmedNewEmail,
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
+      }
+
+      setIsChangeEmailOpen(false);
+      setNewPrimaryEmail("");
+      setEmailChangePassword("");
+      toast.success("Primary email updated successfully!", {
+        description: `Your account email is now ${trimmedNewEmail}. Security notices have been sent to your previous and new addresses.`,
+      });
+    } catch (err: any) {
+      setEmailChangeError(
+        err.message || "Failed to update email. Please verify your password and try again."
+      );
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
       {/* Hero Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#070e24] border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.25)] text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-[#070e24] border border-white/8 shadow-[0_20px_50px_rgba(0,0,0,0.25)] text-white">
         {/* Ambient background glows */}
         <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-600/15 blur-[80px]" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-amber-500/10 blur-[70px]" />
@@ -627,7 +696,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-900 flex items-center justify-center text-amber-300 font-bold text-2xl">
+                  <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900 flex items-center justify-center text-amber-300 font-bold text-2xl">
                     {name.charAt(0) || "U"}
                   </div>
                 )}
@@ -651,12 +720,12 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                     user?.role === "super-admin"
                       ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
                       : user?.role === "admin"
-                      ? "bg-blue-400/20 text-blue-300 border-blue-400/40"
-                      : user?.role === "editor"
-                      ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/40"
-                      : user?.role === "reviewer"
-                      ? "bg-purple-400/20 text-purple-300 border-purple-400/40"
-                      : "bg-sky-400/20 text-sky-300 border-sky-400/40"
+                        ? "bg-blue-400/20 text-blue-300 border-blue-400/40"
+                        : user?.role === "editor"
+                          ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/40"
+                          : user?.role === "reviewer"
+                            ? "bg-purple-400/20 text-purple-300 border-purple-400/40"
+                            : "bg-sky-400/20 text-sky-300 border-sky-400/40"
                   )}
                 >
                   <ShieldCheck className="h-3 w-3" />
@@ -701,7 +770,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             type="button"
             onClick={() => handleSaveProfile()}
             disabled={isSaving || !isDirty}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:from-blue-600 disabled:hover:to-indigo-600"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:from-blue-600 disabled:hover:to-indigo-600"
           >
             {isSaving ? (
               <>
@@ -736,7 +805,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                   "flex items-center gap-2 py-3 px-4 text-xs font-semibold whitespace-nowrap transition-all border-b-2 cursor-pointer",
                   isActive
                     ? "border-blue-400 text-white bg-white/5"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.02]"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/2"
                 )}
               >
                 <Icon className={cn("h-3.5 w-3.5", isActive ? "text-blue-400" : "text-slate-400")} />
@@ -790,20 +859,37 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Institutional Email (Primary Login)
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Institutional Email (Primary Login)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewPrimaryEmail("");
+                      setEmailChangePassword("");
+                      setEmailChangeError(null);
+                      setShowEmailPassword(false);
+                      setIsChangeEmailOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                  >
+                    Change Email
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type="email"
                     disabled
                     value={email}
-                    className="w-full bg-slate-100/80 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs font-mono text-slate-600 cursor-not-allowed"
+                    className="w-full bg-slate-100/80 border border-slate-200 rounded-lg pl-3.5 pr-28 py-2.5 text-xs font-mono text-slate-600 cursor-not-allowed"
                   />
-                  <span className="absolute right-3 top-2.5 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Verified
-                  </span>
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Verified
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1013,7 +1099,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               </div>
 
               {/* Current Active Tags */}
-              <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[50px]">
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-12.5">
                 {interests.map((tag) => (
                   <span
                     key={tag}
@@ -1030,7 +1116,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                   </span>
                 ))}
 
-                <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                <div className="flex items-center gap-1.5 flex-1 min-w-50">
                   <input
                     type="text"
                     value={newTagInput}
@@ -1184,6 +1270,36 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               <p className="text-xs text-slate-500 mt-0.5">
                 Update your login password and review your active session telemetry.
               </p>
+            </div>
+
+            {/* Primary Login Email Card */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Primary Login Email
+                </p>
+                <p className="text-xs font-mono text-slate-700 mt-1 flex items-center gap-1.5 font-semibold">
+                  <Mail className="h-3.5 w-3.5 text-blue-600" />
+                  {email}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Used for account authentication, editorial alerts, and journal correspondence.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewPrimaryEmail("");
+                  setEmailChangePassword("");
+                  setEmailChangeError(null);
+                  setShowEmailPassword(false);
+                  setIsChangeEmailOpen(true);
+                }}
+                className="shrink-0 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Mail className="h-3.5 w-3.5 text-blue-600" />
+                <span>Change Email</span>
+              </button>
             </div>
 
             {/* Change Password Form */}
@@ -1426,7 +1542,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                           : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
                       )}
                     >
-                      <div className="h-13 w-13 rounded-xl overflow-hidden bg-gradient-to-br from-blue-900 to-slate-900 p-0.5 mb-1.5 shadow-xs">
+                      <div className="h-13 w-13 rounded-xl overflow-hidden bg-linear-to-br from-blue-900 to-slate-900 p-0.5 mb-1.5 shadow-xs">
                         <img
                           src={preset.url}
                           alt={preset.label}
@@ -1438,7 +1554,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                       </span>
                       {isSelected && (
                         <span className="absolute -top-1.5 -right-1.5 h-4.5 w-4.5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                          <Check className="h-2.5 w-2.5 stroke-[3]" />
+                          <Check className="h-2.5 w-2.5 stroke-3" />
                         </span>
                       )}
                     </button>
@@ -1477,7 +1593,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
 
                   {/* Cropping Viewport */}
                   <div
-                    className="relative w-[260px] h-[260px] mx-auto rounded-2xl overflow-hidden bg-slate-950 border-2 border-blue-500 shadow-inner select-none cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
+                    className="relative w-65 h-65 mx-auto rounded-2xl overflow-hidden bg-slate-950 border-2 border-blue-500 shadow-inner select-none cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
                     onMouseDown={handleCropMouseDown}
                     onMouseMove={handleCropMouseMove}
                     onMouseUp={handleCropMouseUp}
@@ -1574,7 +1690,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                       disabled={isUploadingPhoto}
                       className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                     >
-                      <Check className="h-4 w-4 stroke-[3]" />
+                      <Check className="h-4 w-4 stroke-3" />
                       <span>Apply Cropped Photo</span>
                     </button>
                   </div>
@@ -1664,6 +1780,133 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           )}
         </div>
       </CustomDrawer>
+
+      {/* Change Primary Email Modal */}
+      <CustomModal
+        isOpen={isChangeEmailOpen}
+        onClose={() => {
+          if (!isChangingEmail) {
+            setIsChangeEmailOpen(false);
+            setEmailChangeError(null);
+          }
+        }}
+        title="Change Primary Email"
+        description="Update your institutional login and correspondence email address."
+        className="max-w-md"
+      >
+        <form onSubmit={handleChangeEmailSubmit} className="space-y-4">
+          <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
+            <ShieldCheck className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Updating your institutional email will change your login address across the GB Journal system. For security, please enter your current account password to confirm.
+            </p>
+          </div>
+
+          {emailChangeError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+              <p className="font-medium leading-relaxed">{emailChangeError}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Current Email
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                disabled
+                value={email}
+                className="w-full bg-slate-100/90 border border-slate-200 rounded-lg pl-9 pr-3.5 py-2.5 text-xs font-mono text-slate-600 cursor-not-allowed"
+              />
+              <Mail className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              New Institutional Email *
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                required
+                value={newPrimaryEmail}
+                onChange={(e) => {
+                  setNewPrimaryEmail(e.target.value);
+                  if (emailChangeError) setEmailChangeError(null);
+                }}
+                placeholder="e.g. yourname@gonobishwabidyalay.edu.bd"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-all font-mono"
+              />
+              <Mail className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Must be a valid and active academic or institutional address.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Confirm Current Password *
+            </label>
+            <div className="relative">
+              <input
+                type={showEmailPassword ? "text" : "password"}
+                required
+                value={emailChangePassword}
+                onChange={(e) => {
+                  setEmailChangePassword(e.target.value);
+                  if (emailChangeError) setEmailChangeError(null);
+                }}
+                placeholder="Enter your current account password"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-10 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-all font-mono"
+              />
+              <Lock className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <button
+                type="button"
+                onClick={() => setShowEmailPassword(!showEmailPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-md transition-colors cursor-pointer"
+                title={showEmailPassword ? "Hide password" : "Show password"}
+              >
+                {showEmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              disabled={isChangingEmail}
+              onClick={() => {
+                setIsChangeEmailOpen(false);
+                setEmailChangeError(null);
+              }}
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isChangingEmail || !newPrimaryEmail || !emailChangePassword}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {isChangingEmail ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  <span>Updating Email...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Confirm Email Change</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </CustomModal>
     </div>
   );
 }
