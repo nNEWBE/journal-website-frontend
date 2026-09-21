@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 interface CustomDatePickerProps {
   value: string;
@@ -109,10 +110,16 @@ export function CustomDatePicker({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Close on scroll/resize to avoid stale positioning
+  // Close on scroll/resize to avoid stale positioning, but do NOT close if scrolling inside the datepicker itself!
   useEffect(() => {
     if (!isOpen) return;
-    function handleClose() { setIsOpen(false); }
+    function handleClose(e: Event) {
+      const target = e.target as HTMLElement | null;
+      if (target && popoverRef.current?.contains(target)) {
+        return;
+      }
+      setIsOpen(false);
+    }
     window.addEventListener("scroll", handleClose, true);
     window.addEventListener("resize", handleClose);
     return () => {
@@ -129,11 +136,33 @@ export function CustomDatePicker({
   const daysOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
   const currentActualYear = new Date().getFullYear();
-  const yearsList = Array.from({ length: 15 }, (_, i) => currentActualYear - 3 + i);
-  if (!yearsList.includes(currentYear) && !isNaN(currentYear)) {
-    yearsList.push(currentYear);
-    yearsList.sort((a, b) => a - b);
-  }
+  const yearsList = useMemo(() => {
+    const list = Array.from({ length: 15 }, (_, i) => currentActualYear - 3 + i);
+    if (!list.includes(currentYear) && !isNaN(currentYear)) {
+      list.push(currentYear);
+      list.sort((a, b) => a - b);
+    }
+    return list;
+  }, [currentActualYear, currentYear]);
+
+  const monthOptions = useMemo(
+    () =>
+      monthNames.map((name, idx) => ({
+        value: String(idx),
+        label: name,
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const yearOptions = useMemo(
+    () =>
+      yearsList.map((y) => ({
+        value: String(y),
+        label: String(y),
+      })),
+    [yearsList]
+  );
 
   const getDaysInMonth = (year: number, month: number) =>
     new Date(year, month + 1, 0).getDate();
@@ -242,10 +271,10 @@ export function CustomDatePicker({
       ref={popoverRef}
       data-datepicker-popover="true"
       style={popoverStyle}
-      className="w-72 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xl ring-1 ring-black/5"
+      className="w-79 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xl ring-1 ring-black/5"
     >
       {/* Calendar Header */}
-      <div className="flex items-center justify-between gap-1 pb-3 border-b border-slate-100">
+      <div className="flex items-center justify-between gap-1.5 pb-3 border-b border-slate-100">
         <button
           type="button"
           onClick={handlePrevMonth}
@@ -256,30 +285,27 @@ export function CustomDatePicker({
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <div className="flex items-center gap-1.5 min-w-0">
-          <select
-            value={currentMonth}
-            onChange={(e) => setCurrentMonth(Number(e.target.value))}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-800 outline-none hover:border-blue-400 focus:border-blue-500 cursor-pointer"
-          >
-            {monthNames.map((name, idx) => (
-              <option key={name} value={idx}>
-                {name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <CustomSelect
+            size="sm"
+            value={String(currentMonth)}
+            onChange={(val) => setCurrentMonth(Number(val))}
+            options={monthOptions}
+            className="flex-1 min-w-0"
+            triggerClassName="bg-slate-50/90 hover:bg-white text-xs font-bold text-slate-800 border-slate-200 h-8 min-h-8 py-1 px-2 rounded-lg"
+            menuClassName="max-h-56 min-w-32 z-100 shadow-xl"
+          />
 
-          <select
-            value={currentYear}
-            onChange={(e) => setCurrentYear(Number(e.target.value))}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-800 outline-none hover:border-blue-400 focus:border-blue-500 cursor-pointer"
-          >
-            {yearsList.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+          <CustomSelect
+            size="sm"
+            value={String(currentYear)}
+            onChange={(val) => setCurrentYear(Number(val))}
+            options={yearOptions}
+            align="right"
+            className="w-21 min-w-0 shrink-0"
+            triggerClassName="bg-slate-50/90 hover:bg-white text-xs font-bold text-slate-800 border-slate-200 h-8 min-h-8 py-1 px-2.5 rounded-lg"
+            menuClassName="max-h-56 w-[84px] min-w-[84px] z-100 shadow-xl"
+          />
         </div>
 
         <button
@@ -312,7 +338,7 @@ export function CustomDatePicker({
               onClick={() => item.isCurrentMonth && handleSelectDay(item.day)}
               disabled={!item.isCurrentMonth}
               className={cn(
-                "h-7 w-7 rounded-md font-semibold text-slate-700 transition-colors flex items-center justify-center cursor-pointer mx-auto",
+                "h-8 w-8 rounded-lg font-semibold text-slate-700 transition-colors flex items-center justify-center cursor-pointer mx-auto",
                 !item.isCurrentMonth && "text-slate-300 pointer-events-none cursor-default",
                 item.isCurrentMonth && "hover:bg-blue-50 hover:text-blue-600",
                 isSelected && "bg-blue-600 text-white hover:bg-blue-700 hover:text-white font-extrabold shadow-sm"

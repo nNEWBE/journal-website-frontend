@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useEffect, useMemo, useRef, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -30,12 +31,14 @@ import {
   Clock,
   ArrowUpRight,
   FileDown,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { articles as initialArticles, articleTypes as defaultArticleTypes, topics as defaultTopics, Article } from "@/lib/data";
 import { articlesApi, issuesApi, IssueData } from "@/lib/api";
 import { CustomDrawer } from "@/components/ui/drawer";
-import { CustomSelect } from "@/components/ui/custom-select";
+import { CustomSelect, formatEnumToTitleCase } from "@/components/ui/custom-select";
+import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/active-filter-bar";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
@@ -51,6 +54,189 @@ function getCoverImage(article: Article): string {
   if (topic.includes("agri") || topic.includes("farm") || topic.includes("climate") || topic.includes("crop")) return "/covers/agriculture.png";
   if (topic.includes("law") || topic.includes("justice") || topic.includes("governance")) return "/covers/law.png";
   return "/covers/medical.png";
+}
+
+function PublicationActionsDropdown({
+  article,
+  onInspect,
+  onCopyDoi,
+}: {
+  article: Article;
+  onInspect: (article: Article) => void;
+  onCopyDoi: (doi: string, e: React.MouseEvent) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [menuCoords, setMenuCoords] = useState<{
+    top: number;
+    left: number;
+  }>({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const updateCoords = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 224;
+      const menuHeight = 190;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
+
+      const left = Math.max(12, Math.min(window.innerWidth - menuWidth - 12, rect.right - menuWidth));
+      const top = openUp
+        ? Math.max(8, rect.top - menuHeight - 6)
+        : Math.min(window.innerHeight - menuHeight - 8, rect.bottom + 6);
+
+      setMenuCoords({ top, left });
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleScrollOrResize() {
+      setIsOpen(false);
+    }
+
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [isOpen]);
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!isOpen) {
+      updateCoords();
+    }
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div className="inline-block text-left" onClick={(e) => e.stopPropagation()}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        className={cn(
+          "p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer",
+          isOpen && "bg-slate-100 text-slate-700 ring-2 ring-slate-200"
+        )}
+        title="Publication Actions"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+
+      {isOpen &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <>
+            {/* Transparent backdrop to capture outside clicks */}
+            <div
+              className="fixed inset-0 z-9998 bg-black/5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+              onContextMenu={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+            />
+
+            {/* Menu Container */}
+            <div
+              style={{
+                position: "fixed",
+                top: `${menuCoords.top}px`,
+                left: `${menuCoords.left}px`,
+                zIndex: 9999,
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-56 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-1.5 shadow-xl shadow-slate-900/10 ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100 text-left font-sans"
+            >
+              {/* Header inside menu showing publication identity */}
+              <div className="flex items-center gap-2.5 px-2.5 py-2 border-b border-slate-100 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 text-blue-700 font-bold text-xs">
+                  <BookOpen className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+                    {article.title}
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-mono truncate leading-tight mt-0.5">
+                    {article.doi}
+                  </p>
+                </div>
+              </div>
+
+              {/* View Details */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onInspect(article);
+                }}
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+              >
+                <Eye className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>View Details</span>
+              </button>
+
+              {/* Open Public Article */}
+              <Link
+                href={`/articles/${article.slug}`}
+                target="_blank"
+                onClick={() => setIsOpen(false)}
+                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+              >
+                <ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>Open Public Article</span>
+              </Link>
+
+              {/* Copy DOI */}
+              <button
+                type="button"
+                disabled={!article.doi}
+                onClick={(e) => {
+                  setIsOpen(false);
+                  onCopyDoi(article.doi, e);
+                }}
+                className={cn(
+                  "group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg transition-colors text-left",
+                  article.doi
+                    ? "text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 cursor-pointer"
+                    : "text-slate-400 cursor-not-allowed opacity-60"
+                )}
+              >
+                <Copy className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                <span>{article.doi ? "Copy DOI" : "DOI Pending"}</span>
+              </button>
+
+              {/* Download PDF */}
+              {article.pdf && (
+                <>
+                  <div className="my-1 border-t border-slate-100" />
+                  <a
+                    href={article.pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsOpen(false)}
+                    className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+                  >
+                    <Download className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                    <span>Download PDF</span>
+                  </a>
+                </>
+              )}
+            </div>
+          </>,
+          document.body
+        )}
+    </div>
+  );
 }
 
 let publicationsCache: {
@@ -127,11 +313,11 @@ export function PublicationsManagementPanel() {
           department: a.department || "Faculty of Health Sciences",
           authors: Array.isArray(a.authors) ? a.authors : (typeof a.authors === "string" ? [a.authors] : ["GB Journal Research Contributor"]),
           abstract: a.abstract || a.abstractText || "",
-          issue: a.issueLabel || a.issue || "Issue 2",
-          volume: a.volumeLabel || a.volume || "Volume 4",
-          pages: a.pages || "1-15",
-          doi: a.doi || `10.5555/gbj.2026.${a.slug}`,
-          publishedAt: a.publishedAt || "July 2026",
+          issue: a.issueLabel || a.issue || "",
+          volume: a.volumeLabel || a.volume || "",
+          pages: a.pages || "",
+          doi: a.doi || "",
+          publishedAt: a.publishedAt || "",
           metrics: {
             views: Number(a.metrics?.views ?? a.views ?? 0),
             downloads: Number(a.metrics?.downloads ?? a.downloads ?? 0),
@@ -361,6 +547,61 @@ export function PublicationsManagementPanel() {
     return count;
   }, [searchQuery, selectedType, selectedTopic, selectedIssue, selectedYear]);
 
+  const publicationChips = useMemo(() => {
+    const list: ActiveFilterChip[] = [];
+    if (searchQuery.trim()) {
+      list.push({
+        id: "search",
+        label: `Keyword: "${searchQuery.trim()}"`,
+        colorClass: "bg-blue-50 text-blue-700",
+        onRemove: () => setSearchQuery(""),
+      });
+    }
+    if (selectedTopic !== "all") {
+      list.push({
+        id: "topic",
+        label: `Discipline: ${formatEnumToTitleCase(selectedTopic)}`,
+        colorClass: "bg-indigo-50 text-indigo-700",
+        onRemove: () => setSelectedTopic("all"),
+      });
+    }
+    if (selectedType !== "all") {
+      list.push({
+        id: "type",
+        label: `Type: ${formatEnumToTitleCase(selectedType)}`,
+        colorClass: "bg-amber-50 text-amber-800",
+        onRemove: () => setSelectedType("all"),
+      });
+    }
+    if (selectedIssue !== "all") {
+      const issueLabel = dynamicIssues.find((i) => i.value === selectedIssue)?.label || selectedIssue;
+      list.push({
+        id: "issue",
+        label: `Issue: ${issueLabel}`,
+        colorClass: "bg-teal-50 text-teal-700",
+        onRemove: () => setSelectedIssue("all"),
+      });
+    }
+    if (selectedYear !== "all") {
+      list.push({
+        id: "year",
+        label: `Year: ${selectedYear}`,
+        colorClass: "bg-slate-100 text-slate-700",
+        onRemove: () => setSelectedYear("all"),
+      });
+    }
+    if (sortBy !== "newest") {
+      const sortLabel = sortOptions.find((s) => s.value === sortBy)?.label || sortBy;
+      list.push({
+        id: "sort",
+        label: `Sort: ${sortLabel}`,
+        colorClass: "bg-purple-50 text-purple-700",
+        onRemove: () => setSortBy("newest"),
+      });
+    }
+    return list;
+  }, [searchQuery, selectedTopic, selectedType, selectedIssue, selectedYear, sortBy, dynamicIssues]);
+
   const resetFilters = () => {
     setSearchQuery("");
     setSelectedType("all");
@@ -371,8 +612,14 @@ export function PublicationsManagementPanel() {
   };
 
   // Copy DOI handler
-  const handleCopyDoi = (doi: string, e?: React.MouseEvent) => {
+  const handleCopyDoi = (doi?: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (!doi || !doi.trim()) {
+      toast.info("DOI Pending", {
+        description: "Official DOI has not yet been minted for this publication.",
+      });
+      return;
+    }
     navigator.clipboard.writeText(doi);
     setCopiedDoi(doi);
     toast.success("DOI copied to clipboard", {
@@ -382,29 +629,46 @@ export function PublicationsManagementPanel() {
     setTimeout(() => setCopiedDoi(null), 2000);
   };
 
-  // Citation generator string
+  // Citation generator string with standard In-Press / Advance Online Publication support
   const generateCitation = (art: Article, format: "apa" | "harvard" | "vancouver" | "bibtex") => {
-    const authorStr = art.authors.join(", ");
+    const authorStr = art.authors && art.authors.length > 0 ? art.authors.join(", ") : "GB Journal Contributor";
     const yearMatch = art.publishedAt?.match(/\b(20\d{2})\b/);
     const pubYear = yearMatch ? yearMatch[1] : "2026";
 
+    const volNum = art.volume?.replace(/[^0-9]/g, "");
+    const issueNum = art.issue?.replace(/[^0-9]/g, "");
+    const hasIssueInfo = !!(volNum && issueNum);
+    const pagesStr = art.pages?.trim();
+    const doiClean = art.doi?.trim();
+    const doiUrl = doiClean ? (doiClean.startsWith("http") ? doiClean : `https://doi.org/${doiClean}`) : "";
+
     switch (format) {
       case "apa":
-        return `${authorStr} (${pubYear}). ${art.title}. Gono Bishwabidyalay Journal of Research, ${art.volume?.replace("Volume ", "") || "4"}(${art.issue?.replace("Issue ", "") || "2"}), ${art.pages || "1-15"}. https://doi.org/${art.doi}`;
+        if (hasIssueInfo && pagesStr) {
+          return `${authorStr} (${pubYear}). ${art.title}. Gono Bishwabidyalay Journal of Research, ${volNum}(${issueNum}), ${pagesStr}.${doiUrl ? ` ${doiUrl}` : ""}`;
+        }
+        return `${authorStr} (${pubYear}). ${art.title}. Gono Bishwabidyalay Journal of Research. Advance online publication.${doiUrl ? ` ${doiUrl}` : ""}`;
+
       case "harvard":
-        return `${authorStr}, ${pubYear}. ${art.title}. Gono Bishwabidyalay Journal of Research, ${art.volume || "Vol. 4"}, no. ${art.issue || "2"}, pp.${art.pages || "1-15"}.`;
+        if (hasIssueInfo && pagesStr) {
+          return `${authorStr}, ${pubYear}. ${art.title}. Gono Bishwabidyalay Journal of Research, ${art.volume || `Vol. ${volNum}`}, no. ${art.issue || issueNum}, pp.${pagesStr}.`;
+        }
+        return `${authorStr}, ${pubYear}. ${art.title}. Gono Bishwabidyalay Journal of Research (in press).`;
+
       case "vancouver":
-        return `${authorStr}. ${art.title}. Gono Bishwabidyalay J Res. ${pubYear};${art.volume?.replace("Volume ", "") || "4"}(${art.issue?.replace("Issue ", "") || "2"}):${art.pages || "1-15"}. doi:${art.doi}`;
+        if (hasIssueInfo && pagesStr) {
+          return `${authorStr}. ${art.title}. Gono Bishwabidyalay J Res. ${pubYear};${volNum}(${issueNum}):${pagesStr}.${doiClean ? ` doi:${doiClean}` : ""}`;
+        }
+        return `${authorStr}. ${art.title}. Gono Bishwabidyalay J Res. [Epub ahead of print].${doiClean ? ` doi:${doiClean}` : ""}`;
+
       case "bibtex":
-        return `@article{gbj_${art.slug.replace(/[^a-zA-Z0-9]/g, "_")},
+        return `@article{gbj_${(art.slug || art.id).replace(/[^a-zA-Z0-9]/g, "_")},
   title={${art.title}},
-  author={${art.authors.join(" and ")}},
+  author={${(art.authors || []).join(" and ")}},
   journal={Gono Bishwabidyalay Journal of Research},
-  volume={${art.volume?.replace("Volume ", "") || "4"}},
-  number={${art.issue?.replace("Issue ", "") || "2"}},
-  pages={${art.pages || "1-15"}},
-  year={${pubYear}},
-  doi={${art.doi}}
+  ${hasIssueInfo ? `volume={${volNum}},\n  number={${issueNum}},` : `note={Advance Online Publication / In Press},`}
+  ${pagesStr ? `pages={${pagesStr}},` : ""}
+  year={${pubYear}}${doiClean ? `,\n  doi={${doiClean}}` : ""}
 }`;
     }
   };
@@ -714,91 +978,14 @@ export function PublicationsManagementPanel() {
           </div>
         </div>
 
-        {/* Active Filters Bar & Counter */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap text-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-slate-600">
-              Showing <span className="font-bold text-slate-900">{filteredArticles.length}</span> of{" "}
-              {articlesList.length} publications
-            </span>
-
-            {/* Filter Chips */}
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-semibold">
-                <span>Keyword: &ldquo;{searchQuery}&rdquo;</span>
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="hover:text-blue-900 cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedTopic !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-semibold">
-                <span>Discipline: {selectedTopic}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTopic("all")}
-                  className="hover:text-indigo-900 cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedType !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold">
-                <span>Type: {selectedType}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedType("all")}
-                  className="hover:text-amber-950 cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedIssue !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 text-[11px] font-semibold">
-                <span>Issue: {selectedIssue}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedIssue("all")}
-                  className="hover:text-teal-900 cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedYear !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold">
-                <span>Year: {selectedYear}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedYear("all")}
-                  className="hover:text-slate-900 cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-          </div>
-
-          {activeFiltersCount > 0 && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="text-xs font-semibold text-red-600 hover:text-red-700 cursor-pointer hover:underline"
-            >
-              Reset all filters
-            </button>
-          )}
-        </div>
+        {/* Active Filters Bar & Counter using standard ActiveFilterBar */}
+        <ActiveFilterBar
+          totalCount={articlesList.length}
+          filteredCount={filteredArticles.length}
+          itemLabel="publications"
+          chips={publicationChips}
+          onResetAll={resetFilters}
+        />
       </div>
 
       {/* ── Main Publications Section Card ── */}
@@ -839,14 +1026,13 @@ export function PublicationsManagementPanel() {
           <div className="overflow-x-auto overflow-y-visible overscroll-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-4 w-12">#</th>
-                  <th className="py-3 px-4 min-w-75">Publication Title & DOI</th>
-                  <th className="py-3 px-4 min-w-50">Authors & Department</th>
-                  <th className="py-3 px-4 min-w-40">Track & Type</th>
-                  <th className="py-3 px-4 min-w-30">Issue / Date</th>
-                  <th className="py-3 px-4 min-w-50 text-center">Readership & Impact</th>
-                  <th className="py-3 px-4 text-right min-w-30">Actions</th>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap">
+                  <th className="py-3 px-4 w-12 text-slate-400 font-mono text-[11px]">#</th>
+                  <th className="py-3 px-4 min-w-70">Publication</th>
+                  <th className="py-3 px-4 min-w-40">Authors</th>
+                  <th className="py-3 px-4 min-w-32">Track & Type</th>
+                  <th className="py-3 px-4 min-w-36">Issue / Date</th>
+                  <th className="py-3 px-4 text-right w-16">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -858,143 +1044,81 @@ export function PublicationsManagementPanel() {
                       className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
                     >
                       {/* 1. Index */}
-                      <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] w-12">
                         {idx + 1}
                       </td>
 
-                      {/* 2. Title & DOI with Cover Image */}
+                      {/* 2. Publication Title & DOI */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-start gap-3">
-                          <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-slate-900 border border-slate-200/80 shrink-0 shadow-2xs group-hover:border-blue-300 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-slate-900 border border-slate-200/80 shrink-0 shadow-2xs group-hover:border-blue-300 transition-all">
                             <Image
                               src={getCoverImage(article)}
                               alt={article.title}
                               fill
-                              sizes="56px"
+                              sizes="40px"
                               className="object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           </div>
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug text-xs">
                               {article.title}
                             </p>
-                            <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                              <span className="font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60">
+                            {article.doi ? (
+                              <p className="font-mono text-[11px] text-slate-400 mt-0.5">
                                 {article.doi}
-                              </span>
-                              <button
-                                onClick={(e) => handleCopyDoi(article.doi, e)}
-                                className="text-slate-400 hover:text-blue-600 p-0.5 transition-colors cursor-pointer"
-                                title="Copy DOI"
-                              >
-                                {copiedDoi === article.doi ? (
-                                  <Check className="h-3 w-3 text-emerald-600" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </button>
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                                <ShieldCheck className="h-2.5 w-2.5" />
-                                Open Access
-                              </span>
-                            </div>
+                              </p>
+                            ) : (
+                              <p className="font-sans text-[10px] text-amber-600 font-medium mt-0.5">
+                                DOI Pending
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
 
-                      {/* 3. Authors & Dept */}
+                      {/* 3. Authors */}
                       <td className="py-3.5 px-4">
-                        <p className="font-semibold text-slate-800 line-clamp-1">
+                        <p className="font-medium text-slate-700 line-clamp-1 text-xs">
                           {article.authors.join(", ")}
-                        </p>
-                        <p className="text-[11px] text-slate-500 line-clamp-1">
-                          {article.department || "Academic Faculty"}
                         </p>
                       </td>
 
                       {/* 4. Track & Type */}
                       <td className="py-3.5 px-4">
-                        <div className="space-y-1">
-                          <span className="inline-block px-2 py-0.5 rounded-md bg-blue-50 text-gb-blue text-[11px] font-bold">
-                            {article.topic}
-                          </span>
-                          <div>
-                            <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                              {article.type}
-                            </span>
-                          </div>
-                        </div>
+                        <p className="font-medium text-slate-800 text-xs">
+                          {article.topic}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {article.type}
+                        </p>
                       </td>
 
                       {/* 5. Issue / Date */}
-                      <td className="py-3.5 px-4 text-[11px]">
-                        <p className="font-semibold text-slate-800">
-                          {article.volume} • {article.issue}
+                      <td className="py-3.5 px-4 text-xs whitespace-nowrap">
+                        <p className="font-medium text-slate-800 whitespace-nowrap">
+                          {article.volume && article.issue ? (
+                            `${article.volume} • ${article.issue}`
+                          ) : article.volume || article.issue ? (
+                            article.volume || article.issue
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/70">
+                              In Press / Online First
+                            </span>
+                          )}
                         </p>
-                        <p className="text-slate-500">{article.publishedAt || "July 2026"}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">
+                          {article.publishedAt || "Recently Published"}
+                        </p>
                       </td>
 
-                      {/* 6. Readership Metrics */}
-                      <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          {/* Views Pill */}
-                          <div
-                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-lg bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/70 text-blue-700 transition-colors cursor-default"
-                            title={`${article.metrics?.views || 0} Total Article Views`}
-                          >
-                            <Eye className="h-3 w-3 text-blue-500 shrink-0" />
-                            <span className="font-mono text-[11px] font-bold">
-                              {(article.metrics?.views || 0).toLocaleString()}
-                            </span>
-                            <span className="text-[9px] font-semibold text-blue-500 uppercase">reads</span>
-                          </div>
-
-                          {/* Downloads Pill */}
-                          <div
-                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-lg bg-emerald-50/90 hover:bg-emerald-100/90 border border-emerald-200/70 text-emerald-700 transition-colors cursor-default"
-                            title={`${article.metrics?.downloads || 0} Full PDF Downloads`}
-                          >
-                            <FileDown className="h-3 w-3 text-emerald-500 shrink-0" />
-                            <span className="font-mono text-[11px] font-bold">
-                              {(article.metrics?.downloads || 0).toLocaleString()}
-                            </span>
-                            <span className="text-[9px] font-semibold text-emerald-500 uppercase">pdf</span>
-                          </div>
-
-                          {/* Citations Pill */}
-                          <div
-                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-lg bg-purple-50/90 hover:bg-purple-100/90 border border-purple-200/70 text-purple-700 transition-colors cursor-default"
-                            title={`${article.metrics?.citations || 0} Academic Citations`}
-                          >
-                            <Quote className="h-3 w-3 text-purple-500 shrink-0" />
-                            <span className="font-mono text-[11px] font-bold">
-                              {(article.metrics?.citations || 0).toLocaleString()}
-                            </span>
-                            <span className="text-[9px] font-semibold text-purple-500 uppercase">cites</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* 7. Actions */}
+                      {/* 6. Actions */}
                       <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setInspectedArticle(article)}
-                            className="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                            title="Inspect metadata & citation"
-                          >
-                            Details
-                          </button>
-
-                          <Link
-                            href={`/articles/${article.slug}`}
-                            target="_blank"
-                            className="p-1.5 text-slate-500 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            title="Open public article view"
-                          >
-                            <ArrowUpRight className="h-3.5 w-3.5" />
-                          </Link>
-                        </div>
+                        <PublicationActionsDropdown
+                          article={article}
+                          onInspect={() => setInspectedArticle(article)}
+                          onCopyDoi={(doi, e) => handleCopyDoi(doi, e)}
+                        />
                       </td>
                     </tr>
                   );
@@ -1100,11 +1224,19 @@ export function PublicationsManagementPanel() {
       <CustomDrawer
         isOpen={Boolean(inspectedArticle)}
         onClose={() => setInspectedArticle(null)}
-        title={inspectedArticle?.title || "Publication Details"}
+        title="Publication Overview"
         description={
           inspectedArticle
-            ? `${inspectedArticle.volume || "Volume 4"} • ${inspectedArticle.issue || "Issue 2"} — DOI: ${inspectedArticle.doi}`
+            ? `${inspectedArticle.volume || "Volume 4"} • ${inspectedArticle.issue || "Issue 2"} • Published ${inspectedArticle.publishedAt || "July 2026"}`
             : "Scholarly record metadata and citation details"
+        }
+        badge={
+          inspectedArticle ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <ShieldCheck className="h-3 w-3 text-emerald-600" />
+              Open Access
+            </span>
+          ) : null
         }
         icon={BookOpen}
         size="xl"
@@ -1133,7 +1265,7 @@ export function PublicationsManagementPanel() {
                 <Link
                   href={`/articles/${inspectedArticle.slug}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#0b1b3d] hover:bg-[#162c60] px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
                 >
                   <span>Open Public Article</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
@@ -1144,161 +1276,223 @@ export function PublicationsManagementPanel() {
         }
       >
         {inspectedArticle && (
-          <div className="space-y-5 text-left p-1">
-            {/* Modal Cover Image Banner */}
-            <div className="relative h-44 sm:h-52 w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-xs">
-              <Image
-                src={getCoverImage(inspectedArticle)}
-                alt={inspectedArticle.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 700px"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
-              <div className="absolute bottom-3.5 left-4 right-4 flex items-center justify-between gap-2 flex-wrap">
-                <span className="px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-xs text-slate-900 text-xs font-bold shadow-xs">
-                  {inspectedArticle.topic}
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Open Access Publication
-                </span>
-              </div>
-            </div>
+          <div className="space-y-5 text-left p-0.5">
+            {/* 1. Article Hero Showcase Card */}
+            <div className="rounded-2xl border border-slate-200/90 bg-linear-to-br from-slate-50/80 via-white to-slate-50/40 p-4 sm:p-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+                {/* Book Cover Thumbnail */}
+                <div className="relative w-24 sm:w-28 aspect-3/4 rounded-xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-md shrink-0">
+                  <Image
+                    src={getCoverImage(inspectedArticle)}
+                    alt={inspectedArticle.title}
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-slate-950/70 via-transparent to-transparent" />
+                  <span className="absolute bottom-1.5 left-1.5 right-1.5 inline-block bg-slate-900/90 text-white px-1.5 py-0.5 text-center text-[8.5px] font-bold uppercase tracking-wider truncate rounded">
+                    {inspectedArticle.topic}
+                  </span>
+                </div>
 
-            {/* Badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-gb-blue text-xs font-bold">
-                {inspectedArticle.topic}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold">
-                {inspectedArticle.type}
-              </span>
-            </div>
+                {/* Article Header Details */}
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-blue-50 text-gb-blue text-xs font-bold border border-blue-100">
+                      <FileText className="h-3 w-3" />
+                      {inspectedArticle.type}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                      <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                      Open Access
+                    </span>
+                  </div>
 
-            {/* Title */}
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
-                {inspectedArticle.title}
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                {inspectedArticle.department || "Academic Department"}
-              </p>
-            </div>
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 leading-snug tracking-tight font-academic">
+                    {inspectedArticle.title}
+                  </h2>
 
-            {/* Author Attribution */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60 space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Authors</p>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">
-                {inspectedArticle.authors.join(", ")}
-              </p>
-            </div>
-
-            {/* Issue, Volume & DOI Metadata */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/50">
-                <p className="text-[10px] font-bold uppercase text-slate-400">Volume & Issue</p>
-                <p className="font-semibold text-slate-800 mt-0.5">{inspectedArticle.volume} • {inspectedArticle.issue}</p>
-              </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/50">
-                <p className="text-[10px] font-bold uppercase text-slate-400">Page Range</p>
-                <p className="font-semibold text-slate-800 mt-0.5">{inspectedArticle.pages || "1-15"}</p>
-              </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/50">
-                <p className="text-[10px] font-bold uppercase text-slate-400">Published</p>
-                <p className="font-semibold text-slate-800 mt-0.5">{inspectedArticle.publishedAt || "July 2026"}</p>
-              </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/50">
-                <p className="text-[10px] font-bold uppercase text-slate-400">DOI</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="font-mono text-[11px] text-slate-700 truncate">{inspectedArticle.doi}</span>
-                  <button
-                    onClick={() => handleCopyDoi(inspectedArticle.doi)}
-                    className="text-slate-400 hover:text-blue-600 shrink-0"
-                    title="Copy DOI"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </button>
+                  <div className="pt-0.5 space-y-1">
+                    <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span>{inspectedArticle.authors.join(", ")}</span>
+                    </p>
+                    {inspectedArticle.department && (
+                      <p className="text-[11px] text-slate-500 pl-5">
+                        {inspectedArticle.department}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Readership & Live Telemetry Section */}
-            <div className="p-4 bg-linear-to-br from-slate-900 via-slate-850 to-slate-950 rounded-2xl text-white shadow-md border border-slate-800 space-y-3.5">
+            {/* 2. Metadata Grid (Clean 4-col card) */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                {/* Volume & Issue */}
+                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <CalendarDays className="h-3 w-3 text-slate-400" />
+                    Issue
+                  </p>
+                  <p className="font-semibold text-slate-800 whitespace-nowrap">
+                    {inspectedArticle.volume && inspectedArticle.issue ? (
+                      `${inspectedArticle.volume} • ${inspectedArticle.issue}`
+                    ) : inspectedArticle.volume || inspectedArticle.issue ? (
+                      inspectedArticle.volume || inspectedArticle.issue
+                    ) : (
+                      <span className="text-amber-700 font-medium text-[11px]">In Press (Ahead of Issue)</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Published Date */}
+                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-slate-400" />
+                    Published
+                  </p>
+                  <p className="font-semibold text-slate-800 whitespace-nowrap">
+                    {inspectedArticle.publishedAt || "Recently Published"}
+                  </p>
+                </div>
+
+                {/* Page Range */}
+                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <Layers className="h-3 w-3 text-slate-400" />
+                    Pages
+                  </p>
+                  <p className="font-semibold text-slate-800 whitespace-nowrap">
+                    {inspectedArticle.pages?.trim() ? (
+                      inspectedArticle.pages
+                    ) : (
+                      <span className="text-amber-700 font-medium text-[11px]">In Press (Unpaginated)</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* DOI */}
+                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <FileText className="h-3 w-3 text-slate-400" />
+                      DOI
+                    </span>
+                    {inspectedArticle.doi && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyDoi(inspectedArticle.doi)}
+                        className="text-blue-600 hover:text-blue-800 font-semibold text-[10px] cursor-pointer flex items-center gap-0.5"
+                        title="Copy DOI"
+                      >
+                        {copiedDoi === inspectedArticle.doi ? (
+                          <Check className="h-3 w-3 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
+                  </p>
+                  {inspectedArticle.doi ? (
+                    <p className="font-mono text-[11px] font-semibold text-slate-800 truncate" title={inspectedArticle.doi}>
+                      {inspectedArticle.doi}
+                    </p>
+                  ) : (
+                    <p className="font-sans text-[11px] text-amber-600 font-medium italic">
+                      Pending Assignment
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Readership & Academic Impact (Premium Academic Card) */}
+            <div className="rounded-2xl border border-slate-200/90 bg-linear-to-br from-white via-slate-50/40 to-blue-50/20 p-4 sm:p-5 shadow-2xs space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                    Live Readership & Impact Telemetry
-                  </span>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Readership & Live Impact Telemetry
+                  </h3>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
-                  Active Supabase Telemetry
+                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  Active Telemetry
                 </span>
               </div>
 
-              {/* 3 Metric Cards */}
-              <div className="grid grid-cols-3 gap-2.5">
-                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-blue-300">
-                    <span className="text-[11px] font-semibold">Article Reads</span>
-                    <Eye className="h-3.5 w-3.5 text-blue-400" />
+              {/* 3 Stat Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Views */}
+                <div className="bg-white rounded-xl p-3.5 border border-blue-100 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-blue-700">
+                    <span className="text-xs font-bold text-slate-600">Total Reads</span>
+                    <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                      <Eye className="h-3.5 w-3.5" />
+                    </div>
                   </div>
-                  <p className="font-mono text-xl sm:text-2xl font-black mt-2 text-white">
+                  <p className="font-mono text-2xl font-black mt-2 text-slate-900">
                     {(inspectedArticle.metrics?.views || 0).toLocaleString()}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Starts from 0</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Global readers</p>
                 </div>
 
-                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-emerald-300">
-                    <span className="text-[11px] font-semibold">PDF Downloads</span>
-                    <FileDown className="h-3.5 w-3.5 text-emerald-400" />
+                {/* PDF Downloads */}
+                <div className="bg-white rounded-xl p-3.5 border border-emerald-100 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-emerald-700">
+                    <span className="text-xs font-bold text-slate-600">PDF Downloads</span>
+                    <div className="h-7 w-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                      <FileDown className="h-3.5 w-3.5" />
+                    </div>
                   </div>
-                  <p className="font-mono text-xl sm:text-2xl font-black mt-2 text-white">
+                  <p className="font-mono text-2xl font-black mt-2 text-slate-900">
                     {(inspectedArticle.metrics?.downloads || 0).toLocaleString()}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Click tracked</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Direct downloads</p>
                 </div>
 
-                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-purple-300">
-                    <span className="text-[11px] font-semibold">Citations</span>
-                    <Quote className="h-3.5 w-3.5 text-purple-400" />
+                {/* Citations */}
+                <div className="bg-white rounded-xl p-3.5 border border-purple-100 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-purple-700">
+                    <span className="text-xs font-bold text-slate-600">Citations</span>
+                    <div className="h-7 w-7 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                      <Quote className="h-3.5 w-3.5" />
+                    </div>
                   </div>
-                  <p className="font-mono text-xl sm:text-2xl font-black mt-2 text-white">
+                  <p className="font-mono text-2xl font-black mt-2 text-slate-900">
                     {(inspectedArticle.metrics?.citations || 0).toLocaleString()}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Academic impact</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Scholarly citations</p>
                 </div>
               </div>
 
-              {/* Telemetry Actions (Test Increment / Reset) */}
-              <div className="pt-2 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2">
+              {/* Simulation Toolbar for Admin testing */}
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleSimulateView(inspectedArticle.slug)}
                     disabled={isMetricsUpdating === inspectedArticle.slug}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     title="Simulate +1 view"
                   >
-                    <Eye className="h-3.5 w-3.5" />
-                    <span>+1 View</span>
+                    <Eye className="h-3 w-3" />
+                    <span>+1 Read</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleSimulateDownload(inspectedArticle.slug)}
                     disabled={isMetricsUpdating === inspectedArticle.slug}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     title="Simulate +1 download"
                   >
-                    <FileDown className="h-3.5 w-3.5" />
-                    <span>+1 Download</span>
+                    <FileDown className="h-3 w-3" />
+                    <span>+1 PDF</span>
                   </button>
                 </div>
 
@@ -1306,11 +1500,11 @@ export function PublicationsManagementPanel() {
                   type="button"
                   onClick={() => handleResetMetrics(inspectedArticle.slug)}
                   disabled={isMetricsUpdating === inspectedArticle.slug}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
                   title="Reset metrics for this publication to 0"
                 >
-                  <RotateCcw className={cn("h-3.5 w-3.5", isMetricsUpdating === inspectedArticle.slug && "animate-spin")} />
-                  <span>Reset to 0</span>
+                  <RotateCcw className={cn("h-3 w-3", isMetricsUpdating === inspectedArticle.slug && "animate-spin")} />
+                  <span>Reset</span>
                 </button>
               </div>
             </div>

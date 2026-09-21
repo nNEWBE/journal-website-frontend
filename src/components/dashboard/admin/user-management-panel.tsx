@@ -31,6 +31,7 @@ import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
+import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/active-filter-bar";
 import {
   Table,
   TableHeader,
@@ -52,6 +53,19 @@ const ROLE_OPTIONS = [
   { value: "super-admin", label: "Super Admins" },
 ];
 
+const STATUS_OPTIONS = [
+  { value: "all", label: "All Statuses" },
+  { value: "active", label: "Active" },
+  { value: "suspended", label: "Suspended" },
+];
+
+const SORT_OPTIONS = [
+  { value: "priority", label: "Role Priority" },
+  { value: "name_asc", label: "Name (A-Z)" },
+  { value: "name_desc", label: "Name (Z-A)" },
+  { value: "newest", label: "Newest First" },
+];
+
 
 // Module-level cache for instant tab switching without loading delays
 let userCache: { data: UserItem[]; timestamp: number } | null = null;
@@ -67,6 +81,8 @@ export function UserManagementPanel({
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("priority");
 
   // Action dropdown menu state
   const [actionMenuUserId, setActionMenuUserId] = useState<string | number | null>(null);
@@ -273,9 +289,24 @@ export function UserManagementPanel({
           roleFilter === "all" ||
           u.role?.toLowerCase() === roleFilter.toLowerCase();
 
-        return matchSearch && matchRole;
+        const isUserActive = (u as any).enabled !== false;
+        const matchStatus =
+          statusFilter === "all" ||
+          (statusFilter === "active" && isUserActive) ||
+          (statusFilter === "suspended" && !isUserActive);
+
+        return matchSearch && matchRole && matchStatus;
       })
       .sort((a, b) => {
+        if (sortBy === "name_asc") {
+          return (a.fullName || "").localeCompare(b.fullName || "");
+        }
+        if (sortBy === "name_desc") {
+          return (b.fullName || "").localeCompare(a.fullName || "");
+        }
+        if (sortBy === "newest") {
+          return (new Date((b as any).createdAt || 0).getTime() || 0) - (new Date((a as any).createdAt || 0).getTime() || 0);
+        }
         const roleA = (a.role || "author").toLowerCase().replace(/[\s_]/g, "-");
         const roleB = (b.role || "author").toLowerCase().replace(/[\s_]/g, "-");
         const priorityA = ROLE_PRIORITY[roleA] ?? 99;
@@ -285,7 +316,53 @@ export function UserManagementPanel({
         }
         return (a.fullName || "").localeCompare(b.fullName || "");
       });
-  }, [users, searchQuery, roleFilter]);
+  }, [users, searchQuery, roleFilter, statusFilter, sortBy]);
+
+  const userChips = useMemo(() => {
+    const list: ActiveFilterChip[] = [];
+    if (searchQuery.trim()) {
+      list.push({
+        id: "search",
+        label: `Keyword: "${searchQuery.trim()}"`,
+        colorClass: "bg-blue-50 text-blue-700",
+        onRemove: () => setSearchQuery(""),
+      });
+    }
+    if (roleFilter !== "all") {
+      const roleLabel = ROLE_OPTIONS.find((r) => r.value === roleFilter)?.label || roleFilter;
+      list.push({
+        id: "role",
+        label: `Role: ${roleLabel}`,
+        colorClass: "bg-indigo-50 text-indigo-700",
+        onRemove: () => setRoleFilter("all"),
+      });
+    }
+    if (statusFilter !== "all") {
+      list.push({
+        id: "status",
+        label: `Status: ${statusFilter === "active" ? "Active" : "Suspended"}`,
+        colorClass: statusFilter === "active" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700",
+        onRemove: () => setStatusFilter("all"),
+      });
+    }
+    if (sortBy !== "priority") {
+      const sortLabel = SORT_OPTIONS.find((s) => s.value === sortBy)?.label || sortBy;
+      list.push({
+        id: "sort",
+        label: `Sort: ${sortLabel}`,
+        colorClass: "bg-slate-100 text-slate-700",
+        onRemove: () => setSortBy("priority"),
+      });
+    }
+    return list;
+  }, [searchQuery, roleFilter, statusFilter, sortBy]);
+
+  const resetAllUserFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setSortBy("priority");
+  };
 
   // Role stats
   const stats = useMemo(() => {
@@ -538,18 +615,51 @@ export function UserManagementPanel({
           onSearchChange={setSearchQuery}
           searchPlaceholder="Search by name, email, department, institution..."
         >
-          <div className="w-full sm:w-48 shrink-0">
-            <CustomSelect
-              options={ROLE_OPTIONS}
-              value={roleFilter}
-              onChange={setRoleFilter}
-              size="form"
-              className="w-full"
-              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-              placeholder="Filter by Role"
-            />
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="w-full sm:w-44 shrink-0">
+              <CustomSelect
+                options={ROLE_OPTIONS}
+                value={roleFilter}
+                onChange={setRoleFilter}
+                size="form"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                placeholder="Filter by Role"
+              />
+            </div>
+            <div className="w-full sm:w-36 shrink-0">
+              <CustomSelect
+                options={STATUS_OPTIONS}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                size="form"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                placeholder="All Statuses"
+              />
+            </div>
+            <div className="w-full sm:w-36 shrink-0">
+              <CustomSelect
+                options={SORT_OPTIONS}
+                value={sortBy}
+                onChange={setSortBy}
+                size="form"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                placeholder="Sort By"
+              />
+            </div>
           </div>
         </DashboardTableHeader>
+
+        {/* Active Filter Bar */}
+        <ActiveFilterBar
+          totalCount={users.length}
+          filteredCount={filteredUsers.length}
+          itemLabel="scholars"
+          chips={userChips}
+          onResetAll={resetAllUserFilters}
+        />
 
         {loading ? (
           <AcademicDataLoader

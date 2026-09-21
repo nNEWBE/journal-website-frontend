@@ -29,11 +29,12 @@ import { boardApi, adminApi, filesApi } from "@/lib/api";
 import { type BoardMember } from "@/lib/data";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
-import { CustomSelect } from "@/components/ui/custom-select";
+import { CustomSelect, formatEnumToTitleCase } from "@/components/ui/custom-select";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
+import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/active-filter-bar";
 import { cn } from "@/lib/utils";
 
 const BOARD_ROLES = [
@@ -176,13 +177,48 @@ export function BoardManagementPanel() {
     });
   }, [members, searchQuery, roleFilter]);
 
+  const BOARD_ROLE_FILTER_OPTIONS = [
+    { value: "ALL", label: "All Roles" },
+    { value: "CHIEF", label: "Chief & Managing" },
+    { value: "SECTION", label: "Section Editors" },
+    { value: "ADVISORY", label: "Advisory Council" },
+  ];
+
+  const boardChips = useMemo(() => {
+    const list: ActiveFilterChip[] = [];
+    if (searchQuery.trim()) {
+      list.push({
+        id: "search",
+        label: `Keyword: "${searchQuery.trim()}"`,
+        colorClass: "bg-blue-50 text-blue-700",
+        onRemove: () => setSearchQuery(""),
+      });
+    }
+    if (roleFilter !== "ALL") {
+      const roleLabel =
+        BOARD_ROLE_FILTER_OPTIONS.find((r) => r.value === roleFilter)?.label || roleFilter;
+      list.push({
+        id: "role",
+        label: `Role: ${roleLabel}`,
+        colorClass: "bg-indigo-50 text-indigo-700",
+        onRemove: () => setRoleFilter("ALL"),
+      });
+    }
+    return list;
+  }, [searchQuery, roleFilter]);
+
+  const resetAllBoardFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("ALL");
+  };
+
   // Options for linking a board member to a registered system user account
   const userOptions = useMemo(() => {
     const opts = [{ value: "", label: "None — External Scholar / Masthead Only" }];
     systemUsers.forEach((u) => {
       opts.push({
         value: String(u.id),
-        label: `${u.fullName} (${(u.role || "user").toUpperCase()} • ${u.email})`,
+        label: `${u.fullName} (${formatEnumToTitleCase(u.role || "user")} • ${u.email})`,
       });
     });
     return opts;
@@ -410,29 +446,27 @@ export function BoardManagementPanel() {
           onSearchChange={setSearchQuery}
           searchPlaceholder="Search by scholar name, department, role..."
         >
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {[
-              { id: "ALL", label: "All Roles" },
-              { id: "CHIEF", label: "Chief & Managing" },
-              { id: "SECTION", label: "Section Editors" },
-              { id: "ADVISORY", label: "Advisory Council" },
-            ].map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRoleFilter(r.id)}
-                className={cn(
-                  "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap",
-                  roleFilter === r.id
-                    ? "bg-gb-blue text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
+          <div className="w-full sm:w-52 shrink-0">
+            <CustomSelect
+              options={BOARD_ROLE_FILTER_OPTIONS}
+              value={roleFilter}
+              onChange={setRoleFilter}
+              size="form"
+              className="w-full"
+              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              placeholder="Filter by Role"
+            />
           </div>
         </DashboardTableHeader>
+
+        {/* Active Filter Bar */}
+        <ActiveFilterBar
+          totalCount={members.length}
+          filteredCount={filteredMembers.length}
+          itemLabel="board members"
+          chips={boardChips}
+          onResetAll={resetAllBoardFilters}
+        />
 
         {loading ? (
           <AcademicDataLoader

@@ -17,11 +17,36 @@ interface CustomSelectProps {
   onChange: (value: string) => void;
   className?: string;
   triggerClassName?: string;
+  menuClassName?: string;
+  optionClassName?: string;
   placeholder?: string;
   variant?: "default" | "dark";
   direction?: "auto" | "down" | "up";
+  align?: "left" | "right";
   disabled?: boolean;
   size?: "default" | "sm" | "form";
+}
+
+export function formatEnumToTitleCase(str?: string): string {
+  if (!str) return "";
+  const preserved = new Set(["DOI", "PDF", "ORCID", "ISSN", "ISBN", "URL", "ID", "API", "AI"]);
+  if (preserved.has(str)) return str;
+
+  // Check if string contains underscores or is all-uppercase (with letters, length > 1)
+  // e.g. "SUBMITTED", "REVIEWER_INVITATION", "DRAFT", "REVIEWS_COMPLETE", "UNDER_REVIEW"
+  if (str.includes("_") || (str.length > 1 && str === str.toUpperCase() && /[A-Z]/.test(str))) {
+    return str
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .split(" ")
+      .map((w) => {
+        if (preserved.has(w.toUpperCase())) return w.toUpperCase();
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      })
+      .join(" ");
+  }
+
+  return str;
 }
 
 export function CustomSelect({
@@ -30,9 +55,12 @@ export function CustomSelect({
   onChange,
   className,
   triggerClassName,
+  menuClassName,
+  optionClassName,
   placeholder = "Select option",
   variant = "default",
   direction = "down",
+  align = "left",
   disabled = false,
   size = "default",
 }: CustomSelectProps) {
@@ -73,16 +101,31 @@ export function CustomSelect({
   const isSm = size === "sm";
   const isForm = size === "form";
 
-  // Normalize options
-  const normalizedOptions: SelectOptionObject[] = options.map((opt) =>
-    typeof opt === "string" ? { value: opt, label: opt } : opt
-  );
+  // Normalize options and ensure labels are cleanly formatted in Title Case
+  const normalizedOptions: SelectOptionObject[] = options.map((opt) => {
+    if (typeof opt === "string") {
+      return { value: opt, label: formatEnumToTitleCase(opt) };
+    }
+    return {
+      value: opt.value,
+      label: formatEnumToTitleCase(opt.label),
+    };
+  });
 
   const selectedOption = normalizedOptions.find((opt) => opt.value === value);
-  const displayLabel = selectedOption ? selectedOption.label : value || placeholder;
+  const rawDisplay = selectedOption ? selectedOption.label : value || placeholder;
+  const displayLabel = rawDisplay === placeholder ? placeholder : formatEnumToTitleCase(rawDisplay);
 
   return (
-    <div ref={containerRef} className={cn("relative w-full", isSm ? "min-w-30" : "min-w-35", className)}>
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative",
+        !className?.includes("w-") && "w-full",
+        isSm ? "min-w-30" : "min-w-35",
+        className
+      )}
+    >
       <button
         type="button"
         disabled={disabled}
@@ -119,8 +162,10 @@ export function CustomSelect({
             "absolute z-100 w-full min-w-35 max-h-60 overflow-y-auto rounded-xl shadow-2xl animate-fade p-1.5",
             isDark
               ? "border border-white/15 bg-[#0c1338] text-white backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
-              : "border border-(--border) bg-white",
-            openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5"
+              : "border border-slate-200 bg-white",
+            openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5",
+            align === "right" ? "right-0 left-auto" : "left-0",
+            menuClassName
           )}
         >
           {normalizedOptions.map((option) => {
@@ -140,16 +185,17 @@ export function CustomSelect({
                       ? "bg-white/20 text-white font-bold"
                       : "text-white/80 hover:bg-white/10 hover:text-white"
                     : isSelected
-                      ? "bg-color-green-soft text-(--color-green-dark) hover:bg-color-green-soft"
-                      : "text-slate-700 hover:bg-slate-50"
+                      ? "bg-blue-50 text-blue-700 font-bold"
+                      : "text-slate-700 hover:bg-slate-50",
+                  optionClassName
                 )}
               >
-                <span className="truncate capitalize">{option.label}</span>
+                <span className="truncate">{option.label}</span>
                 {isSelected && (
                   <Check
                     className={cn(
                       "h-3.5 w-3.5 shrink-0 ml-2",
-                      isDark ? "text-amber-400" : "text-(--color-gb-university-green)"
+                      isDark ? "text-amber-400" : "text-blue-600"
                     )}
                   />
                 )}

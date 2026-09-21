@@ -20,8 +20,10 @@ import {
   ChevronRight,
   ShieldCheck,
   Eye,
-  CheckCircle2,
   RefreshCw,
+  Rocket,
+  CheckCircle2,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -36,10 +38,13 @@ import { DashboardStatsGrid } from "../workspace/dashboard-stats-grid";
 import { PipelineContentSkeleton } from "../workspace/pipeline-content-skeleton";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "../workspace/assign-reviewer-modal";
+import { PublishToIssueModal } from "../workspace/publish-to-issue-modal";
+import { EditorialDecisionModal } from "../workspace/editorial-decision-modal";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
+import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/active-filter-bar";
 import { formatDateTime, formatDate, cn } from "@/lib/utils";
 import {
   Table,
@@ -75,16 +80,16 @@ function StatusPill({ status }: { status: string }) {
 
 function RowActionsDropdown({
   sub,
-  canAdvance,
-  advanceSubmission,
   triggerAssignReviewer,
   triggerViewInfo,
+  triggerPublish,
+  triggerDecision,
 }: {
   sub: Submission;
-  canAdvance: boolean;
-  advanceSubmission: (id: string) => void;
   triggerAssignReviewer: (sub: Submission) => void;
   triggerViewInfo: (sub: Submission) => void;
+  triggerPublish: (sub: Submission) => void;
+  triggerDecision: (sub: Submission) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{
@@ -96,7 +101,7 @@ function RowActionsDropdown({
   const updateCoords = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const menuWidth = 224;
+      const menuWidth = 230;
       const menuHeight = 220;
       const spaceBelow = window.innerHeight - rect.bottom;
       const openUp = spaceBelow < menuHeight + 20 && rect.top > menuHeight;
@@ -206,32 +211,66 @@ function RowActionsDropdown({
                 <span>Inspect Manuscript</span>
               </button>
 
-              {/* Assign Reviewers */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  triggerAssignReviewer(sub);
-                }}
-                className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
-              >
-                <UserCheck className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
-                <span>Assign Reviewers</span>
-              </button>
-
-              {/* Advance Workflow */}
-              {canAdvance && (
+              {/* Schedule & Publish to Issue (for accepted or in-production papers) */}
+              {(sub.status === "ACCEPTED" ||
+                sub.status === "COPYEDITING" ||
+                sub.status === "PROOFING" ||
+                sub.status === "SCHEDULED") && (
                 <button
                   type="button"
                   onClick={() => {
                     setIsOpen(false);
-                    advanceSubmission(sub.id);
+                    triggerPublish(sub);
+                  }}
+                  className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-950 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <Rocket className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
+                  <span>Schedule & Publish to Issue</span>
+                </button>
+              )}
+
+              {/* Make Editorial Decision (for under-review or submitted papers) */}
+              {sub.status !== "PUBLISHED" &&
+                sub.status !== "REJECTED" &&
+                sub.status !== "ACCEPTED" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      triggerDecision(sub);
+                    }}
+                    className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
+                  >
+                    <ShieldCheck className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                    <span>Make Editorial Decision</span>
+                  </button>
+                )}
+
+              {/* Assign Reviewers */}
+              {sub.status !== "PUBLISHED" && sub.status !== "REJECTED" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    triggerAssignReviewer(sub);
                   }}
                   className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer text-left"
                 >
-                  <CheckCircle2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
-                  <span>Advance Workflow</span>
+                  <UserCheck className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                  <span>Assign Reviewers</span>
                 </button>
+              )}
+
+              {/* View in Publications (if already published) */}
+              {sub.status === "PUBLISHED" && (
+                <Link
+                  href="/dashboard/publications"
+                  onClick={() => setIsOpen(false)}
+                  className="group w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-blue-700 hover:text-blue-950 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <BookOpen className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform shrink-0" />
+                  <span>View in Publications</span>
+                </Link>
               )}
 
               {/* Download Files */}
@@ -264,11 +303,52 @@ export function ManuscriptPipelinePanel() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [topicFilter, setTopicFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   // Modals & Drawers
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedForPublish, setSelectedForPublish] = useState<Submission | null>(null);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [selectedForDecision, setSelectedForDecision] = useState<Submission | null>(null);
+  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
+
+  const handlePublishedSuccess = (updatedSub: Submission) => {
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === updatedSub.id ? { ...s, status: "PUBLISHED" } : s))
+    );
+    if (pipelineCache) {
+      pipelineCache = {
+        ...pipelineCache,
+        data: pipelineCache.data.map((s) =>
+          s.id === updatedSub.id ? { ...s, status: "PUBLISHED" } : s
+        ),
+      };
+    }
+    if (selectedSubmission?.id === updatedSub.id) {
+      setSelectedSubmission({ ...selectedSubmission, status: "PUBLISHED" });
+    }
+  };
+
+  const handleDecisionSuccess = (updatedSub: Submission, decision: string) => {
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === updatedSub.id ? updatedSub : s))
+    );
+    if (pipelineCache) {
+      pipelineCache = {
+        ...pipelineCache,
+        data: pipelineCache.data.map((s) =>
+          s.id === updatedSub.id ? updatedSub : s
+        ),
+      };
+    }
+    if (selectedSubmission?.id === updatedSub.id) {
+      setSelectedSubmission(updatedSub);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -324,6 +404,16 @@ export function ManuscriptPipelinePanel() {
     }
   };
 
+  const formatCleanLabel = (str?: string) => {
+    if (!str) return "";
+    return str
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  };
+
   const statusOptions = useMemo(() => {
     const presentStatuses = new Set<string>();
     submissions.forEach((s) => {
@@ -331,70 +421,216 @@ export function ManuscriptPipelinePanel() {
     });
 
     const standardStatuses = [
-      "Awaiting Editor",
-      "Under Review",
-      "In Desk Review",
-      "Reviews Complete",
-      "Revisions Requested",
-      "Revision Requested",
-      "Accepted",
-      "Published",
-      "Rejected",
+      { key: "SUBMITTED", label: "Submitted" },
+      { key: "DRAFT", label: "Draft" },
+      { key: "WITH_EDITOR", label: "Awaiting Editor" },
+      { key: "INITIAL_CHECK", label: "In Desk Review" },
+      { key: "UNDER_REVIEW", label: "Under Review" },
+      { key: "REVIEWER_INVITATION", label: "Reviewer Invitation" },
+      { key: "REVIEWS_COMPLETE", label: "Reviews Complete" },
+      { key: "REVISION_REQUESTED", label: "Revisions Requested" },
+      { key: "COPYEDITING", label: "Copyediting" },
+      { key: "PROOFING", label: "Proofing" },
+      { key: "SCHEDULED", label: "Scheduled" },
+      { key: "ACCEPTED", label: "Accepted" },
+      { key: "PUBLISHED", label: "Published" },
+      { key: "REJECTED", label: "Rejected" },
     ];
 
-    const ordered: string[] = [];
-    standardStatuses.forEach((st) => {
-      if (presentStatuses.has(st)) {
-        ordered.push(st);
-        presentStatuses.delete(st);
+    const options: { value: string; label: string }[] = [
+      { value: "all", label: "All Statuses" },
+    ];
+
+    const addedCleanLabels = new Set<string>();
+    // 1. Add standard statuses that are present in the submissions
+    standardStatuses.forEach((std) => {
+      const isPresent = Array.from(presentStatuses).some(
+        (st) =>
+          st.toLowerCase() === std.key.toLowerCase() ||
+          st.toLowerCase() === std.label.toLowerCase() ||
+          st.toLowerCase().replace(/_/g, " ") === std.label.toLowerCase() ||
+          (std.label === "Awaiting Editor" && (st.toLowerCase() === "with_editor" || st.toLowerCase() === "with editor")) ||
+          (std.label === "In Desk Review" && (st.toLowerCase() === "initial_check" || st.toLowerCase() === "initial check"))
+      );
+      if (isPresent && !addedCleanLabels.has(std.label.toLowerCase())) {
+        options.push({ value: std.label, label: std.label });
+        addedCleanLabels.add(std.label.toLowerCase());
       }
     });
-    presentStatuses.forEach((st) => ordered.push(st));
-    standardStatuses.forEach((st) => {
-      if (!ordered.includes(st)) ordered.push(st);
+
+    // 2. Add other present statuses with clean Title Case labels
+    presentStatuses.forEach((st) => {
+      const clean = formatCleanLabel(st);
+      if (!addedCleanLabels.has(clean.toLowerCase())) {
+        options.push({ value: clean, label: clean });
+        addedCleanLabels.add(clean.toLowerCase());
+      }
     });
 
+    // 3. Append remaining standard statuses that weren't present
+    standardStatuses.forEach((std) => {
+      if (!addedCleanLabels.has(std.label.toLowerCase())) {
+        options.push({ value: std.label, label: std.label });
+        addedCleanLabels.add(std.label.toLowerCase());
+      }
+    });
+
+    return options;
+  }, [submissions]);
+
+  const topicOptions = useMemo(() => {
+    const set = new Set<string>();
+    submissions.forEach((s) => {
+      const t = s.topic || (s as any).track;
+      if (t) set.add(formatCleanLabel(t));
+    });
     return [
-      { value: "all", label: "All Statuses" },
-      ...ordered.map((st) => ({ value: st, label: st })),
+      { value: "all", label: "All Disciplines" },
+      ...Array.from(set).sort().map((t) => ({ value: t, label: t })),
     ];
   }, [submissions]);
+
+  const typeOptions = useMemo(() => {
+    const set = new Set<string>();
+    submissions.forEach((s) => {
+      if (s.type) set.add(formatCleanLabel(s.type));
+    });
+    return [
+      { value: "all", label: "All Types" },
+      ...Array.from(set).sort().map((t) => ({ value: t, label: t })),
+    ];
+  }, [submissions]);
+
+  const sortOptions = [
+    { value: "newest", label: "Recently Updated" },
+    { value: "oldest", label: "Oldest First" },
+    { value: "score_desc", label: "Highest Review Score" },
+    { value: "score_asc", label: "Lowest Review Score" },
+  ];
 
   const filtered = useMemo(() => {
     let result = submissions;
     if (statusFilter !== "all") {
-      result = result.filter((s) => s.status.toLowerCase() === statusFilter.toLowerCase());
+      const sf = statusFilter.toLowerCase().replace(/_/g, " ");
+      result = result.filter((s) => {
+        const st = (s.status || "").toLowerCase().replace(/_/g, " ");
+        const isDirectMatch =
+          st === sf ||
+          s.status?.toLowerCase() === statusFilter.toLowerCase() ||
+          s.status?.toLowerCase().replace(/_/g, " ") === sf;
+        if (isDirectMatch) return true;
+
+        const isWithEditor =
+          (st === "with editor" || st === "awaiting editor") &&
+          (sf === "with editor" || sf === "awaiting editor");
+        if (isWithEditor) return true;
+
+        const isDeskReview =
+          (st === "initial check" || st === "in desk review") &&
+          (sf === "initial check" || sf === "in desk review");
+        if (isDeskReview) return true;
+
+        const isRevision =
+          (st === "revisions requested" || st === "revision requested") &&
+          (sf === "revisions requested" || sf === "revision requested");
+        if (isRevision) return true;
+
+        return false;
+      });
+    }
+    if (topicFilter !== "all") {
+      result = result.filter((s) => {
+        const t = formatCleanLabel(s.topic || (s as any).track || "");
+        return t.toLowerCase() === topicFilter.toLowerCase();
+      });
+    }
+    if (typeFilter !== "all") {
+      result = result.filter((s) => {
+        const t = formatCleanLabel(s.type || "");
+        return t.toLowerCase() === typeFilter.toLowerCase();
+      });
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((s) =>
-        [s.id, s.title, s.status, s.author, ...(s.reviewers || [])]
+        [s.id, s.title, s.status, s.author, s.topic, s.type, ...(s.reviewers || [])]
           .join(" ")
           .toLowerCase()
           .includes(q)
       );
     }
-    return result;
-  }, [submissions, searchQuery, statusFilter]);
+    return [...result].sort((a, b) => {
+      if (sortBy === "oldest") {
+        return (new Date(a.updated || 0).getTime() || 0) - (new Date(b.updated || 0).getTime() || 0);
+      }
+      if (sortBy === "score_desc") {
+        return (b.score || 0) - (a.score || 0);
+      }
+      if (sortBy === "score_asc") {
+        return (a.score || 0) - (b.score || 0);
+      }
+      return (new Date(b.updated || 0).getTime() || 0) - (new Date(a.updated || 0).getTime() || 0);
+    });
+  }, [submissions, searchQuery, statusFilter, topicFilter, typeFilter, sortBy]);
 
-  function advanceSubmission(id: string) {
-    const sub = submissions.find((s) => s.id === id);
-    if (!sub) return;
-    const transitions: Record<string, string> = {
-      "Awaiting Editor": "Under Review",
-      "Under Review": "Reviews Complete",
-      "Reviews Complete": "Accepted",
-      Accepted: "Published",
-      "Revision Requested": "Revised Manuscript Submitted",
-      "Revised Manuscript Submitted": "Under Review",
-    };
-    const nextStatus = transitions[sub.status] ?? "Under Review";
-    const newSubs = submissions.map((s) =>
-      s.id === id ? { ...s, status: nextStatus, updated: "Just now" } : s
-    );
-    setSubmissions(newSubs);
-    toast.success(`Status advanced to "${nextStatus}".`);
-  }
+  const chips = useMemo(() => {
+    const list: ActiveFilterChip[] = [];
+    if (searchQuery.trim()) {
+      list.push({
+        id: "search",
+        label: `Keyword: "${searchQuery.trim()}"`,
+        colorClass: "bg-blue-50 text-blue-700",
+        onRemove: () => setSearchQuery(""),
+      });
+    }
+    if (statusFilter !== "all") {
+      const matchedLabel =
+        statusOptions.find(
+          (o) => o.value.toLowerCase() === statusFilter.toLowerCase()
+        )?.label || formatCleanLabel(statusFilter);
+      list.push({
+        id: "status",
+        label: `Status: ${matchedLabel}`,
+        colorClass: "bg-indigo-50 text-indigo-700",
+        onRemove: () => setStatusFilter("all"),
+      });
+    }
+    if (topicFilter !== "all") {
+      list.push({
+        id: "topic",
+        label: `Discipline: ${topicFilter}`,
+        colorClass: "bg-teal-50 text-teal-700",
+        onRemove: () => setTopicFilter("all"),
+      });
+    }
+    if (typeFilter !== "all") {
+      list.push({
+        id: "type",
+        label: `Type: ${typeFilter}`,
+        colorClass: "bg-amber-50 text-amber-800",
+        onRemove: () => setTypeFilter("all"),
+      });
+    }
+    if (sortBy !== "newest") {
+      const sortLabel = sortOptions.find((o) => o.value === sortBy)?.label || sortBy;
+      list.push({
+        id: "sort",
+        label: `Sort: ${sortLabel}`,
+        colorClass: "bg-slate-100 text-slate-700",
+        onRemove: () => setSortBy("newest"),
+      });
+    }
+    return list;
+  }, [searchQuery, statusFilter, topicFilter, typeFilter, sortBy, statusOptions]);
+
+  const resetAllFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setTopicFilter("all");
+    setTypeFilter("all");
+    setSortBy("newest");
+  };
+
 
   function handleAssignReviewerSubmit(subId: string, reviewerName: string) {
     const newSubs = submissions.map((s) => {
@@ -440,6 +676,81 @@ export function ManuscriptPipelinePanel() {
       {/* KPI Stats Cards */}
       <DashboardStatsGrid submissions={submissions} isLoading={!mounted || isLoading} />
 
+      {/* Filter Dropdowns Row using CustomSelect */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              Manuscript Status
+            </label>
+            <CustomSelect
+              options={statusOptions}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              size="form"
+              placeholder="All Statuses"
+              className="w-full"
+              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              Discipline / Track
+            </label>
+            <CustomSelect
+              options={topicOptions}
+              value={topicFilter}
+              onChange={setTopicFilter}
+              size="form"
+              placeholder="All Disciplines"
+              className="w-full"
+              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              Article Type
+            </label>
+            <CustomSelect
+              options={typeOptions}
+              value={typeFilter}
+              onChange={setTypeFilter}
+              size="form"
+              placeholder="All Types"
+              className="w-full"
+              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              Sort By
+            </label>
+            <CustomSelect
+              options={sortOptions}
+              value={sortBy}
+              onChange={setSortBy}
+              size="form"
+              placeholder="Sort By"
+              className="w-full"
+              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+            />
+          </div>
+        </div>
+
+        {/* Active Filter Bar */}
+        <ActiveFilterBar
+          totalCount={submissions.length}
+          filteredCount={filtered.length}
+          itemLabel="manuscripts"
+          chips={chips}
+          onResetAll={resetAllFilters}
+          className="px-0 pt-3 pb-0 bg-transparent border-t border-slate-100"
+        />
+      </div>
+
       {/* Main Pipeline Table Card */}
       {!mounted || (isLoading && submissions.length === 0) ? (
         <PipelineContentSkeleton rows={6} />
@@ -454,20 +765,7 @@ export function ManuscriptPipelinePanel() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchPlaceholder="Search manuscripts, authors, IDs..."
-          >
-            {/* Status Filter Select */}
-            <div className="w-full sm:w-44 md:w-48 shrink-0">
-              <CustomSelect
-                options={statusOptions}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                size="form"
-                placeholder="All Statuses"
-                className="w-full"
-                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-              />
-            </div>
-          </DashboardTableHeader>
+          />
 
           {/* Content */}
           {filtered.length === 0 ? (
@@ -585,8 +883,6 @@ export function ManuscriptPipelinePanel() {
                       <TableCell className="text-right">
                         <RowActionsDropdown
                           sub={sub}
-                          canAdvance={true}
-                          advanceSubmission={advanceSubmission}
                           triggerAssignReviewer={(s) => {
                             setSelectedSubmission(s);
                             setIsAssignModalOpen(true);
@@ -594,6 +890,14 @@ export function ManuscriptPipelinePanel() {
                           triggerViewInfo={(s) => {
                             setSelectedSubmission(s);
                             setIsInfoModalOpen(true);
+                          }}
+                          triggerPublish={(s) => {
+                            setSelectedForPublish(s);
+                            setIsPublishModalOpen(true);
+                          }}
+                          triggerDecision={(s) => {
+                            setSelectedForDecision(s);
+                            setIsDecisionModalOpen(true);
                           }}
                         />
                       </TableCell>
@@ -636,8 +940,6 @@ export function ManuscriptPipelinePanel() {
                   <div className="flex items-center justify-end pt-1">
                     <RowActionsDropdown
                       sub={sub}
-                      canAdvance={true}
-                      advanceSubmission={advanceSubmission}
                       triggerAssignReviewer={(s) => {
                         setSelectedSubmission(s);
                         setIsAssignModalOpen(true);
@@ -645,6 +947,14 @@ export function ManuscriptPipelinePanel() {
                       triggerViewInfo={(s) => {
                         setSelectedSubmission(s);
                         setIsInfoModalOpen(true);
+                      }}
+                      triggerPublish={(s) => {
+                        setSelectedForPublish(s);
+                        setIsPublishModalOpen(true);
+                      }}
+                      triggerDecision={(s) => {
+                        setSelectedForDecision(s);
+                        setIsDecisionModalOpen(true);
                       }}
                     />
                   </div>
@@ -691,19 +1001,173 @@ export function ManuscriptPipelinePanel() {
             >
               Close
             </button>
-            <button
-              type="button"
-              onClick={() => toast.success("Downloading manuscript package...")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Download All Files</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => toast.success("Downloading manuscript package...")}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Download className="h-3.5 w-3.5 text-slate-400" />
+                <span>Files</span>
+              </button>
+
+              {(selectedSubmission?.status === "ACCEPTED" ||
+                selectedSubmission?.status === "COPYEDITING" ||
+                selectedSubmission?.status === "PROOFING" ||
+                selectedSubmission?.status === "SCHEDULED") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsInfoModalOpen(false);
+                    setSelectedForPublish(selectedSubmission);
+                    setIsPublishModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
+                >
+                  <Rocket className="h-3.5 w-3.5" />
+                  <span>Schedule & Publish</span>
+                </button>
+              )}
+
+              {selectedSubmission?.status !== "PUBLISHED" &&
+                selectedSubmission?.status !== "REJECTED" &&
+                selectedSubmission?.status !== "ACCEPTED" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInfoModalOpen(false);
+                      setSelectedForDecision(selectedSubmission);
+                      setIsDecisionModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Editorial Decision</span>
+                  </button>
+                )}
+
+              {selectedSubmission?.status === "PUBLISHED" && (
+                <Link
+                  href="/dashboard/publications"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-colors cursor-pointer"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span>View in Publications</span>
+                </Link>
+              )}
+            </div>
           </div>
         }
       >
         {selectedSubmission && (
           <div className="space-y-6">
+            {/* Editorial Governance & Production Stage Banner */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs space-y-3">
+              {(selectedSubmission.status === "ACCEPTED" ||
+                selectedSubmission.status === "COPYEDITING" ||
+                selectedSubmission.status === "PROOFING" ||
+                selectedSubmission.status === "SCHEDULED") && (
+                <div className="rounded-xl border border-emerald-200 bg-linear-to-r from-emerald-50/80 via-white to-blue-50/30 p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-2xs">
+                        <Rocket className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                          Ready for Issue Scheduling & DOI Minting
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          Peer review is complete and manuscript is accepted. Assign Volume, Issue & mint official CrossRef DOI.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedForPublish(selectedSubmission);
+                        setIsPublishModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs hover:shadow transition-all cursor-pointer"
+                    >
+                      <Rocket className="h-3.5 w-3.5" />
+                      <span>Schedule & Publish to Issue</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {(selectedSubmission.status === "SUBMITTED" ||
+                selectedSubmission.status === "INITIAL_CHECK" ||
+                selectedSubmission.status === "WITH_EDITOR" ||
+                selectedSubmission.status === "UNDER_REVIEW" ||
+                selectedSubmission.status === "REVISION_REQUESTED") && (
+                <div className="rounded-xl border border-blue-100 bg-linear-to-r from-blue-50/70 via-slate-50 to-white p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-2xs">
+                        <ShieldCheck className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                          Peer Review & Editorial Evaluation
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          Assign double-blind referees, evaluate peer reviews, or record an official editorial decision.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAssignModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all cursor-pointer shadow-2xs"
+                      >
+                        <UserCheck className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Assign Reviewer</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedForDecision(selectedSubmission);
+                          setIsDecisionModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gb-blue hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Make Decision</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedSubmission.status === "PUBLISHED" && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-2xs">
+                      <BookOpen className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                        Published in Official Research Repository
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Official DOI registered • Sequenced in journal volume • Live metrics active.
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/dashboard/publications"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all"
+                  >
+                    <span>View in Publications</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
+            </div>
+
             {/* Author info */}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 grid gap-3 sm:grid-cols-2">
               <div className="flex items-center gap-3">
@@ -824,6 +1288,32 @@ export function ManuscriptPipelinePanel() {
         onClose={() => setIsAssignModalOpen(false)}
         submission={selectedSubmission}
         onAssign={handleAssignReviewerSubmit}
+      />
+
+      {/* Publish to Issue Modal */}
+      <PublishToIssueModal
+        isOpen={isPublishModalOpen}
+        onClose={() => {
+          setIsPublishModalOpen(false);
+          setSelectedForPublish(null);
+        }}
+        submission={selectedForPublish}
+        onPublished={handlePublishedSuccess}
+      />
+
+      {/* Editorial Decision Modal */}
+      <EditorialDecisionModal
+        isOpen={isDecisionModalOpen}
+        onClose={() => {
+          setIsDecisionModalOpen(false);
+          setSelectedForDecision(null);
+        }}
+        submission={selectedForDecision}
+        onDecisionMade={handleDecisionSuccess}
+        onOpenPublishModal={(sub) => {
+          setSelectedForPublish(sub);
+          setIsPublishModalOpen(true);
+        }}
       />
     </div>
   );
