@@ -4,9 +4,10 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowUpRight,
-  ArrowLeft,
+  AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   FileCheck2,
   Save,
   Send,
@@ -17,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getSession } from "@/lib/auth";
 import { submissionsApi } from "@/lib/api";
 import { PremiumLoader } from "@/components/ui/loader";
+import { cn } from "@/lib/utils";
 
 import { StepArticleInfo } from "./submission/step-article-info";
 import { StepAuthorsList, type AuthorItem } from "./submission/step-authors-list";
@@ -81,13 +83,43 @@ export function SubmissionWizard() {
     }
   }, [router]);
 
+  const abstractWordCount = useMemo(() => {
+    return form.abstract.trim()
+      ? form.abstract.trim().split(/\s+/).filter(Boolean).length
+      : 0;
+  }, [form.abstract]);
+
+  const authorsMissingBank = useMemo(() => {
+    return authors.filter(
+      (a) => !a.bankName?.trim() || !a.accountNumber?.trim() || !a.accountHolderName?.trim()
+    );
+  }, [authors]);
+
   const completeness = useMemo(() => {
     let score = 0;
     if (form.type) score += 10;
     if (form.title.trim().length >= 10) score += 15;
-    if (form.abstract.trim().length >= 30) score += 15;
+    if (abstractWordCount >= 150) score += 15;
+    else if (abstractWordCount > 0) score += Math.round((abstractWordCount / 150) * 15);
     if (form.keywords.trim().length >= 3) score += 15;
-    if (authors.length > 0 && authors.every((a) => a.name.trim() && a.email.trim())) score += 15;
+
+    // All authors must have name, academic email, and mandatory bank details
+    const allAuthorsValid =
+      authors.length > 0 &&
+      authors.every(
+        (a) =>
+          a.name.trim() &&
+          a.email.trim() &&
+          a.bankName?.trim() &&
+          a.accountNumber?.trim() &&
+          a.accountHolderName?.trim()
+      );
+    if (allAuthorsValid) {
+      score += 15;
+    } else if (authors.length > 0 && authors.every((a) => a.name.trim() && a.email.trim())) {
+      score += 7; // partial score if authors exist but bank details incomplete
+    }
+
     if (form.files.length > 0) score += 15;
 
     const decs = form.declarations;
@@ -101,7 +133,7 @@ export function SubmissionWizard() {
     score += Math.round((checkedCount / 5) * 15);
 
     return Math.min(100, score);
-  }, [form, authors]);
+  }, [form, authors, abstractWordCount]);
 
   function handleFormChange(field: string, value: any) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -123,8 +155,14 @@ export function SubmissionWizard() {
         return false;
       }
       if (!form.abstract.trim()) {
-        toast.error("Abstract Required", {
-          description: "Please provide a structured abstract (150-300 words).",
+        toast.error("Structured Abstract Required", {
+          description: "Please provide a structured abstract of at least 150 words.",
+        });
+        return false;
+      }
+      if (abstractWordCount < 150) {
+        toast.error("Abstract Under Minimum Word Count", {
+          description: `Structured abstract must contain at least 150 words to proceed to the next section. Current count: ${abstractWordCount} words (${150 - abstractWordCount} more needed).`,
         });
         return false;
       }
@@ -150,6 +188,33 @@ export function SubmissionWizard() {
         });
         return false;
       }
+      const missingBankAuthor = authors.find(
+        (a) => !a.bankName?.trim() || !a.accountNumber?.trim() || !a.accountHolderName?.trim()
+      );
+      if (missingBankAuthor) {
+        toast.error("Mandatory Bank Details Missing", {
+          description: `Author "${missingBankAuthor.name}" is missing required bank account details. University policy mandates honorarium disbursement information for all contributing authors.`,
+        });
+        return false;
+      }
+    }
+
+    if (currentStep === 2) {
+      if (!form.files || form.files.length === 0) {
+        toast.error("Manuscript File Required", {
+          description: "Please upload at least one blinded manuscript file (PDF or DOCX) before proceeding to the next step.",
+        });
+        return false;
+      }
+    }
+
+    if (currentStep === 3) {
+      if (!form.declarations.originalWork) {
+        toast.error("Original Work Declaration Required", {
+          description: "You must confirm that this manuscript is original work and not under review elsewhere.",
+        });
+        return false;
+      }
     }
 
     return true;
@@ -165,14 +230,22 @@ export function SubmissionWizard() {
     if (idx <= step) {
       setStep(idx);
     } else {
-      if (validateCurrentStep(step)) {
-        setStep(idx);
+      for (let s = step; s < idx; s++) {
+        if (!validateCurrentStep(s)) {
+          return;
+        }
       }
+      setStep(idx);
     }
   }
 
   async function handleSubmit() {
-    if (!validateCurrentStep(0) || !validateCurrentStep(1)) {
+    if (
+      !validateCurrentStep(0) ||
+      !validateCurrentStep(1) ||
+      !validateCurrentStep(2) ||
+      !validateCurrentStep(3)
+    ) {
       return;
     }
 
@@ -375,20 +448,105 @@ export function SubmissionWizard() {
             onClick={() => setStep(step - 1)}
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
             Previous
           </button>
 
-          {step < wizardSteps.length - 1 && (
-            <button
-              type="button"
-              onClick={handleNextStep}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gb-blue px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-colors cursor-pointer"
-            >
-              Next Step
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {step === 0 && abstractWordCount < 150 && (
+              <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                {abstractWordCount === 0
+                  ? "Abstract requires at least 150 words to proceed"
+                  : `Need ${150 - abstractWordCount} more words to unlock next step`}
+              </span>
+            )}
+
+            {step === 1 && authorsMissingBank.length > 0 && (
+              <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                {authorsMissingBank.length === 1
+                  ? `Bank details required for ${authorsMissingBank[0].name}`
+                  : `Bank details required for all ${authorsMissingBank.length} authors`}
+              </span>
+            )}
+
+            {step === 2 && form.files.length === 0 && (
+              <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                Manuscript file upload required to proceed
+              </span>
+            )}
+
+            {step === 3 && !form.declarations.originalWork && (
+              <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                Original work confirmation required to proceed
+              </span>
+            )}
+
+            {step === 4 &&
+              (authorsMissingBank.length > 0 ||
+                form.files.length === 0 ||
+                !form.declarations.originalWork) && (
+                <span className="text-[11px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-lg hidden sm:inline-flex items-center gap-1.5 shadow-2xs">
+                  <AlertCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                  Resolve highlighted issues to submit
+                </span>
+              )}
+
+            {step < wizardSteps.length - 1 ? (
+              <button
+                type="button"
+                onClick={handleNextStep}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-extrabold transition-all cursor-pointer shadow-xs",
+                  (step === 0 && abstractWordCount < 150) ||
+                    (step === 1 && authorsMissingBank.length > 0) ||
+                    (step === 2 && form.files.length === 0) ||
+                    (step === 3 && !form.declarations.originalWork)
+                    ? "bg-slate-100 text-slate-400 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300"
+                    : "bg-gb-blue text-white hover:bg-gb-blue-dark"
+                )}
+                title={
+                  step === 0 && abstractWordCount < 150
+                    ? `Minimum 150 words required for abstract (${150 - abstractWordCount} more needed)`
+                    : step === 1 && authorsMissingBank.length > 0
+                      ? `Mandatory bank details required for all authors before proceeding (${authorsMissingBank.map((a) => a.name).join(", ")})`
+                      : step === 2 && form.files.length === 0
+                        ? "Please upload your blinded manuscript file (PDF or DOCX) to proceed"
+                        : step === 3 && !form.declarations.originalWork
+                          ? "Please confirm the original work declaration to proceed"
+                          : "Proceed to next step"
+                }
+              >
+                Next Step
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={
+                  isSubmitting ||
+                  !form.keywords.trim() ||
+                  authorsMissingBank.length > 0 ||
+                  form.files.length === 0 ||
+                  !form.declarations.originalWork
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gb-blue-deep px-6 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <span>Submitting Manuscript...</span>
+                ) : (
+                  <>
+                    <Send className="h-3.5 w-3.5" />
+                    Finalize & Submit Manuscript
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -11,6 +11,8 @@ export interface CustomCheckboxProps {
   description?: React.ReactNode;
   disabled?: boolean;
   size?: "sm" | "md" | "lg";
+  color?: "brand" | "emerald" | "blue";
+  align?: "center" | "start";
   className?: string;
   boxClassName?: string;
   id?: string;
@@ -23,6 +25,8 @@ export function CustomCheckbox({
   description,
   disabled = false,
   size = "md",
+  color = "brand",
+  align,
   className,
   boxClassName,
   id,
@@ -39,16 +43,25 @@ export function CustomCheckbox({
     lg: "h-4 w-4 stroke-[3]",
   };
 
+  const colorCheckedMap = {
+    brand: "bg-[#0b1b3d] border-[#0b1b3d] text-white shadow-xs ring-2 ring-blue-900/10",
+    emerald: "bg-emerald-600 border-emerald-600 text-white shadow-xs ring-2 ring-emerald-600/20",
+    blue: "bg-blue-600 border-blue-600 text-white shadow-xs ring-2 ring-blue-600/20",
+  };
+
+  const isStartAligned = align === "start" || (align === undefined && Boolean(description));
+
   return (
     <label
       htmlFor={id}
       className={cn(
-        "group inline-flex items-center gap-2.5 select-none transition-all duration-150 cursor-pointer",
+        "group inline-flex gap-2.5 select-none transition-all duration-150 cursor-pointer",
+        isStartAligned ? "items-start" : "items-center",
         disabled && "opacity-50 cursor-not-allowed",
         className
       )}
     >
-      <div className="relative flex items-center justify-center shrink-0">
+      <div className={cn("relative flex items-center justify-center shrink-0", isStartAligned && "mt-0.5")}>
         <input
           type="checkbox"
           id={id}
@@ -66,7 +79,7 @@ export function CustomCheckbox({
             "border transition-all duration-150 flex items-center justify-center shadow-2xs",
             sizeBoxMap[size] || sizeBoxMap.md,
             checked
-              ? "bg-[#0b1b3d] border-[#0b1b3d] text-white shadow-xs ring-2 ring-blue-900/10"
+              ? (colorCheckedMap[color] || colorCheckedMap.brand)
               : "border-slate-300 bg-white group-hover:border-slate-400 group-hover:bg-slate-50",
             boxClassName
           )}

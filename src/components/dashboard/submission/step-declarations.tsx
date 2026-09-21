@@ -1,6 +1,7 @@
 "use client";
 
 import { ShieldCheck } from "lucide-react";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 
 export interface DeclarationsState {
   noConflict: boolean;
@@ -19,7 +20,7 @@ interface StepDeclarationsProps {
 const checkboxes: { key: keyof DeclarationsState; title: string; desc: string }[] = [
   {
     key: "originalWork",
-    title: "Original Work & Unublished Status",
+    title: "Original Work & Unpublished Status",
     desc: "I confirm that this manuscript is original, has not been published previously, and is not currently under consideration by any other journal.",
   },
   {
@@ -64,31 +65,38 @@ export function StepDeclarations({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {checkboxes.map((item) => {
           const isChecked = Boolean(declarations[item.key]);
           return (
-            <label
+            <div
               key={item.key}
-              className={`flex items-start gap-3.5 rounded-2xl border p-4 transition-all cursor-pointer ${
+              className={`rounded-2xl border p-4 transition-all ${
                 isChecked
-                  ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-emerald-300 bg-emerald-50/50 shadow-2xs"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40"
               }`}
             >
-              <input
-                type="checkbox"
+              <CustomCheckbox
+                id={`declaration-${item.key}`}
                 checked={isChecked}
-                onChange={(e) => onChange(item.key, e.target.checked)}
-                className="mt-0.5 h-4.5 w-4.5 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                onChange={(val) => onChange(item.key, val)}
+                color="emerald"
+                size="md"
+                align="start"
+                className="w-full"
+                label={
+                  <span className="text-xs font-bold text-slate-900 leading-snug">
+                    {item.title}
+                  </span>
+                }
+                description={
+                  <span className="text-[11.5px] text-slate-600 leading-relaxed block mt-1">
+                    {item.desc}
+                  </span>
+                }
               />
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">{item.title}</h4>
-                <p className="mt-1 text-[11px] text-slate-600 leading-relaxed">
-                  {item.desc}
-                </p>
-              </div>
-            </label>
+            </div>
           );
         })}
       </div>

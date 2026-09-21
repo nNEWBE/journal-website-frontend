@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileCheck2, FileText, Trash2, UploadCloud } from "lucide-react";
+import { AlertCircle, FileCheck2, FileText, Trash2, UploadCloud } from "lucide-react";
 
 export interface ManuscriptFile {
   name: string;
@@ -68,9 +68,22 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
           Upload Manuscript Files
         </h3>
         <p className="text-xs text-slate-500">
-          Please upload blinded manuscript file (PDF/DOCX) stripped of author names for double-blind review.
+          Please upload your blinded manuscript file (PDF/DOCX) stripped of author names for double-blind review. At least one manuscript file is mandatory.
         </p>
       </div>
+
+      {/* Mandatory manuscript file warning if empty */}
+      {files.length === 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs">
+          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold">Manuscript File Upload Required</p>
+            <p className="text-amber-800 text-[11.5px] leading-relaxed">
+              At least one blinded manuscript document (PDF or DOCX) is required to proceed to the next section. Supplementary files (figures, tables, datasets) can also be added.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Hidden file input */}
       <input
@@ -94,7 +107,9 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
         className={`relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
           isDragging
             ? "border-blue-500 bg-blue-50/80 scale-[0.99]"
-            : "border-slate-300 bg-slate-50/60 hover:border-blue-400 hover:bg-blue-50/20"
+            : files.length === 0
+              ? "border-amber-300/80 bg-amber-50/20 hover:border-blue-400 hover:bg-blue-50/20"
+              : "border-slate-300 bg-slate-50/60 hover:border-blue-400 hover:bg-blue-50/20"
         }`}
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-xs text-blue-600 border border-slate-200">
@@ -104,7 +119,7 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
           Click to browse or drop your manuscript files here
         </p>
         <p className="mt-1 text-[11px] text-slate-500">
-          Accepts PDF, DOCX, XLSX, ZIP (Max 50MB per file)
+          Accepts PDF, DOCX, XLSX, ZIP (Max 50MB per file) · Blinded Manuscript Required
         </p>
       </div>
 
