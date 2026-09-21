@@ -1221,7 +1221,8 @@ export interface BackendNotification {
   type: string;
   targetRoles?: string;
   link?: string;
-  isRead: boolean;
+  read?: boolean;
+  isRead?: boolean;
   createdAt: string;
 }
 

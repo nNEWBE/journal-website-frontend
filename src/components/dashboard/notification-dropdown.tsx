@@ -69,16 +69,16 @@ export function NotificationDropdown({
     try {
       const backendItems = await notificationsApi.getNotifications(activeRole);
       if (Array.isArray(backendItems)) {
-        const mappedBackend: AppNotification[] = backendItems.map((b) => ({
+        const mappedBackend: AppNotification[] = backendItems.map((b: any) => ({
           id: `backend-${b.id}`,
           title: b.title,
           message: b.message,
           timestamp: b.createdAt || new Date().toISOString(),
           type: (b.type?.toLowerCase() as any) || "system",
-          read: b.isRead,
+          read: Boolean(b.read ?? b.isRead ?? false),
           link: b.link ? b.link.replace("/dashboard/admin/pipeline", "/dashboard/pipeline") : undefined,
           targetRoles: b.targetRoles
-            ? (b.targetRoles.toLowerCase().split(",").map((r) => r.trim()) as any)
+            ? (b.targetRoles.toLowerCase().split(",").map((r: string) => r.trim()) as any)
             : undefined,
         }));
 
@@ -165,24 +165,33 @@ export function NotificationDropdown({
   };
 
   const handleMarkAllRead = async () => {
+    // Optimistically mark all in state as read
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     markAllAsRead();
     try {
       await notificationsApi.markAllAsRead();
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("Failed to mark all as read in backend:", err);
     }
-    syncNotifications();
+    await syncNotifications();
     toast.success("All notifications marked as read");
   };
 
   const handleItemClick = async (notif: AppNotification) => {
     if (!notif.read) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
+      );
       markAsRead(notif.id);
       if (notif.id.startsWith("backend-")) {
         const backendId = notif.id.replace("backend-", "");
-        notificationsApi.markAsRead(backendId).catch(() => {});
+        try {
+          await notificationsApi.markAsRead(backendId);
+        } catch (err) {
+          console.error("Failed to mark notification as read in backend:", err);
+        }
       }
-      syncNotifications();
+      await syncNotifications();
     }
     if (notif.link) {
       setIsOpen(false);
@@ -193,12 +202,19 @@ export function NotificationDropdown({
 
   const handleItemMarkRead = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
     markAsRead(id);
     if (id.startsWith("backend-")) {
       const backendId = id.replace("backend-", "");
-      notificationsApi.markAsRead(backendId).catch(() => {});
+      try {
+        await notificationsApi.markAsRead(backendId);
+      } catch (err) {
+        console.error("Failed to mark notification as read in backend:", err);
+      }
     }
-    syncNotifications();
+    await syncNotifications();
   };
 
   const getIconForType = (type: AppNotification["type"]) => {
