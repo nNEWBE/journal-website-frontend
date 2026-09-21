@@ -92,6 +92,7 @@ import { PipelineContentSkeleton, FilterBarSkeleton } from "./workspace/pipeline
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
 import { SubmitReviewModal } from "./workspace/submit-review-modal";
+import { NotificationDropdown } from "@/components/dashboard/notification-dropdown";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -2072,12 +2073,7 @@ export function DashboardWorkspace({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => toast.info("No pending notifications.")}
-              className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-(--color-gb-border) bg-white text-(--color-gb-muted) hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Bell className="h-3.5 w-3.5" />
-            </button>
+            <NotificationDropdown activeRole={activeRole} />
             {activeRole === "author" && !pathname.includes("/profile") && (
               <Link
                 href="/dashboard/submissions/new"

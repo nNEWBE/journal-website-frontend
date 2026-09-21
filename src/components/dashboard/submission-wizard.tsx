@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileCheck2,
+  LayoutDashboard,
   Save,
   Send,
   ShieldCheck,
@@ -19,6 +20,7 @@ import { getSession } from "@/lib/auth";
 import { submissionsApi } from "@/lib/api";
 import { PremiumLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
+import { addNotification, sendBrowserNotification } from "@/lib/notifications";
 
 import { StepArticleInfo } from "./submission/step-article-info";
 import { StepAuthorsList, type AuthorItem } from "./submission/step-authors-list";
@@ -302,9 +304,34 @@ export function SubmissionWizard() {
       );
       setNewSubId(generatedId);
       setSubmitted(true);
+
+      // 1. Author In-App Notification
+      addNotification({
+        title: "Manuscript Submitted Successfully",
+        message: `Manuscript ${generatedId} ("${form.title || "Untitled Manuscript"}") has been submitted and entered editorial desk screening.`,
+        type: "submission",
+        link: "/dashboard/author",
+        targetRoles: ["author"],
+      });
+
+      // 2. Admin & Super Admin In-App Notification
+      addNotification({
+        title: `New Manuscript: ${generatedId}`,
+        message: `${currentUser?.name || "Author"} submitted "${form.title || "Untitled Manuscript"}" (${form.type} · ${form.topic}). Awaiting desk review.`,
+        type: "editorial",
+        link: "/dashboard/pipeline",
+        targetRoles: ["admin", "super_admin", "editor"],
+      });
+
+      // 3. Desktop Browser Notification
+      sendBrowserNotification(`Manuscript ${generatedId} Submitted!`, {
+        body: `"${form.title || "Untitled Manuscript"}" has been successfully submitted to GB Journal.`,
+        tag: `submission-${generatedId}`,
+      });
+
       toast.success(`Manuscript ${generatedId} submitted successfully!`, {
         id: toastId,
-        description: "Your manuscript is now in the editorial screening queue.",
+        description: "Your manuscript is now in the editorial screening queue. Confirmation emails and alerts have been sent.",
         duration: 5000,
       });
     } catch (err: any) {
@@ -347,7 +374,8 @@ export function SubmissionWizard() {
               href="/dashboard/author"
               className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-gb-blue px-6 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-colors"
             >
-              Go to Author Dashboard
+              <LayoutDashboard className="h-4 w-4" />
+              <span>Go to Author Dashboard</span>
             </Link>
           </div>
         </div>
