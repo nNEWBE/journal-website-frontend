@@ -8,18 +8,8 @@ export interface AdminState {
   error: string | null;
 }
 
-const fallbackStats: DashboardStats = {
-  activeSubmissions: 24,
-  underReview: 14,
-  accepted: 8,
-  publishedArticles: 184,
-  activeReviewers: 32,
-  publishedIssues: 12,
-  registeredUsers: 840,
-};
-
 const initialState: AdminState = {
-  stats: fallbackStats,
+  stats: null,
   users: [],
   isLoading: false,
   error: null,
@@ -32,8 +22,9 @@ export const fetchAdminStats = createAsyncThunk<
 >("admin/fetchStats", async (_, { rejectWithValue }) => {
   try {
     return await adminApi.getStats();
-  } catch {
-    return fallbackStats;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Failed to load admin stats";
+    return rejectWithValue(msg);
   }
 });
 

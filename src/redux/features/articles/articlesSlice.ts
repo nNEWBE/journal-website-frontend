@@ -44,16 +44,15 @@ export const fetchArticles = createAsyncThunk<
   try {
     const res = await articlesApi.list(params);
     return {
-      content: res.content && res.content.length > 0 ? res.content : fallbackArticles,
-      totalElements: res.totalElements || fallbackArticles.length,
+      content: res.content || [],
+      totalElements: res.totalElements || 0,
       totalPages: res.totalPages || 1,
       page: res.number || 0,
     };
   } catch {
-    // Return fallback articles if backend unreachable
     return {
-      content: fallbackArticles,
-      totalElements: fallbackArticles.length,
+      content: [],
+      totalElements: 0,
       totalPages: 1,
       page: 0,
     };

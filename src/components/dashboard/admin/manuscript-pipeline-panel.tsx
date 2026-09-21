@@ -28,7 +28,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  submissions as seedSubmissions,
   type Role,
   type Submission,
 } from "@/lib/data";
@@ -361,21 +360,16 @@ export function ManuscriptPipelinePanel() {
       setIsLoading(true);
       try {
         const res = await editorApi.listSubmissions();
-        if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
-          const formatted = res.content.map((item: any) => ({
-            ...item,
-            updated: formatDateTime(item.updated || item.updatedAt || item.createdAt),
-            due: formatDate(item.due),
-          }));
-          setSubmissions(formatted);
-          pipelineCache = { data: formatted, timestamp: Date.now() };
-        } else if (!pipelineCache) {
-          setSubmissions(seedSubmissions);
-        }
+        const content = res?.content && Array.isArray(res.content) ? res.content : (Array.isArray(res) ? res : []);
+        const formatted = content.map((item: any) => ({
+          ...item,
+          updated: formatDateTime(item.updated || item.updatedAt || item.createdAt),
+          due: formatDate(item.due),
+        }));
+        setSubmissions(formatted);
+        pipelineCache = { data: formatted, timestamp: Date.now() };
       } catch (err) {
-        if (!pipelineCache) {
-          setSubmissions(seedSubmissions);
-        }
+        console.error("Failed to load pipeline submissions:", err);
       } finally {
         setIsLoading(false);
       }
@@ -387,15 +381,14 @@ export function ManuscriptPipelinePanel() {
     setIsRefreshing(true);
     try {
       const res = await editorApi.listSubmissions();
-      if (res?.content && Array.isArray(res.content) && res.content.length > 0) {
-        const formatted = res.content.map((item: any) => ({
-          ...item,
-          updated: formatDateTime(item.updated || item.updatedAt || item.createdAt),
-          due: formatDate(item.due),
-        }));
-        setSubmissions(formatted);
-        pipelineCache = { data: formatted, timestamp: Date.now() };
-      }
+      const content = res?.content && Array.isArray(res.content) ? res.content : (Array.isArray(res) ? res : []);
+      const formatted = content.map((item: any) => ({
+        ...item,
+        updated: formatDateTime(item.updated || item.updatedAt || item.createdAt),
+        due: formatDate(item.due),
+      }));
+      setSubmissions(formatted);
+      pipelineCache = { data: formatted, timestamp: Date.now() };
       toast.success("Pipeline synchronized with backend");
     } catch {
       toast.info("Pipeline refreshed");

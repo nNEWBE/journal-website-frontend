@@ -55,9 +55,9 @@ export const fetchIssues = createAsyncThunk<
 >("issues/fetchIssues", async (_, { rejectWithValue }) => {
   try {
     const list = await issuesApi.list();
-    return list.length > 0 ? list : initialState.issues;
+    return list || [];
   } catch {
-    return initialState.issues;
+    return [];
   }
 });
 

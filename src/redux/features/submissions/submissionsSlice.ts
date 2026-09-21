@@ -17,8 +17,8 @@ export interface SubmissionsState {
 }
 
 const initialState: SubmissionsState = {
-  mySubmissions: fallbackSubmissions,
-  editorSubmissions: fallbackSubmissions,
+  mySubmissions: [],
+  editorSubmissions: [],
   selectedSubmission: null,
   isLoading: false,
   isActionLoading: false,
@@ -32,9 +32,9 @@ export const fetchMySubmissions = createAsyncThunk<
 >("submissions/fetchMySubmissions", async (_, { rejectWithValue }) => {
   try {
     const list = await submissionsApi.getMySubmissions();
-    return list.length > 0 ? list : fallbackSubmissions;
+    return list || [];
   } catch {
-    return fallbackSubmissions;
+    return [];
   }
 });
 
@@ -45,9 +45,9 @@ export const fetchEditorSubmissions = createAsyncThunk<
 >("submissions/fetchEditorSubmissions", async (params = {}, { rejectWithValue }) => {
   try {
     const res = await editorApi.listSubmissions(params.status, params.type);
-    return res.content && res.content.length > 0 ? res.content : fallbackSubmissions;
+    return res.content || [];
   } catch {
-    return fallbackSubmissions;
+    return [];
   }
 });
 

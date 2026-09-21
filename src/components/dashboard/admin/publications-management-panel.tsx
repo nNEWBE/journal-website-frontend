@@ -42,6 +42,7 @@ import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/a
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
+import { PipelineContentSkeleton } from "@/components/dashboard/workspace/pipeline-content-skeleton";
 import { cn } from "@/lib/utils";
 
 function getCoverImage(article: Article): string {
@@ -246,9 +247,9 @@ let publicationsCache: {
 } | null = null;
 
 export function PublicationsManagementPanel() {
-  const [articlesList, setArticlesList] = useState<Article[]>(() => publicationsCache?.articles || initialArticles);
+  const [articlesList, setArticlesList] = useState<Article[]>(() => publicationsCache?.articles || []);
   const [issuesList, setIssuesList] = useState<IssueData[]>(() => publicationsCache?.issues || []);
-  const [loading, setLoading] = useState<boolean>(!publicationsCache);
+  const [loading, setLoading] = useState<boolean>(!publicationsCache || !publicationsCache.articles);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
 
@@ -274,7 +275,7 @@ export function PublicationsManagementPanel() {
       publicationsCache = null;
       setIsRefreshing(true);
     } else {
-      const hasCache = !!publicationsCache;
+      const hasCache = !!publicationsCache && Array.isArray(publicationsCache.articles);
       if (hasCache) {
         setArticlesList(publicationsCache!.articles);
         setIssuesList(publicationsCache!.issues);
@@ -299,10 +300,10 @@ export function PublicationsManagementPanel() {
         issuesApi.list(fetchOptions),
       ]);
 
-      let finalArticles = initialArticles;
+      let finalArticles: Article[] = [];
       let finalIssues: IssueData[] = [];
 
-      if (artRes.status === "fulfilled" && artRes.value?.content && artRes.value.content.length > 0) {
+      if (artRes.status === "fulfilled" && artRes.value?.content && Array.isArray(artRes.value.content)) {
         // Harmonize backend articles with fallback data if needed
         const backendArticles: Article[] = artRes.value.content.map((a: any) => ({
           id: a.articleId || a.id || `ART-${a.slug}`,
@@ -332,7 +333,7 @@ export function PublicationsManagementPanel() {
         finalArticles = backendArticles;
         setArticlesList(finalArticles);
       } else if (!publicationsCache) {
-        setArticlesList(initialArticles);
+        setArticlesList([]);
       }
 
       if (issRes.status === "fulfilled" && Array.isArray(issRes.value)) {
@@ -352,7 +353,7 @@ export function PublicationsManagementPanel() {
     } catch (err) {
       console.warn("Using offline publications repository:", err);
       if (!publicationsCache) {
-        setArticlesList(initialArticles);
+        setArticlesList([]);
       }
       if (isManualRefresh) {
         toast.error("Failed to refresh publications repository");
@@ -1004,7 +1005,11 @@ export function PublicationsManagementPanel() {
         />
 
         {/* Content Body */}
-        {filteredArticles.length === 0 ? (
+        {loading && articlesList.length === 0 ? (
+          <div className="p-4">
+            <PipelineContentSkeleton rows={7} />
+          </div>
+        ) : filteredArticles.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <Search className="h-6 w-6" />

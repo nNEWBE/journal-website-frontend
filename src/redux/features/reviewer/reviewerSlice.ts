@@ -10,9 +10,7 @@ export interface ReviewerState {
 }
 
 const initialState: ReviewerState = {
-  assignments: fallbackSubmissions.filter(
-    (s) => s.status.toLowerCase().includes("review")
-  ),
+  assignments: [],
   isLoading: false,
   isActionLoading: false,
   error: null,
@@ -25,9 +23,9 @@ export const fetchMyAssignments = createAsyncThunk<
 >("reviewer/fetchMyAssignments", async (_, { rejectWithValue }) => {
   try {
     const list = await reviewerApi.getMyAssignments();
-    return list.length > 0 ? list : initialState.assignments;
+    return list || [];
   } catch {
-    return initialState.assignments;
+    return [];
   }
 });
 

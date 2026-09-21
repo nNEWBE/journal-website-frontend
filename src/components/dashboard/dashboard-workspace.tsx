@@ -57,7 +57,8 @@ import {
   Compass,
 } from "lucide-react";
 import { toast } from "sonner";
-import { CustomSelect } from "@/components/ui/custom-select";
+import { CustomSelect, formatEnumToTitleCase } from "@/components/ui/custom-select";
+import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/active-filter-bar";
 import { CustomDatePicker } from "@/components/ui/custom-datepicker";
 import { CustomModal } from "@/components/ui/modal";
 import { StatCard } from "@/components/ui/stat-card";
@@ -76,10 +77,10 @@ import {
 } from "@/components/ui/table";
 import { cn, formatDateTime, formatDate } from "@/lib/utils";
 import {
-  submissions as seedSubmissions,
   type Role,
   type Submission,
 } from "@/lib/data";
+import { AcademicDataLoader } from "@/components/ui/loader";
 import { getSession, clearSession, deleteCookie, type User } from "@/lib/auth";
 import { submissionsApi, reviewerApi, editorApi } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
@@ -91,11 +92,6 @@ import { PipelineContentSkeleton } from "./workspace/pipeline-content-skeleton";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
 import { SubmitReviewModal } from "./workspace/submit-review-modal";
-import { UserManagementPanel } from "./admin/user-management-panel";
-import { MailingCenterPanel } from "./admin/mailing-center-panel";
-import { IssueManagementPanel } from "./admin/issue-management-panel";
-import { BoardManagementPanel } from "./admin/board-management-panel";
-import { PublicationsManagementPanel } from "./admin/publications-management-panel";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -408,10 +404,21 @@ interface SubmissionsCacheEntry {
   data: Submission[];
   timestamp: number;
 }
+export const globalRoleSubmissionsCache: Partial<Record<Role, { data: Submission[]; timestamp: number }>> = {};
 export let globalSubmissionsCache: SubmissionsCacheEntry | null = null;
 
-export function invalidateSubmissionsCache() {
-  globalSubmissionsCache = null;
+export function invalidateSubmissionsCache(role?: Role) {
+  if (role) {
+    delete globalRoleSubmissionsCache[role];
+    if (globalSubmissionsCache?.role === role) {
+      globalSubmissionsCache = null;
+    }
+  } else {
+    for (const key of Object.keys(globalRoleSubmissionsCache) as Role[]) {
+      delete globalRoleSubmissionsCache[key];
+    }
+    globalSubmissionsCache = null;
+  }
 }
 
 export function DashboardWorkspace({
@@ -516,6 +523,7 @@ export function DashboardWorkspace({
   };
 
   const isAnalyticsPage = pathname.includes("/analytics");
+  const isDashboardRoot = pathname === "/dashboard" || pathname === "/dashboard/";
   const activeRole: Role = useMemo(() => {
     if (pathname.includes("/super-admin")) return "super-admin";
     if (pathname.includes("/admin")) return "admin";
@@ -547,15 +555,46 @@ export function DashboardWorkspace({
   const activeView = isAnalyticsPage ? "analytics" : "workspace";
 
   const [submissions, setSubmissions] = useState<Submission[]>(() => {
-    if (globalSubmissionsCache && globalSubmissionsCache.role === activeRole) {
-      return globalSubmissionsCache.data;
+    const cached = globalRoleSubmissionsCache[activeRole];
+    if (cached && cached.data) {
+      return cached.data;
     }
     return [];
   });
   const [isDataLoading, setIsDataLoading] = useState<boolean>(() => {
-    return !(globalSubmissionsCache && globalSubmissionsCache.role === activeRole && globalSubmissionsCache.data.length > 0);
+    const cached = globalRoleSubmissionsCache[activeRole];
+    return !(cached && cached.data && cached.data.length > 0 && Date.now() - cached.timestamp < 45000);
   });
+
+  // Keep state strictly in sync with activeRole during render.
+  // When activeRole changes, React immediately re-renders with the new role's cached data or empty array before painting,
+  // completely eliminating any intermediate flash frame of the previous role's data.
+  const [prevRole, setPrevRole] = useState<Role>(activeRole);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [topicFilter, setTopicFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+
+  if (prevRole !== activeRole) {
+    setPrevRole(activeRole);
+    setSearchQuery("");
+    setStatusFilter("all");
+    setTopicFilter("all");
+    setTypeFilter("all");
+    setSortBy("newest");
+    const cached = globalRoleSubmissionsCache[activeRole];
+    if (cached && cached.data) {
+      setSubmissions(cached.data);
+      setIsDataLoading(Date.now() - cached.timestamp >= 45000);
+    } else {
+      setSubmissions([]);
+      setIsDataLoading(true);
+    }
+  }
+
+  const activeRoleRef = useRef(activeRole);
+  activeRoleRef.current = activeRole;
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -588,48 +627,64 @@ export function DashboardWorkspace({
       }
     }
 
-    // Fetch real submissions from backend API (with SWR caching)
+    // Fetch real submissions from backend API (with per-role SWR caching)
     async function loadRealData(force = false) {
-      const hasCache = globalSubmissionsCache && globalSubmissionsCache.role === activeRole && globalSubmissionsCache.data.length > 0;
-      if (hasCache && !force) {
-        setSubmissions(globalSubmissionsCache!.data);
-        setIsDataLoading(false);
-        // If fresh (< 45s), do not block UI with redundant network query
-        if (Date.now() - globalSubmissionsCache!.timestamp < 45000) {
-          return;
+      if (isDashboardRoot) return;
+
+      const currentTargetRole = activeRole;
+      const cached = globalRoleSubmissionsCache[currentTargetRole];
+      const hasFreshCache = cached && cached.data && Date.now() - cached.timestamp < 45000;
+
+      if (hasFreshCache && !force) {
+        if (activeRoleRef.current === currentTargetRole) {
+          setSubmissions(cached.data);
+          setIsDataLoading(false);
         }
-      } else if (!hasCache) {
+        return;
+      }
+
+      if (!cached || cached.data.length === 0) {
         setIsDataLoading(true);
       }
 
       try {
         let liveSubs: Submission[] = [];
-        if (activeRole === "reviewer") {
+        if (currentTargetRole === "reviewer") {
           const assignments = await reviewerApi.getMyAssignments();
           if (assignments && Array.isArray(assignments)) {
             liveSubs = assignments.map(mapDtoToSubmission);
           }
-        } else if (activeRole === "editor" || activeRole === "admin" || activeRole === "super-admin") {
+        } else if (currentTargetRole === "editor" || currentTargetRole === "admin" || currentTargetRole === "super-admin") {
           const res = await editorApi.listSubmissions();
-          if (res && (res as any).content && Array.isArray((res as any).content)) {
-            liveSubs = (res as any).content.map(mapDtoToSubmission);
-          }
+          const list = (res && (res as any).content && Array.isArray((res as any).content))
+            ? (res as any).content
+            : (Array.isArray(res) ? res : []);
+          liveSubs = list.map(mapDtoToSubmission);
         } else {
           const authorSubs = await submissionsApi.getMySubmissions();
           if (authorSubs && Array.isArray(authorSubs)) {
             liveSubs = authorSubs.map(mapDtoToSubmission);
           }
         }
-        setSubmissions(liveSubs);
-        globalSubmissionsCache = {
-          role: activeRole,
+
+        const cacheEntry = {
+          role: currentTargetRole,
           data: liveSubs,
           timestamp: Date.now(),
         };
+        globalRoleSubmissionsCache[currentTargetRole] = cacheEntry;
+        globalSubmissionsCache = cacheEntry;
+
+        if (activeRoleRef.current === currentTargetRole) {
+          setSubmissions(liveSubs);
+          setIsDataLoading(false);
+        }
       } catch (err) {
         console.error("Failed to load submissions from API:", err);
       } finally {
-        setIsDataLoading(false);
+        if (activeRoleRef.current === currentTargetRole) {
+          setIsDataLoading(false);
+        }
       }
     }
     loadRealData();
@@ -652,15 +707,230 @@ export function DashboardWorkspace({
     }
   };
 
+  const statusOptions = useMemo(() => {
+    const presentStatuses = new Set<string>();
+    submissions.forEach((s) => {
+      if (s.status) presentStatuses.add(s.status);
+    });
+
+    const standardStatuses = [
+      { key: "SUBMITTED", label: "Submitted" },
+      { key: "DRAFT", label: "Draft" },
+      { key: "WITH_EDITOR", label: "Awaiting Editor" },
+      { key: "INITIAL_CHECK", label: "In Desk Review" },
+      { key: "UNDER_REVIEW", label: "Under Review" },
+      { key: "REVIEWER_INVITATION", label: "Reviewer Invitation" },
+      { key: "REVIEWS_COMPLETE", label: "Reviews Complete" },
+      { key: "REVISION_REQUESTED", label: "Revisions Requested" },
+      { key: "COPYEDITING", label: "Copyediting" },
+      { key: "PROOFING", label: "Proofing" },
+      { key: "SCHEDULED", label: "Scheduled" },
+      { key: "ACCEPTED", label: "Accepted" },
+      { key: "PUBLISHED", label: "Published" },
+      { key: "REJECTED", label: "Rejected" },
+    ];
+
+    const options: { value: string; label: string }[] = [
+      { value: "all", label: "All Statuses" },
+    ];
+
+    const addedCleanLabels = new Set<string>();
+    // 1. Add standard statuses that are present in the submissions
+    standardStatuses.forEach((std) => {
+      const isPresent = Array.from(presentStatuses).some(
+        (st) =>
+          st.toLowerCase() === std.key.toLowerCase() ||
+          st.toLowerCase() === std.label.toLowerCase() ||
+          st.toLowerCase().replace(/_/g, " ") === std.label.toLowerCase() ||
+          (std.label === "Awaiting Editor" && (st.toLowerCase() === "with_editor" || st.toLowerCase() === "with editor")) ||
+          (std.label === "In Desk Review" && (st.toLowerCase() === "initial_check" || st.toLowerCase() === "initial check"))
+      );
+      if (isPresent && !addedCleanLabels.has(std.label.toLowerCase())) {
+        options.push({ value: std.label, label: std.label });
+        addedCleanLabels.add(std.label.toLowerCase());
+      }
+    });
+
+    // 2. Add other present statuses with clean Title Case labels
+    presentStatuses.forEach((st) => {
+      const clean = formatEnumToTitleCase(st);
+      if (!addedCleanLabels.has(clean.toLowerCase())) {
+        options.push({ value: clean, label: clean });
+        addedCleanLabels.add(clean.toLowerCase());
+      }
+    });
+
+    // 3. Append remaining standard statuses that weren't present
+    standardStatuses.forEach((std) => {
+      if (!addedCleanLabels.has(std.label.toLowerCase())) {
+        options.push({ value: std.label, label: std.label });
+        addedCleanLabels.add(std.label.toLowerCase());
+      }
+    });
+
+    return options;
+  }, [submissions]);
+
+  const topicOptions = useMemo(() => {
+    const set = new Set<string>();
+    submissions.forEach((s) => {
+      const t = s.topic || (s as any).track;
+      if (t) set.add(formatEnumToTitleCase(t));
+    });
+    return [
+      { value: "all", label: "All Disciplines" },
+      ...Array.from(set).sort().map((t) => ({ value: t, label: t })),
+    ];
+  }, [submissions]);
+
+  const typeOptions = useMemo(() => {
+    const set = new Set<string>();
+    submissions.forEach((s) => {
+      if (s.type) set.add(formatEnumToTitleCase(s.type));
+    });
+    return [
+      { value: "all", label: "All Types" },
+      ...Array.from(set).sort().map((t) => ({ value: t, label: t })),
+    ];
+  }, [submissions]);
+
+  const sortOptions = [
+    { value: "newest", label: "Recently Updated" },
+    { value: "oldest", label: "Oldest First" },
+    { value: "score_desc", label: "Highest Review Score" },
+    { value: "score_asc", label: "Lowest Review Score" },
+    { value: "title_asc", label: "Title (A–Z)" },
+  ];
+
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return submissions;
-    return submissions.filter((s) =>
-      [s.id, s.title, s.status, s.author, s.type]
-        .join(" ")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
-    );
-  }, [submissions, currentUser, activeRole, searchQuery]);
+    let result = submissions;
+
+    if (statusFilter !== "all") {
+      const sf = statusFilter.toLowerCase().replace(/_/g, " ");
+      result = result.filter((s) => {
+        const st = (s.status || "").toLowerCase().replace(/_/g, " ");
+        const isDirectMatch =
+          st === sf ||
+          s.status?.toLowerCase() === statusFilter.toLowerCase() ||
+          s.status?.toLowerCase().replace(/_/g, " ") === sf;
+        if (isDirectMatch) return true;
+
+        const isWithEditor =
+          (st === "with editor" || st === "awaiting editor") &&
+          (sf === "with editor" || sf === "awaiting editor");
+        if (isWithEditor) return true;
+
+        const isDeskReview =
+          (st === "initial check" || st === "in desk review") &&
+          (sf === "initial check" || sf === "in desk review");
+        if (isDeskReview) return true;
+
+        const isRevision =
+          st.includes("revision") && sf.includes("revision");
+        if (isRevision) return true;
+
+        return false;
+      });
+    }
+
+    if (topicFilter !== "all") {
+      result = result.filter((s) => {
+        const t = formatEnumToTitleCase(s.topic || (s as any).track || "");
+        return t.toLowerCase() === topicFilter.toLowerCase();
+      });
+    }
+
+    if (typeFilter !== "all") {
+      result = result.filter((s) => {
+        const t = formatEnumToTitleCase(s.type || "");
+        return t.toLowerCase() === typeFilter.toLowerCase();
+      });
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((s) =>
+        [s.id, s.title, s.status, s.author, s.topic, s.type, ...(s.reviewers || [])]
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
+      );
+    }
+
+    return [...result].sort((a, b) => {
+      if (sortBy === "oldest") {
+        return (new Date(a.updated || 0).getTime() || 0) - (new Date(b.updated || 0).getTime() || 0);
+      }
+      if (sortBy === "score_desc") {
+        return (b.score || 0) - (a.score || 0);
+      }
+      if (sortBy === "score_asc") {
+        return (a.score || 0) - (b.score || 0);
+      }
+      if (sortBy === "title_asc") {
+        return (a.title || "").localeCompare(b.title || "");
+      }
+      return (new Date(b.updated || 0).getTime() || 0) - (new Date(a.updated || 0).getTime() || 0);
+    });
+  }, [submissions, searchQuery, statusFilter, topicFilter, typeFilter, sortBy]);
+
+  const chips = useMemo(() => {
+    const list: ActiveFilterChip[] = [];
+    if (searchQuery.trim()) {
+      list.push({
+        id: "search",
+        label: `Keyword: "${searchQuery.trim()}"`,
+        colorClass: "bg-blue-50 text-blue-700",
+        onRemove: () => setSearchQuery(""),
+      });
+    }
+    if (statusFilter !== "all") {
+      const matchedLabel =
+        statusOptions.find(
+          (o) => o.value.toLowerCase() === statusFilter.toLowerCase()
+        )?.label || formatEnumToTitleCase(statusFilter);
+      list.push({
+        id: "status",
+        label: `Status: ${matchedLabel}`,
+        colorClass: "bg-indigo-50 text-indigo-700",
+        onRemove: () => setStatusFilter("all"),
+      });
+    }
+    if (topicFilter !== "all") {
+      list.push({
+        id: "topic",
+        label: `Discipline: ${topicFilter}`,
+        colorClass: "bg-teal-50 text-teal-700",
+        onRemove: () => setTopicFilter("all"),
+      });
+    }
+    if (typeFilter !== "all") {
+      list.push({
+        id: "type",
+        label: `Type: ${typeFilter}`,
+        colorClass: "bg-amber-50 text-amber-800",
+        onRemove: () => setTypeFilter("all"),
+      });
+    }
+    if (sortBy !== "newest") {
+      const sortLabel = sortOptions.find((o) => o.value === sortBy)?.label || sortBy;
+      list.push({
+        id: "sort",
+        label: `Sort: ${sortLabel}`,
+        colorClass: "bg-slate-100 text-slate-700",
+        onRemove: () => setSortBy("newest"),
+      });
+    }
+    return list;
+  }, [searchQuery, statusFilter, topicFilter, typeFilter, sortBy, statusOptions]);
+
+  const resetAllFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setTopicFilter("all");
+    setTypeFilter("all");
+    setSortBy("newest");
+  };
 
   function updateSubmissionsState(newSubs: Submission[]) {
     setSubmissions(newSubs);
@@ -936,7 +1206,7 @@ export function DashboardWorkspace({
                   {isCoreExpanded && (
                     <div className="space-y-1">
                       {/* Non-admin suites */}
-                      {activeRole !== "admin" && activeRole !== "super-admin" && (
+                      {!isAdminOrSuperAdmin && (
                         navItems
                           .filter((item) => activeRole === item.id)
                           .map((item) => {
@@ -1097,10 +1367,10 @@ export function DashboardWorkspace({
                     {isRoleSuitesExpanded && (
                       <div className="space-y-1">
                         {navItems
-                          .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
+                          .filter((item) => item.id !== "admin" && item.id !== "super-admin")
                           .map((item) => {
                             const Icon = item.icon;
-                            const isActive = activeRole === item.id && activeView === "workspace";
+                            const isActive = activeRole === item.id && activeView === "workspace" && !pathname.includes("/profile");
                             return (
                               <button
                                 key={item.id}
@@ -1109,14 +1379,15 @@ export function DashboardWorkspace({
                                   router.push(item.href);
                                 }}
                                 className={cn(
-                                  "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-9 px-3 gap-3 rounded-xl border-l-[3px]",
+                                  "flex w-full items-center text-left text-xs transition-all duration-150 cursor-pointer h-10 px-3 gap-3 rounded-xl border-l-[3px]",
                                   isActive
-                                    ? "bg-white/10 text-white font-semibold border-l-amber-400 shadow-xs"
-                                    : "text-slate-400 hover:bg-white/4 hover:text-slate-200 border-l-transparent"
+                                    ? "bg-blue-600/20 text-white font-bold border-l-blue-400 shadow-xs"
+                                    : "text-slate-300 hover:bg-white/6 hover:text-white border-l-transparent"
                                 )}
                               >
-                                <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                                <span className="truncate flex-1">{item.label}</span>
+                                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#60a5fa]" : "text-slate-400")} />
+                                <span className="truncate flex-1 font-medium">{item.label}</span>
+                                {isActive && <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
                               </button>
                             );
                           })}
@@ -1251,7 +1522,7 @@ export function DashboardWorkspace({
               {(isCoreExpanded || isSidebarCollapsed) && (
                 <div className="space-y-1">
                   {/* Active Workspace for Non-Admin roles */}
-                  {activeRole !== "admin" && activeRole !== "super-admin" && (
+                  {!isAdminOrSuperAdmin && (
                     navItems
                       .filter((item) => activeRole === item.id)
                       .map((item) => {
@@ -1504,9 +1775,10 @@ export function DashboardWorkspace({
                 {(isRoleSuitesExpanded || isSidebarCollapsed) && (
                   <div className="space-y-1">
                     {navItems
-                      .filter((item) => item.id !== "admin" && item.id !== "super-admin" && item.id !== activeRole)
+                      .filter((item) => item.id !== "admin" && item.id !== "super-admin")
                       .map((item) => {
                         const Icon = item.icon;
+                        const isActive = activeRole === item.id && activeView === "workspace" && !pathname.includes("/profile");
                         return (
                           <CustomTooltip
                             key={item.id}
@@ -1519,20 +1791,31 @@ export function DashboardWorkspace({
                                 setIsMobileSidebarOpen(false);
                                 router.push(item.href);
                               }}
-                              className="flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group text-slate-400 hover:bg-white/4 hover:text-slate-200"
+                              className={cn(
+                                "flex items-center text-left text-xs transition-colors duration-150 cursor-pointer h-10 w-full rounded-xl overflow-hidden relative group",
+                                isActive
+                                  ? "bg-blue-600/20 text-white font-bold shadow-xs"
+                                  : "text-slate-300 hover:bg-white/6 hover:text-white"
+                              )}
                             >
+                              {isActive && (
+                                <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-blue-400" />
+                              )}
                               <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                                <Icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-200" />
+                                <Icon className={cn("h-4 w-4 transition-colors", isActive ? "text-[#60a5fa]" : "text-slate-400 group-hover:text-white")} />
                               </div>
                               <div
                                 className={cn(
-                                  "min-w-0 flex-1 pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                                  "min-w-0 flex-1 flex items-center justify-between pr-3 pl-1 whitespace-nowrap overflow-hidden transition-opacity duration-200",
                                   isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
                                 )}
                               >
-                                <span className="truncate text-slate-300 group-hover:text-white">
+                                <span className="truncate font-medium text-slate-200 group-hover:text-white">
                                   {item.label}
                                 </span>
+                                {isActive && (
+                                  <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 ml-1" />
+                                )}
                               </div>
                             </button>
                           </CustomTooltip>
@@ -1821,6 +2104,10 @@ export function DashboardWorkspace({
             pathname.includes("/super-admin") ||
             pathname.includes("/admin") ? (
             children
+          ) : isDashboardRoot ? (
+            <div className="p-8 flex items-center justify-center min-h-[60vh]">
+              <AcademicDataLoader title="Redirecting to your workspace..." subtitle="Initializing role environment" />
+            </div>
           ) : (
             <>
               {activeView === "analytics" && (
@@ -1855,12 +2142,87 @@ export function DashboardWorkspace({
                   <div>
                     <div className="p-4">
                       <DashboardStatsGrid
-                        submissions={activeRole === "reviewer" || activeRole === "author" ? filtered : submissions}
-                        isLoading={isDataLoading && submissions.length === 0}
+                        submissions={submissions}
+                        isLoading={!mounted || (isDataLoading && submissions.length === 0)}
                       />
                     </div>
 
                     <div className="px-4 pb-6 space-y-4">
+                      {/* Filter Dropdowns Row using CustomSelect */}
+                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                              Manuscript Status
+                            </label>
+                            <CustomSelect
+                              options={statusOptions}
+                              value={statusFilter}
+                              onChange={setStatusFilter}
+                              size="form"
+                              placeholder="All Statuses"
+                              className="w-full"
+                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                              Discipline / Track
+                            </label>
+                            <CustomSelect
+                              options={topicOptions}
+                              value={topicFilter}
+                              onChange={setTopicFilter}
+                              size="form"
+                              placeholder="All Disciplines"
+                              className="w-full"
+                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                              Article Type
+                            </label>
+                            <CustomSelect
+                              options={typeOptions}
+                              value={typeFilter}
+                              onChange={setTypeFilter}
+                              size="form"
+                              placeholder="All Types"
+                              className="w-full"
+                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                              Sort By
+                            </label>
+                            <CustomSelect
+                              options={sortOptions}
+                              value={sortBy}
+                              onChange={setSortBy}
+                              size="form"
+                              placeholder="Sort By"
+                              className="w-full"
+                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Active Filter Bar */}
+                        <ActiveFilterBar
+                          totalCount={submissions.length}
+                          filteredCount={filtered.length}
+                          itemLabel="manuscripts"
+                          chips={chips}
+                          onResetAll={resetAllFilters}
+                          className="px-0 pt-3 pb-0 bg-transparent border-t border-slate-100"
+                        />
+                      </div>
+
                       {!mounted || (isDataLoading && submissions.length === 0) ? (
                         <PipelineContentSkeleton rows={6} />
                       ) : (
@@ -1886,7 +2248,7 @@ export function DashboardWorkspace({
 
                             {filtered.length === 0 ? (
                               <div className="py-14 px-6 flex flex-col items-center justify-center text-center">
-                                {searchQuery.trim() ? (
+                                {chips.length > 0 ? (
                                   <div className="flex flex-col items-center max-w-sm">
                                     <div className="relative mb-4 flex items-center justify-center">
                                       <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200/80 border border-slate-200 flex items-center justify-center shadow-inner">
@@ -1900,14 +2262,19 @@ export function DashboardWorkspace({
                                       No Manuscripts Found
                                     </h3>
                                     <p className="mt-1.5 text-xs text-(--color-gb-muted) leading-relaxed">
-                                      No records match <span className="font-semibold text-slate-800 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">&quot;{searchQuery}&quot;</span>. Try checking for typos or searching by author name or manuscript ID.
+                                      {searchQuery.trim() ? (
+                                        <>No records match <span className="font-semibold text-slate-800 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">&quot;{searchQuery}&quot;</span> with the selected filter criteria.</>
+                                      ) : (
+                                        <>No records match the selected filter criteria.</>
+                                      )}
                                     </p>
                                     <button
-                                      onClick={() => setSearchQuery("")}
+                                      type="button"
+                                      onClick={resetAllFilters}
                                       className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gb-blue-soft border border-gb-blue/20 px-3.5 py-1.5 text-xs font-bold text-gb-blue hover:bg-gb-blue hover:text-white transition-all shadow-xs cursor-pointer"
                                     >
                                       <X className="h-3.5 w-3.5" />
-                                      Clear Search Filter
+                                      Reset All Filters
                                     </button>
                                   </div>
                                 ) : (
