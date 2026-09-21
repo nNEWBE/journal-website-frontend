@@ -197,10 +197,14 @@ export interface AuthResponseData {
     title: string;
     department?: string;
     institution?: string;
+    country?: string;
+    orcid?: string;
+    researchInterests?: string;
     avatarUrl?: string;
     avatar?: string;
     secondaryEmail?: string;
     emailVerified: boolean;
+    enabled?: boolean;
   };
 }
 
@@ -842,14 +846,19 @@ export const adminApi = {
     userId: number | string,
     payload: {
       fullName?: string;
+      email?: string;
+      secondaryEmail?: string;
       role?: string;
       title?: string;
       department?: string;
       institution?: string;
+      country?: string;
       orcid?: string;
+      researchInterests?: string;
       avatarUrl?: string;
       password?: string;
       enabled?: boolean;
+      emailVerified?: boolean;
     }
   ): Promise<AuthResponseData["user"]> => {
     return request<AuthResponseData["user"]>(`/api/v1/admin/users/${userId}`, {

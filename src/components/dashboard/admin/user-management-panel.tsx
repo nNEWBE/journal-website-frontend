@@ -109,15 +109,20 @@ export function UserManagementPanel({
   const [userToEdit, setUserToEdit] = useState<UserItem | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editSecondaryEmail, setEditSecondaryEmail] = useState("");
   const [editRole, setEditRole] = useState("author");
   const [editTitle, setEditTitle] = useState("");
   const [editDept, setEditDept] = useState("");
   const [editInst, setEditInst] = useState("");
+  const [editCountry, setEditCountry] = useState("");
   const [editOrcid, setEditOrcid] = useState("");
+  const [editResearchInterests, setEditResearchInterests] = useState("");
   const [editAvatarUrl, setEditAvatarUrl] = useState("");
   const [isUploadingEditAvatar, setIsUploadingEditAvatar] = useState(false);
   const [editPassword, setEditPassword] = useState("");
   const [editEnabled, setEditEnabled] = useState(true);
+  const [editEmailVerified, setEditEmailVerified] = useState(false);
 
   const handleOpenMenu = (e: React.MouseEvent<HTMLButtonElement>, user: UserItem) => {
     e.stopPropagation();
@@ -463,14 +468,20 @@ export function UserManagementPanel({
   const openEditModal = (u: UserItem) => {
     setUserToEdit(u);
     setEditName(u.fullName || u.name || "");
+    setEditEmail(u.email || "");
+    setEditSecondaryEmail((u as any).secondaryEmail || "");
     setEditRole(u.role || "author");
     setEditTitle(u.title || "");
     setEditDept(u.department || "");
     setEditInst(u.institution || "");
+    setEditCountry((u as any).country || "");
     setEditOrcid((u as any).orcid || "");
+    const interests = (u as any).researchInterests;
+    setEditResearchInterests(Array.isArray(interests) ? interests.join(", ") : (interests || ""));
     setEditAvatarUrl(u.avatarUrl || (u as any).avatar || "");
     setEditPassword("");
     setEditEnabled((u as any).enabled !== false);
+    setEditEmailVerified(!!(u as any).emailVerified);
     setActionMenuUserId(null);
   };
 
@@ -482,25 +493,53 @@ export function UserManagementPanel({
       toast.error("Please enter a valid scholar name");
       return;
     }
+    const cleanEmail = editEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      toast.error("Please enter a valid academic email address");
+      return;
+    }
 
     try {
       setIsUpdating(true);
       const updated = await adminApi.updateUser(userToEdit.id, {
         fullName: editName.trim(),
+        email: cleanEmail,
+        secondaryEmail: editSecondaryEmail.trim() || undefined,
         role: editRole,
         title: editTitle.trim() || undefined,
         department: editDept.trim() || undefined,
         institution: editInst.trim() || undefined,
+        country: editCountry.trim() || undefined,
         orcid: editOrcid.trim() || undefined,
+        researchInterests: editResearchInterests.trim() || undefined,
         avatarUrl: editAvatarUrl.trim() || "",
         password: editPassword.trim() || undefined,
         enabled: editEnabled,
+        emailVerified: editEmailVerified,
       });
 
       setUsers((prev) => {
         const next = prev.map((u) =>
           u.id === userToEdit.id
-            ? { ...u, ...updated, avatarUrl: updated.avatarUrl !== undefined ? updated.avatarUrl : editAvatarUrl }
+            ? {
+                ...u,
+                ...updated,
+                fullName: editName.trim(),
+                name: editName.trim(),
+                email: cleanEmail,
+                role: editRole as any,
+                title: editTitle.trim(),
+                department: editDept.trim(),
+                institution: editInst.trim(),
+                country: editCountry.trim(),
+                orcid: editOrcid.trim(),
+                researchInterests: editResearchInterests.trim(),
+                secondaryEmail: editSecondaryEmail.trim(),
+                enabled: editEnabled,
+                emailVerified: editEmailVerified,
+                avatarUrl: updated?.avatarUrl !== undefined ? updated.avatarUrl : editAvatarUrl,
+                avatar: updated?.avatarUrl !== undefined ? updated.avatarUrl : editAvatarUrl,
+              }
             : u
         );
         userCache = { data: next, timestamp: Date.now() };
@@ -508,7 +547,7 @@ export function UserManagementPanel({
       });
 
       toast.success("Scholar profile updated successfully", {
-        description: `Changes saved for ${editName.trim()}`,
+        description: `All changes saved for ${editName.trim()} (${cleanEmail})`,
       });
       setUserToEdit(null);
     } catch (err: any) {
@@ -1074,14 +1113,31 @@ export function UserManagementPanel({
             />
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Academic Email</label>
-            <input
-              disabled
-              value={userToEdit?.email || ""}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500 font-medium cursor-not-allowed"
-            />
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Email address is permanently bound to this user record.</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Academic Email *</label>
+              <input
+                type="email"
+                required
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="scholar@gonouniversity.edu.bd"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Primary login & correspondence address.</span>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Secondary Email (Optional)</label>
+              <input
+                type="email"
+                value={editSecondaryEmail}
+                onChange={(e) => setEditSecondaryEmail(e.target.value)}
+                placeholder="e.g. personal.backup@gmail.com"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Backup recovery & notifications.</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1137,6 +1193,16 @@ export function UserManagementPanel({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
+              <label className="block font-bold text-slate-700 mb-1">Country</label>
+              <input
+                value={editCountry}
+                onChange={(e) => setEditCountry(e.target.value)}
+                placeholder="e.g. Bangladesh"
+                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+
+            <div>
               <label className="block font-bold text-slate-700 mb-1">ORCID iD</label>
               <input
                 value={editOrcid}
@@ -1145,25 +1211,42 @@ export function UserManagementPanel({
                 className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
               />
             </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Reset Password (Optional)</label>
-              <input
-                type="password"
-                value={editPassword}
-                onChange={(e) => setEditPassword(e.target.value)}
-                placeholder="Leave blank to keep unchanged"
-                className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
-              />
-            </div>
           </div>
 
-          <div className="pt-1">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Research Interests & Expertise</label>
+            <input
+              value={editResearchInterests}
+              onChange={(e) => setEditResearchInterests(e.target.value)}
+              placeholder="e.g. Pharmacology, Microbiology, Clinical Pharmacy, Drug Delivery"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+            />
+            <span className="text-[10px] text-slate-400 mt-0.5 block">Comma-separated topics for reviewer assignment matching and author profile.</span>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Reset Password (Optional)</label>
+            <input
+              type="password"
+              value={editPassword}
+              onChange={(e) => setEditPassword(e.target.value)}
+              placeholder="Leave blank to keep unchanged"
+              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"
+            />
+          </div>
+
+          <div className="pt-1 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/90">
             <CustomCheckbox
               id="editEnabled"
               checked={editEnabled}
               onChange={setEditEnabled}
               label="Account Active & Enabled"
+            />
+            <CustomCheckbox
+              id="editEmailVerified"
+              checked={editEmailVerified}
+              onChange={setEditEmailVerified}
+              label="Email Address Verified"
             />
           </div>
 
