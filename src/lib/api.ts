@@ -726,6 +726,25 @@ export const editorApi = {
     );
   },
 
+  removeReviewer: async (
+    submissionId: number | string,
+    params: {
+      reviewerId?: number | string;
+      assignmentId?: number | string;
+      reviewerName?: string;
+    }
+  ): Promise<{ message: string }> => {
+    const query = new URLSearchParams();
+    if (params.reviewerId) query.set("reviewerId", params.reviewerId.toString());
+    if (params.assignmentId) query.set("assignmentId", params.assignmentId.toString());
+    if (params.reviewerName) query.set("reviewerName", params.reviewerName);
+
+    return request<{ message: string }>(
+      `/api/v1/editor/submissions/${submissionId}/remove-reviewer?${query.toString()}`,
+      { method: "POST" }
+    );
+  },
+
   makeDecision: async (
     submissionId: number | string,
     payload: EditorialDecisionPayload
@@ -962,15 +981,28 @@ export const filesApi = {
 
     const isBrowser = typeof window !== "undefined";
     const targetUrl = isBrowser
-      ? "/api/backend/files/upload-image"
+      ? "/api/files/upload-image"
       : `${API_BASE_URL}/api/v1/files/upload-image`;
 
-    const res = await fetch(targetUrl, {
+    let res = await fetch(targetUrl, {
       method: "POST",
       body: formData,
     });
 
+    if (!res.ok && res.status === 401 && isBrowser) {
+      const refreshed = await silentlyRefreshToken();
+      if (refreshed) {
+        res = await fetch(targetUrl, {
+          method: "POST",
+          body: formData,
+        });
+      }
+    }
+
     if (!res.ok) {
+      if (res.status === 401 && typeof window !== "undefined") {
+        handleSessionExpired();
+      }
       const error = await res.json().catch(() => ({ message: "Image upload failed" }));
       throw new Error(error.message || `HTTP ${res.status}`);
     }

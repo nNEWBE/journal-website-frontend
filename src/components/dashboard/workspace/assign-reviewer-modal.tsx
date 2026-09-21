@@ -23,7 +23,9 @@ import {
   Layers,
   Loader2,
   Calendar,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -55,6 +57,7 @@ interface AssignReviewerModalProps {
   onClose: () => void;
   submission: Submission | null;
   onAssign: (subId: string, reviewerName: string, reviewerId?: number, dueDate?: string) => void;
+  onUnassign?: (subId: string, reviewerName: string, reviewerId?: number) => void;
 }
 
 function getInitials(name: string): string {
@@ -149,12 +152,54 @@ export function AssignReviewerModal({
   onClose,
   submission,
   onAssign,
+  onUnassign,
 }: AssignReviewerModalProps) {
+  const [assignedReviewers, setAssignedReviewers] = useState<string[]>(() => submission?.reviewers || []);
+  const [removingReviewer, setRemovingReviewer] = useState<string | null>(null);
   const [reviewersList, setReviewersList] = useState<ReviewerUser[]>([]);
   const [selectedReviewerName, setSelectedReviewerName] = useState<string>("");
   const [invitationNote, setInvitationNote] = useState("");
   const [loadingReviewers, setLoadingReviewers] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (submission) {
+      setAssignedReviewers(submission.reviewers || []);
+    }
+  }, [submission, isOpen]);
+
+  const handleRemoveReviewer = async (reviewerName: string) => {
+    if (!submission) return;
+    setRemovingReviewer(reviewerName);
+    try {
+      const matchingUser = reviewersList.find(
+        (r) => r.fullName.trim().toLowerCase() === reviewerName.trim().toLowerCase()
+      );
+      const matchingReview = submission.reviews?.find(
+        (r) =>
+          r.reviewerName?.trim().toLowerCase() === reviewerName.trim().toLowerCase() ||
+          r.reviewerEmail?.trim().toLowerCase() === matchingUser?.email?.trim().toLowerCase()
+      );
+
+      const targetNumericId = submission.rawId || (submission as any)?.id;
+      if (targetNumericId) {
+        await editorApi.removeReviewer(targetNumericId, {
+          reviewerId: matchingUser?.id,
+          assignmentId: matchingReview?.id,
+          reviewerName: reviewerName,
+        });
+      }
+
+      setAssignedReviewers((prev) => prev.filter((r) => r !== reviewerName));
+      toast.success(`Removed referee "${reviewerName}".`);
+      onUnassign?.(submission.id, reviewerName, matchingUser?.id);
+    } catch (err: any) {
+      console.error("Failed to remove reviewer:", err);
+      toast.error(err?.message || `Failed to remove ${reviewerName}.`);
+    } finally {
+      setRemovingReviewer(null);
+    }
+  };
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 14);
@@ -269,6 +314,7 @@ export function AssignReviewerModal({
       const matched = reviewersList.find((r) => r.fullName === selectedReviewerName);
       const isoDueDate = dueDate ? new Date(`${dueDate}T23:59:59.000Z`).toISOString() : undefined;
       await onAssign(submission.id, selectedReviewerName, matched?.id, isoDueDate);
+      setAssignedReviewers((prev) => Array.from(new Set([...prev, selectedReviewerName])));
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -338,29 +384,49 @@ export function AssignReviewerModal({
         </div>
 
         {/* Existing Assigned Reviewers Alert */}
-        {submission.reviewers && submission.reviewers.length > 0 && (
+        {assignedReviewers && assignedReviewers.length > 0 && (
           <div className="rounded-2xl border border-amber-200/80 bg-linear-to-br from-amber-50/70 to-amber-50/20 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
                 <Users className="h-4 w-4 text-amber-700" />
-                <span>Currently Assigned Referees ({submission.reviewers.length})</span>
+                <span>Currently Assigned Referees ({assignedReviewers.length})</span>
               </div>
               <span className="text-[10px] font-bold text-amber-700 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded-full">
                 Active In Peer Review
               </span>
             </div>
             <div className="flex flex-wrap gap-2 pt-0.5">
-              {submission.reviewers.map((rev, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-amber-200/90 px-2.5 py-1 text-xs font-bold text-amber-900 shadow-2xs"
-                >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-800">
-                    {rev.charAt(0).toUpperCase()}
+              {assignedReviewers.map((rev, i) => {
+                const isRemoving = removingReviewer === rev;
+                return (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-amber-200/90 pl-2.5 pr-1.5 py-1 text-xs font-bold text-amber-900 shadow-2xs group hover:border-rose-300 transition-colors"
+                  >
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-800">
+                      {rev.charAt(0).toUpperCase()}
+                    </span>
+                    <span>{rev}</span>
+                    <button
+                      type="button"
+                      disabled={isRemoving || isSubmitting}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveReviewer(rev);
+                      }}
+                      className="ml-0.5 p-0.5 rounded-md text-amber-600/70 hover:text-rose-600 hover:bg-rose-100/80 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center"
+                      title={`Remove referee ${rev}`}
+                      aria-label={`Remove referee ${rev}`}
+                    >
+                      {isRemoving ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-rose-500" />
+                      ) : (
+                        <X className="h-3 w-3 stroke-[2.5]" />
+                      )}
+                    </button>
                   </span>
-                  <span>{rev}</span>
-                </span>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

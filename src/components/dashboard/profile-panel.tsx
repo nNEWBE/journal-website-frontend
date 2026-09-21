@@ -71,42 +71,42 @@ const PRESET_AVATARS = [
   {
     id: "prof_rahman",
     label: "Prof. Rahman",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfRahman&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=262e33",
+    url: "/images/avatars/prof_rahman.jpg",
   },
   {
     id: "dr_fatima",
     label: "Dr. Fatima",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrFatima&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
+    url: "/images/avatars/dr_fatima.jpg",
   },
   {
     id: "prof_tariq",
     label: "Prof. Tariq",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfTariq&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=25557c",
+    url: "/images/avatars/prof_tariq.jpg",
   },
   {
     id: "dr_nasreen",
     label: "Dr. Nasreen",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrNasreen&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=929598",
+    url: "/images/avatars/dr_nasreen.jpg",
   },
   {
     id: "assoc_prof_kamal",
     label: "Assoc. Prof. Kamal",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=AssocProfKamal&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=262e33",
+    url: "/images/avatars/assoc_prof_kamal.jpg",
   },
   {
     id: "dr_ayesha",
     label: "Dr. Ayesha",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrAyesha&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=collarAndSweater&clothingColor=3c4f5e",
+    url: "/images/avatars/dr_ayesha.jpg",
   },
   {
     id: "prof_mahmud",
     label: "Prof. Mahmud",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProfMahmud&mouth=default&eyes=default&eyebrows=defaultNatural&clothing=blazerAndSweater&clothingColor=5199e4",
+    url: "/images/avatars/prof_mahmud.jpg",
   },
   {
     id: "dr_rehana",
     label: "Dr. Rehana",
-    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DrRehana&mouth=smile&eyes=default&eyebrows=defaultNatural&clothing=blazerAndShirt&clothingColor=25557c",
+    url: "/images/avatars/dr_rehana.jpg",
   },
 ];
 
@@ -696,7 +696,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900 flex items-center justify-center text-amber-300 font-bold text-2xl">
+                  <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-700 to-slate-900 flex items-center justify-center text-white font-bold text-2xl">
                     {name.charAt(0) || "U"}
                   </div>
                 )}
@@ -1499,7 +1499,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               )}
             >
               <ImageIcon className="h-3.5 w-3.5 text-blue-600" />
-              <span>Avatar Presets</span>
+              <span>Scholar Portraits</span>
             </button>
 
             <button
@@ -1521,7 +1521,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           {avatarModalTab === "preset" && (
             <div className="space-y-3 pt-1">
               <p className="text-xs text-slate-500">
-                Choose an illustrated academic representation for your scholar profile:
+                Choose a professional scholar photograph for your profile:
               </p>
               <div className="grid grid-cols-4 gap-2.5">
                 {PRESET_AVATARS.map((preset) => {
@@ -1532,7 +1532,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                       type="button"
                       onClick={() => {
                         setAvatar(preset.url);
-                        toast.success(`Selected ${preset.label} avatar. Click 'Save All Changes' to apply.`);
+                        toast.success(`Selected ${preset.label} photo. Click 'Save All Changes' to apply.`);
                         setIsAvatarModalOpen(false);
                       }}
                       className={cn(
@@ -1542,11 +1542,11 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
                           : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
                       )}
                     >
-                      <div className="h-13 w-13 rounded-xl overflow-hidden bg-linear-to-br from-blue-900 to-slate-900 p-0.5 mb-1.5 shadow-xs">
+                      <div className="h-14 w-14 rounded-xl overflow-hidden ring-1 ring-slate-200/80 mb-1.5 shadow-xs bg-slate-100">
                         <img
                           src={preset.url}
                           alt={preset.label}
-                          className="h-full w-full object-cover rounded-lg"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                       <span className="text-[10px] font-semibold text-slate-700 truncate w-full text-center">

@@ -657,6 +657,33 @@ export function ManuscriptPipelinePanel() {
     toast.success(`Assigned ${reviewerName} to ${subId}.`);
   }
 
+  function handleUnassignReviewer(subId: string, reviewerName: string) {
+    setSubmissions((prev) =>
+      prev.map((s) => {
+        if (s.id !== subId) return s;
+        const reviewers = (s.reviewers || []).filter((r) => r !== reviewerName);
+        const status = reviewers.length === 0 ? "Awaiting Editor" : s.status;
+        return { ...s, reviewers, status, updated: "Just now" };
+      })
+    );
+    if (pipelineCache) {
+      pipelineCache = {
+        ...pipelineCache,
+        data: pipelineCache.data.map((s) => {
+          if (s.id !== subId) return s;
+          const reviewers = (s.reviewers || []).filter((r) => r !== reviewerName);
+          const status = reviewers.length === 0 ? "Awaiting Editor" : s.status;
+          return { ...s, reviewers, status, updated: "Just now" };
+        }),
+      };
+    }
+    if (selectedSubmission?.id === subId) {
+      const reviewers = (selectedSubmission.reviewers || []).filter((r) => r !== reviewerName);
+      const status = reviewers.length === 0 ? "Awaiting Editor" : selectedSubmission.status;
+      setSelectedSubmission({ ...selectedSubmission, reviewers, status });
+    }
+  }
+
   function updateDueDate(id: string, newDate: string) {
     const newSubs = submissions.map((s) =>
       s.id === id ? { ...s, due: newDate, updated: "Just now" } : s
@@ -1306,6 +1333,7 @@ export function ManuscriptPipelinePanel() {
         onClose={() => setIsAssignModalOpen(false)}
         submission={selectedSubmission}
         onAssign={handleAssignReviewerSubmit}
+        onUnassign={handleUnassignReviewer}
       />
 
       {/* Publish to Issue Modal */}

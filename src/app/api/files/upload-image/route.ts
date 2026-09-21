@@ -1,0 +1,174 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/lib/backend-url";
+
+const BACKEND_URL = getBackendUrl();
+
+/**
+ * POST /api/files/upload-image
+ *
+ * Dedicated multipart proxy for Cloudinary image uploads.
+ * Reads the image file and target folder from browser FormData,
+ * forwards cleanly to Spring Boot POST /api/v1/files/upload-image
+ * (which uploads to Cloudinary and returns { url, publicId, format, width, height }).
+ *
+ * Auth flow:
+ *  1. Read access token from HttpOnly cookie
+ *  2. Forward multipart to Spring Boot
+ *  3. On 401 -> call /api/v1/auth/refresh to get a fresh JWT -> retry once
+ *  4. If refresh fails -> return 401
+ */
+export async function POST(req: NextRequest) {
+  try {
+    // ── Parse incoming FormData ────────────────────────────────────────────
+    let formData: FormData;
+    try {
+      formData = await req.formData();
+    } catch (err: any) {
+      return NextResponse.json(
+        { message: "Failed to parse form data: " + err.message },
+        { status: 400 }
+      );
+    }
+
+    const file = formData.get("file");
+    if (!file || !(file instanceof Blob)) {
+      return NextResponse.json(
+        { message: "No image file provided for upload." },
+        { status: 400 }
+      );
+    }
+
+    const folder = (formData.get("folder") as string) || "gbjournal/images";
+    const fileName =
+      file instanceof File ? file.name : `image-${Date.now()}.jpg`;
+
+    // ── Read access token ──────────────────────────────────────────────────
+    let accessToken =
+      req.cookies.get("access_token")?.value ||
+      req.cookies.get("gb_access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { message: "Session expired. Please log in again.", sessionExpired: true },
+        { status: 401 }
+      );
+    }
+
+    // ── Helper: rebuild FormData each time (streams can't be reused) ───────
+    const buildForm = (): FormData => {
+      const f = new FormData();
+      f.append("file", file, fileName);
+      f.append("folder", folder);
+      return f;
+    };
+
+    // ── Helper: POST multipart to Spring Boot ──────────────────────────────
+    const postToBackend = (token: string): Promise<Response> =>
+      fetch(`${BACKEND_URL}/api/v1/files/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        // DO NOT set Content-Type — fetch auto-sets multipart/form-data + boundary
+        body: buildForm(),
+      });
+
+    // ── First attempt ──────────────────────────────────────────────────────
+    let backendRes = await postToBackend(accessToken);
+
+    // ── 401: try token refresh then retry once ─────────────────────────────
+    let refreshCookies: string[] = [];
+    if (backendRes.status === 401) {
+      const refreshToken =
+        req.cookies.get("refresh_token")?.value ||
+        req.cookies.get("gb_refresh_token")?.value;
+
+      if (refreshToken) {
+        try {
+          const refreshRes = await fetch(`${BACKEND_URL}/api/v1/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+            signal: AbortSignal.timeout(15000),
+          });
+
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            const newToken: string | undefined = refreshData.accessToken;
+
+            if (newToken) {
+              accessToken = newToken;
+
+              // Retry upload with refreshed token
+              backendRes = await postToBackend(newToken);
+
+              // Tell the browser to update its HttpOnly cookies
+              const isProduction = process.env.NODE_ENV === "production";
+              const opts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}${
+                isProduction ? "; Secure" : ""
+              }`;
+              const refreshOpts = `; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${
+                isProduction ? "; Secure" : ""
+              }`;
+              refreshCookies = [
+                `access_token=${newToken}${opts}`,
+                `gb_access_token=${newToken}${opts}`,
+              ];
+              if (refreshData.refreshToken) {
+                refreshCookies.push(
+                  `refresh_token=${refreshData.refreshToken}${refreshOpts}`,
+                  `gb_refresh_token=${refreshData.refreshToken}${refreshOpts}`
+                );
+              }
+            }
+          } else {
+            return NextResponse.json(
+              {
+                message: "Session expired. Please log out and log back in.",
+                sessionExpired: true,
+              },
+              { status: 401 }
+            );
+          }
+        } catch {
+          // Network issue during refresh
+        }
+      }
+    }
+
+    // ── Handle non-OK backend response ────────────────────────────────────
+    if (!backendRes.ok) {
+      let errorMsg = `Upload failed (${backendRes.status})`;
+      let sessionExpired = backendRes.status === 401;
+
+      try {
+        const errBody = await backendRes.json();
+        errorMsg = errBody.message || errBody.error || errorMsg;
+      } catch {
+        // non-JSON error body
+      }
+
+      if (sessionExpired) {
+        errorMsg = "Session expired. Please log out and log back in.";
+      }
+
+      return NextResponse.json(
+        { message: errorMsg, sessionExpired },
+        { status: backendRes.status }
+      );
+    }
+
+    const data = await backendRes.json();
+    const res = NextResponse.json(data, { status: 200 });
+
+    for (const header of refreshCookies) {
+      res.headers.append("Set-Cookie", header);
+    }
+
+    return res;
+  } catch (error: any) {
+    console.error("[upload-image] Unexpected error:", error);
+    return NextResponse.json(
+      { message: error.message || "Image upload failed" },
+      { status: 500 }
+    );
+  }
+}

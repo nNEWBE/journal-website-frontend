@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   BookOpen,
   Plus,
@@ -11,9 +11,12 @@ import {
   ExternalLink,
   RotateCcw,
   Star,
+  Upload,
+  Loader2,
+  ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { issuesApi, adminApi, IssueData } from "@/lib/api";
+import { issuesApi, adminApi, filesApi, IssueData } from "@/lib/api";
 import { CustomModal } from "@/components/ui/modal";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AcademicDataLoader } from "@/components/ui/loader";
@@ -36,6 +39,37 @@ export function IssueManagementPanel() {
   const [title, setTitle] = useState("Special Issue on Advances in Pharmaceutical Chemistry");
   const [description, setDescription] = useState("Original research on drug synthesis, pharmaceutical biotechnology, and clinical drug delivery systems.");
   const [coverUrl, setCoverUrl] = useState("");
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const coverFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, or WebP).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size must be under 10MB.");
+      return;
+    }
+
+    try {
+      setIsUploadingCover(true);
+      const res = await filesApi.uploadImage(file, "gbjournal/covers");
+      if (res?.url) {
+        setCoverUrl(res.url);
+        toast.success("Cover image uploaded to Cloudinary successfully!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload cover image. Please try again.");
+    } finally {
+      setIsUploadingCover(false);
+      if (e.target) e.target.value = "";
+    }
+  };
 
   const loadIssues = async (force = false) => {
     const hasCache = issueCache?.data && issueCache.data.length > 0;
@@ -132,7 +166,7 @@ export function IssueManagementPanel() {
         </button>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--color-gb-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[color:var(--color-gb-blue-dark)] transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-gb-blue-dark transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer shrink-0"
         >
           <Plus className="h-4 w-4" />
           <span>Create New Issue</span>
@@ -141,14 +175,14 @@ export function IssueManagementPanel() {
 
       {/* Issues Grid */}
       {loading ? (
-        <div className="rounded-2xl border border-[color:var(--color-gb-border)] bg-white shadow-xs">
+        <div className="rounded-2xl border border-(--color-gb-border) bg-white shadow-xs">
           <AcademicDataLoader
             title="Loading Journal Issues"
             subtitle="Fetching publication volumes, releases, and article catalogues..."
           />
         </div>
       ) : issues.length === 0 ? (
-        <div className="rounded-xl border border-[color:var(--color-gb-border)] bg-white p-12 text-center shadow-sm">
+        <div className="rounded-xl border border-(--color-gb-border) bg-white p-12 text-center shadow-sm">
           <BookOpen className="h-10 w-10 text-slate-300 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-slate-800">No Journal Issues Registered Yet</h3>
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
@@ -166,7 +200,7 @@ export function IssueManagementPanel() {
                   "rounded-2xl border bg-white p-5 shadow-sm transition-all relative overflow-hidden flex flex-col justify-between",
                   isCurrent
                     ? "border-blue-500 ring-2 ring-blue-500/10 shadow-md"
-                    : "border-[color:var(--color-gb-border)] hover:border-slate-300"
+                    : "border-(--color-gb-border) hover:border-slate-300"
                 )}
               >
                 <div>
@@ -188,7 +222,7 @@ export function IssueManagementPanel() {
                     )}
                   </div>
 
-                  <h3 className="text-sm font-extrabold text-[color:var(--color-gb-ink)] font-academic leading-snug line-clamp-2">
+                  <h3 className="text-sm font-extrabold text-(--color-gb-ink) font-academic leading-snug line-clamp-2">
                     {issue.title || `Volume ${issue.volume}, Issue ${issue.number}`}
                   </h3>
 
@@ -207,7 +241,7 @@ export function IssueManagementPanel() {
                   {!isCurrent && (
                     <button
                       onClick={() => handleSetCurrent(issue.id)}
-                      className="text-[11px] font-bold text-[color:var(--color-gb-blue)] hover:underline cursor-pointer"
+                      className="text-[11px] font-bold text-gb-blue hover:underline cursor-pointer"
                     >
                       Set as Active Release
                     </button>
@@ -284,14 +318,75 @@ export function IssueManagementPanel() {
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Cover Image URL (Optional)</label>
+            <label className="block font-bold text-slate-700 mb-1">
+              Cover Image (Cloudinary)
+            </label>
             <input
-              type="url"
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+              type="file"
+              ref={coverFileInputRef}
+              accept="image/png, image/jpeg, image/webp"
+              className="hidden"
+              onChange={handleCoverFileUpload}
             />
+            {coverUrl ? (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={coverUrl}
+                    alt="Cover preview"
+                    className="h-12 w-9 rounded-md object-cover border border-slate-200 shadow-xs shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800">Cover Uploaded</p>
+                    <p className="text-[10px] text-slate-500 truncate">{coverUrl}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <button
+                    type="button"
+                    onClick={() => coverFileInputRef.current?.click()}
+                    disabled={isUploadingCover}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 cursor-pointer"
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverUrl("")}
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => coverFileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-blue-50/20"
+              >
+                {isUploadingCover ? (
+                  <div className="flex items-center gap-2 text-xs font-bold text-blue-600 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Uploading to Cloudinary...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-5 w-5 text-slate-400 mb-1" />
+                    <p className="text-xs font-bold text-slate-700">Click to upload cover image</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">PNG, JPG, or WebP up to 10MB (stored on Cloudinary)</p>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="mt-2">
+              <input
+                type="url"
+                value={coverUrl}
+                onChange={(e) => setCoverUrl(e.target.value)}
+                placeholder="Or paste external image URL (https://...)"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
@@ -305,7 +400,7 @@ export function IssueManagementPanel() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-lg bg-[color:var(--color-gb-blue)] text-white font-bold hover:bg-[color:var(--color-gb-blue-dark)] shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-gb-blue text-white font-bold hover:bg-gb-blue-dark shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? "Creating..." : "Create Issue"}
             </button>

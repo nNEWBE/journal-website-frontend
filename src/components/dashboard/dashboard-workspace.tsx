@@ -1028,6 +1028,21 @@ export function DashboardWorkspace({
     toast.success(`Assigned ${reviewerName} to ${subId}.`);
   }
 
+  function handleUnassignReviewer(subId: string, reviewerName: string) {
+    const newSubs = submissions.map((s) => {
+      if (s.id !== subId) return s;
+      const reviewers = (s.reviewers || []).filter((r) => r !== reviewerName);
+      const status = reviewers.length === 0 ? "Awaiting Editor" : s.status;
+      return { ...s, reviewers, status, updated: "Just now" };
+    });
+    updateSubmissionsState(newSubs);
+    if (selectedSubmission?.id === subId) {
+      const reviewers = (selectedSubmission.reviewers || []).filter((r) => r !== reviewerName);
+      const status = reviewers.length === 0 ? "Awaiting Editor" : selectedSubmission.status;
+      setSelectedSubmission({ ...selectedSubmission, reviewers, status });
+    }
+  }
+
   function updateDueDate(id: string, newDate: string) {
     const newSubs = submissions.map((s) =>
       s.id === id ? { ...s, due: newDate, updated: "Just now" } : s
@@ -1488,7 +1503,7 @@ export function DashboardWorkspace({
                           className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs">
+                        <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-white font-bold text-xs">
                           {currentUser.name.charAt(0)}
                         </div>
                       )}
@@ -1934,7 +1949,7 @@ export function DashboardWorkspace({
                             className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/20"
                           />
                         ) : (
-                          <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15">
+                          <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-white font-bold text-xs ring-1 ring-white/15">
                             {currentUser.name.charAt(0)}
                           </div>
                         )}
@@ -2045,7 +2060,7 @@ export function DashboardWorkspace({
                       className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-amber-300 font-bold text-xs ring-1 ring-white/15 shadow-inner">
+                    <div className="h-8 w-8 rounded-lg bg-linear-to-br from-[#1e40af] via-[#1e3a8a] to-[#0f172a] flex items-center justify-center text-white font-bold text-xs ring-1 ring-white/15 shadow-inner">
                       {currentUser.name.charAt(0)}
                     </div>
                   )}
@@ -2794,6 +2809,7 @@ export function DashboardWorkspace({
         onClose={() => setIsAssignModalOpen(false)}
         submission={selectedSubmission}
         onAssign={handleAssignReviewerSubmit}
+        onUnassign={handleUnassignReviewer}
       />
 
       {/* Submit Review Modal */}
