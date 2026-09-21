@@ -169,3 +169,56 @@ export function PipelineContentSkeleton({
     </div>
   );
 }
+
+export function FilterBarSkeleton({
+  count = 4,
+  className,
+}: {
+  count?: number;
+  className?: string;
+}) {
+  const labelWidths = ["w-24", "w-28", "w-20", "w-16", "w-20"];
+  const valWidths = ["w-20", "w-24", "w-16", "w-24", "w-20"];
+
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs",
+        className
+      )}
+    >
+      <div
+        className={cn(
+          "grid gap-3",
+          count === 4
+            ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-4"
+            : count === 5
+            ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+            : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+        )}
+      >
+        {Array.from({ length: count }).map((_, i) => (
+          <div key={i} className="space-y-1.5">
+            {/* Label skeleton */}
+            <div
+              className={cn(
+                "h-2.5 rounded-md border border-slate-200/80 bg-slate-100 animate-pulse",
+                labelWidths[i % labelWidths.length]
+              )}
+            />
+            {/* Select Trigger skeleton */}
+            <div className="h-9 min-h-9 w-full rounded-xl border border-slate-200/90 bg-slate-50/70 px-3 flex items-center justify-between shadow-2xs">
+              <div
+                className={cn(
+                  "h-3 rounded border border-slate-200/80 bg-slate-100 animate-pulse",
+                  valWidths[i % valWidths.length]
+                )}
+              />
+              <div className="h-2.5 w-2.5 rounded-xs border border-slate-200/80 bg-slate-200/80 animate-pulse shrink-0" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

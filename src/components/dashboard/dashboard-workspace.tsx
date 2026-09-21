@@ -88,7 +88,7 @@ import { logoutUser, setUser, fetchCurrentUser } from "@/redux/features/auth/aut
 
 import { roleNotes, roleAccentMap, statusConfig } from "./workspace/workspace-data";
 import { DashboardStatsGrid } from "./workspace/dashboard-stats-grid";
-import { PipelineContentSkeleton } from "./workspace/pipeline-content-skeleton";
+import { PipelineContentSkeleton, FilterBarSkeleton } from "./workspace/pipeline-content-skeleton";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
 import { SubmitReviewModal } from "./workspace/submit-review-modal";
@@ -2148,91 +2148,95 @@ export function DashboardWorkspace({
                     </div>
 
                     <div className="px-4 pb-6 space-y-4">
-                      {/* Filter Dropdowns Row using CustomSelect */}
-                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs">
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                              Manuscript Status
-                            </label>
-                            <CustomSelect
-                              options={statusOptions}
-                              value={statusFilter}
-                              onChange={setStatusFilter}
-                              size="form"
-                              placeholder="All Statuses"
-                              className="w-full"
-                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                              Discipline / Track
-                            </label>
-                            <CustomSelect
-                              options={topicOptions}
-                              value={topicFilter}
-                              onChange={setTopicFilter}
-                              size="form"
-                              placeholder="All Disciplines"
-                              className="w-full"
-                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                              Article Type
-                            </label>
-                            <CustomSelect
-                              options={typeOptions}
-                              value={typeFilter}
-                              onChange={setTypeFilter}
-                              size="form"
-                              placeholder="All Types"
-                              className="w-full"
-                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                              Sort By
-                            </label>
-                            <CustomSelect
-                              options={sortOptions}
-                              value={sortBy}
-                              onChange={setSortBy}
-                              size="form"
-                              placeholder="Sort By"
-                              className="w-full"
-                              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Active Filter Bar */}
-                        <ActiveFilterBar
-                          totalCount={submissions.length}
-                          filteredCount={filtered.length}
-                          itemLabel="manuscripts"
-                          chips={chips}
-                          onResetAll={resetAllFilters}
-                          className="px-0 pt-3 pb-0 bg-transparent border-t border-slate-100"
-                        />
-                      </div>
-
                       {!mounted || (isDataLoading && submissions.length === 0) ? (
-                        <PipelineContentSkeleton rows={6} />
+                        <>
+                          <FilterBarSkeleton count={4} />
+                          <PipelineContentSkeleton rows={6} />
+                        </>
                       ) : (
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            key={`table-${activeRole}`}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.25 }}
+                        <>
+                          {/* Filter Dropdowns Row using CustomSelect */}
+                          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Manuscript Status
+                                </label>
+                                <CustomSelect
+                                  options={statusOptions}
+                                  value={statusFilter}
+                                  onChange={setStatusFilter}
+                                  size="form"
+                                  placeholder="All Statuses"
+                                  className="w-full"
+                                  triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Discipline / Track
+                                </label>
+                                <CustomSelect
+                                  options={topicOptions}
+                                  value={topicFilter}
+                                  onChange={setTopicFilter}
+                                  size="form"
+                                  placeholder="All Disciplines"
+                                  className="w-full"
+                                  triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Article Type
+                                </label>
+                                <CustomSelect
+                                  options={typeOptions}
+                                  value={typeFilter}
+                                  onChange={setTypeFilter}
+                                  size="form"
+                                  placeholder="All Types"
+                                  className="w-full"
+                                  triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Sort By
+                                </label>
+                                <CustomSelect
+                                  options={sortOptions}
+                                  value={sortBy}
+                                  onChange={setSortBy}
+                                  size="form"
+                                  placeholder="Sort By"
+                                  className="w-full"
+                                  triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Active Filter Bar */}
+                            <ActiveFilterBar
+                              totalCount={submissions.length}
+                              filteredCount={filtered.length}
+                              itemLabel="manuscripts"
+                              chips={chips}
+                              onResetAll={resetAllFilters}
+                              className="px-0 pt-3 pb-0 bg-transparent border-t border-slate-100"
+                            />
+                          </div>
+
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={`table-${activeRole}`}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.25 }}
                             className="h-fit rounded-xl border border-(--color-gb-border) bg-white shadow-sm"
                           >
                             <DashboardTableHeader
@@ -2486,7 +2490,8 @@ export function DashboardWorkspace({
                             )}
                           </motion.div>
                         </AnimatePresence>
-                      )}
+                      </>
+                    )}
 
                     </div>
                   </div>

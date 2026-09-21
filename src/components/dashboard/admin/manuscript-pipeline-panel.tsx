@@ -34,7 +34,7 @@ import {
 import { editorApi } from "@/lib/api";
 import { statusConfig } from "../workspace/workspace-data";
 import { DashboardStatsGrid } from "../workspace/dashboard-stats-grid";
-import { PipelineContentSkeleton } from "../workspace/pipeline-content-skeleton";
+import { PipelineContentSkeleton, FilterBarSkeleton } from "../workspace/pipeline-content-skeleton";
 import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "../workspace/assign-reviewer-modal";
 import { PublishToIssueModal } from "../workspace/publish-to-issue-modal";
@@ -669,80 +669,84 @@ export function ManuscriptPipelinePanel() {
       {/* KPI Stats Cards */}
       <DashboardStatsGrid submissions={submissions} isLoading={!mounted || isLoading} />
 
-      {/* Filter Dropdowns Row using CustomSelect */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Manuscript Status
-            </label>
-            <CustomSelect
-              options={statusOptions}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              size="form"
-              placeholder="All Statuses"
-              className="w-full"
-              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-            />
+      {/* Filter Dropdowns Row using CustomSelect or Skeleton when loading */}
+      {!mounted || (isLoading && submissions.length === 0) ? (
+        <FilterBarSkeleton count={4} />
+      ) : (
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 space-y-3.5 shadow-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Manuscript Status
+              </label>
+              <CustomSelect
+                options={statusOptions}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                size="form"
+                placeholder="All Statuses"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Discipline / Track
+              </label>
+              <CustomSelect
+                options={topicOptions}
+                value={topicFilter}
+                onChange={setTopicFilter}
+                size="form"
+                placeholder="All Disciplines"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Article Type
+              </label>
+              <CustomSelect
+                options={typeOptions}
+                value={typeFilter}
+                onChange={setTypeFilter}
+                size="form"
+                placeholder="All Types"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Sort By
+              </label>
+              <CustomSelect
+                options={sortOptions}
+                value={sortBy}
+                onChange={setSortBy}
+                size="form"
+                placeholder="Sort By"
+                className="w-full"
+                triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Discipline / Track
-            </label>
-            <CustomSelect
-              options={topicOptions}
-              value={topicFilter}
-              onChange={setTopicFilter}
-              size="form"
-              placeholder="All Disciplines"
-              className="w-full"
-              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Article Type
-            </label>
-            <CustomSelect
-              options={typeOptions}
-              value={typeFilter}
-              onChange={setTypeFilter}
-              size="form"
-              placeholder="All Types"
-              className="w-full"
-              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Sort By
-            </label>
-            <CustomSelect
-              options={sortOptions}
-              value={sortBy}
-              onChange={setSortBy}
-              size="form"
-              placeholder="Sort By"
-              className="w-full"
-              triggerClassName="h-9 min-h-9 rounded-xl border-slate-200/90 text-xs font-medium"
-            />
-          </div>
+          {/* Active Filter Bar */}
+          <ActiveFilterBar
+            totalCount={submissions.length}
+            filteredCount={filtered.length}
+            itemLabel="manuscripts"
+            chips={chips}
+            onResetAll={resetAllFilters}
+            className="px-0 pt-3 pb-0 bg-transparent border-t border-slate-100"
+          />
         </div>
-
-        {/* Active Filter Bar */}
-        <ActiveFilterBar
-          totalCount={submissions.length}
-          filteredCount={filtered.length}
-          itemLabel="manuscripts"
-          chips={chips}
-          onResetAll={resetAllFilters}
-          className="px-0 pt-3 pb-0 bg-transparent border-t border-slate-100"
-        />
-      </div>
+      )}
 
       {/* Main Pipeline Table Card */}
       {!mounted || (isLoading && submissions.length === 0) ? (

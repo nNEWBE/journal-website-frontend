@@ -42,7 +42,7 @@ import { ActiveFilterBar, type ActiveFilterChip } from "@/components/dashboard/a
 import { DashboardHeaderActions } from "@/components/dashboard/dashboard-page-wrapper";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { DashboardTableHeader } from "@/components/dashboard/dashboard-table-header";
-import { PipelineContentSkeleton } from "@/components/dashboard/workspace/pipeline-content-skeleton";
+import { PipelineContentSkeleton, FilterBarSkeleton } from "@/components/dashboard/workspace/pipeline-content-skeleton";
 import { cn } from "@/lib/utils";
 
 function getCoverImage(article: Article): string {
@@ -905,89 +905,93 @@ export function PublicationsManagementPanel() {
       </div>
 
       {/* ── Filter Dropdowns Center ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-3">
-        {/* Filter Dropdowns Row using CustomSelect */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-          {/* 1. Research Discipline */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Discipline
-            </label>
-            <CustomSelect
-              options={topicOptions}
-              value={selectedTopic}
-              onChange={setSelectedTopic}
-              size="form"
-              className="w-full"
-            />
+      {loading && articlesList.length === 0 ? (
+        <FilterBarSkeleton count={5} />
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-3">
+          {/* Filter Dropdowns Row using CustomSelect */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            {/* 1. Research Discipline */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Discipline
+              </label>
+              <CustomSelect
+                options={topicOptions}
+                value={selectedTopic}
+                onChange={setSelectedTopic}
+                size="form"
+                className="w-full"
+              />
+            </div>
+
+            {/* 2. Article Type */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Article Type
+              </label>
+              <CustomSelect
+                options={typeOptions}
+                value={selectedType}
+                onChange={setSelectedType}
+                size="form"
+                className="w-full"
+              />
+            </div>
+
+            {/* 3. Issue & Volume */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Issue / Volume
+              </label>
+              <CustomSelect
+                options={issueOptions}
+                value={selectedIssue}
+                onChange={setSelectedIssue}
+                size="form"
+                className="w-full"
+              />
+            </div>
+
+            {/* 4. Publication Year */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Year
+              </label>
+              <CustomSelect
+                options={yearOptions}
+                value={selectedYear}
+                onChange={setSelectedYear}
+                size="form"
+                className="w-full"
+              />
+            </div>
+
+            {/* 5. Sort By */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Sort By
+              </label>
+              <CustomSelect
+                options={sortOptions}
+                value={sortBy}
+                onChange={(val) => setSortBy(val as any)}
+                size="form"
+                className="w-full"
+              />
+            </div>
           </div>
 
-          {/* 2. Article Type */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Article Type
-            </label>
-            <CustomSelect
-              options={typeOptions}
-              value={selectedType}
-              onChange={setSelectedType}
-              size="form"
-              className="w-full"
-            />
-          </div>
-
-          {/* 3. Issue & Volume */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Issue / Volume
-            </label>
-            <CustomSelect
-              options={issueOptions}
-              value={selectedIssue}
-              onChange={setSelectedIssue}
-              size="form"
-              className="w-full"
-            />
-          </div>
-
-          {/* 4. Publication Year */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Year
-            </label>
-            <CustomSelect
-              options={yearOptions}
-              value={selectedYear}
-              onChange={setSelectedYear}
-              size="form"
-              className="w-full"
-            />
-          </div>
-
-          {/* 5. Sort By */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Sort By
-            </label>
-            <CustomSelect
-              options={sortOptions}
-              value={sortBy}
-              onChange={(val) => setSortBy(val as any)}
-              size="form"
-              className="w-full"
-            />
-          </div>
+          {/* Active Filters Bar & Counter using standard ActiveFilterBar */}
+          <ActiveFilterBar
+            totalCount={articlesList.length}
+            filteredCount={filteredArticles.length}
+            itemLabel="publications"
+            chips={publicationChips}
+            onResetAll={resetFilters}
+          />
         </div>
-
-        {/* Active Filters Bar & Counter using standard ActiveFilterBar */}
-        <ActiveFilterBar
-          totalCount={articlesList.length}
-          filteredCount={filteredArticles.length}
-          itemLabel="publications"
-          chips={publicationChips}
-          onResetAll={resetFilters}
-        />
-      </div>
+      )}
 
       {/* ── Main Publications Section Card ── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
