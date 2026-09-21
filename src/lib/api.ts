@@ -272,6 +272,31 @@ export const authApi = {
       body: JSON.stringify(data),
     });
   },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    return request<{ message: string }>("/api/v1/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  validateResetToken: async (
+    token: string
+  ): Promise<{ valid: boolean; email?: string; message?: string }> => {
+    return request<{ valid: boolean; email?: string; message?: string }>(
+      `/api/v1/auth/validate-reset-token?token=${encodeURIComponent(token)}`
+    );
+  },
+
+  resetPassword: async (
+    token: string,
+    newPassword: string
+  ): Promise<{ message: string }> => {
+    return request<{ message: string }>("/api/v1/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
 };
 
 // ==========================================
