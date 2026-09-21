@@ -93,6 +93,7 @@ import { CustomDrawer } from "@/components/ui/drawer";
 import { AssignReviewerModal } from "./workspace/assign-reviewer-modal";
 import { SubmitReviewModal } from "./workspace/submit-review-modal";
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown";
+import { addNotification } from "@/lib/notifications";
 
 function getStatusConfig(status: string) {
   return statusConfig[status] ?? {
@@ -203,6 +204,8 @@ function RowActionsDropdown({
   triggerUploadRevision,
   triggerSubmitReview,
   triggerViewInfo,
+  triggerAcceptInvitation,
+  triggerDeclineInvitation,
 }: {
   sub: Submission;
   canAdvance: boolean;
@@ -212,6 +215,8 @@ function RowActionsDropdown({
   triggerUploadRevision: (sub: Submission) => void;
   triggerSubmitReview: (subId: string) => void;
   triggerViewInfo: (sub: Submission) => void;
+  triggerAcceptInvitation?: (sub: Submission) => void;
+  triggerDeclineInvitation?: (sub: Submission) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{
@@ -359,6 +364,35 @@ function RowActionsDropdown({
                 >
                   <Send className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
                   <span>Upload Revision</span>
+                </button>
+              )}
+
+              {/* Reviewer Invitation Decision Actions */}
+              {activeRole === "reviewer" && triggerAcceptInvitation && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerAcceptInvitation(sub);
+                    setIsOpen(false);
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+                >
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Accept Review Invitation</span>
+                </button>
+              )}
+
+              {activeRole === "reviewer" && triggerDeclineInvitation && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerDeclineInvitation(sub);
+                    setIsOpen(false);
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+                >
+                  <X className="h-4 w-4 text-rose-600 shrink-0" />
+                  <span>Decline Invitation</span>
                 </button>
               )}
 
@@ -956,13 +990,18 @@ export function DashboardWorkspace({
     toast.success(`Status advanced to "${nextStatus}".`);
   }
 
-  async function handleAssignReviewerSubmit(subId: string, reviewerName: string, reviewerId?: number) {
+  async function handleAssignReviewerSubmit(
+    subId: string,
+    reviewerName: string,
+    reviewerId?: number,
+    dueDate?: string
+  ) {
     const sub = submissions.find((s) => s.id === subId);
     const targetNumericId = sub?.rawId;
 
     if (targetNumericId && reviewerId) {
       try {
-        await editorApi.assignReviewer(targetNumericId, reviewerId);
+        await editorApi.assignReviewer(targetNumericId, reviewerId, dueDate);
         toast.success(`Assigned ${reviewerName} to ${subId}.`);
         try {
           const res = await editorApi.listSubmissions();
@@ -982,7 +1021,8 @@ export function DashboardWorkspace({
       if (s.id !== subId) return s;
       const reviewers = Array.from(new Set([...s.reviewers, reviewerName]));
       const status = s.status === "Awaiting Editor" ? "Under Review" : s.status;
-      return { ...s, reviewers, status, updated: "Just now" };
+      const due = dueDate ? formatDate(dueDate) : s.due;
+      return { ...s, reviewers, status, due, updated: "Just now" };
     });
     updateSubmissionsState(newSubs);
     toast.success(`Assigned ${reviewerName} to ${subId}.`);
@@ -1018,13 +1058,47 @@ export function DashboardWorkspace({
     toast.success(`Revision uploaded for ${target.id}.`);
   }
 
-  function handleAcceptInvitation() {
-    const target = submissions.find((s) => s.status === "Under Review");
-    if (!target) {
-      toast.info("No pending review invitations.");
-      return;
+  async function handleAcceptInvitation(sub: Submission) {
+    try {
+      if (sub.rawId) {
+        await reviewerApi.acceptInvitation(sub.rawId);
+      }
+      const newSubs = submissions.map((s) =>
+        s.id === sub.id ? { ...s, status: "Under Review", updated: "Just now" } : s
+      );
+      updateSubmissionsState(newSubs);
+      addNotification({
+        title: "Review Invitation Accepted",
+        message: `You accepted the review invitation for manuscript ${sub.id} ("${sub.title}").`,
+        type: "review",
+        targetRoles: ["reviewer", "editor", "admin"],
+        link: "/dashboard/reviewer",
+      });
+      toast.success(`Review invitation accepted for ${sub.id}.`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to accept review invitation.");
     }
-    toast.success(`Invitation accepted for ${target.id}.`);
+  }
+
+  async function handleDeclineInvitation(sub: Submission) {
+    try {
+      if (sub.rawId) {
+        await reviewerApi.declineInvitation(sub.rawId);
+      }
+      // Unassign: remove this manuscript from reviewer's view
+      const newSubs = submissions.filter((s) => s.id !== sub.id);
+      updateSubmissionsState(newSubs);
+      addNotification({
+        title: "Review Invitation Declined",
+        message: `Review invitation declined for manuscript ${sub.id} ("${sub.title}"). The manuscript is now unassigned.`,
+        type: "review",
+        targetRoles: ["editor", "admin", "super_admin"],
+        link: "/dashboard/pipeline",
+      });
+      toast.info(`Declined review invitation for ${sub.id}. Manuscript unassigned.`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to decline review invitation.");
+    }
   }
 
   function triggerViewInfo(sub: Submission) {
@@ -2427,6 +2501,8 @@ export function DashboardWorkspace({
                                               }
                                               triggerSubmitReview={triggerSubmitReview}
                                               triggerViewInfo={triggerViewInfo}
+                                              triggerAcceptInvitation={handleAcceptInvitation}
+                                              triggerDeclineInvitation={handleDeclineInvitation}
                                             />
                                           </TableCell>
                                         </TableRow>
@@ -2477,6 +2553,8 @@ export function DashboardWorkspace({
                                           }
                                           triggerSubmitReview={triggerSubmitReview}
                                           triggerViewInfo={triggerViewInfo}
+                                          triggerAcceptInvitation={handleAcceptInvitation}
+                                          triggerDeclineInvitation={handleDeclineInvitation}
                                         />
                                       </div>
                                     </div>

@@ -8,7 +8,7 @@ export interface AppNotification {
   type: "submission" | "review" | "system" | "editorial";
   read: boolean;
   link?: string;
-  targetRoles?: ("author" | "admin" | "super_admin" | "editor")[];
+  targetRoles?: ("author" | "admin" | "super_admin" | "editor" | "reviewer")[];
 }
 
 const STORAGE_KEY = "gbj_notifications_store_v1";

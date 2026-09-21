@@ -556,6 +556,39 @@ export const reviewerApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  getInvitationByToken: async (token: string): Promise<{
+    assignmentId: number;
+    status: string;
+    submissionId: string;
+    title: string;
+    type: string;
+    topic: string;
+    abstractText: string;
+    reviewerName: string;
+    reviewerEmail: string;
+    dueDate: string;
+  }> => {
+    return request<any>(`/api/v1/reviewer/invitations/${token}`);
+  },
+
+  respondToInvitationByToken: async (
+    token: string,
+    accept: boolean
+  ): Promise<{
+    success?: boolean;
+    alreadyResponded?: boolean;
+    action?: string;
+    status: string;
+    submissionId: string;
+    reviewerName: string;
+    title: string;
+    dueDate?: string;
+  }> => {
+    return request<any>(`/api/v1/reviewer/invitations/${token}/respond?accept=${accept}`, {
+      method: "POST",
+    });
+  },
 };
 
 // ==========================================
@@ -565,6 +598,33 @@ export const reviewerApi = {
 export interface EditorialDecisionPayload {
   decision: "ACCEPT" | "REJECT" | "REVISION_REQUESTED";
   note?: string;
+}
+
+export interface ReviewerPerformanceStats {
+  reviewerId: number;
+  reviewerName: string;
+  email: string;
+  activeReviews: number;
+  completedReviews: number;
+  totalInvitations: number;
+  maxCapacity: number;
+  onTimeTargetRate: number | null;
+  avgTurnaroundDays: number | null;
+  rating: number | null;
+  stressLevel: "Low Stress" | "Moderate" | "High Load";
+  stressVariant: "emerald" | "amber" | "rose";
+  currentActivityText: string;
+  turnaroundHistory: {
+    paper: string;
+    days: number;
+    target: number;
+    variance: string;
+  }[];
+  monthlyActivity: {
+    month: string;
+    completed: number;
+    onTime: number;
+  }[];
 }
 
 export const editorApi = {
@@ -589,6 +649,14 @@ export const editorApi = {
 
   getReviewers: async (): Promise<AuthResponseData["user"][]> => {
     return request<AuthResponseData["user"][]>("/api/v1/editor/reviewers");
+  },
+
+  getReviewerPerformance: async (
+    reviewerId: number | string
+  ): Promise<ReviewerPerformanceStats> => {
+    return request<ReviewerPerformanceStats>(
+      `/api/v1/editor/reviewers/${reviewerId}/performance`
+    );
   },
 
   assignEditor: async (
@@ -1060,6 +1128,40 @@ export const navigationApi = {
 
   resetDefaults: async (): Promise<NavItemDTO[]> => {
     return request<NavItemDTO[]>("/api/v1/admin/navigation/reset-defaults", {
+      method: "POST",
+    });
+  },
+};
+
+// ==========================================
+// 15. NOTIFICATIONS API
+// ==========================================
+
+export interface BackendNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: string;
+  targetRoles?: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const notificationsApi = {
+  getNotifications: async (role?: string): Promise<BackendNotification[]> => {
+    const q = role ? `?role=${encodeURIComponent(role)}` : "";
+    return request<BackendNotification[]>(`/api/v1/notifications${q}`);
+  },
+
+  markAsRead: async (id: number | string): Promise<{ message: string }> => {
+    return request<{ message: string }>(`/api/v1/notifications/${id}/read`, {
+      method: "PATCH",
+    });
+  },
+
+  markAllAsRead: async (): Promise<{ message: string }> => {
+    return request<{ message: string }>(`/api/v1/notifications/mark-all-read`, {
       method: "POST",
     });
   },

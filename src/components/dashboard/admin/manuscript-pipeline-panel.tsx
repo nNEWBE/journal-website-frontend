@@ -625,12 +625,33 @@ export function ManuscriptPipelinePanel() {
   };
 
 
-  function handleAssignReviewerSubmit(subId: string, reviewerName: string) {
+  async function handleAssignReviewerSubmit(
+    subId: string,
+    reviewerName: string,
+    reviewerId?: number,
+    dueDate?: string
+  ) {
+    const sub = submissions.find((s) => s.id === subId);
+    const targetNumericId = (sub as any)?.rawId || (sub as any)?.id;
+
+    if (targetNumericId && reviewerId) {
+      try {
+        await editorApi.assignReviewer(targetNumericId, reviewerId, dueDate);
+        toast.success(`Assigned ${reviewerName} to ${subId}.`);
+        handleRefresh();
+        return;
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to assign reviewer on server.");
+        return;
+      }
+    }
+
     const newSubs = submissions.map((s) => {
       if (s.id !== subId) return s;
       const reviewers = Array.from(new Set([...s.reviewers, reviewerName]));
       const status = s.status === "Awaiting Editor" ? "Under Review" : s.status;
-      return { ...s, reviewers, status, updated: "Just now" };
+      const due = dueDate ? formatDate(dueDate) : s.due;
+      return { ...s, reviewers, status, due, updated: "Just now" };
     });
     setSubmissions(newSubs);
     toast.success(`Assigned ${reviewerName} to ${subId}.`);

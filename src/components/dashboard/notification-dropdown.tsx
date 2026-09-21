@@ -24,6 +24,7 @@ import {
   markAsRead,
   requestBrowserNotificationPermission,
 } from "@/lib/notifications";
+import { notificationsApi } from "@/lib/api";
 
 function formatTimeAgo(isoDate: string): string {
   try {
@@ -56,15 +57,47 @@ export function NotificationDropdown({
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync notifications from local store
-  const syncNotifications = () => {
-    const list = getStoredNotifications(activeRole).map((n) => {
+  // Sync notifications from local store + backend API
+  const syncNotifications = async () => {
+    const localList = getStoredNotifications(activeRole).map((n) => {
       if (n.link === "/dashboard/admin/pipeline") {
         return { ...n, link: "/dashboard/pipeline" };
       }
       return n;
     });
-    setNotifications(list);
+
+    try {
+      const backendItems = await notificationsApi.getNotifications(activeRole);
+      if (Array.isArray(backendItems)) {
+        const mappedBackend: AppNotification[] = backendItems.map((b) => ({
+          id: `backend-${b.id}`,
+          title: b.title,
+          message: b.message,
+          timestamp: b.createdAt || new Date().toISOString(),
+          type: (b.type?.toLowerCase() as any) || "system",
+          read: b.isRead,
+          link: b.link ? b.link.replace("/dashboard/admin/pipeline", "/dashboard/pipeline") : undefined,
+          targetRoles: b.targetRoles
+            ? (b.targetRoles.toLowerCase().split(",").map((r) => r.trim()) as any)
+            : undefined,
+        }));
+
+        // Merge backend and local notifications, avoiding duplicate titles+messages
+        const combined = [...mappedBackend];
+        for (const loc of localList) {
+          if (!combined.some((c) => c.id === loc.id || (c.title === loc.title && c.message === loc.message))) {
+            combined.push(loc);
+          }
+        }
+        combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setNotifications(combined);
+        return;
+      }
+    } catch {
+      // Fallback to local store if backend unreachable or unauthenticated
+    }
+
+    setNotifications(localList);
   };
 
   useEffect(() => {
@@ -76,7 +109,9 @@ export function NotificationDropdown({
       setBrowserPermission("unsupported");
     }
 
-    const handleUpdate = () => syncNotifications();
+    const handleUpdate = () => {
+      syncNotifications();
+    };
     window.addEventListener("notifications-updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
 
@@ -85,6 +120,13 @@ export function NotificationDropdown({
       window.removeEventListener("storage", handleUpdate);
     };
   }, [activeRole]);
+
+  // Refresh when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      syncNotifications();
+    }
+  }, [isOpen]);
 
   // Click outside listener
   useEffect(() => {
@@ -122,15 +164,24 @@ export function NotificationDropdown({
     }
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
     markAllAsRead();
+    try {
+      await notificationsApi.markAllAsRead();
+    } catch {
+      // ignore
+    }
     syncNotifications();
     toast.success("All notifications marked as read");
   };
 
-  const handleItemClick = (notif: AppNotification) => {
+  const handleItemClick = async (notif: AppNotification) => {
     if (!notif.read) {
       markAsRead(notif.id);
+      if (notif.id.startsWith("backend-")) {
+        const backendId = notif.id.replace("backend-", "");
+        notificationsApi.markAsRead(backendId).catch(() => {});
+      }
       syncNotifications();
     }
     if (notif.link) {
@@ -140,9 +191,13 @@ export function NotificationDropdown({
     }
   };
 
-  const handleItemMarkRead = (e: React.MouseEvent, id: string) => {
+  const handleItemMarkRead = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     markAsRead(id);
+    if (id.startsWith("backend-")) {
+      const backendId = id.replace("backend-", "");
+      notificationsApi.markAsRead(backendId).catch(() => {});
+    }
     syncNotifications();
   };
 
