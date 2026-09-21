@@ -246,7 +246,7 @@ function ReviewInvitationContent() {
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href="/login?redirect=/dashboard/reviewer"
+                href="/dashboard/reviewer"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gb-blue text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-all"
               >
                 <UserCheck className="h-4 w-4" />
@@ -278,10 +278,17 @@ function ReviewInvitationContent() {
               </p>
             </div>
 
-            <div className="pt-3 flex items-center justify-center gap-3">
+            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/dashboard/reviewer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gb-blue text-xs font-bold text-white shadow-xs hover:bg-gb-blue-dark transition-all"
+              >
+                <UserCheck className="h-4 w-4" />
+                <span>Go to Reviewer Workspace</span>
+              </Link>
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <span>Return to Journal Home</span>
                 <ArrowRight className="h-4 w-4" />

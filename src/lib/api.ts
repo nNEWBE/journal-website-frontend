@@ -1238,6 +1238,12 @@ export const notificationsApi = {
     });
   },
 
+  markAsUnread: async (id: number | string): Promise<{ message: string }> => {
+    return request<{ message: string }>(`/api/v1/notifications/${id}/unread`, {
+      method: "PATCH",
+    });
+  },
+
   markAllAsRead: async (): Promise<{ message: string }> => {
     return request<{ message: string }>(`/api/v1/notifications/mark-all-read`, {
       method: "POST",

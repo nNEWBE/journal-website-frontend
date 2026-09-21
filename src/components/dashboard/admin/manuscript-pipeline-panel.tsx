@@ -658,12 +658,16 @@ export function ManuscriptPipelinePanel() {
   }
 
   function handleUnassignReviewer(subId: string, reviewerName: string) {
+    const cleanName = reviewerName.trim().toLowerCase();
     setSubmissions((prev) =>
       prev.map((s) => {
         if (s.id !== subId) return s;
-        const reviewers = (s.reviewers || []).filter((r) => r !== reviewerName);
+        const reviewers = (s.reviewers || []).filter((r) => r.trim().toLowerCase() !== cleanName);
+        const reviews = (s.reviews || []).filter(
+          (rev) => rev.reviewerName?.trim().toLowerCase() !== cleanName
+        );
         const status = reviewers.length === 0 ? "Awaiting Editor" : s.status;
-        return { ...s, reviewers, status, updated: "Just now" };
+        return { ...s, reviewers, reviews, status, updated: "Just now" };
       })
     );
     if (pipelineCache) {
@@ -671,16 +675,22 @@ export function ManuscriptPipelinePanel() {
         ...pipelineCache,
         data: pipelineCache.data.map((s) => {
           if (s.id !== subId) return s;
-          const reviewers = (s.reviewers || []).filter((r) => r !== reviewerName);
+          const reviewers = (s.reviewers || []).filter((r) => r.trim().toLowerCase() !== cleanName);
+          const reviews = (s.reviews || []).filter(
+            (rev) => rev.reviewerName?.trim().toLowerCase() !== cleanName
+          );
           const status = reviewers.length === 0 ? "Awaiting Editor" : s.status;
-          return { ...s, reviewers, status, updated: "Just now" };
+          return { ...s, reviewers, reviews, status, updated: "Just now" };
         }),
       };
     }
     if (selectedSubmission?.id === subId) {
-      const reviewers = (selectedSubmission.reviewers || []).filter((r) => r !== reviewerName);
+      const reviewers = (selectedSubmission.reviewers || []).filter((r) => r.trim().toLowerCase() !== cleanName);
+      const reviews = (selectedSubmission.reviews || []).filter(
+        (rev) => rev.reviewerName?.trim().toLowerCase() !== cleanName
+      );
       const status = reviewers.length === 0 ? "Awaiting Editor" : selectedSubmission.status;
-      setSelectedSubmission({ ...selectedSubmission, reviewers, status });
+      setSelectedSubmission({ ...selectedSubmission, reviewers, reviews, status });
     }
   }
 

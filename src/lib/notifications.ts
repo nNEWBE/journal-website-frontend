@@ -81,10 +81,52 @@ export function addNotification(
   return newNotif;
 }
 
+const READ_IDS_KEY = "gbj_read_notification_ids_v1";
+
+export function getLocalReadIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(READ_IDS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function recordLocalRead(id: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const set = getLocalReadIds();
+    set.add(id);
+    localStorage.setItem(READ_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+export function recordLocalUnread(id: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const set = getLocalReadIds();
+    set.delete(id);
+    localStorage.setItem(READ_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+export function recordAllLocalRead(ids: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const set = getLocalReadIds();
+    for (const id of ids) {
+      set.add(id);
+    }
+    localStorage.setItem(READ_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
 /**
  * Mark a single notification as read
  */
 export function markAsRead(id: string): void {
+  recordLocalRead(id);
   if (typeof window === "undefined") return;
 
   try {
@@ -99,6 +141,24 @@ export function markAsRead(id: string): void {
 }
 
 /**
+ * Mark a single notification as unread
+ */
+export function markAsUnread(id: string): void {
+  recordLocalUnread(id);
+  if (typeof window === "undefined") return;
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const list: AppNotification[] = raw ? JSON.parse(raw) : DEFAULT_NOTIFICATIONS;
+    const updated = list.map((n) => (n.id === id ? { ...n, read: false } : n));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event("notifications-updated"));
+  } catch (err) {
+    console.warn("Failed to mark notification as unread:", err);
+  }
+}
+
+/**
  * Mark all notifications as read
  */
 export function markAllAsRead(): void {
@@ -108,6 +168,7 @@ export function markAllAsRead(): void {
     const raw = localStorage.getItem(STORAGE_KEY);
     const list: AppNotification[] = raw ? JSON.parse(raw) : DEFAULT_NOTIFICATIONS;
     const updated = list.map((n) => ({ ...n, read: true }));
+    recordAllLocalRead(list.map((n) => n.id));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("notifications-updated"));
   } catch (err) {

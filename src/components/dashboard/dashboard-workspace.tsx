@@ -580,6 +580,18 @@ export function DashboardWorkspace({
     return (currentUser?.role as Role) || (reduxUser?.role as Role) || initialRole;
   }, [pathname, currentUser?.role, reduxUser?.role, initialRole]);
 
+  // Automatically and smoothly update URL from /dashboard to role-specific workspace
+  useEffect(() => {
+    if (isDashboardRoot) {
+      const targetRole =
+        (currentUser?.role as Role) ||
+        (reduxUser?.role as Role) ||
+        activeRole ||
+        "author";
+      router.replace(`/dashboard/${targetRole}`);
+    }
+  }, [isDashboardRoot, currentUser?.role, reduxUser?.role, activeRole, router]);
+
   const isAdminOrSuperAdmin = Boolean(
     currentUser?.role === "super-admin" ||
     currentUser?.role === "admin" ||
@@ -664,8 +676,6 @@ export function DashboardWorkspace({
 
     // Fetch real submissions from backend API (with per-role SWR caching)
     async function loadRealData(force = false) {
-      if (isDashboardRoot) return;
-
       const currentTargetRole = activeRole;
       const cached = globalRoleSubmissionsCache[currentTargetRole];
       const hasFreshCache = cached && cached.data && Date.now() - cached.timestamp < 45000;
@@ -1029,17 +1039,26 @@ export function DashboardWorkspace({
   }
 
   function handleUnassignReviewer(subId: string, reviewerName: string) {
+    const cleanName = reviewerName.trim().toLowerCase();
     const newSubs = submissions.map((s) => {
       if (s.id !== subId) return s;
-      const reviewers = (s.reviewers || []).filter((r) => r !== reviewerName);
+      const reviewers = (s.reviewers || []).filter((r) => r.trim().toLowerCase() !== cleanName);
+      const reviews = (s.reviews || []).filter(
+        (rev) => rev.reviewerName?.trim().toLowerCase() !== cleanName
+      );
       const status = reviewers.length === 0 ? "Awaiting Editor" : s.status;
-      return { ...s, reviewers, status, updated: "Just now" };
+      return { ...s, reviewers, reviews, status, updated: "Just now" };
     });
     updateSubmissionsState(newSubs);
     if (selectedSubmission?.id === subId) {
-      const reviewers = (selectedSubmission.reviewers || []).filter((r) => r !== reviewerName);
+      const reviewers = (selectedSubmission.reviewers || []).filter(
+        (r) => r.trim().toLowerCase() !== cleanName
+      );
+      const reviews = (selectedSubmission.reviews || []).filter(
+        (rev) => rev.reviewerName?.trim().toLowerCase() !== cleanName
+      );
       const status = reviewers.length === 0 ? "Awaiting Editor" : selectedSubmission.status;
-      setSelectedSubmission({ ...selectedSubmission, reviewers, status });
+      setSelectedSubmission({ ...selectedSubmission, reviewers, reviews, status });
     }
   }
 
@@ -2189,10 +2208,6 @@ export function DashboardWorkspace({
             pathname.includes("/super-admin") ||
             pathname.includes("/admin") ? (
             children
-          ) : isDashboardRoot ? (
-            <div className="p-8 flex items-center justify-center min-h-[60vh]">
-              <AcademicDataLoader title="Redirecting to your workspace..." subtitle="Initializing role environment" />
-            </div>
           ) : (
             <>
               {activeView === "analytics" && (

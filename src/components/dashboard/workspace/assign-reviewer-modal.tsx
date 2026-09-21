@@ -24,6 +24,8 @@ import {
   Loader2,
   Calendar,
   X,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -155,7 +157,7 @@ export function AssignReviewerModal({
   onUnassign,
 }: AssignReviewerModalProps) {
   const [assignedReviewers, setAssignedReviewers] = useState<string[]>(() => submission?.reviewers || []);
-  const [removingReviewer, setRemovingReviewer] = useState<string | null>(null);
+  const [stagedRemovals, setStagedRemovals] = useState<string[]>([]);
   const [reviewersList, setReviewersList] = useState<ReviewerUser[]>([]);
   const [selectedReviewerName, setSelectedReviewerName] = useState<string>("");
   const [invitationNote, setInvitationNote] = useState("");
@@ -165,40 +167,16 @@ export function AssignReviewerModal({
   useEffect(() => {
     if (submission) {
       setAssignedReviewers(submission.reviewers || []);
+      setStagedRemovals([]);
     }
   }, [submission, isOpen]);
 
-  const handleRemoveReviewer = async (reviewerName: string) => {
-    if (!submission) return;
-    setRemovingReviewer(reviewerName);
-    try {
-      const matchingUser = reviewersList.find(
-        (r) => r.fullName.trim().toLowerCase() === reviewerName.trim().toLowerCase()
-      );
-      const matchingReview = submission.reviews?.find(
-        (r) =>
-          r.reviewerName?.trim().toLowerCase() === reviewerName.trim().toLowerCase() ||
-          r.reviewerEmail?.trim().toLowerCase() === matchingUser?.email?.trim().toLowerCase()
-      );
-
-      const targetNumericId = submission.rawId || (submission as any)?.id;
-      if (targetNumericId) {
-        await editorApi.removeReviewer(targetNumericId, {
-          reviewerId: matchingUser?.id,
-          assignmentId: matchingReview?.id,
-          reviewerName: reviewerName,
-        });
-      }
-
-      setAssignedReviewers((prev) => prev.filter((r) => r !== reviewerName));
-      toast.success(`Removed referee "${reviewerName}".`);
-      onUnassign?.(submission.id, reviewerName, matchingUser?.id);
-    } catch (err: any) {
-      console.error("Failed to remove reviewer:", err);
-      toast.error(err?.message || `Failed to remove ${reviewerName}.`);
-    } finally {
-      setRemovingReviewer(null);
-    }
+  const handleToggleStageRemoval = (reviewerName: string) => {
+    setStagedRemovals((prev) =>
+      prev.includes(reviewerName)
+        ? prev.filter((r) => r !== reviewerName)
+        : [...prev, reviewerName]
+    );
   };
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date();
@@ -307,15 +285,58 @@ export function AssignReviewerModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedReviewerName || !submission) return;
+    if (!submission) return;
+    if (!selectedReviewerName && stagedRemovals.length === 0) return;
 
     setIsSubmitting(true);
     try {
-      const matched = reviewersList.find((r) => r.fullName === selectedReviewerName);
-      const isoDueDate = dueDate ? new Date(`${dueDate}T23:59:59.000Z`).toISOString() : undefined;
-      await onAssign(submission.id, selectedReviewerName, matched?.id, isoDueDate);
-      setAssignedReviewers((prev) => Array.from(new Set([...prev, selectedReviewerName])));
+      const targetNumericId = submission.rawId || (submission as any)?.id;
+
+      // 1. Process all staged referee unassignments
+      if (stagedRemovals.length > 0 && targetNumericId) {
+        for (const revName of stagedRemovals) {
+          const matchingUser = reviewersList.find(
+            (r) => r.fullName.trim().toLowerCase() === revName.trim().toLowerCase()
+          );
+          const matchingReview = submission.reviews?.find(
+            (r) =>
+              r.reviewerName?.trim().toLowerCase() === revName.trim().toLowerCase() ||
+              r.reviewerEmail?.trim().toLowerCase() === matchingUser?.email?.trim().toLowerCase()
+          );
+
+          try {
+            await editorApi.removeReviewer(targetNumericId, {
+              reviewerId: matchingUser?.id,
+              assignmentId: matchingReview?.id,
+              reviewerName: revName,
+            });
+            onUnassign?.(submission.id, revName, matchingUser?.id);
+          } catch (err: any) {
+            console.error(`Failed to unassign referee ${revName}:`, err);
+            toast.error(err?.message || `Failed to unassign ${revName}.`);
+          }
+        }
+
+        toast.success(
+          `Unassigned ${stagedRemovals.length} referee${stagedRemovals.length > 1 ? "s" : ""}. Notification email dispatched.`
+        );
+        setAssignedReviewers((prev) => prev.filter((r) => !stagedRemovals.includes(r)));
+      }
+
+      // 2. Assign new referee if selected
+      if (selectedReviewerName) {
+        const matched = reviewersList.find((r) => r.fullName === selectedReviewerName);
+        const isoDueDate = dueDate ? new Date(`${dueDate}T23:59:59.000Z`).toISOString() : undefined;
+        await onAssign(submission.id, selectedReviewerName, matched?.id, isoDueDate);
+        setAssignedReviewers((prev) => Array.from(new Set([...prev, selectedReviewerName])));
+        toast.success(`Assigned ${selectedReviewerName} to ${submission.id}.`);
+      }
+
+      setStagedRemovals([]);
       onClose();
+    } catch (err: any) {
+      console.error("Failed to commit reviewer updates:", err);
+      toast.error(err?.message || "Failed to commit reviewer updates.");
     } finally {
       setIsSubmitting(false);
     }
@@ -397,29 +418,50 @@ export function AssignReviewerModal({
             </div>
             <div className="flex flex-wrap gap-2 pt-0.5">
               {assignedReviewers.map((rev, i) => {
-                const isRemoving = removingReviewer === rev;
+                const isStaged = stagedRemovals.includes(rev);
                 return (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-amber-200/90 pl-2.5 pr-1.5 py-1 text-xs font-bold text-amber-900 shadow-2xs group hover:border-rose-300 transition-colors"
+                    className={`inline-flex items-center gap-1.5 rounded-xl border pl-2.5 pr-1.5 py-1 text-xs font-bold shadow-2xs transition-all ${
+                      isStaged
+                        ? "bg-rose-50 border-rose-300 text-rose-800"
+                        : "bg-white border-amber-200/90 text-amber-900 group hover:border-rose-300"
+                    }`}
                   >
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-800">
+                    <span
+                      className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${
+                        isStaged
+                          ? "bg-rose-200 text-rose-900"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
                       {rev.charAt(0).toUpperCase()}
                     </span>
-                    <span>{rev}</span>
+                    <span className={isStaged ? "line-through decoration-rose-500/70 opacity-75" : ""}>
+                      {rev}
+                    </span>
+                    {isStaged && (
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-rose-600 bg-rose-100/80 border border-rose-200 px-1 py-0.2 rounded">
+                        To Unassign
+                      </span>
+                    )}
                     <button
                       type="button"
-                      disabled={isRemoving || isSubmitting}
+                      disabled={isSubmitting}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveReviewer(rev);
+                        handleToggleStageRemoval(rev);
                       }}
-                      className="ml-0.5 p-0.5 rounded-md text-amber-600/70 hover:text-rose-600 hover:bg-rose-100/80 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center"
-                      title={`Remove referee ${rev}`}
-                      aria-label={`Remove referee ${rev}`}
+                      className={`ml-0.5 p-0.5 rounded-md transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center ${
+                        isStaged
+                          ? "text-rose-700 hover:text-slate-950 hover:bg-rose-200"
+                          : "text-amber-600/70 hover:text-rose-600 hover:bg-rose-100/80"
+                      }`}
+                      title={isStaged ? `Undo removal of referee ${rev}` : `Unassign referee ${rev}`}
+                      aria-label={isStaged ? `Undo removal of referee ${rev}` : `Unassign referee ${rev}`}
                     >
-                      {isRemoving ? (
-                        <Loader2 className="h-3 w-3 animate-spin text-rose-500" />
+                      {isStaged ? (
+                        <RotateCcw className="h-3 w-3" />
                       ) : (
                         <X className="h-3 w-3 stroke-[2.5]" />
                       )}
@@ -428,6 +470,24 @@ export function AssignReviewerModal({
                 );
               })}
             </div>
+
+            {stagedRemovals.length > 0 && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-2.5 flex items-center justify-between text-xs text-rose-900 animate-in fade-in-50 duration-200">
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold">
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+                  <span>
+                    <strong>{stagedRemovals.length} referee{stagedRemovals.length > 1 ? "s" : ""}</strong> marked for removal. Will be unassigned and notified by email upon clicking <strong>Confirm</strong> below.
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStagedRemovals([])}
+                  className="text-[10px] font-black text-rose-700 hover:text-rose-950 underline cursor-pointer shrink-0 ml-2"
+                >
+                  Undo All
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1090,22 +1150,52 @@ export function AssignReviewerModal({
         )}
 
         {/* Actions Footer */}
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950 transition-colors shadow-2xs cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!selectedReviewerName || isSubmitting}
-            className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-6 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <UserCheck className="h-4 w-4" />
-            <span>{isSubmitting ? "Assigning Reviewer..." : "Confirm & Assign Reviewer"}</span>
-          </button>
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+          <div className="text-[11px] font-semibold">
+            {stagedRemovals.length > 0 ? (
+              <span className="text-rose-600 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
+                <span>
+                  {stagedRemovals.length} referee{stagedRemovals.length > 1 ? "s" : ""} pending unassignment
+                </span>
+              </span>
+            ) : (
+              <span className="text-slate-400">All reviewer updates require confirmation</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950 transition-colors shadow-2xs cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || (!selectedReviewerName && stagedRemovals.length === 0)}
+              className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-6 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-98"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Saving Updates...</span>
+                </>
+              ) : (
+                <>
+                  <UserCheck className="h-4 w-4" />
+                  <span>
+                    {stagedRemovals.length > 0 && selectedReviewerName
+                      ? "Confirm & Save Changes"
+                      : stagedRemovals.length > 0
+                      ? `Confirm & Unassign (${stagedRemovals.length})`
+                      : "Confirm & Assign Reviewer"}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </CustomDrawer>
