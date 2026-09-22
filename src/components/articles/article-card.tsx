@@ -26,7 +26,7 @@ export function ArticleCard({
           {/* Article Image Container */}
           <Link
             href={`/articles/${article.slug}`}
-            className="relative aspect-[4/3] sm:aspect-[3/4] w-full overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 block"
+            className="relative aspect-4/3 sm:aspect-3/4 w-full overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 block"
           >
             <Image
               src={imageUrl}
@@ -35,7 +35,7 @@ export function ArticleCard({
               sizes="(max-width: 639px) 100vw, 160px"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent" />
             <span className="absolute bottom-2 left-2 right-2 inline-block bg-slate-900/90 text-white px-2 py-0.5 text-center text-[9px] font-bold uppercase tracking-wider truncate">
               {article.topic}
             </span>
@@ -71,14 +71,14 @@ export function ArticleCard({
             </div>
 
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3 text-[10.5px] font-mono text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Eye className="h-3 w-3 text-slate-400" />
-                  {article.metrics.views.toLocaleString()} views
+              <div className="flex items-center gap-3.5 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1.5 font-medium" title={`${article.metrics.views.toLocaleString()} Total Views`}>
+                  <Eye className="h-3.5 w-3.5 text-slate-400" />
+                  <span>{article.metrics.views.toLocaleString()} {article.metrics.views === 1 ? "view" : "views"}</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <Download className="h-3 w-3 text-slate-400" />
-                  {article.metrics.downloads.toLocaleString()} pdfs
+                <span className="inline-flex items-center gap-1.5 font-medium" title={`${article.metrics.downloads.toLocaleString()} Total Downloads`}>
+                  <Download className="h-3.5 w-3.5 text-slate-400" />
+                  <span>{article.metrics.downloads.toLocaleString()} {article.metrics.downloads === 1 ? "download" : "downloads"}</span>
                 </span>
               </div>
 
@@ -102,7 +102,7 @@ export function ArticleCard({
       <div>
         <Link
           href={`/articles/${article.slug}`}
-          className="relative aspect-[4/3] w-full overflow-hidden bg-slate-950 border border-slate-200/80 block mb-3"
+          className="relative aspect-4/3 w-full overflow-hidden bg-slate-950 border border-slate-200/80 block mb-3"
         >
           <Image
             src={imageUrl}
@@ -111,7 +111,7 @@ export function ArticleCard({
             sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent" />
           <span className="absolute bottom-2 left-2 text-[9px] font-bold uppercase tracking-wider text-white bg-slate-900/90 px-2 py-0.5">
             {article.topic}
           </span>
@@ -138,7 +138,7 @@ export function ArticleCard({
       </div>
 
       <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-        <span className="font-mono text-[9.5px] text-slate-500 truncate max-w-[140px]">
+        <span className="font-mono text-[9.5px] text-slate-500 truncate max-w-35">
           {article.doi}
         </span>
         <Link

@@ -35,10 +35,31 @@ async function fetchBoardMembersFromDb(): Promise<BoardMember[]> {
   try {
     const backendUrl = getBackendUrl();
     const res = await fetch(`${backendUrl}/api/v1/editorial-board`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return [];
-    return await res.json();
+    const items = await res.json();
+    return items.map((m: any) => {
+      const defaultImage =
+        m.role === "Editor-in-Chief"
+          ? "/images/avatars/dr_fatima.jpg"
+          : m.role === "Managing Editor"
+            ? "/images/avatars/prof_tariq.jpg"
+            : m.name?.includes("Rehana")
+              ? "/images/avatars/dr_rehana.jpg"
+              : m.name?.includes("Mahbub")
+                ? "/images/avatars/prof_mahmud.jpg"
+                : m.name?.includes("Nasima")
+                  ? "/images/avatars/dr_ayesha.jpg"
+                  : "/images/avatars/dr_fatima.jpg";
+
+      return {
+        ...m,
+        image: m.imageUrl || m.image || defaultImage,
+        imageUrl: m.imageUrl || m.image || defaultImage,
+        institution: m.institution || "Gono Bishwabidyalay",
+      };
+    });
   } catch (err) {
     console.error("Failed to fetch board members from DB:", err);
     return [];

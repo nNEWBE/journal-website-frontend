@@ -182,7 +182,10 @@ export type BoardMember = {
   expertise?: string;
   bio?: string;
   image?: string;
+  imageUrl?: string;
   avatarUrl?: string;
+  orcid?: string;
+  googleScholarUrl?: string;
 };
 
 export const boardMembers: BoardMember[] = [];

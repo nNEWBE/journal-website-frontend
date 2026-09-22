@@ -419,17 +419,17 @@ export function CurrentIssueInteractive({
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                              <div className="flex items-center gap-3 text-[10.5px] font-mono text-slate-500">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3 text-slate-400" />
-                                  {article.metrics?.views.toLocaleString()} views
+                              <div className="flex items-center gap-3.5 text-xs text-slate-500">
+                                <span className="inline-flex items-center gap-1.5 font-medium" title={`${(article.metrics?.views || 0).toLocaleString()} Total Views`}>
+                                  <Eye className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>{(article.metrics?.views || 0).toLocaleString()} {article.metrics?.views === 1 ? "view" : "views"}</span>
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Download className="h-3 w-3 text-slate-400" />
-                                  {article.metrics?.downloads.toLocaleString()} pdfs
+                                <span className="inline-flex items-center gap-1.5 font-medium" title={`${(article.metrics?.downloads || 0).toLocaleString()} Total Downloads`}>
+                                  <Download className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>{(article.metrics?.downloads || 0).toLocaleString()} {article.metrics?.downloads === 1 ? "download" : "downloads"}</span>
                                 </span>
                                 <span className="text-slate-400 hidden sm:inline">|</span>
-                                <span className="text-slate-500 hidden sm:inline truncate max-w-35">
+                                <span className="text-slate-500 font-mono text-[11px] hidden sm:inline truncate max-w-35">
                                   DOI: {article.doi}
                                 </span>
                               </div>

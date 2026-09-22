@@ -1,185 +1,189 @@
 import Link from "next/link";
-import { LockOpen, Mail, MapPin, Phone } from "lucide-react";
+import {
+  BookOpen,
+  ChevronRight,
+  Landmark,
+  Mail,
+  MapPin,
+  PenLine,
+  Phone,
+} from "lucide-react";
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="group inline-flex items-center gap-1.5 text-[12.5px] text-slate-300/85 hover:text-white transition-colors"
+      >
+        <ChevronRight className="h-3 w-3 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+        <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+          {children}
+        </span>
+      </Link>
+    </li>
+  );
+}
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[#050e24] text-white border-t border-slate-800">
-      <div className="container-x py-14 sm:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr_1.1fr] gap-10 lg:gap-8">
-          {/* Brand Column */}
-          <div className="space-y-4">
+    <footer className="bg-[#050d21] text-white border-t border-slate-800/90">
+      <div className="container-x py-12 sm:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-6">
+          {/* Brand Column (3 cols) */}
+          <div className="lg:col-span-3 space-y-4">
             <Link href="/" className="inline-flex items-center gap-3.5 group">
-              <div className="relative shrink-0 overflow-hidden bg-white shadow-sm ring-1 ring-white/10 h-[52px] w-[52px] flex items-center justify-center p-1">
+              <div className="relative shrink-0 overflow-hidden rounded-md bg-white p-1.5 shadow-md ring-1 ring-white/15 h-12 w-12 flex items-center justify-center">
                 <img
                   src="/gb-logo-official.png"
                   alt="Gono Bishwabidyalay emblem"
                   className="h-full w-full object-contain"
                 />
               </div>
-              <div className="leading-tight">
-                <p className="font-ui text-lg sm:text-xl font-black text-white tracking-tight group-hover:text-amber-300 transition-colors">
+              <div>
+                <span className="font-ui text-lg sm:text-xl font-bold text-white tracking-tight group-hover:text-amber-300 transition-colors block">
                   GB Journal
-                </p>
-                <p className="font-bangla text-xs font-semibold text-amber-400/90 mt-0.5">
+                </span>
+                <span className="font-bangla text-xs font-semibold text-amber-400/90 block -mt-0.5">
                   গণ বিশ্ববিদ্যালয়
-                </p>
+                </span>
               </div>
             </Link>
-            <p className="text-xs sm:text-[13px] leading-relaxed text-slate-300/90 max-w-xs">
-              Gono Bishwabidyalay Journal of Research — advancing interdisciplinary discovery through rigorous peer review and open access scholarship.
+
+            <p className="text-xs sm:text-[13px] leading-relaxed text-slate-300/90 max-w-sm">
+              Gono Bishwabidyalay Journal of Research — advancing interdisciplinary discovery through rigorous double-blind peer review and open access scholarship.
             </p>
-            <div className="flex items-center gap-2 text-xs text-slate-300">
-              <LockOpen className="h-4 w-4 text-amber-400" />
-              <span>Open Access · Peer Reviewed</span>
+          </div>
+
+          {/* Journals (2 cols) */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2.5 mb-3.5">
+              <span className="flex h-5.5 w-5.5 items-center justify-center rounded-sm bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+                <BookOpen className="h-3 w-3" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-normal text-white">
+                JOURNALS
+              </span>
             </div>
-            <Link
-              href="/"
-              className="inline-block text-xs font-semibold text-amber-300 hover:text-amber-200 transition-colors"
-            >
-              journal.gonobishwabidyalay.edu.bd
-            </Link>
-          </div>
-
-          {/* Journals */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              JOURNALS
-            </p>
-            <ul className="mt-4 space-y-2.5 text-xs text-slate-300">
-              <li>
-                <Link href="/articles" className="hover:text-white transition-colors">
-                  All Journals
-                </Link>
-              </li>
-              <li>
-                <Link href="/issues/current" className="hover:text-white transition-colors">
-                  Current Issue
-                </Link>
-              </li>
-              <li>
-                <Link href="/articles" className="hover:text-white transition-colors">
-                  Articles in Press
-                </Link>
-              </li>
-              <li>
-                <Link href="/issues" className="hover:text-white transition-colors">
-                  Special Issues
-                </Link>
-              </li>
-              <li>
-                <Link href="/articles" className="hover:text-white transition-colors">
-                  Top Cited Articles
-                </Link>
-              </li>
+            <ul className="space-y-2.5 text-xs text-slate-300/90">
+              <FooterLink href="/articles">All Articles</FooterLink>
+              <FooterLink href="/issues/current">Current Issue</FooterLink>
+              <FooterLink href="/issues">Issue Archives</FooterLink>
+              <FooterLink href="/articles?sort=views">Most Viewed Articles</FooterLink>
+              <FooterLink href="/articles?sort=downloads">Most Downloaded</FooterLink>
             </ul>
           </div>
 
-          {/* For Authors */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              FOR AUTHORS
-            </p>
-            <ul className="mt-4 space-y-2.5 text-xs text-slate-300">
-              <li>
-                <Link href="/dashboard/submissions/new" className="hover:text-white transition-colors">
-                  Submit Manuscript
-                </Link>
-              </li>
-              <li>
-                <Link href="/reviewers" className="hover:text-white transition-colors">
-                  For Reviewers
-                </Link>
-              </li>
-              <li>
-                <Link href="/authors" className="hover:text-white transition-colors">
-                  Author Guidelines
-                </Link>
-              </li>
-              <li>
-                <Link href="/policies" className="hover:text-white transition-colors">
-                  Ethics & Policies
-                </Link>
-              </li>
-              <li>
-                <Link href="/policies" className="hover:text-white transition-colors">
-                  Publication Fees
-                </Link>
-              </li>
+          {/* For Authors (2 cols) */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2.5 mb-3.5">
+              <span className="flex h-5.5 w-5.5 items-center justify-center rounded-sm bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+                <PenLine className="h-3 w-3" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-normal text-white">
+                FOR AUTHORS
+              </span>
+            </div>
+            <ul className="space-y-2.5 text-xs text-slate-300/90">
+              <FooterLink href="/dashboard/submissions/new">Submit Manuscript</FooterLink>
+              <FooterLink href="/authors">Author Guidelines</FooterLink>
+              <FooterLink href="/reviewers">Reviewer Guidelines</FooterLink>
+              <FooterLink href="/policies">Publication Ethics</FooterLink>
+              <FooterLink href="/policies">Publication Fees & Waivers</FooterLink>
             </ul>
           </div>
 
-          {/* About */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              ABOUT
-            </p>
-            <ul className="mt-4 space-y-2.5 text-xs text-slate-300">
-              <li>
-                <Link href="/about" className="hover:text-white transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/editorial-board" className="hover:text-white transition-colors">
-                  Editorial Board
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-white transition-colors">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-white transition-colors">
-                  Newsroom
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white transition-colors">
-                  Contact
-                </Link>
-              </li>
+          {/* About (2 cols) */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2.5 mb-3.5">
+              <span className="flex h-5.5 w-5.5 items-center justify-center rounded-sm bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+                <Landmark className="h-3 w-3" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-normal text-white">
+                ABOUT
+              </span>
+            </div>
+            <ul className="space-y-2.5 text-xs text-slate-300/90">
+              <FooterLink href="/about">About the Journal</FooterLink>
+              <FooterLink href="/editorial-board">Editorial Board</FooterLink>
+              <FooterLink href="/editorial-board">Advisory Council</FooterLink>
+              <FooterLink href="/policies">Peer Review Model</FooterLink>
+              <FooterLink href="/contact">Contact Editorial Office</FooterLink>
             </ul>
           </div>
 
-          {/* Contact */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              CONTACT
-            </p>
-            <div className="mt-4 space-y-3 text-xs text-slate-300">
-              <div className="flex items-start gap-2.5">
-                <Mail className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <a href="mailto:editorial@gonobishwabidyalay.edu.bd" className="hover:underline">
+          {/* Contact (3 cols) */}
+          <div className="lg:col-span-3">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2.5 mb-3.5">
+              <span className="flex h-5.5 w-5.5 items-center justify-center rounded-sm bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+                <Mail className="h-3 w-3" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-normal text-white">
+                CONTACT
+              </span>
+            </div>
+            <div className="space-y-3 text-xs text-slate-300/90">
+              <a
+                href="mailto:editorial@gonobishwabidyalay.edu.bd"
+                className="group flex items-center gap-2.5 hover:text-white transition-colors"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-white/5 border border-white/10 text-slate-400 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
+                  <Mail className="h-3 w-3" />
+                </span>
+                <span className="text-[11.5px] truncate font-medium text-slate-300 group-hover:text-amber-200 transition-colors">
                   editorial@gonobishwabidyalay.edu.bd
-                </a>
-              </div>
+                </span>
+              </a>
+
               <div className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <span>Gono Bishwabidyalay, Nolam, Savar, Dhaka 1344, Bangladesh</span>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-white/5 border border-white/10 text-slate-400 mt-0.5">
+                  <MapPin className="h-3 w-3" />
+                </span>
+                <span className="text-[11.5px] leading-relaxed text-slate-300">
+                  Gono Bishwabidyalay, Nolam, Savar, Dhaka 1344, Bangladesh
+                </span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <Phone className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <span>+880 (2) 779-2220</span>
-              </div>
+
+              <a
+                href="tel:+88027792220"
+                className="group flex items-center gap-2.5 hover:text-white transition-colors"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-white/5 border border-white/10 text-slate-400 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
+                  <Phone className="h-3 w-3" />
+                </span>
+                <span className="text-[11.5px] font-medium text-slate-300 group-hover:text-amber-200 transition-colors">
+                  +880 (2) 779-2220
+                </span>
+              </a>
             </div>
           </div>
         </div>
       </div>
 
       {/* Sub-Footer Bottom Bar */}
-      <div className="border-t border-slate-800/80 py-5 bg-[#030a1b]">
-        <div className="container-x flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-          <span>© {new Date().getFullYear()} GB Journal of Research · Gono Bishwabidyalay. All rights reserved.</span>
-          <div className="flex items-center gap-6">
-            <Link href="/policies" className="hover:text-white transition-colors">
-              Privacy Policy
+      <div className="border-t border-slate-800/90 py-5 bg-[#030819]">
+        <div className="container-x flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-1 text-center md:text-left">
+            <span>© {new Date().getFullYear()} GB Journal of Research · Gono Bishwabidyalay.</span>
+            <span className="hidden sm:inline text-slate-600">|</span>
+            <span className="text-slate-400">All rights reserved.</span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-[11px] sm:text-xs text-slate-400">
+            <Link href="/policies" className="group inline-flex items-center gap-1 hover:text-slate-200 transition-colors">
+              <ChevronRight className="h-2.5 w-2.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+              <span>Privacy Policy</span>
             </Link>
-            <Link href="/policies" className="hover:text-white transition-colors">
-              Terms of Use
+            <Link href="/policies" className="group inline-flex items-center gap-1 hover:text-slate-200 transition-colors">
+              <ChevronRight className="h-2.5 w-2.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+              <span>Terms of Use</span>
             </Link>
-            <Link href="/about" className="hover:text-white transition-colors">
-              Accessibility
+            <Link href="/policies" className="group inline-flex items-center gap-1 hover:text-slate-200 transition-colors">
+              <ChevronRight className="h-2.5 w-2.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+              <span>Ethics & Malpractice</span>
+            </Link>
+            <Link href="/about" className="group inline-flex items-center gap-1 hover:text-slate-200 transition-colors">
+              <ChevronRight className="h-2.5 w-2.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+              <span>Accessibility</span>
             </Link>
           </div>
         </div>

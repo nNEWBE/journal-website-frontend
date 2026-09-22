@@ -1198,14 +1198,14 @@ export function PublicationsManagementPanel() {
 
                     {/* Footer: Metrics & Read Full Article */}
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 text-[10px] sm:text-[10.5px] font-mono text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3 text-slate-400" />
-                          {(article.metrics?.views || 0).toLocaleString()} views
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1 font-medium" title={`${(article.metrics?.views || 0).toLocaleString()} Total Views`}>
+                          <Eye className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{(article.metrics?.views || 0).toLocaleString()} {(article.metrics?.views || 0) === 1 ? "view" : "views"}</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Download className="h-3 w-3 text-slate-400" />
-                          {(article.metrics?.downloads || 0).toLocaleString()} pdfs
+                        <span className="inline-flex items-center gap-1 font-medium" title={`${(article.metrics?.downloads || 0).toLocaleString()} Total Downloads`}>
+                          <Download className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{(article.metrics?.downloads || 0).toLocaleString()} {(article.metrics?.downloads || 0) === 1 ? "download" : "downloads"}</span>
                         </span>
                       </div>
 

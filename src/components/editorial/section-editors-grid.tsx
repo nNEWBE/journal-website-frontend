@@ -47,18 +47,13 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
   return (
     <section aria-label="Section Editors and Discipline Chairs" className="space-y-8">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-6 border-b border-slate-200/80">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-            DISCIPLINE CHAIRS
-          </p>
-          <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.4rem] font-medium tracking-[-0.02em] text-slate-950">
-            Section Editors & Subject Specialists
-          </h2>
-        </div>
-        <p className="text-xs sm:text-sm text-slate-600 max-w-md">
-          Faculty specialists overseeing specialized peer-review tracks, referee assignments, and initial desk assessments.
+      <div className="pb-6 border-b border-slate-200/80">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+          DISCIPLINE CHAIRS
         </p>
+        <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.4rem] font-medium tracking-[-0.02em] text-slate-950">
+          Section Editors & Subject Specialists
+        </h2>
       </div>
 
       {/* Faculty Filter Tabs */}
@@ -92,86 +87,86 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEditors.map((editor) => (
-            <div
-              key={editor.id}
-              className="bg-white border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
-            >
-            <div>
-              <div className="flex items-start gap-4">
-                {editor.image ? (
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden bg-slate-100 border border-slate-200/90 shadow-2xs">
-                    <Image
-                      src={editor.image}
-                      alt={editor.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center bg-slate-100 border border-slate-200 text-[#1e40af] font-bold text-lg">
-                    {editor.name.charAt(0)}
-                  </div>
-                )}
+          {filteredEditors.map((editor) => {
+            const editorImage =
+              editor.imageUrl ||
+              editor.image ||
+              (editor.name?.includes("Rehana")
+                ? "/images/avatars/dr_rehana.jpg"
+                : editor.name?.includes("Mahbub")
+                  ? "/images/avatars/prof_mahmud.jpg"
+                  : editor.name?.includes("Nasima")
+                    ? "/images/avatars/dr_ayesha.jpg"
+                    : "/images/avatars/dr_fatima.jpg");
 
-                <div className="min-w-0 flex-1">
-                  <span className="inline-block px-2 py-0.5 bg-blue-50 text-[#1e40af] text-[9px] font-bold uppercase tracking-wider border border-blue-100">
-                    {editor.role}
-                  </span>
-                  <h3 className="mt-1.5 font-academic text-base sm:text-lg font-medium text-slate-950 leading-snug">
-                    {editor.name}
-                  </h3>
-                  <p className="text-xs font-medium text-slate-600 mt-0.5">
-                    {editor.title}
-                  </p>
-                </div>
-              </div>
+            const detailHref = editor.id
+              ? `/editorial-board/${editor.id}`
+              : `/editorial-board`;
 
-              <div className="mt-4 space-y-1 text-xs text-slate-500 font-mono border-t border-slate-100 pt-3">
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{editor.institution}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{editor.unit}</span>
-                </div>
-              </div>
-
-              {editor.expertise && (
-                <div className="mt-4 border-t border-slate-100 pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Track Specialization
-                  </p>
-                  <p className="text-xs text-slate-700 leading-relaxed">
-                    {editor.expertise}
-                  </p>
-                </div>
-              )}
-
-              {editor.bio && (
-                <p className="mt-3 text-[11px] leading-relaxed text-slate-500 italic border-t border-slate-100 pt-2.5">
-                  &ldquo;{editor.bio}&rdquo;
-                </p>
-              )}
-            </div>
-
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Active Review Track
-              </span>
-              <Link
-                href="/articles"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1e40af] hover:underline"
+            return (
+              <div
+                key={editor.id}
+                className="group bg-white border border-slate-200/90 p-5 sm:p-6 flex flex-col justify-between shadow-2xs hover:border-slate-300 hover:shadow-md transition-all duration-200"
               >
-                <span>Track Articles</span>
-                <ArrowUpRight className="h-3 w-3" />
-              </Link>
-            </div>
-          </div>
-        ))}
+                <div>
+                  <div className="flex items-start gap-4">
+                    <Link
+                      href={detailHref}
+                      className="relative h-20 w-18 shrink-0 overflow-hidden bg-slate-100 border border-slate-200/90 shadow-2xs block"
+                    >
+                      <Image
+                        src={editorImage}
+                        alt={editor.name}
+                        fill
+                        className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                        sizes="80px"
+                      />
+                    </Link>
+
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-[#1e40af] text-[9.5px] font-bold uppercase tracking-wider border border-blue-100">
+                        {editor.role}
+                      </span>
+                      <Link href={detailHref} className="block mt-1">
+                        <h3 className="font-academic text-base font-bold text-slate-950 group-hover:text-[#1e40af] transition-colors leading-snug">
+                          {editor.name}
+                        </h3>
+                      </Link>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        {editor.unit}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {editor.institution || "Gono Bishwabidyalay"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {editor.expertise && (
+                    <div className="mt-4 border-t border-slate-100 pt-3">
+                      <p className="text-[11.5px] text-slate-500 line-clamp-1">
+                        <span className="font-semibold text-slate-600">Track:</span>{" "}
+                        {editor.expertise}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    COPE Oversight
+                  </span>
+                  <Link
+                    href={detailHref}
+                    className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1e40af] hover:underline"
+                  >
+                    <span>View Profile</span>
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
