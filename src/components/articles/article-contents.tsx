@@ -71,8 +71,8 @@ export function ArticleContents({ sections }: { sections: Article["sections"] })
   ];
 
   return (
-    <nav aria-label="Article sections" className="p-3.5 md:p-4">
-      <ol className="space-y-1.5">
+    <nav aria-label="Article sections" className="space-y-1">
+      <ol className="space-y-1">
         {items.map(({ heading, id, num }) => {
           const isActive = activeId === id;
 
@@ -81,25 +81,18 @@ export function ArticleContents({ sections }: { sections: Article["sections"] })
               <a
                 href={`#${id}`}
                 onClick={(e) => handleClick(e, id)}
-                className={`group relative flex min-h-9 items-center justify-between rounded-xl px-3 py-2 text-xs transition-all duration-200 ${
+                className={`group flex items-center justify-between text-xs py-2 pr-2.5 transition-all duration-150 border-l-2 ${
                   isActive
-                    ? "bg-[color:var(--color-gb-blue-soft)] font-extrabold text-[color:var(--color-gb-blue-deep)] shadow-2xs pl-4"
-                    : "font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-blue-50/90 text-[#1f2f82] font-bold border-[#1f2f82] pl-3 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium border-transparent pl-3"
                 }`}
               >
-                {/* Active indicator bar */}
-                {isActive && (
-                  <span
-                    className="absolute left-1.5 top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-[color:var(--color-gb-blue)]"
-                    aria-hidden="true"
-                  />
-                )}
-                <span className="truncate">{heading}</span>
+                <span className="truncate pr-2">{heading}</span>
                 <span
-                  className={`ml-2 shrink-0 font-mono text-[10px] font-extrabold transition-colors ${
+                  className={`font-mono text-[10px] font-bold shrink-0 transition-colors ${
                     isActive
-                      ? "text-[color:var(--color-gb-gold-dark)]"
-                      : "text-slate-300 group-hover:text-slate-500"
+                      ? "text-[#1f2f82] bg-blue-100/70 px-1.5 py-0.5"
+                      : "text-slate-400 group-hover:text-slate-600 bg-slate-100/60 px-1.5 py-0.5"
                   }`}
                 >
                   {num}

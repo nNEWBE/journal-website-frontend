@@ -86,27 +86,35 @@ export function ArticleActions({
           rel="noopener noreferrer"
           onClick={handleDownload}
           download={!!article.pdf}
-          className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer"
+          className="group inline-flex items-center gap-2.5 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md active:translate-y-px cursor-pointer"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
           <span>Download PDF</span>
         </a>
 
         <button
           type="button"
           onClick={handleCite}
-          className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/25 px-5 py-3.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer backdrop-blur-xs"
         >
-          {copiedCite ? <Check className="h-4 w-4 text-emerald-400" /> : <Quote className="h-4 w-4 text-amber-300" />}
+          {copiedCite ? (
+            <Check className="h-4 w-4 text-emerald-400" />
+          ) : (
+            <Quote className="h-4 w-4 text-amber-300" />
+          )}
           <span>{copiedCite ? "Citation Copied" : "Cite Article"}</span>
         </button>
 
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/25 px-5 py-3.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer backdrop-blur-xs"
         >
-          {copiedShare ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4 text-blue-300" />}
+          {copiedShare ? (
+            <Check className="h-4 w-4 text-emerald-400" />
+          ) : (
+            <Share2 className="h-4 w-4 text-blue-300" />
+          )}
           <span>{copiedShare ? "Link Copied" : "Share"}</span>
         </button>
       </div>
@@ -121,7 +129,7 @@ export function ArticleActions({
         rel="noopener noreferrer"
         onClick={handleDownload}
         download={!!article.pdf}
-        className="inline-flex w-full items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white py-3 text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs"
+        className="inline-flex w-full items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white py-3 text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer"
       >
         <Download className="h-4 w-4" />
         <span>Download Full PDF</span>
@@ -133,7 +141,11 @@ export function ArticleActions({
           onClick={handleCite}
           className="inline-flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
         >
-          {copiedCite ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Quote className="h-3.5 w-3.5 text-slate-500" />}
+          {copiedCite ? (
+            <Check className="h-3.5 w-3.5 text-emerald-600" />
+          ) : (
+            <Quote className="h-3.5 w-3.5 text-slate-500" />
+          )}
           <span>{copiedCite ? "Copied" : "Cite"}</span>
         </button>
 
@@ -142,7 +154,11 @@ export function ArticleActions({
           onClick={handleShare}
           className="inline-flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
         >
-          {copiedShare ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Share2 className="h-3.5 w-3.5 text-slate-500" />}
+          {copiedShare ? (
+            <Check className="h-3.5 w-3.5 text-emerald-600" />
+          ) : (
+            <Share2 className="h-3.5 w-3.5 text-slate-500" />
+          )}
           <span>{copiedShare ? "Copied" : "Share"}</span>
         </button>
       </div>

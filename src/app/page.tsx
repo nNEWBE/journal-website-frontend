@@ -4,6 +4,7 @@ import { getBackendUrl } from "@/lib/backend-url";
 import { type Article, type Issue } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 async function fetchHomeData(): Promise<{
   sections: PageContentDTO[];

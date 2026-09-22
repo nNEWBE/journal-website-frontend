@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Eye } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
-import { contentApi, type PageContentDTO } from "@/lib/api";
+import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
 import { useHomeSection } from "@/lib/home-sections-context";
 import { type Article } from "@/lib/data";
 
@@ -33,7 +33,7 @@ export const mostReadArticles: MostReadItem[] = [
 
 export function HomeMostRead({
   section: propSection,
-  articles,
+  articles: propArticles,
 }: {
   section?: PageContentDTO | null;
   articles?: Article[];
@@ -41,6 +41,25 @@ export function HomeMostRead({
   const contextSection = useHomeSection("most-read");
   const activeSection = propSection || contextSection;
   const [section, setSection] = useState<PageContentDTO | null>(() => activeSection || null);
+  const [articles, setArticles] = useState<Article[]>(() => propArticles || []);
+
+  useEffect(() => {
+    if (propArticles && propArticles.length > 0) {
+      setArticles(propArticles);
+    }
+  }, [propArticles]);
+
+  useEffect(() => {
+    // Refresh with fresh database metrics on client mount
+    articlesApi
+      .list({ size: 20 }, { cache: "no-store" })
+      .then((res) => {
+        if (res?.content && res.content.length > 0) {
+          setArticles(res.content);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (activeSection) {

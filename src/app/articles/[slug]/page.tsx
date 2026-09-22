@@ -36,7 +36,8 @@ import { articles, findArticle } from "@/lib/data";
 import type { Article } from "@/lib/data";
 import { getBackendUrl } from "@/lib/backend-url";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -73,8 +74,8 @@ async function fetchArticleFromDb(slug: string): Promise<Article | null> {
           ? data.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
           : typeof data.authors === "string"
             ? (data.authors.includes(",")
-                ? data.authors.split(",").map((s: string) => s.trim())
-                : [data.authors.trim()])
+              ? data.authors.split(",").map((s: string) => s.trim())
+              : [data.authors.trim()])
             : [];
 
         const sectionsList = Array.isArray(data.sections)
@@ -294,7 +295,7 @@ function ArticleRecord({ article }: { article: Article }) {
       </div>
 
       <div>
-        <dl className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 pb-4">
+        <dl className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 pb-4 text-center">
           {[
             {
               label: "Views",
@@ -312,7 +313,7 @@ function ArticleRecord({ article }: { article: Article }) {
               icon: Quote,
             },
           ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="px-2 text-center">
+            <div key={label} className="px-2">
               <dt className="flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
                 <Icon className="h-3 w-3" />
                 <span>{label}</span>
@@ -525,23 +526,58 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       {/* ── 2. Floating Metrics Bar ── */}
       <div className="bg-[#fbfcff] pb-20 pt-8 border-b border-slate-200/80">
         <div className="container-x">
-          <div className="bg-white border border-slate-200/90 shadow-2xs p-3 sm:p-4 mb-8">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 text-center">
-              <div className="p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Views</p>
-                <p className="font-mono text-xl font-bold text-slate-900 mt-1">{article.metrics.views.toLocaleString()}</p>
+          <div className="bg-white border border-slate-200/90 shadow-2xs mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+              {/* Metric 1: Views */}
+              <div className="p-3.5 sm:py-5 sm:px-6 flex items-center justify-center gap-3 sm:gap-3.5 group hover:bg-slate-50/50 transition-colors">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center bg-blue-50 text-[#1f2f82] border border-blue-100">
+                  <Eye className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                </div>
+                <div>
+                  <p className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Views</p>
+                  <p className="font-mono text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+                    {article.metrics.views.toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className="p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">PDF Downloads</p>
-                <p className="font-mono text-xl font-bold text-slate-900 mt-1">{article.metrics.downloads.toLocaleString()}</p>
+
+              {/* Metric 2: Downloads */}
+              <div className="p-3.5 sm:py-5 sm:px-6 flex items-center justify-center gap-3 sm:gap-3.5 group hover:bg-slate-50/50 transition-colors">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center bg-emerald-50 text-emerald-700 border border-emerald-100">
+                  <Download className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                </div>
+                <div>
+                  <p className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">PDF Downloads</p>
+                  <p className="font-mono text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+                    {article.metrics.downloads.toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className="p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Citations</p>
-                <p className="font-mono text-xl font-bold text-[#1e40af] mt-1">{article.metrics.citations.toLocaleString()}</p>
+
+              {/* Metric 3: Citations */}
+              <div className="p-3.5 sm:py-5 sm:px-6 flex items-center justify-center gap-3 sm:gap-3.5 group hover:bg-slate-50/50 transition-colors">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center bg-amber-50 text-amber-700 border border-amber-100">
+                  <Quote className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                </div>
+                <div>
+                  <p className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Citations</p>
+                  <p className="font-mono text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+                    {article.metrics.citations.toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className="p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Page Extent</p>
-                <p className="font-mono text-xl font-bold text-slate-900 mt-1">{article.pages}</p>
+
+              {/* Metric 4: Page Extent */}
+              <div className="p-3.5 sm:py-5 sm:px-6 flex items-center justify-center gap-3 sm:gap-3.5 group hover:bg-slate-50/50 transition-colors">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center bg-slate-100 text-slate-700 border border-slate-200">
+                  <BookOpen className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                </div>
+                <div>
+                  <p className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Page Extent</p>
+                  <p className="font-mono text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+                    {article.pages}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -581,7 +617,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                         <p className="text-[10.5px] text-slate-400">Scholarly Summary</p>
                       </div>
                     </div>
-                    <p className="font-academic text-base sm:text-lg leading-relaxed text-slate-800 wrap-break-word break-all whitespace-pre-wrap">
+                    <p className="font-academic text-base sm:text-lg leading-relaxed text-slate-800 wrap-break-word whitespace-pre-wrap">
                       {abstractSection.body}
                     </p>
                   </section>
@@ -603,7 +639,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                           {section.heading}
                         </h2>
                       </div>
-                      <p className="text-sm leading-relaxed text-slate-700 max-w-prose">
+                      <p className="text-sm leading-relaxed text-slate-700 max-w-prose wrap-break-word whitespace-pre-wrap">
                         {section.body}
                       </p>
                     </section>
