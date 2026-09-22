@@ -1237,41 +1237,41 @@ export function AssignReviewerModal({
 
         {/* Actions Footer */}
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-          <div className="text-[11px] font-semibold">
+          <div className="text-[11px] font-semibold min-w-0">
             {stagedRemovals.length > 0 ? (
-              <span className="text-rose-600 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
-                <span>
+              <span className="text-rose-600 flex items-center gap-1.5 truncate">
+                <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                <span className="truncate">
                   {stagedRemovals.length} referee{stagedRemovals.length > 1 ? "s" : ""} pending unassignment
                 </span>
               </span>
             ) : (
-              <span className="text-slate-400">All reviewer updates require confirmation</span>
+              <span className="text-slate-400 truncate">All reviewer updates require confirmation</span>
             )}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950 transition-colors shadow-2xs cursor-pointer"
+              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950 transition-colors shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || (!selectedReviewerName && stagedRemovals.length === 0)}
-              className="inline-flex items-center gap-2 rounded-xl bg-gb-blue px-6 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-98"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gb-blue px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-gb-blue-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-98 whitespace-nowrap shrink-0"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saving Updates...</span>
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  <span className="whitespace-nowrap">Saving Updates...</span>
                 </>
               ) : (
                 <>
-                  <UserCheck className="h-4 w-4" />
-                  <span>
+                  <UserCheck className="h-4 w-4 shrink-0" />
+                  <span className="whitespace-nowrap">
                     {stagedRemovals.length > 0 && selectedReviewerName
                       ? "Confirm & Save Changes"
                       : stagedRemovals.length > 0

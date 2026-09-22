@@ -345,7 +345,7 @@ export function EditorialDecisionModal({
             type="submit"
             form="editorial-decision-form"
             disabled={isSubmitting}
-            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50 ${decision === "ACCEPT"
+            className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 ${decision === "ACCEPT"
                 ? "bg-emerald-600 hover:bg-emerald-700"
                 : decision === "REVISION_REQUESTED"
                   ? "bg-amber-600 hover:bg-amber-700"
@@ -354,23 +354,23 @@ export function EditorialDecisionModal({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Recording Decision...</span>
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                <span className="whitespace-nowrap">Recording Decision...</span>
               </>
             ) : decision === "ACCEPT" ? (
               <>
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Confirm Acceptance & Proceed</span>
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span className="whitespace-nowrap">Confirm Acceptance & Proceed</span>
               </>
             ) : decision === "REVISION_REQUESTED" ? (
               <>
-                <RotateCcw className="h-4 w-4" />
-                <span>Dispatch Revision Request</span>
+                <RotateCcw className="h-4 w-4 shrink-0" />
+                <span className="whitespace-nowrap">Dispatch Revision Request</span>
               </>
             ) : (
               <>
-                <XCircle className="h-4 w-4" />
-                <span>Confirm Manuscript Decline</span>
+                <XCircle className="h-4 w-4 shrink-0" />
+                <span className="whitespace-nowrap">Confirm Manuscript Decline</span>
               </>
             )}
           </button>
