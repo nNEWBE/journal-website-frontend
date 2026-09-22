@@ -348,12 +348,12 @@ function ReviewInvitationContent() {
 
             {/* Abstract preview if available */}
             {invitation?.abstractText && (
-              <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <div className="space-y-1.5 pt-2 border-t border-slate-100 max-w-full min-w-0 overflow-hidden">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5 text-slate-400" />
                   <span>Abstract</span>
                 </span>
-                <p className="text-xs text-slate-600 leading-relaxed max-h-48 overflow-y-auto pr-2">
+                <p className="text-xs text-slate-600 leading-relaxed max-h-48 overflow-y-auto pr-2 wrap-break-word break-all whitespace-pre-wrap">
                   {invitation.abstractText}
                 </p>
               </div>

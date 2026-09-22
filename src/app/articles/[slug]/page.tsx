@@ -586,7 +586,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                         <p className="text-[10.5px] text-slate-400">Scholarly Summary</p>
                       </div>
                     </div>
-                    <p className="font-academic text-base sm:text-lg leading-relaxed text-slate-800">
+                    <p className="font-academic text-base sm:text-lg leading-relaxed text-slate-800 wrap-break-word break-all whitespace-pre-wrap">
                       {abstractSection.body}
                     </p>
                   </section>

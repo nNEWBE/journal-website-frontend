@@ -163,6 +163,7 @@ export function AssignReviewerModal({
   const [assignedReviewers, setAssignedReviewers] = useState<string[]>(() => submission?.reviewers || []);
   const [stagedRemovals, setStagedRemovals] = useState<string[]>([]);
   const [reviewersList, setReviewersList] = useState<ReviewerUser[]>(() => cachedReviewers || []);
+  const [selectedReviewerId, setSelectedReviewerId] = useState<string>(() => (cachedReviewers?.[0] ? String(cachedReviewers[0].id) : ""));
   const [selectedReviewerName, setSelectedReviewerName] = useState<string>(() => cachedReviewers?.[0]?.fullName || "");
   const [invitationNote, setInvitationNote] = useState("");
   const [loadingReviewers, setLoadingReviewers] = useState(false);
@@ -190,7 +191,9 @@ export function AssignReviewerModal({
   });
   const [chartView, setChartView] = useState<"turnaround" | "velocity">("turnaround");
 
-  const selectedReviewer = reviewersList.find((r) => r.fullName === selectedReviewerName);
+  const selectedReviewer = reviewersList.find((r) => String(r.id) === selectedReviewerId)
+    || reviewersList.find((r) => r.fullName === selectedReviewerName)
+    || reviewersList[0];
 
   const [perfStats, setPerfStats] = useState<ReviewerPerformanceStats | null>(() => {
     if (selectedReviewer?.id && perfStatsCache.has(selectedReviewer.id)) {
@@ -207,7 +210,8 @@ export function AssignReviewerModal({
     // 1. Immediately apply cached reviewers if present (0ms)
     if (cachedReviewers && cachedReviewers.length > 0) {
       setReviewersList(cachedReviewers);
-      if (!selectedReviewerName) {
+      if (!selectedReviewerId) {
+        setSelectedReviewerId(String(cachedReviewers[0].id));
         setSelectedReviewerName(cachedReviewers[0].fullName);
       }
     } else {
@@ -219,16 +223,24 @@ export function AssignReviewerModal({
       .getReviewers()
       .then((users) => {
         if (users && Array.isArray(users) && users.length > 0) {
-          const mapped: ReviewerUser[] = users.map((u: any) => ({
-            id: u.id,
-            fullName: u.fullName || u.name || u.email,
-            email: u.email,
-            institution: u.institution,
-            department: u.department,
-          }));
+          const seen = new Set<string | number>();
+          const mapped: ReviewerUser[] = [];
+          for (const u of (users as any[])) {
+            const key = u.id ?? u.email;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            mapped.push({
+              id: u.id,
+              fullName: u.fullName || u.name || u.email,
+              email: u.email,
+              institution: u.institution,
+              department: u.department,
+            });
+          }
           cachedReviewers = mapped;
           setReviewersList(mapped);
-          setSelectedReviewerName((prev) => prev || mapped[0].fullName);
+          setSelectedReviewerId((prev) => prev || (mapped[0] ? String(mapped[0].id) : ""));
+          setSelectedReviewerName((prev) => prev || (mapped[0] ? mapped[0].fullName : ""));
 
           // 3. Pre-warm cache for all available reviewers in parallel
           mapped.forEach((u) => {
@@ -566,13 +578,25 @@ export function AssignReviewerModal({
             options={
               reviewersList.length > 0
                 ? reviewersList.map((r) => ({
-                    value: r.fullName,
-                    label: r.institution ? `${r.fullName} (${r.institution})` : r.fullName,
+                    value: String(r.id),
+                    label: r.institution
+                      ? `${r.fullName} (${r.institution})`
+                      : r.department
+                      ? `${r.fullName} (${r.department})`
+                      : r.email
+                      ? `${r.fullName} (${r.email})`
+                      : r.fullName,
                   }))
                 : [loadingReviewers ? "Loading reviewers..." : "No reviewers registered"]
             }
-            value={selectedReviewerName}
-            onChange={setSelectedReviewerName}
+            value={selectedReviewer ? String(selectedReviewer.id) : ""}
+            onChange={(val) => {
+              const matched = reviewersList.find((r) => String(r.id) === val);
+              if (matched) {
+                setSelectedReviewerId(String(matched.id));
+                setSelectedReviewerName(matched.fullName);
+              }
+            }}
             placeholder={loadingReviewers ? "Loading active reviewers..." : "Choose a reviewer"}
           />
 

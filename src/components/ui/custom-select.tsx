@@ -168,11 +168,11 @@ export function CustomSelect({
             menuClassName
           )}
         >
-          {normalizedOptions.map((option) => {
+          {normalizedOptions.map((option, idx) => {
             const isSelected = option.value === value;
             return (
               <button
-                key={option.value}
+                key={`${option.value}-${idx}`}
                 type="button"
                 onClick={() => {
                   onChange(option.value);

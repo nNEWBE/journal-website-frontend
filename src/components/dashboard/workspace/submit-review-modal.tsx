@@ -313,7 +313,7 @@ export function SubmitReviewModal({
 
           {/* Abstract with smooth expand/collapse */}
           {submission.abstractText && (
-            <div className="rounded-xl border border-slate-200/70 bg-white p-3 space-y-1.5">
+            <div className="rounded-xl border border-slate-200/70 bg-white p-3 space-y-1.5 max-w-full min-w-0 overflow-hidden">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Abstract Summary
@@ -333,7 +333,7 @@ export function SubmitReviewModal({
               </div>
               <p
                 className={cn(
-                  "text-slate-600 leading-relaxed text-[11.5px] transition-all",
+                  "text-slate-600 leading-relaxed text-[11.5px] transition-all wrap-break-word break-all whitespace-pre-wrap",
                   !isAbstractExpanded && "line-clamp-3"
                 )}
               >

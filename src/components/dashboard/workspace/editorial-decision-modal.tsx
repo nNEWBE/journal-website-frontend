@@ -214,7 +214,7 @@ export function EditorialDecisionModal({
 
     try {
       const targetNumericId = submission.rawId || Number(String(submission.id).replace(/\D/g, "")) || 1;
-      
+
       // Combine note with internal note if provided
       const fullNote = internalNote.trim()
         ? `${note.trim()}\n\n[INTERNAL EDITORIAL OFFICE NOTE]:\n${internalNote.trim()}`
@@ -229,8 +229,8 @@ export function EditorialDecisionModal({
         decision === "ACCEPT"
           ? "Accepted for Publication"
           : decision === "REVISION_REQUESTED"
-          ? "Revision Requested"
-          : "Declined";
+            ? "Revision Requested"
+            : "Declined";
 
       toast.success(`Editorial Decision Recorded: ${decisionLabel}`, {
         id: toastId,
@@ -243,8 +243,8 @@ export function EditorialDecisionModal({
           decision === "ACCEPT"
             ? "ACCEPTED"
             : decision === "REVISION_REQUESTED"
-            ? "REVISION_REQUESTED"
-            : "REJECTED",
+              ? "REVISION_REQUESTED"
+              : "REJECTED",
       };
 
       if (onDecisionMade) {
@@ -285,8 +285,8 @@ export function EditorialDecisionModal({
     score >= 75
       ? "text-emerald-700 bg-emerald-50 border-emerald-200"
       : score >= 50
-      ? "text-amber-700 bg-amber-50 border-amber-200"
-      : "text-rose-700 bg-rose-50 border-rose-200";
+        ? "text-amber-700 bg-amber-50 border-amber-200"
+        : "text-rose-700 bg-rose-50 border-rose-200";
 
   const completedReviews = submission.reviews?.filter((r) => r.status === "COMPLETED" || r.reviewComments) || [];
 
@@ -300,8 +300,7 @@ export function EditorialDecisionModal({
     const reportsText = completedReviews
       .map(
         (rev, idx) =>
-          `\n\n------------------------------------------------------------\nREFEREE REPORT ${idx + 1} (${rev.recommendation || "Evaluation"})\n------------------------------------------------------------\n${
-            rev.reviewComments || "No public comments entered."
+          `\n\n------------------------------------------------------------\nREFEREE REPORT ${idx + 1} (${rev.recommendation || "Evaluation"})\n------------------------------------------------------------\n${rev.reviewComments || "No public comments entered."
           }`
       )
       .join("\n");
@@ -346,13 +345,12 @@ export function EditorialDecisionModal({
             type="submit"
             form="editorial-decision-form"
             disabled={isSubmitting}
-            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50 ${
-              decision === "ACCEPT"
+            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50 ${decision === "ACCEPT"
                 ? "bg-emerald-600 hover:bg-emerald-700"
                 : decision === "REVISION_REQUESTED"
-                ? "bg-amber-600 hover:bg-amber-700"
-                : "bg-rose-600 hover:bg-rose-700"
-            }`}
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "bg-rose-600 hover:bg-rose-700"
+              }`}
           >
             {isSubmitting ? (
               <>
@@ -381,7 +379,7 @@ export function EditorialDecisionModal({
     >
       <form id="editorial-decision-form" onSubmit={handleSubmit} className="space-y-6 text-xs pb-4">
         {/* 1. Manuscript Intelligence & Context Card */}
-        <div className="rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+        <div className="rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 sm:p-5 shadow-2xs space-y-3.5 max-w-full min-w-0 overflow-hidden">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 bg-blue-50 text-gb-blue border border-blue-200/70 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
@@ -455,18 +453,18 @@ export function EditorialDecisionModal({
 
           {/* Collapsible Abstract Content */}
           {showAbstract && (
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-slate-700 leading-relaxed text-xs space-y-2">
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-slate-700 leading-relaxed text-xs space-y-2 max-w-full min-w-0 overflow-hidden">
               <p className="font-bold text-[11px] uppercase tracking-wider text-slate-500">
                 Manuscript Abstract
               </p>
-              <p className="text-slate-600 text-justify font-sans">
+              <p className="text-slate-600 font-sans wrap-break-word break-all whitespace-pre-wrap">
                 {submission.abstractText || "No abstract provided for this submission."}
               </p>
               {submission.keywords && (
                 <div className="pt-1.5 flex items-center gap-1.5 flex-wrap">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Keywords:</span>
                   {submission.keywords.split(/[,;]/).map((kw, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">
+                    <span key={i} className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium wrap-break-word">
                       {kw.trim()}
                     </span>
                   ))}
@@ -520,17 +518,15 @@ export function EditorialDecisionModal({
             <button
               type="button"
               onClick={() => setDecision("ACCEPT")}
-              className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
-                decision === "ACCEPT"
+              className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${decision === "ACCEPT"
                   ? "border-emerald-500 bg-emerald-50/70 shadow-sm ring-2 ring-emerald-500/20"
                   : "border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/70 shadow-2xs"
-              }`}
+                }`}
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center justify-center h-8 w-8 rounded-xl ${
-                    decision === "ACCEPT" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700"
-                  }`}>
+                  <span className={`inline-flex items-center justify-center h-8 w-8 rounded-xl ${decision === "ACCEPT" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700"
+                    }`}>
                     <CheckCircle2 className="h-4.5 w-4.5" />
                   </span>
                   {decision === "ACCEPT" && (
@@ -552,17 +548,15 @@ export function EditorialDecisionModal({
             <button
               type="button"
               onClick={() => setDecision("REVISION_REQUESTED")}
-              className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
-                decision === "REVISION_REQUESTED"
+              className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${decision === "REVISION_REQUESTED"
                   ? "border-amber-500 bg-amber-50/70 shadow-sm ring-2 ring-amber-500/20"
                   : "border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/70 shadow-2xs"
-              }`}
+                }`}
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center justify-center h-8 w-8 rounded-xl ${
-                    decision === "REVISION_REQUESTED" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700"
-                  }`}>
+                  <span className={`inline-flex items-center justify-center h-8 w-8 rounded-xl ${decision === "REVISION_REQUESTED" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700"
+                    }`}>
                     <RotateCcw className="h-4.5 w-4.5" />
                   </span>
                   {decision === "REVISION_REQUESTED" && (
@@ -584,17 +578,15 @@ export function EditorialDecisionModal({
             <button
               type="button"
               onClick={() => setDecision("REJECT")}
-              className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
-                decision === "REJECT"
+              className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${decision === "REJECT"
                   ? "border-rose-500 bg-rose-50/70 shadow-sm ring-2 ring-rose-500/20"
                   : "border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/70 shadow-2xs"
-              }`}
+                }`}
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center justify-center h-8 w-8 rounded-xl ${
-                    decision === "REJECT" ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-700"
-                  }`}>
+                  <span className={`inline-flex items-center justify-center h-8 w-8 rounded-xl ${decision === "REJECT" ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-700"
+                    }`}>
                     <XCircle className="h-4.5 w-4.5" />
                   </span>
                   {decision === "REJECT" && (
@@ -624,22 +616,20 @@ export function EditorialDecisionModal({
                 <button
                   type="button"
                   onClick={() => setRevisionKind("MINOR")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    revisionKind === "MINOR"
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${revisionKind === "MINOR"
                       ? "bg-amber-600 text-white shadow-2xs"
                       : "bg-white border border-amber-300 text-amber-800 hover:bg-amber-100"
-                  }`}
+                    }`}
                 >
                   Minor Revision (14 Days)
                 </button>
                 <button
                   type="button"
                   onClick={() => setRevisionKind("MAJOR")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    revisionKind === "MAJOR"
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${revisionKind === "MAJOR"
                       ? "bg-amber-600 text-white shadow-2xs"
                       : "bg-white border border-amber-300 text-amber-800 hover:bg-amber-100"
-                  }`}
+                    }`}
                 >
                   Major Revision (30 Days)
                 </button>
@@ -649,13 +639,12 @@ export function EditorialDecisionModal({
 
           {/* Next Step Workflow Callout (Authoritative Info Box - NO SPARKLES) */}
           <div
-            className={`p-3.5 rounded-xl border transition-all text-xs flex items-start gap-2.5 ${
-              decision === "ACCEPT"
+            className={`p-3.5 rounded-xl border transition-all text-xs flex items-start gap-2.5 ${decision === "ACCEPT"
                 ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
                 : decision === "REVISION_REQUESTED"
-                ? "bg-amber-50/80 border-amber-200 text-amber-950"
-                : "bg-rose-50/80 border-rose-200 text-rose-950"
-            }`}
+                  ? "bg-amber-50/80 border-amber-200 text-amber-950"
+                  : "bg-rose-50/80 border-rose-200 text-rose-950"
+              }`}
           >
             <Info className="h-4 w-4 shrink-0 mt-0.5 text-slate-600" />
             <div className="min-w-0 flex-1 leading-relaxed">
