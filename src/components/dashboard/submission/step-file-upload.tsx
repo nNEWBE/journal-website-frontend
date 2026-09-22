@@ -1,7 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { AlertCircle, FileCheck2, FileText, Trash2, UploadCloud } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  ArrowRight,
+  Edit3,
+  FileCheck2,
+  FileEdit,
+  FileText,
+  Trash2,
+  UploadCloud,
+} from "lucide-react";
+import { toast } from "sonner";
+import { createManuscriptFile } from "@/lib/manuscript-export";
 
 export interface ManuscriptFile {
   name: string;
@@ -9,6 +21,7 @@ export interface ManuscriptFile {
   type: string;
   date: string;
   file?: File;
+  isWrittenOnline?: boolean;
 }
 
 interface StepFileUploadProps {
@@ -16,9 +29,44 @@ interface StepFileUploadProps {
   setFiles: React.Dispatch<React.SetStateAction<ManuscriptFile[]>>;
 }
 
+const SUBMISSION_ATTACH_KEY = "gb_draft_written_manuscript";
+
 export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if an online-written manuscript was attached via /editor/manuscript
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SUBMISSION_ATTACH_KEY);
+      if (stored) {
+        const payload = JSON.parse(stored);
+        if (payload.html && payload.filename) {
+          const alreadyExists = files.some(
+            (f) => f.name === payload.filename || f.isWrittenOnline
+          );
+          if (!alreadyExists) {
+            const virtualFile = createManuscriptFile(payload.html, payload.title);
+            const sizeStr = `${Math.max(1, Math.round(payload.html.length / 1024))} KB`;
+
+            const attachedItem: ManuscriptFile = {
+              name: payload.filename,
+              size: sizeStr,
+              type: "Blinded Manuscript (Written Online)",
+              date: "Just now",
+              file: virtualFile,
+              isWrittenOnline: true,
+            };
+
+            setFiles((prev) => [attachedItem, ...prev]);
+            toast.success("Online-drafted manuscript attached to submission!");
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to sync written manuscript draft:", e);
+    }
+  }, [files, setFiles]);
 
   const processFiles = (fileList: FileList | File[]) => {
     const incoming = Array.from(fileList);
@@ -58,6 +106,14 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
   };
 
   const removeFile = (index: number) => {
+    const fileToRemove = files[index];
+    if (fileToRemove.isWrittenOnline) {
+      try {
+        localStorage.removeItem(SUBMISSION_ATTACH_KEY);
+      } catch (err) {
+        console.error(err);
+      }
+    }
     setFiles(files.filter((_, i) => i !== index));
   };
 
@@ -85,6 +141,38 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
         </div>
       )}
 
+      {/* ── NEW: Write Manuscript Online Feature Card ── */}
+      <div className="rounded-2xl border border-blue-200/90 bg-linear-to-r from-blue-50/70 via-indigo-50/50 to-slate-50 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0b1b3d] text-white shadow-xs">
+            <FileEdit className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-900">
+                Write Manuscript Online in Academic Word Processor
+              </h4>
+              <span className="inline-flex items-center px-2 py-0.5 bg-blue-100/80 text-[#1e40af] text-[10px] font-bold uppercase rounded-full">
+                New
+              </span>
+            </div>
+            <p className="text-[11.5px] text-slate-600 mt-0.5 leading-relaxed">
+              Compose in predefined IMRaD format, customize academic fonts, font sizes, line spacing, tables, citations, and export as Word (.docx) directly attached here.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/editor/manuscript"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider rounded-xs transition-all shadow-xs shrink-0 cursor-pointer group"
+        >
+          <span>Open Word Processor</span>
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-amber-300" />
+        </Link>
+      </div>
+
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -104,13 +192,12 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
-          isDragging
+        className={`relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${isDragging
             ? "border-blue-500 bg-blue-50/80 scale-[0.99]"
             : files.length === 0
               ? "border-amber-300/80 bg-amber-50/20 hover:border-blue-400 hover:bg-blue-50/20"
               : "border-slate-300 bg-slate-50/60 hover:border-blue-400 hover:bg-blue-50/20"
-        }`}
+          }`}
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-xs text-blue-600 border border-slate-200">
           <UploadCloud className="h-6 w-6" />
@@ -150,10 +237,29 @@ export function StepFileUpload({ files, setFiles }: StepFileUploadProps) {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-700 border border-emerald-200">
-                    <FileCheck2 className="h-3 w-3" />
-                    Uploaded
-                  </span>
+                  {file.isWrittenOnline ? (
+                    <>
+                      <Link
+                        href="/editor/manuscript"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md bg-blue-50 hover:bg-blue-100 px-2 py-0.5 text-[9px] font-bold text-[#1e40af] border border-blue-200 transition-colors"
+                        title="Reopen paper in academic word processor"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        Edit in Processor
+                      </Link>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-700 border border-emerald-200">
+                        <FileCheck2 className="h-3 w-3" />
+                        Attached
+                      </span>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-700 border border-emerald-200">
+                      <FileCheck2 className="h-3 w-3" />
+                      Uploaded
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {

@@ -66,15 +66,23 @@ export function CustomTooltip({
   };
 
   useEffect(() => {
+    if (!isVisible) return;
+
+    let rafId: number | null = null;
     const handleScrollOrResize = () => {
-      if (isVisible) {
-        updatePosition();
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          updatePosition();
+          rafId = null;
+        });
       }
     };
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
+
+    window.addEventListener("scroll", handleScrollOrResize, { capture: true, passive: true });
+    window.addEventListener("resize", handleScrollOrResize, { passive: true });
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
     };
@@ -103,13 +111,13 @@ export function CustomTooltip({
               side === "right"
                 ? "translateY(-50%)"
                 : side === "left"
-                ? "translate(-100%, -50%)"
-                : side === "top"
-                ? "translate(-50%, -100%)"
-                : "translate(-50%, 0)",
+                  ? "translate(-100%, -50%)"
+                  : side === "top"
+                    ? "translate(-50%, -100%)"
+                    : "translate(-50%, 0)",
           }}
           className={cn(
-            "fixed z-[99999] pointer-events-none flex items-center animate-in fade-in zoom-in-95 duration-150",
+            "fixed z-99999 pointer-events-none flex items-center animate-in fade-in zoom-in-95 duration-150",
             className
           )}
         >

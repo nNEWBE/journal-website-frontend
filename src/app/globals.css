@@ -205,10 +205,8 @@ html.lenis body {
 
 /* ── Hardware Acceleration & Zero-Lag Compositing ── */
 html {
-  scroll-behavior: smooth !important;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
-  overflow-x: clip;
 }
 
 body {
@@ -217,9 +215,7 @@ body {
   font-family: var(--font-body), var(--font-body-fallback);
   font-optical-sizing: auto;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth !important;
   text-rendering: optimizeSpeed;
-  overflow-x: clip;
 }
 
 /* Promote key layout containers to dedicated GPU compositor layers without memory bloat */
@@ -239,10 +235,8 @@ header.sticky,
 }
 .overflow-y-auto,
 .scroll-container {
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  transform: translateZ(0);
 }
 
 .overflow-x-auto {
@@ -251,11 +245,15 @@ header.sticky,
   overscroll-behavior-y: auto !important;
 }
 
-/* Prevent expensive hover state layout thrashing while actively scrolling */
-body.is-scrolling *,
-body.is-scrolling *::before,
-body.is-scrolling *::after {
-  pointer-events: none !important;
+/* Manuscript canvas: instant hardware scroll, paper sheet promoted to GPU compositor layer */
+.manuscript-scroll-canvas {
+  scroll-behavior: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+#manuscript-paper-sheet {
+  will-change: transform;
 }
 
 ::selection {
@@ -1759,3 +1757,203 @@ select:focus-visible,
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* ==========================================================================
+   TipTap Academic Manuscript Typography & Layout Styles
+   ========================================================================== */
+.manuscript-tiptap-content {
+  width: 100%;
+}
+
+.manuscript-tiptap-content .ProseMirror {
+  outline: none !important;
+  min-height: 850px;
+}
+
+/* Individual page sheet appearance */
+.manuscript-tiptap-content .ProseMirror.rm-with-pagination {
+  background-color: #ffffff !important;
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.12), 0 2px 8px -2px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 2px !important;
+  margin: 0 auto;
+  box-sizing: border-box !important;
+  padding-top: var(--rm-margin-top) !important;
+  padding-bottom: var(--rm-margin-bottom) !important;
+}
+
+/* Visual gap between physical paper sheets */
+.manuscript-tiptap-content .rm-pagination-gap {
+  background-color: #eef1f6 !important;
+  border-top: 1px solid #cbd5e1 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: inset 0 3px 6px -2px rgba(0, 0, 0, 0.07), inset 0 -3px 6px -2px rgba(0, 0, 0, 0.07) !important;
+  position: relative;
+}
+
+/* Page Header */
+.manuscript-tiptap-content .rm-page-header {
+  border-bottom: 1px dashed #e2e8f0;
+  padding-top: 14px !important;
+  padding-bottom: 8px !important;
+  color: #64748b;
+  font-size: 8.5pt;
+  font-family: var(--font-body), sans-serif;
+  user-select: none;
+}
+
+/* Page Footer */
+.manuscript-tiptap-content .rm-page-footer {
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 8px !important;
+  padding-bottom: 14px !important;
+  color: #64748b;
+  font-size: 8.5pt;
+  font-family: var(--font-body), sans-serif;
+  user-select: none;
+}
+
+.manuscript-tiptap-content .rm-page-number,
+.manuscript-tiptap-content .rm-page-number-plus {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* When pagination is disabled (Web Layout continuous mode) */
+.manuscript-tiptap-content .ProseMirror[rm-pagination-disabled] {
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.manuscript-tiptap-content .ProseMirror p {
+  margin: 6pt 0;
+}
+
+.manuscript-tiptap-content h1 {
+  font-size: 20pt;
+  font-weight: bold;
+  margin: 18pt 0 10pt 0;
+  line-height: 1.25;
+}
+
+.manuscript-tiptap-content h2 {
+  font-size: 15pt;
+  font-weight: bold;
+  margin: 16pt 0 8pt 0;
+  line-height: 1.3;
+}
+
+.manuscript-tiptap-content h3 {
+  font-size: 13pt;
+  font-weight: bold;
+  margin: 12pt 0 6pt 0;
+  line-height: 1.35;
+}
+
+.manuscript-tiptap-content h4 {
+  font-size: 11.5pt;
+  font-weight: bold;
+  margin: 10pt 0 4pt 0;
+  line-height: 1.4;
+}
+
+.manuscript-tiptap-content blockquote {
+  border-left: 3.5px solid #94a3b8;
+  padding-left: 14pt;
+  margin: 14pt 0;
+  font-style: italic;
+  color: #475569;
+}
+
+.manuscript-tiptap-content ul {
+  list-style-type: disc;
+  margin: 8pt 0 8pt 24pt;
+}
+
+.manuscript-tiptap-content ol {
+  list-style-type: decimal;
+  margin: 8pt 0 8pt 24pt;
+}
+
+.manuscript-tiptap-content li {
+  margin: 3pt 0;
+}
+
+.manuscript-tiptap-content code {
+  background-color: #f1f5f9;
+  border-radius: 2px;
+  padding: 1.5pt 4pt;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.manuscript-tiptap-content pre {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: monospace;
+  padding: 12pt 16pt;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 14pt 0;
+}
+
+.manuscript-tiptap-content hr {
+  border: none;
+  border-top: 1.5pt solid #cbd5e1;
+  margin: 20pt 0;
+}
+
+/* TipTap Tables */
+.manuscript-tiptap-content table {
+  border-collapse: collapse;
+  margin: 16pt 0;
+  width: 100%;
+  table-layout: fixed;
+  font-size: 10.5pt;
+}
+
+.manuscript-tiptap-content td,
+.manuscript-tiptap-content th {
+  border: 1px solid #cbd5e1;
+  padding: 6pt 10pt;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.manuscript-tiptap-content th {
+  font-weight: bold;
+  background-color: #f8fafc;
+  border-top: 1.5pt solid #0f172a;
+  border-bottom: 1.5pt solid #0f172a;
+}
+
+.manuscript-tiptap-content .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(37, 99, 235, 0.12);
+  pointer-events: none;
+}
+
+.manuscript-tiptap-content .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #2563eb;
+  pointer-events: none;
+}
+
+/* ProseMirror DropCursor */
+.ProseMirror-dropcursor {
+  border-left: 2px solid #2563eb !important;
+  background-color: #2563eb !important;
+}
+

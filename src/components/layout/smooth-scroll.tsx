@@ -6,11 +6,12 @@ import Lenis from "lenis";
 
 export function SmoothScroll() {
   const pathname = usePathname();
-  const isDashboard = pathname?.startsWith("/dashboard");
+  const isExcluded =
+    pathname?.startsWith("/dashboard") || pathname?.startsWith("/editor");
 
   useEffect(() => {
-    // If on a dashboard route, do not run smooth scrolling
-    if (isDashboard) {
+    // If on a dashboard or editor route, do not run smooth scrolling
+    if (isExcluded) {
       if (typeof window !== "undefined" && (window as any).__lenis) {
         (window as any).__lenis.destroy();
         (window as any).__lenis = null;
@@ -78,7 +79,7 @@ export function SmoothScroll() {
         (window as any).__lenis = null;
       }
     };
-  }, [isDashboard, pathname]);
+  }, [isExcluded, pathname]);
 
   return null;
 }

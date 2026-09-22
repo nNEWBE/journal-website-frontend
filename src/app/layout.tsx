@@ -52,7 +52,6 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-scroll-behavior="smooth"
       className={`${plusJakartaSans.variable} ${playfairDisplay.variable} ${notoBangla.variable} ${jetBrainsMono.variable} min-h-full antialiased`}
       suppressHydrationWarning
     >

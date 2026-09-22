@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface SelectOptionObject {
   value: string;
   label: string;
+  style?: React.CSSProperties;
 }
 
 export type SelectOption = string | SelectOptionObject;
@@ -24,7 +25,7 @@ interface CustomSelectProps {
   direction?: "auto" | "down" | "up";
   align?: "left" | "right";
   disabled?: boolean;
-  size?: "default" | "sm" | "form";
+  size?: "default" | "sm" | "form" | "toolbar";
 }
 
 export function formatEnumToTitleCase(str?: string): string {
@@ -66,36 +67,79 @@ export function CustomSelect({
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
+  const [fixedCoords, setFixedCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent | PointerEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handleClickOutside);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
+
+  const isToolbar = size === "toolbar";
 
   useEffect(() => {
     if (isOpen && containerRef.current) {
-      if (direction === "down") {
-        setOpenUpward(false);
-        return;
-      }
-      if (direction === "up") {
-        setOpenUpward(true);
-        return;
-      }
-      const rect = containerRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      // Only open upward if space below is severely restricted and space above is abundant
-      setOpenUpward(spaceBelow < 180 && spaceAbove > 240);
+      const updateCoords = () => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        const shouldOpenUp =
+          direction === "up" ||
+          (direction !== "down" && spaceBelow < 220 && spaceAbove > 200);
+
+        const targetWidth = Math.max(rect.width, isToolbar ? 190 : 140);
+        let left = rect.left;
+        if (align === "right" || left + targetWidth > viewportWidth - 12) {
+          left = Math.max(12, rect.right - targetWidth);
+        }
+
+        setOpenUpward(shouldOpenUp);
+        setFixedCoords({
+          top: shouldOpenUp ? undefined : rect.bottom + 4,
+          bottom: shouldOpenUp ? viewportHeight - rect.top + 4 : undefined,
+          left,
+          width: targetWidth,
+        });
+      };
+
+      updateCoords();
+      window.addEventListener("scroll", updateCoords, true);
+      window.addEventListener("resize", updateCoords);
+      return () => {
+        window.removeEventListener("scroll", updateCoords, true);
+        window.removeEventListener("resize", updateCoords);
+      };
+    } else {
+      setFixedCoords(null);
     }
-  }, [isOpen, direction]);
+  }, [isOpen, direction, align, isToolbar]);
 
   const isDark = variant === "dark";
   const isSm = size === "sm";
@@ -109,6 +153,7 @@ export function CustomSelect({
     return {
       value: opt.value,
       label: formatEnumToTitleCase(opt.label),
+      style: opt.style,
     };
   });
 
@@ -121,8 +166,8 @@ export function CustomSelect({
       ref={containerRef}
       className={cn(
         "relative",
-        !className?.includes("w-") && "w-full",
-        isSm ? "min-w-30" : "min-w-35",
+        !className?.includes("w-") && (isToolbar ? "w-auto" : "w-full"),
+        isToolbar ? "min-w-fit" : isSm ? "min-w-30" : "min-w-35",
         className
       )}
     >
@@ -131,25 +176,28 @@ export function CustomSelect({
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={cn(
-          "select-trigger flex w-full items-center justify-between gap-2 shadow-xs transition-all outline-none text-left",
-          isForm
-            ? "h-9.5 min-h-9.5 px-3 py-2 rounded-lg text-xs font-normal text-slate-800"
-            : isSm
-              ? "min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold"
-              : "min-h-10.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold",
+          "select-trigger flex w-full items-center justify-between gap-1.5 shadow-xs transition-all outline-none text-left cursor-pointer",
+          isToolbar
+            ? "h-7 min-h-7 px-2 py-0.5 rounded-sm text-xs font-medium border border-slate-200 bg-white text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            : isForm
+              ? "h-9.5 min-h-9.5 px-3 py-2 rounded-lg text-xs font-normal text-slate-800 border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-500 focus:outline-none"
+              : isSm
+                ? "min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold"
+                : "min-h-10.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold",
           disabled && "opacity-50 cursor-not-allowed pointer-events-none",
           isDark
             ? "border border-white/15 bg-white/10 text-white hover:bg-white/15 hover:border-white/30 focus:outline-none focus:ring-0"
-            : isForm
-              ? "border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-500 focus:outline-none"
-              : "border border-slate-200 bg-white font-bold text-slate-800 hover:border-slate-300 focus:border-slate-300 focus:outline-none focus:ring-0",
+            : !isToolbar && !isForm
+              ? "border border-slate-200 bg-white font-bold text-slate-800 hover:border-slate-300 focus:border-slate-300 focus:outline-none focus:ring-0"
+              : "",
           triggerClassName
         )}
       >
-        <span className="truncate">{displayLabel}</span>
+        <span className="truncate" style={selectedOption?.style}>{displayLabel}</span>
         <ChevronDown
           className={cn(
-            "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+            "shrink-0 transition-transform duration-200",
+            isToolbar ? "h-3 w-3 text-slate-400" : "h-3.5 w-3.5",
             isDark ? "text-white/60" : "text-slate-400",
             isOpen && "rotate-180"
           )}
@@ -158,13 +206,27 @@ export function CustomSelect({
 
       {isOpen && !disabled && (
         <div
+          style={
+            isToolbar && fixedCoords
+              ? {
+                position: "fixed",
+                top: fixedCoords.top !== undefined ? `${fixedCoords.top}px` : undefined,
+                bottom: fixedCoords.bottom !== undefined ? `${fixedCoords.bottom}px` : undefined,
+                left: `${fixedCoords.left}px`,
+                width: `${fixedCoords.width}px`,
+                zIndex: 99999,
+              }
+              : undefined
+          }
           className={cn(
-            "absolute z-100 w-full min-w-35 max-h-60 overflow-y-auto rounded-xl shadow-2xl animate-fade p-1.5",
+            isToolbar && fixedCoords ? "fixed z-99999" : "absolute z-100",
+            "max-h-64 overflow-y-auto rounded-md shadow-2xl animate-fade p-1 select-none",
+            isToolbar ? "min-w-44 border border-slate-300 bg-white text-slate-800" : "w-full min-w-35 p-1.5",
             isDark
               ? "border border-white/15 bg-[#0c1338] text-white backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
-              : "border border-slate-200 bg-white",
-            openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5",
-            align === "right" ? "right-0 left-auto" : "left-0",
+              : "border border-slate-200 bg-white text-slate-800",
+            !isToolbar && (openUpward ? "bottom-full mb-1" : "top-full mt-1"),
+            !isToolbar && (align === "right" ? "right-0 left-auto" : "left-0"),
             menuClassName
           )}
         >
@@ -179,7 +241,8 @@ export function CustomSelect({
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "select-option flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold transition-colors cursor-pointer",
+                  "select-option flex w-full items-center justify-between rounded-md text-left text-xs transition-colors cursor-pointer",
+                  isToolbar ? "py-1 px-2 text-[11.5px] font-medium" : "px-2.5 py-1.5 font-semibold",
                   isDark
                     ? isSelected
                       ? "bg-white/20 text-white font-bold"
@@ -190,11 +253,12 @@ export function CustomSelect({
                   optionClassName
                 )}
               >
-                <span className="truncate">{option.label}</span>
+                <span className="truncate" style={option.style}>{option.label}</span>
                 {isSelected && (
                   <Check
                     className={cn(
-                      "h-3.5 w-3.5 shrink-0 ml-2",
+                      "shrink-0 ml-2",
+                      isToolbar ? "h-3 w-3" : "h-3.5 w-3.5",
                       isDark ? "text-amber-400" : "text-blue-600"
                     )}
                   />
