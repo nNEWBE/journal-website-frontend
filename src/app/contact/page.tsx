@@ -31,7 +31,6 @@ import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ContactHero } from "@/components/contact/contact-hero";
-import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 const roleOptions = [
   "Author / Submitter",
@@ -428,7 +427,7 @@ export default function ContactPage() {
               </a>
             </div>
 
-            <div className="relative h-[360px] w-full bg-slate-100">
+            <div className="relative h-90 w-full bg-slate-100">
               <iframe
                 title="Gono Bishwabidyalay Location Map"
                 src="https://maps.google.com/maps?q=Gono+Bishwabidyalay,+Nolam,+Savar,+Dhaka&t=&z=15&ie=UTF8&iwloc=&output=embed"
@@ -450,7 +449,7 @@ export default function ContactPage() {
         <div className="container-x">
           <div className="relative overflow-hidden bg-[#060e22] text-white border border-slate-800 shadow-[0_20px_50px_rgba(3,8,22,0.45)] p-8 sm:p-12 lg:p-14">
             {/* Top gold-to-blue accent line */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-blue-500 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-amber-400 via-blue-500 to-transparent" />
 
             {/* Ambient background glow */}
             <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
@@ -464,7 +463,7 @@ export default function ContactPage() {
                   <span>CALL FOR PAPERS · VOL. 2026/2027</span>
                 </div>
 
-                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.025em] text-white leading-[1.15]">
+                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
                   Ready to Submit Your Manuscript?
                 </h2>
 
@@ -508,7 +507,7 @@ export default function ContactPage() {
               </div>
 
               {/* Right Column: Editorial Secretariat Contact Card */}
-              <div className="bg-white/[0.05] border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
+              <div className="bg-white/5 border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
                 <div>
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">
@@ -566,8 +565,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      <AdminPageEditBadge pageKey="contact" />
     </PageShell>
   );
 }

@@ -13,7 +13,6 @@ import { HomeFaqSection } from "@/components/home/home-faq-section";
 import { HomeMetricsNewsletter } from "@/components/home/home-metrics-newsletter";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
-import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 import { useHomeSectionVisibility } from "@/lib/cms-visibility";
 import { HomeSectionsProvider } from "@/lib/home-sections-context";
 import type { PageContentDTO } from "@/lib/api";
@@ -132,8 +131,6 @@ export function HomePageClient({
 
   return (
     <PageShell>
-      <AdminPageEditBadge pageKey="home" />
-
       <HomeSectionsProvider sections={sections}>
         {orderedKeys.map((key, idx) => {
           if (!isSectionVisible(key)) return null;

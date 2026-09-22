@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { PageTransition } from "@/components/layout/page-transition";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/header/site-header";
+import { AdminPageEditBadge } from "@/components/ui/admin-page-edit-badge";
 
 export function PageShell({ children }: { children: ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function PageShell({ children }: { children: ReactNode }) {
         <PageTransition>{children}</PageTransition>
       </main>
       <SiteFooter />
+      <AdminPageEditBadge />
     </div>
   );
 }

@@ -189,96 +189,119 @@ export default async function BoardMemberDetailPage({ params }: PageProps) {
       </div>
 
       {/* ── 2. Executive Hero Banner ── */}
-      <section className="bg-linear-to-b from-[#060e22] via-[#091534] to-[#0d1d47] text-white py-12 sm:py-16 border-b border-slate-800/90 relative overflow-hidden">
-        {/* Subtle background glow */}
+      <section className="bg-[#060e24] text-white py-12 sm:py-16 border-b border-slate-800/90 relative overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(30,64,175,0.22),rgba(6,14,36,0))]">
+        {/* Subtle decorative glow accents */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="container-x relative">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-8 lg:gap-12">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 lg:gap-12">
             {/* ── Prominent Portrait ── */}
-            <div className="relative w-44 sm:w-56 md:w-64 aspect-3/4 shrink-0 overflow-hidden rounded-xs border-2 border-white/20 shadow-2xl bg-slate-900">
+            <div className="relative w-44 sm:w-52 md:w-60 aspect-3/4 shrink-0 overflow-hidden rounded-xs border border-white/20 shadow-2xl shadow-black/60 bg-slate-900 ring-1 ring-inset ring-white/10">
               <Image
                 src={imageSrc}
                 alt={member.name}
                 fill
                 className="object-cover object-top"
-                sizes="(max-width: 640px) 176px, (max-width: 768px) 224px, 256px"
+                sizes="(max-width: 640px) 176px, (max-width: 768px) 208px, 240px"
                 priority
               />
-              <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
+              <div className="absolute inset-0 ring-1 ring-inset ring-black/10" />
             </div>
 
             {/* ── Member Profile Highlights ── */}
-            <div className="flex-1 min-w-0">
-              {/* Role badge */}
-              <div className="flex flex-wrap items-center gap-2.5 mb-3">
+            <div className="flex-1 min-w-0 text-center md:text-left">
+              {/* Role & Mandate badges */}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 mb-2.5">
                 {isChief ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-wider rounded-xs">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/35 text-amber-300 text-[10.5px] font-bold uppercase tracking-wider">
                     <Award className="h-3.5 w-3.5 text-amber-400" />
                     <span>{member.role}</span>
                   </span>
                 ) : isManaging ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-400/15 border border-blue-400/30 text-blue-300 text-xs font-bold uppercase tracking-wider rounded-xs">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/35 text-blue-300 text-[10.5px] font-bold uppercase tracking-wider">
                     <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
                     <span>{member.role}</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 border border-white/20 text-slate-200 text-xs font-bold uppercase tracking-wider rounded-xs">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/10 border border-white/20 text-slate-200 text-[10.5px] font-bold uppercase tracking-wider">
                     <Users className="h-3.5 w-3.5 text-slate-300" />
                     <span>{member.role}</span>
                   </span>
                 )}
 
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] font-semibold rounded-xs">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] font-medium">
                   <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                   <span>Active Mandate (2024–2028)</span>
                 </span>
               </div>
 
-              {/* Full Name */}
+              {/* Full Academic Name */}
               <h1 className="font-academic text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white leading-tight">
                 {member.name}
               </h1>
 
-              {/* Department & Institution */}
-              <p className="mt-2 text-sm sm:text-base font-medium text-amber-300/90">
-                {member.unit}
-              </p>
-              <p className="text-xs sm:text-sm text-slate-300 flex items-center gap-1.5 mt-1">
-                <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>{member.institution || "Gono Bishwabidyalay, Savar, Dhaka, Bangladesh"}</span>
-              </p>
+              {/* Department & Institution Affiliation */}
+              <div className="mt-2 space-y-1">
+                <p className="text-sm sm:text-base font-semibold text-slate-200">
+                  {member.unit}
+                </p>
+                <p className="text-xs sm:text-sm text-slate-400 flex items-center justify-center md:justify-start gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <span>{member.institution || "Gono Bishwabidyalay, Savar, Dhaka, Bangladesh"}</span>
+                </p>
+              </div>
 
-              {/* Actions & Identifiers Bar */}
-              <div className="mt-6 pt-5 border-t border-white/10 flex flex-wrap items-center gap-3">
-                {member.orcid && (
-                  <a
-                    href={`https://orcid.org/${member.orcid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#a6ce39]/10 border border-[#a6ce39]/30 text-[#b5dd43] text-xs font-mono font-semibold rounded-xs hover:bg-[#a6ce39]/20 transition-colors"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-[#a6ce39]" />
-                    <span>ORCID: {member.orcid}</span>
-                    <ExternalLink className="h-3 w-3 opacity-70" />
-                  </a>
-                )}
+              {/* Academic Identifiers (ORCID & Scholar) */}
+              {(member.orcid || member.googleScholarUrl) && (
+                <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-xs">
+                  {member.orcid && (
+                    <a
+                      href={`https://orcid.org/${member.orcid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-mono transition-colors group"
+                      title="Verified ORCID Researcher Record"
+                    >
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#a6ce39] text-[#050d21] text-[10px] font-bold font-sans">
+                        iD
+                      </span>
+                      <span>orcid.org/{member.orcid}</span>
+                      <ExternalLink className="h-3 w-3 text-slate-400 group-hover:text-white transition-transform group-hover:translate-x-0.5" />
+                    </a>
+                  )}
 
+                  {member.googleScholarUrl && (
+                    <a
+                      href={member.googleScholarUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs transition-colors group"
+                    >
+                      <GraduationCap className="h-3.5 w-3.5 text-sky-400" />
+                      <span>Google Scholar</span>
+                      <ExternalLink className="h-3 w-3 text-slate-400 group-hover:text-white transition-transform group-hover:translate-x-0.5" />
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Actions Bar */}
+              <div className="mt-6 pt-5 border-t border-white/10 flex flex-wrap items-center justify-center md:justify-start gap-3">
                 <Link
                   href="/contact"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-[#060e22] text-[13px] font-semibold transition-colors shadow-sm rounded-xs cursor-pointer group/btn"
                 >
-                  <Mail className="h-3.5 w-3.5" />
+                  <Mail className="h-4 w-4" />
                   <span>Contact Editorial Office</span>
                 </Link>
 
                 <Link
                   href="/dashboard/submissions/new"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-[13px] font-semibold transition-colors rounded-xs cursor-pointer group/sub"
                 >
                   <span>Submit Manuscript</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover/sub:translate-x-0.5 group-hover/sub:-translate-y-0.5" />
                 </Link>
               </div>
             </div>
@@ -382,20 +405,26 @@ export default async function BoardMemberDetailPage({ params }: PageProps) {
                     </Link>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {relatedArticles.map((art) => (
                       <Link
                         key={art.id}
                         href={`/articles/${art.slug}`}
-                        className="group block p-3.5 sm:p-4 bg-slate-50/70 hover:bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-colors"
+                        className="group block p-4 bg-slate-50/60 hover:bg-white border border-slate-200/80 hover:border-slate-300 hover:shadow-xs transition-all duration-200 rounded-xs"
                       >
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#1e40af]">
-                          {art.type} · {art.topic}
-                        </span>
-                        <h3 className="font-academic text-sm sm:text-base font-medium text-slate-900 group-hover:text-[#1e40af] transition-colors mt-0.5 line-clamp-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-block px-2 py-0.5 bg-blue-50 text-[#1e40af] text-[9.5px] font-bold uppercase tracking-wider border border-blue-100/80 rounded-xs">
+                            {art.type} · {art.topic}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1 group-hover:text-[#1e40af] transition-colors">
+                            <span>Read Paper</span>
+                            <ArrowUpRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                          </span>
+                        </div>
+                        <h3 className="font-academic text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#1e40af] transition-colors mt-2 leading-snug line-clamp-2">
                           {art.title}
                         </h3>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                        <p className="text-xs text-slate-500 mt-1.5 line-clamp-1">
                           {art.authors.join(", ")}
                         </p>
                       </Link>
@@ -470,7 +499,7 @@ export default async function BoardMemberDetailPage({ params }: PageProps) {
 
                 <Link
                   href="/contact"
-                  className="mt-5 block text-center w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-[#060e22] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                  className="mt-5 block text-center w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-[#060e22] text-xs sm:text-[13px] font-semibold transition-colors shadow-sm rounded-xs"
                 >
                   Contact Secretariat Desk
                 </Link>
