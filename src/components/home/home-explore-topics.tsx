@@ -183,21 +183,21 @@ export function HomeExploreTopics({ section: propSection }: { section?: PageCont
           </Link>
         </div>
 
-        {/* 8 Topic Cards Grid (4 columns x 2 rows) */}
-        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mt-8 sm:mt-10">
+        {/* 8 Topic Cards Grid (2 columns on mobile, 4 columns on large screens) */}
+        <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mt-8 sm:mt-10">
           {displayedTopics.map((topic: any) => {
             const Icon = topic.icon;
             return (
               <StaggerItem key={topic.id}>
                 <Link
                   href={topic.href}
-                  className="flex flex-col items-center justify-center text-center bg-white border border-slate-200/90 py-9 px-6 shadow-2xs hover:shadow-md hover:border-slate-400/80 transition-all group cursor-pointer h-full"
+                  className="flex flex-col items-center justify-center text-center bg-white border border-slate-200/90 py-6 px-3 sm:py-9 sm:px-6 shadow-2xs hover:shadow-md hover:border-slate-400/80 transition-all group cursor-pointer h-full"
                 >
                   <Icon
-                    className="h-9 w-9 text-slate-800 group-hover:text-[#1e40af] group-hover:scale-110 transition-all duration-300"
+                    className="h-7 w-7 sm:h-9 sm:w-9 text-slate-800 group-hover:text-[#1e40af] group-hover:scale-110 transition-all duration-300"
                     strokeWidth={1.35}
                   />
-                  <span className="mt-5 text-sm sm:text-[15px] font-semibold text-slate-900 group-hover:text-[#1e40af] transition-colors">
+                  <span className="mt-3 sm:mt-5 text-xs sm:text-[15px] font-semibold text-slate-900 group-hover:text-[#1e40af] transition-colors line-clamp-2">
                     {topic.name}
                   </span>
                 </Link>

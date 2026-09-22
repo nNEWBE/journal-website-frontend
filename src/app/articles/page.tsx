@@ -32,13 +32,50 @@ import {
 import { ArticlesHero } from "@/components/articles/articles-hero";
 import { getBackendUrl } from "@/lib/backend-url";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Articles & Research Archive | GB Journal of Research",
   description:
     "Explore peer-reviewed research articles across health, pharmacy, agriculture, law, computing, and social welfare from the Gono Bishwabidyalay Journal of Research.",
 };
+
+async function fetchTopicsFromDb(): Promise<string[]> {
+  try {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(`${backendUrl}/api/v1/topics`, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.filter((t: any) => typeof t === "string" && t.trim().length > 0);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch topics from DB:", err);
+  }
+  return topics;
+}
+
+async function fetchArticleTypesFromDb(): Promise<string[]> {
+  try {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(`${backendUrl}/api/v1/article-types`, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.filter((t: any) => typeof t === "string" && t.trim().length > 0);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch article types from DB:", err);
+  }
+  return articleTypes;
+}
 
 async function fetchArticlesFromDb(
   q?: string,
@@ -49,12 +86,12 @@ async function fetchArticlesFromDb(
     const backendUrl = getBackendUrl();
     const query = new URLSearchParams();
     if (q) query.set("query", q);
-    if (type && type !== "All Categories") query.set("type", type);
+    if (type && type !== "All Categories" && type !== "All Types") query.set("type", type);
     if (topic && topic !== "All Topics") query.set("topic", topic);
     query.set("size", "100");
 
     const res = await fetch(`${backendUrl}/api/v1/articles?${query.toString()}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
 
     if (!res.ok) return [];
@@ -110,7 +147,11 @@ export default async function ArticlesPage({
   const q = String(params.q ?? "");
   const type = String(params.type ?? "");
   const topic = String(params.topic ?? "");
-  const results = await fetchArticlesFromDb(q, type, topic);
+  const [results, availableTopics, availableArticleTypes] = await Promise.all([
+    fetchArticlesFromDb(q, type, topic),
+    fetchTopicsFromDb(),
+    fetchArticleTypesFromDb(),
+  ]);
   const hasFilters = Boolean(q || type || topic);
 
   return (
@@ -119,7 +160,7 @@ export default async function ArticlesPage({
       <FadeIn delay={0.05}>
         <ArticlesHero
           totalArticles={results.length}
-          totalTopics={topics.length}
+          totalTopics={availableTopics.length}
         />
       </FadeIn>
 
@@ -129,11 +170,12 @@ export default async function ArticlesPage({
           {/* Filter form */}
           <FadeIn delay={0.1}>
             <ArticlesFilterForm
+              key={`filter-${q}-${type}-${topic}`}
               initialQ={q}
               initialType={type}
               initialTopic={topic}
-              articleTypes={articleTypes}
-              topics={topics}
+              articleTypes={availableArticleTypes}
+              topics={availableTopics}
             />
           </FadeIn>
 
@@ -213,12 +255,12 @@ export default async function ArticlesPage({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {topics.map((t) => {
-                      const isActive = topic === t;
+                    {availableTopics.map((t) => {
+                      const isActive = topic.toLowerCase() === t.toLowerCase();
                       return (
                         <Link
                           key={t}
-                          href={`/articles?topic=${encodeURIComponent(t)}`}
+                          href={isActive ? "/articles" : `/articles?topic=${encodeURIComponent(t)}`}
                           className={`px-2.5 py-1 text-[11px] font-semibold transition-all border ${isActive
                             ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
                             : "bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100 hover:text-slate-900"
