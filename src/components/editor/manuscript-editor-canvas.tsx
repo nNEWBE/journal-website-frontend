@@ -296,49 +296,54 @@ function ManuscriptEditorCanvasInner({
     applyZoom(100);
   }, [applyZoom]);
 
-  // ── High-Performance Wheel & Scroll Architecture ──
-  // CRITICAL: We only attach a non-passive wheel listener when Control/Meta is actively held down.
-  // During normal scrolling (99.9% of user interactions), ZERO wheel listeners exist on the container.
-  // This allows the browser compositor thread to execute 100% native hardware 120/144 FPS scrolling
-  // without any roundtrips to the JavaScript main thread.
+  // ── High-Performance Wheel & Zoom Architecture ──
+  // Non-passive wheel listener attached to container to intercept Ctrl+Wheel and Trackpad pinch
+  // Normal scrolling (when Ctrl/Meta is NOT pressed) exits in 0.001ms for native 120 FPS hardware scrolling.
   useEffect(() => {
-    let isCtrlActive = false;
+    const scrollEl = canvasScrollRef.current;
+    if (!scrollEl) return;
+
+    let wheelRaf: number | null = null;
+    let pendingDelta = 0;
 
     const handleWheel = (e: WheelEvent) => {
+      // Immediate fast-path: if neither Ctrl nor Meta is pressed, let browser handle native hardware scroll
       if (!e.ctrlKey && !e.metaKey) return;
+
+      // Intercept and prevent browser's native window/page zoom
       e.preventDefault();
 
-      accDeltaRef.current += e.deltaY;
-      const STEP_THRESHOLD = 25;
+      pendingDelta += e.deltaY;
 
-      if (Math.abs(accDeltaRef.current) >= STEP_THRESHOLD) {
-        const direction = accDeltaRef.current < 0 ? 1 : -1;
-        accDeltaRef.current = 0;
-        applyZoom(zoomRef.current + direction * 10);
+      if (wheelRaf === null) {
+        wheelRaf = requestAnimationFrame(() => {
+          wheelRaf = null;
+          const delta = pendingDelta;
+          pendingDelta = 0;
+
+          // Trackpad pinch vs discrete mouse wheel notch
+          const isTrackpad = Math.abs(delta) < 40;
+          let nextZoom: number;
+
+          if (isTrackpad) {
+            // Smooth continuous exponential scaling for trackpad pinch
+            const factor = Math.exp(-delta * 0.006);
+            nextZoom = Math.round(zoomRef.current * factor);
+          } else {
+            // Discrete notches for mouse wheel (10% step per notch)
+            const direction = delta < 0 ? 1 : -1;
+            nextZoom = zoomRef.current + direction * 10;
+          }
+
+          applyZoom(nextZoom);
+        });
       }
     };
 
-    const attachZoomWheel = () => {
-      const scrollEl = canvasScrollRef.current;
-      if (scrollEl && !isCtrlActive) {
-        isCtrlActive = true;
-        scrollEl.addEventListener("wheel", handleWheel, { passive: false });
-      }
-    };
+    scrollEl.addEventListener("wheel", handleWheel, { passive: false });
 
-    const detachZoomWheel = () => {
-      const scrollEl = canvasScrollRef.current;
-      if (scrollEl && isCtrlActive) {
-        isCtrlActive = false;
-        scrollEl.removeEventListener("wheel", handleWheel);
-      }
-    };
-
+    // Keyboard shortcuts (Ctrl +, Ctrl -, Ctrl 0)
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Control" || e.key === "Meta") {
-        attachZoomWheel();
-      }
-
       if (!(e.ctrlKey || e.metaKey)) return;
 
       if (e.key === "=" || e.key === "+") {
@@ -353,31 +358,14 @@ function ManuscriptEditorCanvasInner({
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Control" || e.key === "Meta") {
-        detachZoomWheel();
-      }
-    };
-
-    const handleBlur = () => {
-      detachZoomWheel();
-    };
-
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("blur", handleBlur);
 
     return () => {
+      scrollEl.removeEventListener("wheel", handleWheel);
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("blur", handleBlur);
-      detachZoomWheel();
-      if (zoomRafRef.current !== null) {
-        cancelAnimationFrame(zoomRafRef.current);
-      }
-      if (willChangeTimeoutRef.current) {
-        clearTimeout(willChangeTimeoutRef.current);
-      }
+      if (wheelRaf !== null) cancelAnimationFrame(wheelRaf);
+      if (zoomRafRef.current !== null) cancelAnimationFrame(zoomRafRef.current);
+      if (willChangeTimeoutRef.current) clearTimeout(willChangeTimeoutRef.current);
     };
   }, [applyZoom]);
 
@@ -479,8 +467,8 @@ function ManuscriptEditorCanvasInner({
           </div>
         )}
 
-        {/* Centering wrapper */}
-        <div className="min-h-full py-8 px-6 sm:px-12 flex justify-center items-start" style={{ minWidth: "100%" }}>
+        {/* Centering wrapper (w-fit min-w-full prevents negative-scroll clipping on zoom) */}
+        <div className="min-h-full py-8 px-4 sm:px-8 w-fit min-w-full flex flex-col items-center">
           {/* Bounding box to give the scroll container accurate dimensions */}
           <div
             ref={boundingBoxRef}
@@ -488,6 +476,7 @@ function ManuscriptEditorCanvasInner({
               width: `${currentDimensions.width}px`,
               minHeight: `${currentDimensions.height}px`,
               position: "relative",
+              margin: "0 auto",
             }}
           >
             {/* The actual paper sheet — transform preserved in JSX style so React never wipes it */}

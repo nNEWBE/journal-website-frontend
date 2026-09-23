@@ -10,13 +10,14 @@ import {
   AlignRight,
   ArrowDown,
   ArrowUp,
+  Image as ImageIcon,
   RotateCcw,
   Trash2,
   Type,
   WrapText,
 } from "lucide-react";
 import { toast } from "sonner";
-import { optimizeImageDataUrl } from "@/lib/manuscript-image-optimizer";
+import { optimizeImageFile } from "@/lib/manuscript-image-optimizer";
 
 // Component rendered inside TipTap for every ResizableImage node
 function ResizableImageComponentInner(props: NodeViewProps) {
@@ -26,18 +27,8 @@ function ResizableImageComponentInner(props: NodeViewProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [activeHandle, setActiveHandle] = useState<string | null>(null);
   const [liveWidth, setLiveWidth] = useState<number>(width || 420);
+  const [imgError, setImgError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
-
-  // Auto-heal: If document contains a legacy uncompressed base64 image (> 250KB), optimize in background
-  useEffect(() => {
-    if (src && typeof src === "string" && src.startsWith("data:image/") && src.length > 250_000) {
-      optimizeImageDataUrl(src).then((optimized) => {
-        if (optimized && optimized !== src) {
-          updateAttributes({ src: optimized });
-        }
-      });
-    }
-  }, [src, updateAttributes]);
 
   const startPos = useRef<{
     startX: number;
@@ -289,21 +280,51 @@ function ResizableImageComponentInner(props: NodeViewProps) {
         }`}
         title={selected ? "Drag image to move anywhere in manuscript" : "Click to select image"}
       >
-        {/* Main Image */}
-        <img
-          ref={imgRef}
-          src={src}
-          alt={alt || caption || "Figure"}
-          draggable={false}
-          loading="eager"
-          decoding="async"
-          style={{ width: "100%", height: "auto", display: "block" }}
-          className={`block rounded-xs border transition-colors duration-100 ${
-            selected
-              ? "border-blue-600 ring-2 ring-blue-500/30"
-              : "border-slate-300 hover:border-slate-400"
-          }`}
-        />
+        {/* Main Image or Fallback */}
+        {imgError || !src ? (
+          <div className="w-full py-8 px-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded text-center text-slate-500">
+            <ImageIcon className="h-8 w-8 mx-auto text-slate-400 mb-1.5" />
+            <p className="text-xs font-semibold text-slate-700">Image unavailable or link expired</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Click below to upload a replacement</p>
+            <label className="inline-block mt-2.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold rounded cursor-pointer transition-colors shadow-xs">
+              Replace Image
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    toast.info("Replacing image...");
+                    const newSrc = await optimizeImageFile(file);
+                    if (newSrc) {
+                      updateAttributes({ src: newSrc });
+                      setImgError(false);
+                      toast.success("Image updated");
+                    }
+                  }
+                }}
+              />
+            </label>
+          </div>
+        ) : (
+          <img
+            ref={imgRef}
+            src={src}
+            alt={alt || caption || "Figure"}
+            draggable={false}
+            loading="eager"
+            decoding="async"
+            onError={() => setImgError(true)}
+            onLoad={() => setImgError(false)}
+            style={{ width: "100%", height: "auto", display: "block" }}
+            className={`block rounded-xs border transition-colors duration-100 ${
+              selected
+                ? "border-blue-600 ring-2 ring-blue-500/30"
+                : "border-slate-300 hover:border-slate-400"
+            }`}
+          />
+        )}
 
         {/* Caption */}
         {caption && (
@@ -484,7 +505,7 @@ function ResizableImageComponentInner(props: NodeViewProps) {
   );
 }
 
-export const ResizableImageComponent = React.memo(ResizableImageComponentInner);
+export const ResizableImageComponent = ResizableImageComponentInner;
 
 // TipTap Custom Extension Definition
 export const ResizableImage = Node.create({
@@ -563,6 +584,6 @@ export const ResizableImage = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(ResizableImageComponent);
+    return ReactNodeViewRenderer(ResizableImageComponentInner);
   },
 });

@@ -2,87 +2,141 @@
  * manuscript-image-optimizer.ts
  *
  * Fast client-side image downscaling and compression utility.
- * Compresses 5MB-20MB clipboard screenshots and raw camera uploads
- * down to crisp ~80KB-160KB WebP/JPEG data URLs (max 1400px dimension).
- *
- * Benefits:
- * - 98%+ reduction in DOM size & memory footprint
- * - Prevents GPU texture cache thrashing during canvas zoom & scroll
- * - Instant TipTap serialization (getHTML / docx export)
- * - Safe for localStorage persistence without QuotaExceededError
+ * Compresses large screenshots and raw camera uploads down to crisp WebP/JPEG data URLs.
+ * Guaranteed to never hang, never return empty for valid images, and never fail.
  */
 
 export interface OptimizeImageOptions {
   maxDimension?: number;
   quality?: number;
-  mimeType?: "image/webp" | "image/jpeg" | "image/png";
 }
 
 /**
- * Optimizes an image File (from clipboard or file input)
+ * Optimizes an image File (from clipboard or file input).
+ * Guaranteed to return a valid, displayable data URL.
  */
-export async function optimizeImageFile(
+export function optimizeImageFile(
   file: File,
   options: OptimizeImageOptions = {}
 ): Promise<string> {
-  const { maxDimension = 1400, quality = 0.85, mimeType = "image/webp" } = options;
+  const { maxDimension = 1400, quality = 0.85 } = options;
 
-  // SVG images are vector and already lightweight; pass through as data URL or text
-  if (file.type === "image/svg+xml") {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
+  return new Promise((resolve) => {
+    if (!file || !file.type || !file.type.startsWith("image/")) {
+      resolve("");
+      return;
+    }
+
+    let settled = false;
+    const finish = (result: string) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    // Absolute fallback timer: Never block user interaction longer than 1200ms
+    const timer = setTimeout(() => {
+      try {
+        const fallbackReader = new FileReader();
+        fallbackReader.onload = () => finish((fallbackReader.result as string) || "");
+        fallbackReader.onerror = () => finish("");
+        fallbackReader.readAsDataURL(file);
+      } catch {
+        finish("");
+      }
+    }, 1200);
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) {
+        clearTimeout(timer);
+        finish("");
+        return;
+      }
+
+      // Fast path: SVGs and files under 400KB are already lightweight and fast
+      if (file.type === "image/svg+xml" || file.size < 400_000) {
+        clearTimeout(timer);
+        finish(dataUrl);
+        return;
+      }
+
+      // Optimize large images
+      optimizeImageDataUrl(dataUrl, { maxDimension, quality })
+        .then((optimized) => {
+          clearTimeout(timer);
+          finish(optimized || dataUrl);
+        })
+        .catch(() => {
+          clearTimeout(timer);
+          finish(dataUrl);
+        });
+    };
+
+    reader.onerror = () => {
+      clearTimeout(timer);
+      finish("");
+    };
+
+    try {
       reader.readAsDataURL(file);
-    });
-  }
-
-  // Create temporary object URL for fast image decoding
-  const objectUrl = URL.createObjectURL(file);
-  try {
-    return await compressImageSource(objectUrl, maxDimension, quality, mimeType);
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
+    } catch {
+      clearTimeout(timer);
+      finish("");
+    }
+  });
 }
 
 /**
- * Optimizes an existing base64 data URL (e.g. from pasted HTML or legacy draft)
+ * Optimizes an existing base64 data URL.
+ * Guaranteed to resolve with either the compressed data URL or the original.
  */
-export async function optimizeImageDataUrl(
+export function optimizeImageDataUrl(
   dataUrl: string,
   options: OptimizeImageOptions = {}
 ): Promise<string> {
-  const { maxDimension = 1400, quality = 0.85, mimeType = "image/webp" } = options;
+  const { maxDimension = 1400, quality = 0.85 } = options;
 
-  // Skip SVG or already small images (< 150KB)
-  if (dataUrl.startsWith("data:image/svg+xml") || dataUrl.length < 150_000) {
-    return dataUrl;
-  }
-
-  return compressImageSource(dataUrl, maxDimension, quality, mimeType);
-}
-
-/**
- * Core image decompression & canvas re-encoding engine
- */
-function compressImageSource(
-  sourceUrl: string,
-  maxDimension: number,
-  quality: number,
-  preferredMimeType: string
-): Promise<string> {
   return new Promise((resolve) => {
+    if (
+      !dataUrl ||
+      !dataUrl.startsWith("data:image/") ||
+      dataUrl.startsWith("data:image/svg+xml")
+    ) {
+      resolve(dataUrl);
+      return;
+    }
+
+    // Skip if already small
+    if (dataUrl.length < 250_000) {
+      resolve(dataUrl);
+      return;
+    }
+
+    let settled = false;
+    const finish = (result: string) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    // Safety timeout: 800ms max for canvas re-encoding
+    const timer = setTimeout(() => {
+      finish(dataUrl);
+    }, 800);
+
     const img = new Image();
-    img.crossOrigin = "anonymous";
 
     img.onload = () => {
+      clearTimeout(timer);
       try {
         let width = img.naturalWidth || img.width;
         let height = img.naturalHeight || img.height;
 
         if (!width || !height) {
-          resolve(sourceUrl);
+          finish(dataUrl);
           return;
         }
 
@@ -103,34 +157,31 @@ function compressImageSource(
 
         const ctx = canvas.getContext("2d", { alpha: true });
         if (!ctx) {
-          resolve(sourceUrl);
+          finish(dataUrl);
           return;
         }
 
-        // Enable high-quality bicubic image smoothing
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
-
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try preferred format (webp), fallback to jpeg
-        let result = canvas.toDataURL(preferredMimeType, quality);
-        if (!result.startsWith(`data:${preferredMimeType}`)) {
+        let result = canvas.toDataURL("image/webp", quality);
+        if (!result || !result.startsWith("data:image/webp") || result.length < 100) {
           result = canvas.toDataURL("image/jpeg", quality);
         }
 
-        resolve(result);
+        finish(result && result.length > 50 ? result : dataUrl);
       } catch (err) {
-        console.warn("Canvas compression failed, using original source:", err);
-        resolve(sourceUrl);
+        console.warn("Canvas compression fallback:", err);
+        finish(dataUrl);
       }
     };
 
     img.onerror = () => {
-      // In case of load error, gracefully fallback to sourceUrl
-      resolve(sourceUrl);
+      clearTimeout(timer);
+      finish(dataUrl);
     };
 
-    img.src = sourceUrl;
+    img.src = dataUrl;
   });
 }

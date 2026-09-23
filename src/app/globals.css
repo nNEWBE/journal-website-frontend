@@ -253,21 +253,12 @@ header.sticky,
 }
 
 #manuscript-paper-sheet {
-  will-change: transform;
-  contain: layout style;
-}
-
-/* Optimize manuscript figures and images for smooth hardware scrolling and zooming */
-#manuscript-paper-sheet figure[data-resizable-image],
-#manuscript-paper-sheet .ProseMirror figure {
-  contain: layout style;
-  content-visibility: auto;
+  display: flow-root;
 }
 
 #manuscript-paper-sheet img {
-  image-rendering: -webkit-optimize-contrast;
-  transform: translateZ(0);
-  backface-visibility: hidden;
+  max-width: 100%;
+  height: auto;
 }
 
 ::selection {

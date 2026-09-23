@@ -17,7 +17,6 @@ import {
 import { toast, Toaster } from "sonner";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -25,12 +24,10 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import FontFamily from "@tiptap/extension-font-family";
 import TextAlign from "@tiptap/extension-text-align";
-import Link from "@tiptap/extension-link";
 import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
-import Dropcursor from "@tiptap/extension-dropcursor";
 import mammoth from "mammoth";
 import { PaginationPlus } from "tiptap-pagination-plus";
 
@@ -86,14 +83,16 @@ export default function ManuscriptEditorPage() {
   const [saveStatus, setSaveStatus] = useState<string>("Saved");
   const [lastSavedTime, setLastSavedTime] = useState<string>("");
   const updateDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const editorRef = useRef<any>(null);
 
   // Initialize TipTap Editor with full extensions suite + PaginationPlus
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
+        dropcursor: { color: "#2563eb", width: 2.5 },
+        link: { openOnClick: false },
       }),
-      Underline,
       Subscript,
       Superscript,
       TextStyle,
@@ -101,12 +100,10 @@ export default function ManuscriptEditorPage() {
       Highlight.configure({ multicolor: true }),
       FontFamily,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Link.configure({ openOnClick: false }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
       TableCell,
-      Dropcursor.configure({ color: "#2563eb", width: 2.5 }),
       ResizableImage,
       PaginationPlus.configure({
         enabled: true,
@@ -132,33 +129,52 @@ export default function ManuscriptEditorPage() {
     immediatelyRender: false,
     editorProps: {
       handlePaste: (view, event) => {
-        const items = event.clipboardData?.items;
-        if (items) {
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            if (item.type.startsWith("image/")) {
-              const file = item.getAsFile();
-              if (file) {
-                event.preventDefault();
-                toast.info("Optimizing pasted image...");
-                optimizeImageFile(file).then((optimizedSrc) => {
-                  const node = view.state.schema.nodes.resizableImage?.create({
-                    src: optimizedSrc,
-                    alt: "Figure: Academic illustration",
-                    caption: "Figure: Academic illustration",
-                    width: 480,
-                    wrap: "center",
-                  });
-                  if (node) {
-                    const tr = view.state.tr.replaceSelectionWith(node);
-                    view.dispatch(tr);
-                    toast.success("Image optimized & inserted");
-                  }
-                });
-                return true;
-              }
+        // Collect any pasted image files
+        const imageFiles: File[] = [];
+        if (event.clipboardData?.files?.length) {
+          for (let i = 0; i < event.clipboardData.files.length; i++) {
+            const f = event.clipboardData.files[i];
+            if (f.type.startsWith("image/")) {
+              imageFiles.push(f);
             }
           }
+        }
+        if (imageFiles.length === 0 && event.clipboardData?.items) {
+          for (let i = 0; i < event.clipboardData.items.length; i++) {
+            const item = event.clipboardData.items[i];
+            if (item.type.startsWith("image/")) {
+              const f = item.getAsFile();
+              if (f) imageFiles.push(f);
+            }
+          }
+        }
+
+        if (imageFiles.length > 0) {
+          event.preventDefault();
+          const file = imageFiles[0];
+          toast.info("Inserting pasted image...");
+          optimizeImageFile(file).then((src) => {
+            if (src) {
+              const ed = editorRef.current || (view as any).editor;
+              if (ed && !ed.isDestroyed) {
+                ed.chain()
+                  .focus()
+                  .insertContent({
+                    type: "resizableImage",
+                    attrs: {
+                      src,
+                      alt: "Figure: Academic illustration",
+                      caption: "Figure: Academic illustration",
+                      width: 480,
+                      wrap: "center",
+                    },
+                  })
+                  .run();
+                toast.success("Image inserted successfully");
+              }
+            }
+          });
+          return true;
         }
         return false;
       },
@@ -167,20 +183,27 @@ export default function ManuscriptEditorPage() {
           const file = event.dataTransfer.files[0];
           if (file.type.startsWith("image/")) {
             event.preventDefault();
-            toast.info("Optimizing dropped image...");
-            optimizeImageFile(file).then((optimizedSrc) => {
-              const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_\-]/g, " ");
-              const node = view.state.schema.nodes.resizableImage?.create({
-                src: optimizedSrc,
-                alt: `Figure: ${cleanName}`,
-                caption: `Figure: ${cleanName}`,
-                width: 480,
-                wrap: "center",
-              });
-              if (node) {
-                const tr = view.state.tr.replaceSelectionWith(node);
-                view.dispatch(tr);
-                toast.success(`Image "${file.name}" inserted`);
+            toast.info("Inserting dropped image...");
+            optimizeImageFile(file).then((src) => {
+              if (src) {
+                const ed = editorRef.current || (view as any).editor;
+                const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_\-]/g, " ");
+                if (ed && !ed.isDestroyed) {
+                  ed.chain()
+                    .focus()
+                    .insertContent({
+                      type: "resizableImage",
+                      attrs: {
+                        src,
+                        alt: `Figure: ${cleanName}`,
+                        caption: `Figure: ${cleanName}`,
+                        width: 480,
+                        wrap: "center",
+                      },
+                    })
+                    .run();
+                  toast.success(`Image "${file.name}" inserted`);
+                }
               }
             });
             return true;
@@ -197,6 +220,10 @@ export default function ManuscriptEditorPage() {
       }, 400);
     },
   });
+
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   useEffect(() => {
     return () => {
