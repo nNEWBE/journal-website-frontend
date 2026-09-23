@@ -5,6 +5,7 @@ import React, {
   useState,
   useRef,
   useCallback,
+  memo,
 } from "react";
 import { Editor, EditorContent } from "@tiptap/react";
 import { UploadCloud, ZoomIn, ZoomOut } from "lucide-react";
@@ -31,7 +32,140 @@ interface ManuscriptEditorCanvasProps {
   onDropDocxFile: (file: File) => void;
 }
 
-export function ManuscriptEditorCanvas({
+// ── 1. Isolated Status Bar Component (Updates word/page counts without touching canvas) ──
+interface StatusBarProps {
+  editor: Editor | null;
+  currentDimensions: { name: string; width: number; height: number };
+  zoomLabelRef: React.RefObject<HTMLSpanElement | null>;
+  onZoomStep: (direction: 1 | -1) => void;
+  onZoomReset: () => void;
+}
+
+const ManuscriptEditorStatusBar = memo(function ManuscriptEditorStatusBar({
+  editor,
+  currentDimensions,
+  zoomLabelRef,
+  onZoomStep,
+  onZoomReset,
+}: StatusBarProps) {
+  const [metrics, setMetrics] = useState({
+    wordCount: 0,
+    charCount: 0,
+    estimatedPages: 1,
+    readingTimeMinutes: 1,
+  });
+
+  useEffect(() => {
+    if (!editor) return;
+
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const computeMetrics = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (editor.isDestroyed) return;
+        const text = editor.getText() || "";
+        const words = text.trim().split(/\s+/).filter(Boolean);
+        const wCount = words.length;
+        const cCount = text.length;
+        setMetrics({
+          wordCount: wCount,
+          charCount: cCount,
+          estimatedPages: Math.max(1, Math.ceil(wCount / 250)),
+          readingTimeMinutes: Math.max(1, Math.ceil(wCount / 200)),
+        });
+      }, 300);
+    };
+
+    computeMetrics();
+    editor.on("update", computeMetrics);
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      editor.off("update", computeMetrics);
+    };
+  }, [editor]);
+
+  return (
+    <div className="bg-[#f8fafc] border-t border-slate-200/90 pl-16 pr-4 py-1.5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 shrink-0 select-none">
+      <div className="flex items-center gap-3 text-[11px] font-medium">
+        {/* Paper Format Badge */}
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-slate-200 text-slate-800 font-semibold text-[10.5px]">
+          <span>{currentDimensions.name}</span>
+          <span className="text-slate-400 font-mono text-[9.5px]">
+            {currentDimensions.width}×{currentDimensions.height}px
+          </span>
+        </span>
+
+        <span className="text-slate-300">|</span>
+
+        <span>
+          <strong className="text-slate-900 font-bold">
+            {metrics.wordCount.toLocaleString()}
+          </strong>{" "}
+          words
+        </span>
+        <span className="text-slate-300">|</span>
+        <span>
+          <strong className="text-slate-900 font-bold">
+            {metrics.charCount.toLocaleString()}
+          </strong>{" "}
+          characters
+        </span>
+        <span className="text-slate-300 hidden sm:inline">|</span>
+        <span className="hidden sm:inline">
+          Estimated{" "}
+          <strong className="text-slate-900 font-bold">
+            ~{metrics.estimatedPages}
+          </strong>{" "}
+          {metrics.estimatedPages === 1 ? "page" : "pages"} (Double-Spaced)
+        </span>
+        <span className="text-slate-300 hidden md:inline">|</span>
+        <span className="hidden md:inline text-slate-500">
+          ~{metrics.readingTimeMinutes} min reading time
+        </span>
+      </div>
+
+      {/* Pure DOM Zoom Controls — zero React state on hot path */}
+      <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-xs shadow-2xs">
+        <span className="text-[10.5px] font-semibold text-slate-500 mr-1">
+          Paper Zoom:
+        </span>
+        <button
+          type="button"
+          onClick={() => onZoomStep(-1)}
+          className="p-1 hover:bg-slate-200 rounded-xs text-slate-600 transition-colors cursor-pointer"
+          title="Zoom Out Paper (or Ctrl+Scroll Down)"
+        >
+          <ZoomOut className="h-3.5 w-3.5" />
+        </button>
+        <span
+          ref={zoomLabelRef}
+          className="text-[11px] font-mono text-slate-700 w-11 text-center font-bold"
+        >
+          100%
+        </span>
+        <button
+          type="button"
+          onClick={() => onZoomStep(1)}
+          className="p-1 hover:bg-slate-200 rounded-xs text-slate-600 transition-colors cursor-pointer"
+          title="Zoom In Paper (or Ctrl+Scroll Up)"
+        >
+          <ZoomIn className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onZoomReset}
+          className="text-[10.5px] font-semibold text-blue-700 hover:underline ml-1 cursor-pointer"
+          title="Reset Paper Zoom to 100%"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+});
+
+// ── 2. Main Canvas Component ──
+function ManuscriptEditorCanvasInner({
   editor,
   paperFormat,
   paperOrientation,
@@ -44,10 +178,9 @@ export function ManuscriptEditorCanvas({
   onDropImageFile,
   onDropDocxFile,
 }: ManuscriptEditorCanvasProps) {
-  // ── Zoom is stored in a plain ref — no React state — so zooming never re-renders React ──
+  // Plain ref for zoom percentage — zero React re-renders on zoom hot path
   const zoomRef = useRef<number>(100);
-  // Only used to update the status bar text after zooming settles
-  const [displayZoom, setDisplayZoom] = useState<number>(100);
+  const zoomLabelRef = useRef<HTMLSpanElement | null>(null);
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
@@ -56,73 +189,89 @@ export function ManuscriptEditorCanvas({
   const boundingBoxRef = useRef<HTMLDivElement | null>(null);
   const rulerInnerRef = useRef<HTMLDivElement | null>(null);
   const accDeltaRef = useRef<number>(0);
-  const displayZoomRafRef = useRef<number | null>(null);
+  const zoomRafRef = useRef<number | null>(null);
+  const willChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Paper dimensions (stable unless paperFormat/orientation changes)
+  // Paper dimensions
   const currentDimensions =
     PAPER_DIMENSIONS[paperFormat]?.[paperOrientation] ||
     PAPER_DIMENSIONS.a4.portrait;
 
-  // Track natural unscaled sheet height via ResizeObserver
+  // Track natural unscaled sheet height via ResizeObserver with rAF throttling
   const naturalSheetHeightRef = useRef<number>(currentDimensions.height);
   useEffect(() => {
     const el = paperSheetRef.current;
     if (!el) return;
 
+    let roRaf: number | null = null;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const h =
           entry.borderBoxSize?.[0]?.blockSize ||
           entry.contentRect?.height ||
           0;
-        if (h > 0) {
+        if (h > 0 && Math.abs(h - naturalSheetHeightRef.current) > 4) {
           naturalSheetHeightRef.current = h;
-          // Imperatively update bounding box minHeight without React state
-          const bb = boundingBoxRef.current;
-          if (bb) {
-            const scale = zoomRef.current / 100;
-            bb.style.minHeight = `${Math.round(h * scale)}px`;
+          if (roRaf === null) {
+            roRaf = requestAnimationFrame(() => {
+              roRaf = null;
+              const bb = boundingBoxRef.current;
+              if (bb) {
+                const scale = zoomRef.current / 100;
+                bb.style.minHeight = `${Math.round(naturalSheetHeightRef.current * scale)}px`;
+              }
+            });
           }
         }
       }
     });
 
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      if (roRaf !== null) cancelAnimationFrame(roRaf);
+      ro.disconnect();
+    };
   }, [currentDimensions.height]);
 
-  // Pending rAF for layout writes (bounding box + ruler)
-  const layoutRafRef = useRef<number | null>(null);
+  // ── Core atomic imperative zoom applier ──
+  // Updates sheet transform, bounding box, and ruler synchronously in the same rAF frame.
+  // Never uses React state, so React never reconciles or wipes out the inline transform.
+  const applyZoom = useCallback(
+    (targetZoom: number) => {
+      const next = Math.min(200, Math.max(50, targetZoom));
+      zoomRef.current = next;
 
-  // ── Core imperative zoom applier ──
-  // Split into two phases:
-  //   1. Transform-only (synchronous, compositor thread, zero layout cost)
-  //   2. Layout writes (deferred to rAF so they never block the wheel callback)
-  const applyZoomToDOM = useCallback(
-    (newZoom: number) => {
-      const sheet = paperSheetRef.current;
-      if (!sheet) return;
-
-      const scale = newZoom / 100;
-      const sheetW = currentDimensions.width;
-
-      // ── Phase 1: Transform (GPU-composited, never causes layout) ──
-      sheet.style.transform = newZoom !== 100 ? `scale(${scale})` : "";
-
-      // ── Phase 2: Layout-affecting writes — always deferred to next frame ──
-      if (layoutRafRef.current !== null) {
-        cancelAnimationFrame(layoutRafRef.current);
+      // Update text label directly in DOM without React state
+      if (zoomLabelRef.current) {
+        zoomLabelRef.current.textContent = `${next}%`;
       }
-      layoutRafRef.current = requestAnimationFrame(() => {
-        layoutRafRef.current = null;
+
+      if (zoomRafRef.current !== null) {
+        cancelAnimationFrame(zoomRafRef.current);
+      }
+
+      zoomRafRef.current = requestAnimationFrame(() => {
+        zoomRafRef.current = null;
+        const sheet = paperSheetRef.current;
         const bb = boundingBoxRef.current;
         const ruler = rulerInnerRef.current;
+        if (!sheet || !bb) return;
+
+        const scale = next / 100;
+        const sheetW = currentDimensions.width;
         const sheetH = naturalSheetHeightRef.current;
 
-        if (bb) {
-          bb.style.width = `${Math.round(sheetW * scale)}px`;
-          bb.style.minHeight = `${Math.round(sheetH * scale)}px`;
-        }
+        // Temporarily promote to compositor transform layer during active zoom
+        sheet.style.willChange = "transform";
+        if (willChangeTimeoutRef.current) clearTimeout(willChangeTimeoutRef.current);
+        willChangeTimeoutRef.current = setTimeout(() => {
+          if (sheet) sheet.style.willChange = "auto";
+        }, 300);
+
+        // Atomic layout update in exact same frame
+        sheet.style.transform = next !== 100 ? `scale(${scale})` : "";
+        bb.style.width = `${Math.round(sheetW * scale)}px`;
+        bb.style.minHeight = `${Math.round(sheetH * scale)}px`;
         if (ruler) {
           ruler.style.width = `${Math.round(sheetW * scale)}px`;
         }
@@ -131,143 +280,106 @@ export function ManuscriptEditorCanvas({
     [currentDimensions.width]
   );
 
-  // Whenever paper format / orientation changes, re-apply current zoom to resized sheet
+  // Whenever paper format / orientation changes, re-assert current zoom
   useEffect(() => {
-    applyZoomToDOM(zoomRef.current);
-  }, [currentDimensions.width, currentDimensions.height, applyZoomToDOM]);
+    applyZoom(zoomRef.current);
+  }, [currentDimensions.width, currentDimensions.height, applyZoom]);
 
-  // Word / char metrics (completely isolated from zoom)
-  const [docMetrics, setDocMetrics] = useState({
-    wordCount: 0,
-    charCount: 0,
-    estimatedPages: 1,
-    readingTimeMinutes: 1,
-  });
+  const handleZoomStep = useCallback(
+    (direction: 1 | -1) => {
+      applyZoom(zoomRef.current + direction * 10);
+    },
+    [applyZoom]
+  );
 
+  const handleZoomReset = useCallback(() => {
+    applyZoom(100);
+  }, [applyZoom]);
+
+  // ── High-Performance Wheel & Scroll Architecture ──
+  // CRITICAL: We only attach a non-passive wheel listener when Control/Meta is actively held down.
+  // During normal scrolling (99.9% of user interactions), ZERO wheel listeners exist on the container.
+  // This allows the browser compositor thread to execute 100% native hardware 120/144 FPS scrolling
+  // without any roundtrips to the JavaScript main thread.
   useEffect(() => {
-    if (!editor) return;
+    let isCtrlActive = false;
 
-    const computeMetrics = () => {
-      const text = editor.getText() || "";
-      const words = text.trim().split(/\s+/).filter(Boolean);
-      const wCount = words.length;
-      const cCount = text.length;
-      setDocMetrics({
-        wordCount: wCount,
-        charCount: cCount,
-        estimatedPages: Math.max(1, Math.ceil(wCount / 250)),
-        readingTimeMinutes: Math.max(1, Math.ceil(wCount / 200)),
-      });
-    };
-
-    computeMetrics();
-    editor.on("update", computeMetrics);
-    return () => {
-      editor.off("update", computeMetrics);
-    };
-  }, [editor]);
-
-  // ── Debounced status-bar update — decouple zoom display from the hot wheel path ──
-  const scheduleDisplayZoomUpdate = useCallback((newZoom: number) => {
-    if (displayZoomRafRef.current !== null) {
-      cancelAnimationFrame(displayZoomRafRef.current);
-    }
-    // Use two nested rAFs: first flushes imperative DOM writes,
-    // second schedules the (very cheap) React state update for the label.
-    displayZoomRafRef.current = requestAnimationFrame(() => {
-      displayZoomRafRef.current = requestAnimationFrame(() => {
-        setDisplayZoom(newZoom);
-        displayZoomRafRef.current = null;
-      });
-    });
-  }, []);
-
-  // ── Ctrl+Wheel zoom handler — fully imperative, zero React setState on hot path ──
-  useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
 
       accDeltaRef.current += e.deltaY;
-      const STEP_THRESHOLD = 30;
+      const STEP_THRESHOLD = 25;
 
       if (Math.abs(accDeltaRef.current) >= STEP_THRESHOLD) {
         const direction = accDeltaRef.current < 0 ? 1 : -1;
         accDeltaRef.current = 0;
+        applyZoom(zoomRef.current + direction * 10);
+      }
+    };
 
-        const current = zoomRef.current;
-        const next = Math.min(200, Math.max(50, current + direction * 10));
+    const attachZoomWheel = () => {
+      const scrollEl = canvasScrollRef.current;
+      if (scrollEl && !isCtrlActive) {
+        isCtrlActive = true;
+        scrollEl.addEventListener("wheel", handleWheel, { passive: false });
+      }
+    };
 
-        if (next !== current) {
-          zoomRef.current = next;
-          // DOM update in same microtask — no React involved
-          applyZoomToDOM(next);
-          // Schedule cheap label update after paint
-          scheduleDisplayZoomUpdate(next);
-        }
+    const detachZoomWheel = () => {
+      const scrollEl = canvasScrollRef.current;
+      if (scrollEl && isCtrlActive) {
+        isCtrlActive = false;
+        scrollEl.removeEventListener("wheel", handleWheel);
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta") {
+        attachZoomWheel();
+      }
+
       if (!(e.ctrlKey || e.metaKey)) return;
 
-      let next: number | null = null;
       if (e.key === "=" || e.key === "+") {
         e.preventDefault();
-        next = Math.min(200, zoomRef.current + 10);
+        applyZoom(zoomRef.current + 10);
       } else if (e.key === "-") {
         e.preventDefault();
-        next = Math.max(50, zoomRef.current - 10);
+        applyZoom(zoomRef.current - 10);
       } else if (e.key === "0") {
         e.preventDefault();
-        next = 100;
-      }
-
-      if (next !== null && next !== zoomRef.current) {
-        zoomRef.current = next;
-        applyZoomToDOM(next);
-        scheduleDisplayZoomUpdate(next);
+        applyZoom(100);
       }
     };
 
-    const scrollEl = canvasScrollRef.current;
-    if (scrollEl) {
-      scrollEl.addEventListener("wheel", handleWheel, { passive: false });
-    }
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta") {
+        detachZoomWheel();
+      }
+    };
+
+    const handleBlur = () => {
+      detachZoomWheel();
+    };
+
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
 
     return () => {
-      if (scrollEl) scrollEl.removeEventListener("wheel", handleWheel);
       window.removeEventListener("keydown", handleKeyDown);
-      if (displayZoomRafRef.current !== null) {
-        cancelAnimationFrame(displayZoomRafRef.current);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+      detachZoomWheel();
+      if (zoomRafRef.current !== null) {
+        cancelAnimationFrame(zoomRafRef.current);
       }
-      if (layoutRafRef.current !== null) {
-        cancelAnimationFrame(layoutRafRef.current);
+      if (willChangeTimeoutRef.current) {
+        clearTimeout(willChangeTimeoutRef.current);
       }
     };
-  }, [applyZoomToDOM, scheduleDisplayZoomUpdate]);
-
-  // Button zoom handler — still no React setState on the hot path, uses same imperative path
-  const handleZoomStep = useCallback(
-    (direction: 1 | -1) => {
-      const next = Math.min(200, Math.max(50, zoomRef.current + direction * 10));
-      if (next !== zoomRef.current) {
-        zoomRef.current = next;
-        applyZoomToDOM(next);
-        scheduleDisplayZoomUpdate(next);
-      }
-    },
-    [applyZoomToDOM, scheduleDisplayZoomUpdate]
-  );
-
-  const handleZoomReset = useCallback(() => {
-    if (zoomRef.current !== 100) {
-      zoomRef.current = 100;
-      applyZoomToDOM(100);
-      scheduleDisplayZoomUpdate(100);
-    }
-  }, [applyZoomToDOM, scheduleDisplayZoomUpdate]);
+  }, [applyZoom]);
 
   // Drag-and-drop
   const handleDragOver = (e: React.DragEvent) => {
@@ -320,7 +432,6 @@ export function ManuscriptEditorCanvas({
     >
       {/* ── Top Ruler (width synced imperatively) ── */}
       <div className="bg-[#f1f4f9] border-b border-slate-300/80 h-7 flex items-center justify-center shrink-0 select-none overflow-hidden shadow-2xs">
-        {/* rulerInnerRef width is updated imperatively by applyZoomToDOM */}
         <div
           ref={rulerInnerRef}
           style={{ width: `${currentDimensions.width}px` }}
@@ -353,10 +464,10 @@ export function ManuscriptEditorCanvas({
           overflowY: "scroll",
           overflowX: "auto",
           scrollBehavior: "auto",
-          // Allow browser/compositor to handle pan-y natively (fast path for trackpad/touchscreen)
+          overscrollBehavior: "contain",
           touchAction: "pan-y",
         }}
-        className={`flex-1 min-h-0 relative ${isDraggingOver ? "bg-blue-100/60" : ""}`}
+        className={`manuscript-scroll-canvas flex-1 min-h-0 relative ${isDraggingOver ? "bg-blue-100/60" : ""}`}
       >
         {/* Drop Banner */}
         {isDraggingOver && (
@@ -368,10 +479,9 @@ export function ManuscriptEditorCanvas({
           </div>
         )}
 
-        {/* Centering wrapper — explicit min-width avoids expensive w-max intrinsic-size computation on every layout */}
-        <div className="min-h-full py-8 px-6 sm:px-12 flex justify-center items-start" style={{ minWidth: '100%' }}>
-
-          {/* Invisible bounding box — updated imperatively to keep scrollbars accurate at any zoom */}
+        {/* Centering wrapper */}
+        <div className="min-h-full py-8 px-6 sm:px-12 flex justify-center items-start" style={{ minWidth: "100%" }}>
+          {/* Bounding box to give the scroll container accurate dimensions */}
           <div
             ref={boundingBoxRef}
             style={{
@@ -380,18 +490,17 @@ export function ManuscriptEditorCanvas({
               position: "relative",
             }}
           >
-            {/* The actual paper sheet — transform: scale applied imperatively via applyZoomToDOM */}
+            {/* The actual paper sheet — transform preserved in JSX style so React never wipes it */}
             <div
               ref={paperSheetRef}
               id="manuscript-paper-sheet"
               style={{
                 width: `${currentDimensions.width}px`,
-                // transform applied imperatively by applyZoomToDOM — not via React state
                 transformOrigin: "top left",
-                willChange: "transform",
                 position: "absolute",
                 top: 0,
                 left: 0,
+                transform: zoomRef.current !== 100 ? `scale(${zoomRef.current / 100})` : undefined,
               }}
               className={`${
                 viewMode === "continuous"
@@ -428,80 +537,16 @@ export function ManuscriptEditorCanvas({
         <ManuscriptTableTools editor={editor} />
       </div>
 
-      {/* ── Bottom Status Bar ── */}
-      <div className="bg-[#f8fafc] border-t border-slate-200/90 pl-16 pr-4 py-1.5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 shrink-0 select-none">
-        <div className="flex items-center gap-3 text-[11px] font-medium">
-          {/* Paper Format Badge */}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-slate-200 text-slate-800 font-semibold text-[10.5px]">
-            <span>{currentDimensions.name}</span>
-            <span className="text-slate-400 font-mono text-[9.5px]">
-              {currentDimensions.width}×{currentDimensions.height}px
-            </span>
-          </span>
-
-          <span className="text-slate-300">|</span>
-
-          <span>
-            <strong className="text-slate-900 font-bold">
-              {docMetrics.wordCount.toLocaleString()}
-            </strong>{" "}
-            words
-          </span>
-          <span className="text-slate-300">|</span>
-          <span>
-            <strong className="text-slate-900 font-bold">
-              {docMetrics.charCount.toLocaleString()}
-            </strong>{" "}
-            characters
-          </span>
-          <span className="text-slate-300 hidden sm:inline">|</span>
-          <span className="hidden sm:inline">
-            Estimated{" "}
-            <strong className="text-slate-900 font-bold">
-              ~{docMetrics.estimatedPages}
-            </strong>{" "}
-            {docMetrics.estimatedPages === 1 ? "page" : "pages"} (Double-Spaced)
-          </span>
-          <span className="text-slate-300 hidden md:inline">|</span>
-          <span className="hidden md:inline text-slate-500">
-            ~{docMetrics.readingTimeMinutes} min reading time
-          </span>
-        </div>
-
-        {/* Zoom Controls — displayZoom is only updated after zoom settles */}
-        <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-xs shadow-2xs">
-          <span className="text-[10.5px] font-semibold text-slate-500 mr-1">
-            Paper Zoom:
-          </span>
-          <button
-            type="button"
-            onClick={() => handleZoomStep(-1)}
-            className="p-1 hover:bg-slate-200 rounded-xs text-slate-600 transition-colors cursor-pointer"
-            title="Zoom Out Paper (or Ctrl+Scroll Down)"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <span className="text-[11px] font-mono text-slate-700 w-11 text-center font-bold">
-            {displayZoom}%
-          </span>
-          <button
-            type="button"
-            onClick={() => handleZoomStep(1)}
-            className="p-1 hover:bg-slate-200 rounded-xs text-slate-600 transition-colors cursor-pointer"
-            title="Zoom In Paper (or Ctrl+Scroll Up)"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleZoomReset}
-            className="text-[10.5px] font-semibold text-blue-700 hover:underline ml-1 cursor-pointer"
-            title="Reset Paper Zoom to 100%"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
+      {/* ── Status Bar (Isolated from Canvas) ── */}
+      <ManuscriptEditorStatusBar
+        editor={editor}
+        currentDimensions={currentDimensions}
+        zoomLabelRef={zoomLabelRef}
+        onZoomStep={handleZoomStep}
+        onZoomReset={handleZoomReset}
+      />
     </div>
   );
 }
+
+export const ManuscriptEditorCanvas = memo(ManuscriptEditorCanvasInner);

@@ -16,9 +16,10 @@ import {
   WrapText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { optimizeImageDataUrl } from "@/lib/manuscript-image-optimizer";
 
 // Component rendered inside TipTap for every ResizableImage node
-export function ResizableImageComponent(props: NodeViewProps) {
+function ResizableImageComponentInner(props: NodeViewProps) {
   const { node, updateAttributes, selected, deleteNode, editor } = props;
   const { src, alt, caption, width, wrap } = node.attrs;
 
@@ -26,6 +27,17 @@ export function ResizableImageComponent(props: NodeViewProps) {
   const [activeHandle, setActiveHandle] = useState<string | null>(null);
   const [liveWidth, setLiveWidth] = useState<number>(width || 420);
   const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Auto-heal: If document contains a legacy uncompressed base64 image (> 250KB), optimize in background
+  useEffect(() => {
+    if (src && typeof src === "string" && src.startsWith("data:image/") && src.length > 250_000) {
+      optimizeImageDataUrl(src).then((optimized) => {
+        if (optimized && optimized !== src) {
+          updateAttributes({ src: optimized });
+        }
+      });
+    }
+  }, [src, updateAttributes]);
 
   const startPos = useRef<{
     startX: number;
@@ -272,7 +284,7 @@ export function ResizableImageComponent(props: NodeViewProps) {
         data-drag-handle
         draggable={true}
         style={{ width: `${liveWidth}px`, maxWidth: "100%" }}
-        className={`relative inline-block leading-none transition-shadow ${
+        className={`relative inline-block leading-none ${
           selected ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
         }`}
         title={selected ? "Drag image to move anywhere in manuscript" : "Click to select image"}
@@ -283,8 +295,10 @@ export function ResizableImageComponent(props: NodeViewProps) {
           src={src}
           alt={alt || caption || "Figure"}
           draggable={false}
-          style={{ width: "100%", height: "auto" }}
-          className={`block rounded-xs border transition-all ${
+          loading="eager"
+          decoding="async"
+          style={{ width: "100%", height: "auto", display: "block" }}
+          className={`block rounded-xs border transition-colors duration-100 ${
             selected
               ? "border-blue-600 ring-2 ring-blue-500/30"
               : "border-slate-300 hover:border-slate-400"
@@ -469,6 +483,8 @@ export function ResizableImageComponent(props: NodeViewProps) {
     </NodeViewWrapper>
   );
 }
+
+export const ResizableImageComponent = React.memo(ResizableImageComponentInner);
 
 // TipTap Custom Extension Definition
 export const ResizableImage = Node.create({

@@ -55,6 +55,7 @@ import {
   downloadAsDocx,
   printManuscriptDocument,
 } from "@/lib/manuscript-export";
+import { optimizeImageFile } from "@/lib/manuscript-image-optimizer";
 
 const LOCAL_STORAGE_KEY = "gb_academic_manuscript_draft";
 const SUBMISSION_ATTACH_KEY = "gb_draft_written_manuscript";
@@ -84,6 +85,7 @@ export default function ManuscriptEditorPage() {
   // Save state
   const [saveStatus, setSaveStatus] = useState<string>("Saved");
   const [lastSavedTime, setLastSavedTime] = useState<string>("");
+  const updateDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize TipTap Editor with full extensions suite + PaginationPlus
   const editor = useEditor({
@@ -128,11 +130,79 @@ export default function ManuscriptEditorPage() {
     ],
     content: "",
     immediatelyRender: false,
+    editorProps: {
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (items) {
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type.startsWith("image/")) {
+              const file = item.getAsFile();
+              if (file) {
+                event.preventDefault();
+                toast.info("Optimizing pasted image...");
+                optimizeImageFile(file).then((optimizedSrc) => {
+                  const node = view.state.schema.nodes.resizableImage?.create({
+                    src: optimizedSrc,
+                    alt: "Figure: Academic illustration",
+                    caption: "Figure: Academic illustration",
+                    width: 480,
+                    wrap: "center",
+                  });
+                  if (node) {
+                    const tr = view.state.tr.replaceSelectionWith(node);
+                    view.dispatch(tr);
+                    toast.success("Image optimized & inserted");
+                  }
+                });
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (!moved && event.dataTransfer?.files?.length) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith("image/")) {
+            event.preventDefault();
+            toast.info("Optimizing dropped image...");
+            optimizeImageFile(file).then((optimizedSrc) => {
+              const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_\-]/g, " ");
+              const node = view.state.schema.nodes.resizableImage?.create({
+                src: optimizedSrc,
+                alt: `Figure: ${cleanName}`,
+                caption: `Figure: ${cleanName}`,
+                width: 480,
+                wrap: "center",
+              });
+              if (node) {
+                const tr = view.state.tr.replaceSelectionWith(node);
+                view.dispatch(tr);
+                toast.success(`Image "${file.name}" inserted`);
+              }
+            });
+            return true;
+          }
+        }
+        return false;
+      },
+    },
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      setContentHtml(html);
+      // Debounce the state update to avoid heavy serializations and React waterfall on every keystroke
+      if (updateDebounceRef.current) clearTimeout(updateDebounceRef.current);
+      updateDebounceRef.current = setTimeout(() => {
+        setContentHtml(editor.getHTML());
+      }, 400);
     },
   });
+
+  useEffect(() => {
+    return () => {
+      if (updateDebounceRef.current) clearTimeout(updateDebounceRef.current);
+    };
+  }, []);
 
   // Load draft or initial template on editor mount (deferred to microtask to prevent React 19 flushSync warning)
   useEffect(() => {
@@ -376,14 +446,14 @@ export default function ManuscriptEditorPage() {
   };
 
   // Insert Image File
-  const handleInsertImageFile = (file: File) => {
+  const handleInsertImageFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Only image files (.png, .jpg, .webp, .svg) can be inserted.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const src = e.target?.result as string;
+    try {
+      toast.info(`Optimizing image "${file.name}"...`);
+      const src = await optimizeImageFile(file);
       if (src && editor) {
         const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_\-]/g, " ");
         editor
@@ -402,8 +472,10 @@ export default function ManuscriptEditorPage() {
           .run();
         toast.success(`Image "${file.name}" inserted`);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Failed to insert image:", err);
+      toast.error("Failed to process image file.");
+    }
   };
 
   // Switch Academic Template
