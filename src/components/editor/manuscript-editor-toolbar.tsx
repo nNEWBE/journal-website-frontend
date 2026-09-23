@@ -40,6 +40,7 @@ import {
   FileText,
   Hash,
   Trash2,
+  Check,
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ManuscriptSymbolsPicker } from "./manuscript-symbols-picker";
@@ -1026,11 +1027,14 @@ function ManuscriptEditorToolbarInner({
                   <button
                     type="button"
                     onClick={() => {
+                      const cleanText = (headerFooter?.footerText || "").trim();
+                      const isNum = cleanText === "1" || cleanText.toLowerCase() === "page 1";
                       onUpdateHeaderFooter?.({
                         ...(headerFooter || DEFAULT_HEADER_FOOTER),
                         footerEnabled: true,
                         footerShowPageNumber: true,
                         footerAlign: "center",
+                        footerText: isNum ? "" : headerFooter?.footerText || "",
                       });
                       setShowFooterMenu(false);
                     }}
@@ -1085,10 +1089,11 @@ function ManuscriptEditorToolbarInner({
                   setShowHeaderMenu(false);
                   setShowFooterMenu(false);
                 }}
-                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-xs text-xs font-medium transition-colors cursor-pointer ${headerFooter?.headerShowPageNumber || headerFooter?.footerShowPageNumber
-                  ? "bg-amber-500/30 text-amber-200 border border-amber-400/40"
-                  : "bg-white/10 hover:bg-white/20 text-white"
-                  }`}
+                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-xs text-xs font-medium transition-colors cursor-pointer ${
+                  headerFooter?.headerShowPageNumber || headerFooter?.footerShowPageNumber
+                    ? "bg-amber-500/30 text-amber-200 border border-amber-400/40"
+                    : "bg-white/10 hover:bg-white/20 text-white"
+                }`}
                 title="Insert Page Number"
               >
                 <Hash className="h-3.5 w-3.5 text-amber-400" />
@@ -1096,71 +1101,146 @@ function ManuscriptEditorToolbarInner({
               </button>
 
               {showPageNumberMenu && (
-                <div className="absolute top-9 left-0 z-50 bg-[#060e22] border border-slate-700 p-2 rounded-xs shadow-2xl space-y-1 w-52 text-left">
+                <div className="absolute top-9 left-0 z-50 bg-[#060e22] border border-slate-700 p-2 rounded-xs shadow-2xl space-y-1 w-56 text-left">
                   <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
-                    Page Numbering
+                    Position
                   </div>
                   <button
                     type="button"
                     onClick={() => {
+                      const cleanText = (headerFooter?.footerText || "").trim();
+                      const isNum = cleanText === "1" || cleanText.toLowerCase() === "page 1";
                       onUpdateHeaderFooter?.({
                         ...(headerFooter || DEFAULT_HEADER_FOOTER),
                         footerEnabled: true,
                         footerShowPageNumber: true,
                         footerAlign: "center",
+                        footerText: isNum ? "" : headerFooter?.footerText || "",
                       });
                       setShowPageNumberMenu(false);
                     }}
-                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
                   >
-                    Bottom of Page (Center)
+                    <span>Bottom of Page (Center)</span>
+                    {headerFooter?.footerShowPageNumber && headerFooter?.footerAlign === "center" && (
+                      <Check className="h-3 w-3 text-amber-400" />
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
+                      const cleanText = (headerFooter?.footerText || "").trim();
+                      const isNum = cleanText === "1" || cleanText.toLowerCase() === "page 1";
                       onUpdateHeaderFooter?.({
                         ...(headerFooter || DEFAULT_HEADER_FOOTER),
                         footerEnabled: true,
                         footerShowPageNumber: true,
                         footerAlign: "right",
+                        footerText: isNum ? "" : headerFooter?.footerText || "",
                       });
                       setShowPageNumberMenu(false);
                     }}
-                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
                   >
-                    Bottom of Page (Right)
+                    <span>Bottom of Page (Right)</span>
+                    {headerFooter?.footerShowPageNumber && headerFooter?.footerAlign === "right" && (
+                      <Check className="h-3 w-3 text-amber-400" />
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
+                      const cleanText = (headerFooter?.headerText || "").trim();
+                      const isNum = cleanText === "1" || cleanText.toLowerCase() === "page 1";
                       onUpdateHeaderFooter?.({
                         ...(headerFooter || DEFAULT_HEADER_FOOTER),
                         headerEnabled: true,
                         headerShowPageNumber: true,
                         headerAlign: "right",
+                        headerText: isNum ? "" : headerFooter?.headerText || "",
                       });
                       setShowPageNumberMenu(false);
                     }}
-                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
                   >
-                    Top of Page (Right)
+                    <span>Top of Page (Right)</span>
+                    {headerFooter?.headerShowPageNumber && headerFooter?.headerAlign === "right" && (
+                      <Check className="h-3 w-3 text-amber-400" />
+                    )}
                   </button>
-                  {(headerFooter?.headerShowPageNumber || headerFooter?.footerShowPageNumber) && (
+
+                  <div className="border-t border-slate-700/80 my-1 pt-1">
+                    <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                      Format
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
                         onUpdateHeaderFooter?.({
                           ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                          headerShowPageNumber: false,
-                          footerShowPageNumber: false,
+                          pageNumberFormat: "page-n",
                         });
                         setShowPageNumberMenu(false);
                       }}
-                      className="w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-xs flex items-center gap-1.5"
+                      className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
                     >
-                      <Trash2 className="h-3 w-3" />
-                      <span>Remove Page Numbers</span>
+                      <span>Page 1, 2, 3</span>
+                      {(headerFooter?.pageNumberFormat === "page-n" || !headerFooter?.pageNumberFormat) && (
+                        <Check className="h-3 w-3 text-amber-400" />
+                      )}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateHeaderFooter?.({
+                          ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                          pageNumberFormat: "number",
+                        });
+                        setShowPageNumberMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
+                    >
+                      <span>1, 2, 3 (Plain Number)</span>
+                      {headerFooter?.pageNumberFormat === "number" && (
+                        <Check className="h-3 w-3 text-amber-400" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateHeaderFooter?.({
+                          ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                          pageNumberFormat: "page-n-of-total",
+                        });
+                        setShowPageNumberMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
+                    >
+                      <span>Page 1 of 10</span>
+                      {headerFooter?.pageNumberFormat === "page-n-of-total" && (
+                        <Check className="h-3 w-3 text-amber-400" />
+                      )}
+                    </button>
+                  </div>
+
+                  {(headerFooter?.headerShowPageNumber || headerFooter?.footerShowPageNumber) && (
+                    <div className="border-t border-slate-700/80 my-1 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onUpdateHeaderFooter?.({
+                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                            headerShowPageNumber: false,
+                            footerShowPageNumber: false,
+                          });
+                          setShowPageNumberMenu(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-xs flex items-center gap-1.5"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span>Remove Page Numbers</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

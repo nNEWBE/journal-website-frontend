@@ -461,9 +461,11 @@ function ManuscriptEditorCanvasInner({
   }, [currentDimensions.width]);
 
   const paperSheetRef = useRef<HTMLDivElement>(null);
+  const dynamicPaginationStyleRef = useRef<HTMLStyleElement>(null);
   const [sheetPageCount, setSheetPageCount] = useState<number>(1);
   const [activePageNumber, setActivePageNumber] = useState<number>(1);
   const isReconcilingRef = useRef(false);
+  const needsReconcileRef = useRef(false);
 
   const DESK_GAP_PX = 32;
   const pageStride = currentDimensions.height + DESK_GAP_PX;
@@ -499,10 +501,13 @@ function ManuscriptEditorCanvasInner({
     };
   }, [viewMode, sheetPageCount, pageStride, zoomLevel]);
 
-  // Authentic MS Word Two-Pass DOM block pagination reconciler
+  // Authentic MS Word Real-DOM pagination engine with CSS-Isolated Spacers & Strict Margin Exclusion
   const reconcilePages = useCallback(() => {
     if (typeof window === "undefined" || !paperSheetRef.current) return;
-    if (isReconcilingRef.current) return;
+    if (isReconcilingRef.current) {
+      needsReconcileRef.current = true;
+      return;
+    }
 
     const editorEl = paperSheetRef.current.querySelector(
       ".manuscript-tiptap-content .ProseMirror"
@@ -511,13 +516,8 @@ function ManuscriptEditorCanvasInner({
     if (!editorEl) return;
 
     if (viewMode !== "pages") {
-      // In continuous mode, clear any page break spacers
-      const children = Array.from(editorEl.children) as HTMLElement[];
-      for (const child of children) {
-        if (child.dataset.wordPageBreak === "true") {
-          child.style.marginTop = "";
-          delete child.dataset.wordPageBreak;
-        }
+      if (dynamicPaginationStyleRef.current) {
+        dynamicPaginationStyleRef.current.textContent = "";
       }
       setSheetPageCount(1);
       return;
@@ -534,79 +534,78 @@ function ManuscriptEditorCanvasInner({
 
       const children = Array.from(editorEl.children) as HTMLElement[];
       if (children.length === 0) {
+        if (dynamicPaginationStyleRef.current) {
+          dynamicPaginationStyleRef.current.textContent = "";
+        }
         setSheetPageCount(1);
         return;
       }
 
-      // ── Step 1: Clean reset of any prior page breaks so we measure unconstrained baseline ──
-      for (const child of children) {
-        if (child.dataset.wordPageBreak === "true") {
-          child.style.marginTop = "";
-          delete child.dataset.wordPageBreak;
-        }
+      // Step 1: Clear previous dynamic rules to re-evaluate from clean baseline
+      if (dynamicPaginationStyleRef.current) {
+        dynamicPaginationStyleRef.current.textContent = "";
       }
 
-      // Force synchronous reflow to read natural baseline layout
       const paperRect = paperSheetRef.current.getBoundingClientRect();
+      let currentPage = 0;
+      const cssRules: string[] = [];
 
-      interface BlockSnapshot {
-        el: HTMLElement;
-        isManualPageBreak: boolean;
-        isHeading: boolean;
-        naturalTop: number;
-        naturalHeight: number;
-      }
-
-      const snapshots: BlockSnapshot[] = [];
+      // Step 2: Sequential Real-DOM pagination using non-destructive CSS nth-child rules
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
         if (!child || child.nodeType !== 1) continue;
-        const rect = child.getBoundingClientRect();
-        snapshots.push({
-          el: child,
-          isManualPageBreak:
-            child.dataset.type === "page-break" ||
-            child.classList.contains("manuscript-page-break-divider"),
-          isHeading: /^H[1-6]$/i.test(child.tagName),
-          naturalTop: (rect.top - paperRect.top) / zoomFactor,
-          naturalHeight: Math.max(1, rect.height / zoomFactor),
-        });
-      }
 
-      // ── Step 2: Deterministic Top-to-Bottom Word-Exact Pagination ──
-      let currentPage = 0;
-      let accumulatedPush = 0;
+        const isManualPageBreak =
+          child.dataset.type === "page-break" ||
+          child.classList.contains("manuscript-page-break-divider");
 
-      for (let i = 0; i < snapshots.length; i++) {
-        const item = snapshots[i];
-        const effectiveTop = item.naturalTop + accumulatedPush;
-        const effectiveBottom = effectiveTop + item.naturalHeight;
+        if (isManualPageBreak) {
+          currentPage++;
+          const targetContentTop = currentPage * stride + marginTop;
+          const nextChild = children[i + 1];
+          if (nextChild) {
+            const childBottom =
+              (child.getBoundingClientRect().bottom - paperRect.top) / zoomFactor;
+            const spacer = Math.max(0, Math.round(targetContentTop - childBottom));
+            if (spacer > 0) {
+              const nthChild = i + 2;
+              cssRules.push(
+                `.manuscript-tiptap-content .ProseMirror > *:nth-child(${nthChild}) { margin-top: ${spacer}px !important; }`
+              );
+              if (dynamicPaginationStyleRef.current) {
+                dynamicPaginationStyleRef.current.textContent = cssRules.join("\n");
+              }
+            }
+          }
+          continue;
+        }
 
+        const childRect = child.getBoundingClientRect();
+        const elemTop = (childRect.top - paperRect.top) / zoomFactor;
+        const elemHeight = childRect.height / zoomFactor;
+        const elemBottom = elemTop + elemHeight;
+
+        currentPage = Math.max(currentPage, Math.floor(elemTop / stride));
         const pageStart = currentPage * stride;
         const pageContentStart = pageStart + marginTop;
         const pageContentEnd = pageStart + pageHeight - marginBottom;
 
+        const isHeading = /^H[1-6]$/i.test(child.tagName);
         let shouldBreak = false;
 
-        if (item.isManualPageBreak) {
-          // Manual page break node itself stays on current page
-          shouldBreak = false;
-        } else if (i > 0 && snapshots[i - 1].isManualPageBreak) {
-          // Block immediately following a manual page break always starts on the new page
-          shouldBreak = true;
-        } else if (item.isHeading) {
-          // MS Word "Keep with next":
-          // A heading must never be separated from at least 2 lines of its subsequent block
-          const nextItem = snapshots[i + 1];
-          const nextHeight = nextItem ? nextItem.naturalHeight : 0;
-          // Required headroom: heading height + at least 2 lines (~56px) of subsequent content + 24px safety buffer
-          const headroom = item.naturalHeight + Math.min(nextHeight, 64) + 24;
-          if (effectiveTop + headroom > pageContentEnd) {
+        if (isHeading) {
+          const nextChild = children[i + 1];
+          const nextHeight = nextChild
+            ? nextChild.getBoundingClientRect().height / zoomFactor
+            : 0;
+          const headroom = elemHeight + Math.min(nextHeight, 140) + 24;
+          if (elemTop + headroom > pageContentEnd && elemTop > pageContentStart + 10) {
             shouldBreak = true;
           }
         } else {
-          // Standard block element (p, table, ol, ul, blockquote, pre, figure, etc.)
-          if (effectiveBottom > pageContentEnd && effectiveTop > pageContentStart + 10) {
+          const overflowsBottom = elemBottom > pageContentEnd - 6;
+          const nearBottomEdge = elemTop > pageContentEnd - 24;
+          if ((overflowsBottom || nearBottomEdge) && elemTop > pageContentStart + 10) {
             shouldBreak = true;
           }
         }
@@ -614,34 +613,38 @@ function ManuscriptEditorCanvasInner({
         if (shouldBreak) {
           currentPage++;
           const targetContentTop = currentPage * stride + marginTop;
-          const prevEffectiveBottom =
-            i > 0
-              ? snapshots[i - 1].naturalTop +
-                accumulatedPush +
-                snapshots[i - 1].naturalHeight
-              : marginTop;
-          const spacer = Math.max(
-            0,
-            Math.round(targetContentTop - prevEffectiveBottom)
-          );
 
+          let prevBottom = pageContentStart;
+          for (let k = i - 1; k >= 0; k--) {
+            const prev = children[k];
+            if (prev && prev.nodeType === 1 && prev.clientHeight > 0) {
+              prevBottom =
+                (prev.getBoundingClientRect().bottom - paperRect.top) / zoomFactor;
+              break;
+            }
+          }
+
+          const spacer = Math.max(0, Math.round(targetContentTop - prevBottom));
           if (spacer > 0) {
-            item.el.style.marginTop = `${spacer}px`;
-            item.el.dataset.wordPageBreak = "true";
-            const shift = targetContentTop - effectiveTop;
-            accumulatedPush += Math.max(0, shift);
+            const nthChild = i + 1;
+            cssRules.push(
+              `.manuscript-tiptap-content .ProseMirror > *:nth-child(${nthChild}) { margin-top: ${spacer}px !important; }`
+            );
+            if (dynamicPaginationStyleRef.current) {
+              dynamicPaginationStyleRef.current.textContent = cssRules.join("\n");
+            }
           }
         }
       }
 
-      // ── Step 3: Total page count calculation ──
-      if (snapshots.length > 0) {
-        const lastSnapshot = snapshots[snapshots.length - 1];
-        const lastEffectiveBottom =
-          lastSnapshot.naturalTop + accumulatedPush + lastSnapshot.naturalHeight;
+      // Step 3: Total page count calculation
+      if (children.length > 0) {
+        const lastChild = children[children.length - 1];
+        const lastRect = lastChild.getBoundingClientRect();
+        const lastBottom = (lastRect.bottom - paperRect.top) / zoomFactor;
         const calculatedLastPage = Math.max(
           0,
-          Math.floor(lastEffectiveBottom / stride)
+          Math.floor(lastBottom / stride)
         );
         currentPage = Math.max(currentPage, calculatedLastPage);
       }
@@ -651,6 +654,10 @@ function ManuscriptEditorCanvasInner({
     } finally {
       requestAnimationFrame(() => {
         isReconcilingRef.current = false;
+        if (needsReconcileRef.current) {
+          needsReconcileRef.current = false;
+          reconcilePages();
+        }
       });
     }
   }, [
@@ -692,7 +699,7 @@ function ManuscriptEditorCanvasInner({
     layoutColumns,
   ]);
 
-  // Continuous ResizeObserver on editor DOM (catches width changes and structural layout changes)
+  // Continuous ResizeObserver on editor DOM (catches both width and height changes reliably)
   useEffect(() => {
     if (!paperSheetRef.current) return;
     const editorEl = paperSheetRef.current.querySelector(
@@ -702,43 +709,80 @@ function ManuscriptEditorCanvasInner({
 
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let lastKnownWidth = editorEl.clientWidth;
+    let lastKnownHeight = editorEl.clientHeight;
 
     const observer = new ResizeObserver((entries) => {
+      // Ignore height adjustments triggered by our own spacer modifications
       if (isReconcilingRef.current) return;
+
       for (const entry of entries) {
-        if (Math.abs(entry.contentRect.width - lastKnownWidth) > 1) {
+        const widthChanged = Math.abs(entry.contentRect.width - lastKnownWidth) > 1;
+        const heightChanged = Math.abs(entry.contentRect.height - lastKnownHeight) > 1;
+        if (widthChanged || heightChanged) {
           lastKnownWidth = entry.contentRect.width;
+          lastKnownHeight = entry.contentRect.height;
           if (resizeTimer) clearTimeout(resizeTimer);
           resizeTimer = setTimeout(() => {
             reconcilePages();
-          }, 50);
+          }, 40);
         }
       }
     });
 
     observer.observe(editorEl);
+
+    // Continuous MutationObserver on editor DOM (catches direct block additions, deletions, typing)
+    const mutationObserver = new MutationObserver(() => {
+      // Ignore DOM modifications made by reconcilePages itself
+      if (isReconcilingRef.current) return;
+
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        reconcilePages();
+      }, 50);
+    });
+
+    mutationObserver.observe(editorEl, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    // Run initial reconcile once editor DOM is bound
+    const initTimer = setTimeout(() => {
+      reconcilePages();
+    }, 60);
+
     return () => {
+      clearTimeout(initTimer);
       if (resizeTimer) clearTimeout(resizeTimer);
       observer.disconnect();
+      mutationObserver.disconnect();
     };
   }, [editor, reconcilePages]);
 
-  // Reconcile on editor content updates (debounced for 120 FPS typing speed)
+  // Reconcile on editor content updates & transactions (debounced for fluid typing speed)
   useEffect(() => {
     if (!editor) return;
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleUpdate = () => {
+      if (isReconcilingRef.current) {
+        needsReconcileRef.current = true;
+        return;
+      }
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         reconcilePages();
-      }, 80);
+      }, 50);
     };
 
     editor.on("update", handleUpdate);
+    editor.on("transaction", handleUpdate);
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       editor.off("update", handleUpdate);
+      editor.off("transaction", handleUpdate);
     };
   }, [editor, reconcilePages]);
 
@@ -977,7 +1021,10 @@ function ManuscriptEditorCanvasInner({
               }}
               className="manuscript-paper-sheet relative text-slate-900 selection:bg-blue-100/80"
             >
-              {/* ── MS Word Physical Paper Sheet Cards Layer (Print Layout) ── */}
+              {/* Dynamic Non-Destructive CSS Page Break Spacer Engine (Zero ProseMirror DOM mutation) */}
+              <style ref={dynamicPaginationStyleRef} id="manuscript-dynamic-pagination-styles" />
+
+              {/* ── MS Word Physical Paper Sheet Cards Layer (Print Layout Base: z-0) ── */}
               {viewMode === "pages" && (
                 <div className="manuscript-page-cards-layer absolute inset-0 pointer-events-none select-none z-0 no-print">
                   {Array.from({ length: sheetPageCount }).map((_, pageIdx) => {
@@ -985,7 +1032,7 @@ function ManuscriptEditorCanvasInner({
                     return (
                       <div
                         key={`page-sheet-card-${pageIdx}`}
-                        className="manuscript-page-sheet-card absolute left-0"
+                        className="manuscript-page-sheet-card absolute left-0 pointer-events-none"
                         style={{
                           top: `${cardTop}px`,
                           width: `${currentDimensions.width}px`,
@@ -996,108 +1043,248 @@ function ManuscriptEditorCanvasInner({
                           border: "1px solid #d1d5db",
                           borderRadius: "2px",
                         }}
-                      >
-                        {/* Page Watermark Pill */}
-                        <div className="absolute top-2.5 right-3 text-[9px] font-mono font-medium text-slate-400 select-none">
-                          {currentDimensions.name} · Page {pageIdx + 1} of {sheetPageCount}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── MS Word Header & Footer Margin Exclusion Masks (z-20, in front of text at z-10) ── */}
+              {viewMode === "pages" && (
+                <div className="manuscript-page-masks-layer absolute inset-0 pointer-events-none select-none z-20 no-print">
+                  {Array.from({ length: sheetPageCount }).map((_, pageIdx) => {
+                    const cardTop = pageIdx * pageStride;
+                    const pageNum = pageIdx + 1;
+                    const pageFmt = headerFooter?.pageNumberFormat || "page-n";
+                    const formattedPageStr =
+                      pageFmt === "number"
+                        ? `${pageNum}`
+                        : pageFmt === "page-n-of-total"
+                        ? `Page ${pageNum} of ${sheetPageCount}`
+                        : `Page ${pageNum}`;
+
+                    const trimmedHeaderText = headerFooter?.headerText?.trim() || "";
+                    const isHeaderRedundant =
+                      trimmedHeaderText === "1" ||
+                      trimmedHeaderText.toLowerCase() === "page 1" ||
+                      trimmedHeaderText.toLowerCase() === `page ${pageNum}` ||
+                      trimmedHeaderText === `${pageNum}`;
+                    const hasHeaderText =
+                      Boolean(trimmedHeaderText) &&
+                      !(headerFooter?.headerShowPageNumber && isHeaderRedundant);
+
+                    const trimmedFooterText = headerFooter?.footerText?.trim() || "";
+                    const isFooterRedundant =
+                      trimmedFooterText === "1" ||
+                      trimmedFooterText.toLowerCase() === "page 1" ||
+                      trimmedFooterText.toLowerCase() === `page ${pageNum}` ||
+                      trimmedFooterText === `${pageNum}`;
+                    const hasFooterText =
+                      Boolean(trimmedFooterText) &&
+                      !(headerFooter?.footerShowPageNumber && isFooterRedundant);
+
+                    return (
+                      <React.Fragment key={`page-masks-group-${pageIdx}`}>
+                        {/* ── Header Margin Exclusion Mask (Top 0 to margins.top) ── */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: `${cardTop}px`,
+                            left: 0,
+                            width: `${currentDimensions.width}px`,
+                            height: `${margins.top}px`,
+                            backgroundColor: "#ffffff",
+                            borderTopLeftRadius: "2px",
+                            borderTopRightRadius: "2px",
+                          }}
+                          className="pointer-events-none select-none"
+                        >
+                          {/* Corner Crop Marks for Top Margin */}
+                          <div
+                            style={{
+                              top: `${margins.top - 10}px`,
+                              left: `${margins.left - 10}px`,
+                            }}
+                            className="absolute w-2.5 h-2.5 border-t border-l border-slate-300 pointer-events-none"
+                          />
+                          <div
+                            style={{
+                              top: `${margins.top - 10}px`,
+                              right: `${margins.right - 10}px`,
+                            }}
+                            className="absolute w-2.5 h-2.5 border-t border-r border-slate-300 pointer-events-none"
+                          />
+
+                          {/* Running Header */}
+                          {headerFooter?.headerEnabled && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                left: `${margins.left}px`,
+                                right: `${margins.right}px`,
+                              }}
+                              onDoubleClick={() => {
+                                setActivePageNumber(pageIdx + 1);
+                                setIsEditingHeader(true);
+                                setTimeout(() => headerInputRef.current?.focus(), 50);
+                              }}
+                              className={`group flex flex-col justify-end pb-2 select-none pointer-events-auto cursor-pointer border-b border-dashed border-transparent hover:border-blue-300 transition-colors ${
+                                headerFooter.headerAlign === "left"
+                                  ? "items-start text-left"
+                                  : headerFooter.headerAlign === "right"
+                                  ? "items-end text-right"
+                                  : "items-center text-center"
+                              } ${
+                                isEditingHeader && activePageNumber === pageIdx + 1
+                                  ? "invisible"
+                                  : "visible"
+                              }`}
+                              title="Double-click to edit Header"
+                            >
+                              <div className="flex items-center gap-2 text-[10.5px] text-slate-500 font-sans tracking-wide">
+                                {hasHeaderText && <span>{trimmedHeaderText}</span>}
+                                {hasHeaderText && headerFooter.headerShowPageNumber && (
+                                  <span className="text-slate-300 mx-0.5">|</span>
+                                )}
+                                {headerFooter.headerShowPageNumber && (
+                                  <span className="font-sans text-slate-700 font-medium">
+                                    {formattedPageStr}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="w-full border-b border-slate-200/80 mt-1" />
+                            </div>
+                          )}
+
+                          {/* Prompt to add Header on double click if not yet enabled */}
+                          {!headerFooter?.headerEnabled && !isEditingHeader && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                left: `${margins.left}px`,
+                                right: `${margins.right}px`,
+                              }}
+                              onDoubleClick={() => {
+                                setActivePageNumber(pageIdx + 1);
+                                onUpdateHeaderFooter?.({
+                                  ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                  headerEnabled: true,
+                                });
+                                setIsEditingHeader(true);
+                                setTimeout(() => headerInputRef.current?.focus(), 50);
+                              }}
+                              className="group flex items-center justify-center pointer-events-auto cursor-pointer border-b border-dashed border-transparent hover:border-slate-300 transition-colors select-none"
+                              title="Double-click to add Header"
+                            >
+                              <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">
+                                Double-click to add Header
+                              </span>
+                            </div>
+                          )}
                         </div>
 
-                        {/* MS Word Margin Corner Crop Marks */}
+                        {/* ── Footer Margin Exclusion Mask (Bottom pageHeight - margins.bottom to pageHeight) ── */}
                         <div
                           style={{
-                            top: `${margins.top - 10}px`,
-                            left: `${margins.left - 10}px`,
+                            position: "absolute",
+                            top: `${cardTop + currentDimensions.height - margins.bottom}px`,
+                            left: 0,
+                            width: `${currentDimensions.width}px`,
+                            height: `${margins.bottom}px`,
+                            backgroundColor: "#ffffff",
+                            borderBottomLeftRadius: "2px",
+                            borderBottomRightRadius: "2px",
                           }}
-                          className="absolute w-2.5 h-2.5 border-t border-l border-slate-300 pointer-events-none"
-                        />
-                        <div
-                          style={{
-                            top: `${margins.top - 10}px`,
-                            right: `${margins.right - 10}px`,
-                          }}
-                          className="absolute w-2.5 h-2.5 border-t border-r border-slate-300 pointer-events-none"
-                        />
-                        <div
-                          style={{
-                            bottom: `${margins.bottom - 10}px`,
-                            left: `${margins.left - 10}px`,
-                          }}
-                          className="absolute w-2.5 h-2.5 border-b border-l border-slate-300 pointer-events-none"
-                        />
-                        <div
-                          style={{
-                            bottom: `${margins.bottom - 10}px`,
-                            right: `${margins.right - 10}px`,
-                          }}
-                          className="absolute w-2.5 h-2.5 border-b border-r border-slate-300 pointer-events-none"
-                        />
-
-                        {/* Running Header on this page (if enabled) */}
-                        {headerFooter?.headerEnabled && !isEditingHeader && (
+                          className="pointer-events-none select-none"
+                        >
+                          {/* Corner Crop Marks for Bottom Margin */}
                           <div
                             style={{
-                              position: "absolute",
-                              top: 0,
-                              left: `${margins.left}px`,
-                              right: `${margins.right}px`,
-                              height: `${margins.top}px`,
+                              bottom: `${margins.bottom - 10}px`,
+                              left: `${margins.left - 10}px`,
                             }}
-                            className={`flex flex-col justify-end pb-2 select-none ${
-                              headerFooter.headerAlign === "left"
-                                ? "items-start text-left"
-                                : headerFooter.headerAlign === "right"
-                                ? "items-end text-right"
-                                : "items-center text-center"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-sans tracking-wide">
-                              {headerFooter.headerText && <span>{headerFooter.headerText}</span>}
-                              {headerFooter.headerText && headerFooter.headerShowPageNumber && (
-                                <span className="text-slate-300">|</span>
-                              )}
-                              {headerFooter.headerShowPageNumber && (
-                                <span className="font-mono text-slate-700 font-semibold">
-                                  Page {pageIdx + 1}
-                                </span>
-                              )}
-                            </div>
-                            <div className="w-full border-b border-slate-200/80 mt-1" />
-                          </div>
-                        )}
-
-                        {/* Running Footer on this page (if enabled) */}
-                        {headerFooter?.footerEnabled && !isEditingFooter && (
+                            className="absolute w-2.5 h-2.5 border-b border-l border-slate-300 pointer-events-none"
+                          />
                           <div
                             style={{
-                              position: "absolute",
-                              bottom: 0,
-                              left: `${margins.left}px`,
-                              right: `${margins.right}px`,
-                              height: `${margins.bottom}px`,
+                              bottom: `${margins.bottom - 10}px`,
+                              right: `${margins.right - 10}px`,
                             }}
-                            className={`flex flex-col justify-start pt-2 select-none ${
-                              headerFooter.footerAlign === "left"
-                                ? "items-start text-left"
-                                : headerFooter.footerAlign === "right"
-                                ? "items-end text-right"
-                                : "items-center text-center"
-                            }`}
-                          >
-                            <div className="w-full border-t border-slate-200/80 mb-1" />
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-sans tracking-wide">
-                              {headerFooter.footerText && <span>{headerFooter.footerText}</span>}
-                              {headerFooter.footerText && headerFooter.footerShowPageNumber && (
-                                <span className="text-slate-300">|</span>
-                              )}
-                              {headerFooter.footerShowPageNumber && (
-                                <span className="font-mono text-slate-700 font-semibold">
-                                  Page {pageIdx + 1}
-                                </span>
-                              )}
+                            className="absolute w-2.5 h-2.5 border-b border-r border-slate-300 pointer-events-none"
+                          />
+
+                          {/* Running Footer */}
+                          {headerFooter?.footerEnabled && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                left: `${margins.left}px`,
+                                right: `${margins.right}px`,
+                              }}
+                              onDoubleClick={() => {
+                                setActivePageNumber(pageIdx + 1);
+                                setIsEditingFooter(true);
+                                setTimeout(() => footerInputRef.current?.focus(), 50);
+                              }}
+                              className={`group flex flex-col justify-start pt-2 select-none pointer-events-auto cursor-pointer border-t border-dashed border-transparent hover:border-purple-300 transition-colors ${
+                                headerFooter.footerAlign === "left"
+                                  ? "items-start text-left"
+                                  : headerFooter.footerAlign === "right"
+                                  ? "items-end text-right"
+                                  : "items-center text-center"
+                              } ${
+                                isEditingFooter && activePageNumber === pageIdx + 1
+                                  ? "invisible"
+                                  : "visible"
+                              }`}
+                              title="Double-click to edit Footer"
+                            >
+                              <div className="w-full border-t border-slate-200/80 mb-1" />
+                              <div className="flex items-center gap-2 text-[10.5px] text-slate-500 font-sans tracking-wide">
+                                {hasFooterText && <span>{trimmedFooterText}</span>}
+                                {hasFooterText && headerFooter.footerShowPageNumber && (
+                                  <span className="text-slate-300 mx-0.5">|</span>
+                                )}
+                                {headerFooter.footerShowPageNumber && (
+                                  <span className="font-sans text-slate-700 font-medium">
+                                    {formattedPageStr}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+
+                          {/* Prompt to add Footer on double click if not yet enabled */}
+                          {!headerFooter?.footerEnabled && !isEditingFooter && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                left: `${margins.left}px`,
+                                right: `${margins.right}px`,
+                              }}
+                              onDoubleClick={() => {
+                                setActivePageNumber(pageIdx + 1);
+                                onUpdateHeaderFooter?.({
+                                  ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                  footerEnabled: true,
+                                });
+                                setIsEditingFooter(true);
+                                setTimeout(() => footerInputRef.current?.focus(), 50);
+                              }}
+                              className="group flex items-center justify-center pointer-events-auto cursor-pointer border-t border-dashed border-transparent hover:border-slate-300 transition-colors select-none"
+                              title="Double-click to add Footer"
+                            >
+                              <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">
+                                Double-click to add Footer
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -1136,379 +1323,363 @@ function ManuscriptEditorCanvasInner({
                 })}
 
               {/* ── Document Header (MS Word Style in Top Margin) ── */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: `${margins.left}px`,
-                  right: `${margins.right}px`,
-                  height: `${margins.top}px`,
-                }}
-                className="no-print pointer-events-auto z-20"
-              >
-                {!headerFooter?.headerEnabled && !isEditingHeader && (
-                  <div
-                    onDoubleClick={() => {
-                      onUpdateHeaderFooter?.({
-                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                        headerEnabled: true,
-                      });
-                      setIsEditingHeader(true);
-                      setTimeout(() => headerInputRef.current?.focus(), 50);
-                    }}
-                    className="h-full flex items-center justify-center text-[10.5px] text-slate-400 italic opacity-0 hover:opacity-100 transition-opacity cursor-pointer border-b border-dashed border-slate-300 select-none"
-                    title="Double-click to add Header"
-                  >
-                    <span>Double-click to add Header</span>
-                  </div>
-                )}
-
-                {headerFooter?.headerEnabled && !isEditingHeader && (
-                  <div
-                    onDoubleClick={() => {
-                      setIsEditingHeader(true);
-                      setTimeout(() => headerInputRef.current?.focus(), 50);
-                    }}
-                    className={`group relative h-full flex flex-col justify-end pb-2 cursor-pointer select-none border-b border-dashed border-transparent hover:border-blue-400 ${
-                      headerFooter.headerAlign === "left"
-                        ? "items-start text-left"
-                        : headerFooter.headerAlign === "right"
-                        ? "items-end text-right"
-                        : "items-center text-center"
-                    }`}
-                    title="Double-click to edit Header"
-                  >
-                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-sans tracking-wide">
-                      {headerFooter.headerText && <span>{headerFooter.headerText}</span>}
-                      {headerFooter.headerText && headerFooter.headerShowPageNumber && (
-                        <span className="text-slate-300">|</span>
-                      )}
-                      {headerFooter.headerShowPageNumber && (
-                        <span className="font-mono text-slate-700 font-semibold">Page 1</span>
-                      )}
-                    </div>
-                    <span className="absolute top-1 right-0 opacity-0 group-hover:opacity-100 text-[8.5px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded-xs border border-slate-200 transition-opacity">
-                      Double-click to edit
-                    </span>
-                  </div>
-                )}
-
-                {isEditingHeader && (
-                  <div className="relative h-full flex flex-col justify-end pb-1.5 z-30 select-text">
-                    <div className="flex items-center justify-between gap-1.5 mb-1 bg-white border border-blue-400 rounded-xs px-2 py-1 shadow-md">
-                      <span className="text-[9.5px] font-bold text-blue-700 bg-blue-50 px-1 py-0.5 rounded-xs shrink-0">
-                        HEADER
-                      </span>
-                      <input
-                        ref={headerInputRef}
-                        type="text"
-                        value={headerFooter?.headerText || ""}
-                        placeholder="Enter running title or journal name..."
-                        onChange={(e) =>
-                          onUpdateHeaderFooter?.({
-                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                            headerEnabled: true,
-                            headerText: e.target.value,
-                          })
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === "Escape") {
+              {((viewMode === "pages" && isEditingHeader) ||
+                (viewMode === "continuous" && (headerFooter?.headerEnabled || isEditingHeader))) && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top:
+                      viewMode === "pages"
+                        ? `${(activePageNumber - 1) * pageStride}px`
+                        : 0,
+                    left: `${margins.left}px`,
+                    right: `${margins.right}px`,
+                    height: `${margins.top}px`,
+                  }}
+                  className="no-print pointer-events-auto z-40 select-text"
+                >
+                  {isEditingHeader ? (
+                    <div className="relative h-full flex flex-col justify-end pb-1.5 z-40">
+                      <div className="flex items-center justify-between gap-1.5 mb-1 bg-white border border-blue-400 rounded-xs px-2 py-1 shadow-md">
+                        <span className="text-[9.5px] font-bold text-blue-700 bg-blue-50 px-1 py-0.5 rounded-xs shrink-0">
+                          HEADER
+                        </span>
+                        <input
+                          ref={headerInputRef}
+                          type="text"
+                          value={headerFooter?.headerText || ""}
+                          placeholder="Enter running title or journal name..."
+                          onChange={(e) =>
+                            onUpdateHeaderFooter?.({
+                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                              headerEnabled: true,
+                              headerText: e.target.value,
+                            })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "Escape") {
+                              setIsEditingHeader(false);
+                              onClearHeaderFooterFocus?.();
+                            }
+                          }}
+                          className="flex-1 text-[11px] text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-xs outline-none focus:border-blue-500 font-sans min-w-0"
+                        />
+                        <div className="flex items-center border border-slate-200 rounded-xs overflow-hidden shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onUpdateHeaderFooter?.({
+                                ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                headerAlign: "left",
+                              })
+                            }
+                            className={`p-1 hover:bg-slate-100 ${
+                              headerFooter?.headerAlign === "left"
+                                ? "bg-slate-200 text-blue-600"
+                                : "text-slate-500"
+                            }`}
+                            title="Align Left"
+                          >
+                            <AlignLeft className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onUpdateHeaderFooter?.({
+                                ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                headerAlign: "center",
+                              })
+                            }
+                            className={`p-1 hover:bg-slate-100 ${
+                              headerFooter?.headerAlign === "center"
+                                ? "bg-slate-200 text-blue-600"
+                                : "text-slate-500"
+                            }`}
+                            title="Align Center"
+                          >
+                            <AlignCenter className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onUpdateHeaderFooter?.({
+                                ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                headerAlign: "right",
+                              })
+                            }
+                            className={`p-1 hover:bg-slate-100 ${
+                              headerFooter?.headerAlign === "right"
+                                ? "bg-slate-200 text-blue-600"
+                                : "text-slate-500"
+                            }`}
+                            title="Align Right"
+                          >
+                            <AlignRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextVal = !headerFooter?.headerShowPageNumber;
+                            let nextText = headerFooter?.headerText || "";
+                            if (nextText.trim() === "1" || nextText.trim().toLowerCase() === "page 1") {
+                              nextText = "";
+                            }
+                            onUpdateHeaderFooter?.({
+                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                              headerShowPageNumber: nextVal,
+                              headerText: nextText,
+                            });
+                          }}
+                          className={`px-1.5 py-0.5 text-[9.5px] font-semibold rounded-xs border transition-colors shrink-0 ${
+                            headerFooter?.headerShowPageNumber
+                              ? "bg-blue-100 border-blue-300 text-blue-800"
+                              : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                          }`}
+                          title="Toggle Page Number"
+                        >
+                          # Page
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
                             setIsEditingHeader(false);
                             onClearHeaderFooterFocus?.();
-                          }
-                        }}
-                        className="flex-1 text-[11px] text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-xs outline-none focus:border-blue-500 font-sans min-w-0"
-                      />
-                      <div className="flex items-center border border-slate-200 rounded-xs overflow-hidden shrink-0">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onUpdateHeaderFooter?.({
-                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                              headerAlign: "left",
-                            })
-                          }
-                          className={`p-1 hover:bg-slate-100 ${
-                            headerFooter?.headerAlign === "left"
-                              ? "bg-slate-200 text-blue-600"
-                              : "text-slate-500"
-                          }`}
-                          title="Align Left"
+                          }}
+                          className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-xs cursor-pointer shadow-2xs shrink-0"
                         >
-                          <AlignLeft className="h-3 w-3" />
+                          <Check className="h-3 w-3" />
+                          <span>Done</span>
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
                             onUpdateHeaderFooter?.({
                               ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                              headerAlign: "center",
-                            })
-                          }
-                          className={`p-1 hover:bg-slate-100 ${
-                            headerFooter?.headerAlign === "center"
-                              ? "bg-slate-200 text-blue-600"
-                              : "text-slate-500"
-                          }`}
-                          title="Align Center"
+                              headerEnabled: false,
+                              headerText: "",
+                              headerShowPageNumber: false,
+                            });
+                            setIsEditingHeader(false);
+                            onClearHeaderFooterFocus?.();
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-600 rounded-xs hover:bg-red-50 transition-colors shrink-0"
+                          title="Remove Header"
                         >
-                          <AlignCenter className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onUpdateHeaderFooter?.({
-                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                              headerAlign: "right",
-                            })
-                          }
-                          className={`p-1 hover:bg-slate-100 ${
-                            headerFooter?.headerAlign === "right"
-                              ? "bg-slate-200 text-blue-600"
-                              : "text-slate-500"
-                          }`}
-                          title="Align Right"
-                        >
-                          <AlignRight className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onUpdateHeaderFooter?.({
-                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                            headerShowPageNumber: !headerFooter?.headerShowPageNumber,
-                          })
-                        }
-                        className={`px-1.5 py-0.5 text-[9.5px] font-semibold rounded-xs border transition-colors shrink-0 ${
-                          headerFooter?.headerShowPageNumber
-                            ? "bg-blue-100 border-blue-300 text-blue-800"
-                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        # Page
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsEditingHeader(false);
-                          onClearHeaderFooterFocus?.();
-                        }}
-                        className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-xs cursor-pointer shadow-2xs shrink-0"
-                      >
-                        <Check className="h-3 w-3" />
-                        <span>Done</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onUpdateHeaderFooter?.({
-                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                            headerEnabled: false,
-                            headerText: "",
-                            headerShowPageNumber: false,
-                          });
-                          setIsEditingHeader(false);
-                          onClearHeaderFooterFocus?.();
-                        }}
-                        className="p-1 text-slate-400 hover:text-red-600 rounded-xs hover:bg-red-50 transition-colors shrink-0"
-                        title="Remove Header"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      <div className="w-full border-b border-dashed border-blue-400" />
                     </div>
-                    <div className="w-full border-b border-dashed border-blue-400" />
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    /* Continuous mode static header display */
+                    <div
+                      onDoubleClick={() => {
+                        setIsEditingHeader(true);
+                        setTimeout(() => headerInputRef.current?.focus(), 50);
+                      }}
+                      className={`group relative h-full flex flex-col justify-end pb-2 cursor-pointer select-none border-b border-dashed border-transparent hover:border-blue-400 ${
+                        headerFooter?.headerAlign === "left"
+                          ? "items-start text-left"
+                          : headerFooter?.headerAlign === "right"
+                          ? "items-end text-right"
+                          : "items-center text-center"
+                      }`}
+                      title="Double-click to edit Header"
+                    >
+                      <div className="flex items-center gap-2 text-[10.5px] text-slate-600 font-sans tracking-wide">
+                        {headerFooter?.headerText?.trim() && <span>{headerFooter.headerText.trim()}</span>}
+                        {headerFooter?.headerText?.trim() && headerFooter.headerShowPageNumber && (
+                          <span className="text-slate-300 mx-0.5">|</span>
+                        )}
+                        {headerFooter?.headerShowPageNumber && (
+                          <span className="font-sans text-slate-700 font-medium">Page 1</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── Document Footer (MS Word Style in Bottom Margin) ── */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: viewMode === "continuous" ? undefined : `${currentDimensions.height - margins.bottom}px`,
-                  bottom: viewMode === "continuous" ? 0 : undefined,
-                  left: `${margins.left}px`,
-                  right: `${margins.right}px`,
-                  height: `${margins.bottom}px`,
-                }}
-                className="no-print pointer-events-auto z-20"
-              >
-                {!headerFooter?.footerEnabled && !isEditingFooter && (
-                  <div
-                    onDoubleClick={() => {
-                      onUpdateHeaderFooter?.({
-                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                        footerEnabled: true,
-                      });
-                      setIsEditingFooter(true);
-                      setTimeout(() => footerInputRef.current?.focus(), 50);
-                    }}
-                    className="h-full flex items-center justify-center text-[10.5px] text-slate-400 italic opacity-0 hover:opacity-100 transition-opacity cursor-pointer border-t border-dashed border-slate-300 select-none"
-                    title="Double-click to add Footer"
-                  >
-                    <span>Double-click to add Footer</span>
-                  </div>
-                )}
-
-                {headerFooter?.footerEnabled && !isEditingFooter && (
-                  <div
-                    onDoubleClick={() => {
-                      setIsEditingFooter(true);
-                      setTimeout(() => footerInputRef.current?.focus(), 50);
-                    }}
-                    className={`group relative h-full flex flex-col justify-start pt-2 cursor-pointer select-none border-t border-dashed border-transparent hover:border-purple-400 ${
-                      headerFooter.footerAlign === "left"
-                        ? "items-start text-left"
-                        : headerFooter.footerAlign === "right"
-                        ? "items-end text-right"
-                        : "items-center text-center"
-                    }`}
-                    title="Double-click to edit Footer"
-                  >
-                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-sans tracking-wide">
-                      {headerFooter.footerText && <span>{headerFooter.footerText}</span>}
-                      {headerFooter.footerText && headerFooter.footerShowPageNumber && (
-                        <span className="text-slate-300">|</span>
-                      )}
-                      {headerFooter.footerShowPageNumber && (
-                        <span className="font-mono text-slate-700 font-semibold">Page 1</span>
-                      )}
-                    </div>
-                    <span className="absolute bottom-1 right-0 opacity-0 group-hover:opacity-100 text-[8.5px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded-xs border border-slate-200 transition-opacity">
-                      Double-click to edit
-                    </span>
-                  </div>
-                )}
-
-                {isEditingFooter && (
-                  <div className="relative h-full flex flex-col justify-start pt-1.5 z-30 select-text">
-                    <div className="w-full border-t border-dashed border-purple-400 mb-1" />
-                    <div className="flex items-center justify-between gap-1.5 bg-white border border-purple-400 rounded-xs px-2 py-1 shadow-md">
-                      <span className="text-[9.5px] font-bold text-purple-700 bg-purple-50 px-1 py-0.5 rounded-xs shrink-0">
-                        FOOTER
-                      </span>
-                      <input
-                        ref={footerInputRef}
-                        type="text"
-                        value={headerFooter?.footerText || ""}
-                        placeholder="Enter footer text (e.g. Confidential, Journal Notes)..."
-                        onChange={(e) =>
-                          onUpdateHeaderFooter?.({
-                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                            footerEnabled: true,
-                            footerText: e.target.value,
-                          })
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === "Escape") {
+              {((viewMode === "pages" && isEditingFooter) ||
+                (viewMode === "continuous" && (headerFooter?.footerEnabled || isEditingFooter))) && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top:
+                      viewMode === "pages"
+                        ? `${(activePageNumber - 1) * pageStride + currentDimensions.height - margins.bottom}px`
+                        : undefined,
+                    bottom: viewMode === "continuous" ? 0 : undefined,
+                    left: `${margins.left}px`,
+                    right: `${margins.right}px`,
+                    height: `${margins.bottom}px`,
+                  }}
+                  className="no-print pointer-events-auto z-40 select-text"
+                >
+                  {isEditingFooter ? (
+                    <div className="relative h-full flex flex-col justify-start pt-1.5 z-40">
+                      <div className="w-full border-t border-dashed border-purple-400 mb-1" />
+                      <div className="flex items-center justify-between gap-1.5 bg-white border border-purple-400 rounded-xs px-2 py-1 shadow-md">
+                        <span className="text-[9.5px] font-bold text-purple-700 bg-purple-50 px-1 py-0.5 rounded-xs shrink-0">
+                          FOOTER
+                        </span>
+                        <input
+                          ref={footerInputRef}
+                          type="text"
+                          value={headerFooter?.footerText || ""}
+                          placeholder="Enter footer text (e.g. Confidential, Journal Notes)..."
+                          onChange={(e) =>
+                            onUpdateHeaderFooter?.({
+                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                              footerEnabled: true,
+                              footerText: e.target.value,
+                            })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "Escape") {
+                              setIsEditingFooter(false);
+                              onClearHeaderFooterFocus?.();
+                            }
+                          }}
+                          className="flex-1 text-[11px] text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-xs outline-none focus:border-purple-500 font-sans min-w-0"
+                        />
+                        <div className="flex items-center border border-slate-200 rounded-xs overflow-hidden shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onUpdateHeaderFooter?.({
+                                ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                footerAlign: "left",
+                              })
+                            }
+                            className={`p-1 hover:bg-slate-100 ${
+                              headerFooter?.footerAlign === "left"
+                                ? "bg-slate-200 text-purple-600"
+                                : "text-slate-500"
+                            }`}
+                            title="Align Left"
+                          >
+                            <AlignLeft className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onUpdateHeaderFooter?.({
+                                ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                footerAlign: "center",
+                              })
+                            }
+                            className={`p-1 hover:bg-slate-100 ${
+                              headerFooter?.footerAlign === "center"
+                                ? "bg-slate-200 text-purple-600"
+                                : "text-slate-500"
+                            }`}
+                            title="Align Center"
+                          >
+                            <AlignCenter className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onUpdateHeaderFooter?.({
+                                ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                                footerAlign: "right",
+                              })
+                            }
+                            className={`p-1 hover:bg-slate-100 ${
+                              headerFooter?.footerAlign === "right"
+                                ? "bg-slate-200 text-purple-600"
+                                : "text-slate-500"
+                            }`}
+                            title="Align Right"
+                          >
+                            <AlignRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextVal = !headerFooter?.footerShowPageNumber;
+                            let nextText = headerFooter?.footerText || "";
+                            if (nextText.trim() === "1" || nextText.trim().toLowerCase() === "page 1") {
+                              nextText = "";
+                            }
+                            onUpdateHeaderFooter?.({
+                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                              footerShowPageNumber: nextVal,
+                              footerText: nextText,
+                            });
+                          }}
+                          className={`px-1.5 py-0.5 text-[9.5px] font-semibold rounded-xs border transition-colors shrink-0 ${
+                            headerFooter?.footerShowPageNumber
+                              ? "bg-purple-100 border-purple-300 text-purple-800"
+                              : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                          }`}
+                          title="Toggle Page Number"
+                        >
+                          # Page
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
                             setIsEditingFooter(false);
                             onClearHeaderFooterFocus?.();
-                          }
-                        }}
-                        className="flex-1 text-[11px] text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-xs outline-none focus:border-purple-500 font-sans min-w-0"
-                      />
-                      <div className="flex items-center border border-slate-200 rounded-xs overflow-hidden shrink-0">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onUpdateHeaderFooter?.({
-                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                              footerAlign: "left",
-                            })
-                          }
-                          className={`p-1 hover:bg-slate-100 ${
-                            headerFooter?.footerAlign === "left"
-                              ? "bg-slate-200 text-purple-600"
-                              : "text-slate-500"
-                          }`}
-                          title="Align Left"
+                          }}
+                          className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold rounded-xs cursor-pointer shadow-2xs shrink-0"
                         >
-                          <AlignLeft className="h-3 w-3" />
+                          <Check className="h-3 w-3" />
+                          <span>Done</span>
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
                             onUpdateHeaderFooter?.({
                               ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                              footerAlign: "center",
-                            })
-                          }
-                          className={`p-1 hover:bg-slate-100 ${
-                            headerFooter?.footerAlign === "center"
-                              ? "bg-slate-200 text-purple-600"
-                              : "text-slate-500"
-                          }`}
-                          title="Align Center"
+                              footerEnabled: false,
+                              footerText: "",
+                              footerShowPageNumber: false,
+                            });
+                            setIsEditingFooter(false);
+                            onClearHeaderFooterFocus?.();
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-600 rounded-xs hover:bg-red-50 transition-colors shrink-0"
+                          title="Remove Footer"
                         >
-                          <AlignCenter className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onUpdateHeaderFooter?.({
-                              ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                              footerAlign: "right",
-                            })
-                          }
-                          className={`p-1 hover:bg-slate-100 ${
-                            headerFooter?.footerAlign === "right"
-                              ? "bg-slate-200 text-purple-600"
-                              : "text-slate-500"
-                          }`}
-                          title="Align Right"
-                        >
-                          <AlignRight className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onUpdateHeaderFooter?.({
-                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                            footerShowPageNumber: !headerFooter?.footerShowPageNumber,
-                          })
-                        }
-                        className={`px-1.5 py-0.5 text-[9.5px] font-semibold rounded-xs border transition-colors shrink-0 ${
-                          headerFooter?.footerShowPageNumber
-                            ? "bg-purple-100 border-purple-300 text-purple-800"
-                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        # Page
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsEditingFooter(false);
-                          onClearHeaderFooterFocus?.();
-                        }}
-                        className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold rounded-xs cursor-pointer shadow-2xs shrink-0"
-                      >
-                        <Check className="h-3 w-3" />
-                        <span>Done</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onUpdateHeaderFooter?.({
-                            ...(headerFooter || DEFAULT_HEADER_FOOTER),
-                            footerEnabled: false,
-                            footerText: "",
-                            footerShowPageNumber: false,
-                          });
-                          setIsEditingFooter(false);
-                          onClearHeaderFooterFocus?.();
-                        }}
-                        className="p-1 text-slate-400 hover:text-red-600 rounded-xs hover:bg-red-50 transition-colors shrink-0"
-                        title="Remove Footer"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
                     </div>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    /* Continuous mode static footer display */
+                    <div
+                      onDoubleClick={() => {
+                        setIsEditingFooter(true);
+                        setTimeout(() => footerInputRef.current?.focus(), 50);
+                      }}
+                      className={`group relative h-full flex flex-col justify-start pt-2 cursor-pointer select-none border-t border-dashed border-transparent hover:border-purple-400 ${
+                        headerFooter?.footerAlign === "left"
+                          ? "items-start text-left"
+                          : headerFooter?.footerAlign === "right"
+                          ? "items-end text-right"
+                          : "items-center text-center"
+                      }`}
+                      title="Double-click to edit Footer"
+                    >
+                      <div className="flex items-center gap-2 text-[10.5px] text-slate-600 font-sans tracking-wide">
+                        {headerFooter?.footerText?.trim() && <span>{headerFooter.footerText.trim()}</span>}
+                        {headerFooter?.footerText?.trim() && headerFooter.footerShowPageNumber && (
+                          <span className="text-slate-300 mx-0.5">|</span>
+                        )}
+                        {headerFooter?.footerShowPageNumber && (
+                          <span className="font-sans text-slate-700 font-medium">Page 1</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── Print Header & Footer Elements ── */}
               {headerFooter?.headerEnabled && (
@@ -1521,8 +1692,8 @@ function ManuscriptEditorCanvasInner({
                       : "text-center"
                   }`}
                 >
-                  {headerFooter.headerText && <span>{headerFooter.headerText}</span>}
-                  {headerFooter.headerText && headerFooter.headerShowPageNumber && (
+                  {headerFooter.headerText?.trim() && <span>{headerFooter.headerText.trim()}</span>}
+                  {headerFooter.headerText?.trim() && headerFooter.headerShowPageNumber && (
                     <span> | </span>
                   )}
                   {headerFooter.headerShowPageNumber && <span>Page 1</span>}
@@ -1538,8 +1709,8 @@ function ManuscriptEditorCanvasInner({
                       : "text-center"
                   }`}
                 >
-                  {headerFooter.footerText && <span>{headerFooter.footerText}</span>}
-                  {headerFooter.footerText && headerFooter.footerShowPageNumber && (
+                  {headerFooter.footerText?.trim() && <span>{headerFooter.footerText.trim()}</span>}
+                  {headerFooter.footerText?.trim() && headerFooter.footerShowPageNumber && (
                     <span> | </span>
                   )}
                   {headerFooter.footerShowPageNumber && <span>Page 1</span>}

@@ -248,6 +248,8 @@ export const VIEW_MODE_OPTIONS = [
   { value: "continuous", label: "Web Layout" },
 ];
 
+export type PageNumberFormat = "page-n" | "number" | "page-n-of-total";
+
 export interface ManuscriptHeaderFooterConfig {
   headerEnabled: boolean;
   headerText: string;
@@ -259,6 +261,7 @@ export interface ManuscriptHeaderFooterConfig {
   footerAlign: "left" | "center" | "right";
   footerShowPageNumber: boolean;
 
+  pageNumberFormat?: PageNumberFormat;
   differentFirstPage: boolean;
 }
 
@@ -273,6 +276,8 @@ export const DEFAULT_HEADER_FOOTER: ManuscriptHeaderFooterConfig = {
   footerAlign: "center",
   footerShowPageNumber: false,
 
+  pageNumberFormat: "page-n",
   differentFirstPage: false,
 };
+
 

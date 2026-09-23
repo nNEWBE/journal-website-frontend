@@ -231,7 +231,7 @@ export default function ManuscriptEditorPage() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed.contentHtml && parsed.contentHtml.length > 20) {
-            editor.commands.setContent(parsed.contentHtml);
+            editor.commands.setContent(parsed.contentHtml, { emitUpdate: true });
             setContentHtml(parsed.contentHtml);
             if (parsed.title) setDocTitle(parsed.title);
             if (parsed.font) setCurrentFont(parsed.font);
@@ -252,7 +252,7 @@ export default function ManuscriptEditorPage() {
       }
 
       // Default template load
-      editor.commands.setContent(MANUSCRIPT_TEMPLATES[0].initialHtml);
+      editor.commands.setContent(MANUSCRIPT_TEMPLATES[0].initialHtml, { emitUpdate: true });
       setDocTitle(MANUSCRIPT_TEMPLATES[0].defaultTitle);
       setContentHtml(MANUSCRIPT_TEMPLATES[0].initialHtml);
       setSaveStatus("Template Loaded");
@@ -466,7 +466,7 @@ export default function ManuscriptEditorPage() {
       setContentHtml(template.initialHtml);
       const ed = editorRef.current;
       if (ed) {
-        ed.commands.setContent(template.initialHtml);
+        ed.commands.setContent(template.initialHtml, { emitUpdate: true });
       }
       setShowTemplateModal(false);
       toast.success(`Loaded ${template.name} template.`);
