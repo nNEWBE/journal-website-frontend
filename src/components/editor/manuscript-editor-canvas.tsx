@@ -8,7 +8,7 @@ import React, {
   memo,
 } from "react";
 import { Editor, EditorContent } from "@tiptap/react";
-import { UploadCloud, ZoomIn, ZoomOut } from "lucide-react";
+import { UploadCloud, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ManuscriptTableTools } from "./manuscript-table-tools";
 import {
   type PaperFormat,
@@ -28,25 +28,24 @@ interface ManuscriptEditorCanvasProps {
   currentFont: string;
   currentSize: string;
   currentSpacing: string;
+  docTitle?: string;
   onDropImageFile: (file: File) => void;
   onDropDocxFile: (file: File) => void;
 }
 
-// ── 1. Isolated Status Bar Component (Updates word/page counts without touching canvas) ──
+// ── 1. High-Performance Status Bar (CharacterCount O(1) Metrics & Smooth Zoom) ──
 interface StatusBarProps {
   editor: Editor | null;
   currentDimensions: { name: string; width: number; height: number };
-  zoomLabelRef: React.RefObject<HTMLSpanElement | null>;
-  onZoomStep: (direction: 1 | -1) => void;
-  onZoomReset: () => void;
+  zoomLevel: number;
+  onSetZoom: (zoom: number) => void;
 }
 
 const ManuscriptEditorStatusBar = memo(function ManuscriptEditorStatusBar({
   editor,
   currentDimensions,
-  zoomLabelRef,
-  onZoomStep,
-  onZoomReset,
+  zoomLevel,
+  onSetZoom,
 }: StatusBarProps) {
   const [metrics, setMetrics] = useState({
     wordCount: 0,
@@ -58,39 +57,47 @@ const ManuscriptEditorStatusBar = memo(function ManuscriptEditorStatusBar({
   useEffect(() => {
     if (!editor) return;
 
-    let debounceTimer: NodeJS.Timeout | null = null;
-    const computeMetrics = () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        if (editor.isDestroyed) return;
-        const text = editor.getText() || "";
-        const words = text.trim().split(/\s+/).filter(Boolean);
-        const wCount = words.length;
-        const cCount = text.length;
-        setMetrics({
-          wordCount: wCount,
-          charCount: cCount,
-          estimatedPages: Math.max(1, Math.ceil(wCount / 250)),
-          readingTimeMinutes: Math.max(1, Math.ceil(wCount / 200)),
+    let rafId: number | null = null;
+    const updateMetrics = () => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          if (editor.isDestroyed) return;
+
+          // Prefer O(1) in-memory storage from CharacterCount extension
+          const wCount =
+            editor.storage.characterCount?.words?.() ??
+            (editor.getText() || "").trim().split(/\s+/).filter(Boolean).length;
+          const cCount =
+            editor.storage.characterCount?.characters?.() ??
+            editor.getText()?.length ??
+            0;
+
+          setMetrics({
+            wordCount: wCount,
+            charCount: cCount,
+            estimatedPages: Math.max(1, Math.ceil(wCount / 250)),
+            readingTimeMinutes: Math.max(1, Math.ceil(wCount / 200)),
+          });
         });
-      }, 300);
+      }
     };
 
-    computeMetrics();
-    editor.on("update", computeMetrics);
+    updateMetrics();
+    editor.on("update", updateMetrics);
     return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      editor.off("update", computeMetrics);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      editor.off("update", updateMetrics);
     };
   }, [editor]);
 
   return (
-    <div className="bg-[#f8fafc] border-t border-slate-200/90 pl-16 pr-4 py-1.5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 shrink-0 select-none">
+    <footer className="bg-[#f8fafc] border-t border-slate-200/90 pl-6 sm:pl-12 pr-4 py-1.5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 shrink-0 select-none z-20">
       <div className="flex items-center gap-3 text-[11px] font-medium">
         {/* Paper Format Badge */}
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-slate-200 text-slate-800 font-semibold text-[10.5px]">
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-slate-200/80 text-slate-800 font-semibold text-[10.5px]">
           <span>{currentDimensions.name}</span>
-          <span className="text-slate-400 font-mono text-[9.5px]">
+          <span className="text-slate-500 font-mono text-[9.5px]">
             {currentDimensions.width}×{currentDimensions.height}px
           </span>
         </span>
@@ -108,11 +115,11 @@ const ManuscriptEditorStatusBar = memo(function ManuscriptEditorStatusBar({
           <strong className="text-slate-900 font-bold">
             {metrics.charCount.toLocaleString()}
           </strong>{" "}
-          characters
+          chars
         </span>
         <span className="text-slate-300 hidden sm:inline">|</span>
         <span className="hidden sm:inline">
-          Estimated{" "}
+          Est.{" "}
           <strong className="text-slate-900 font-bold">
             ~{metrics.estimatedPages}
           </strong>{" "}
@@ -120,51 +127,65 @@ const ManuscriptEditorStatusBar = memo(function ManuscriptEditorStatusBar({
         </span>
         <span className="text-slate-300 hidden md:inline">|</span>
         <span className="hidden md:inline text-slate-500">
-          ~{metrics.readingTimeMinutes} min reading time
+          ~{metrics.readingTimeMinutes} min read
         </span>
       </div>
 
-      {/* Pure DOM Zoom Controls — zero React state on hot path */}
-      <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-xs shadow-2xs">
+      {/* Hardware-Accelerated Zoom Stepper */}
+      <div className="flex items-center gap-1.5 bg-white border border-slate-300 px-2 py-0.5 rounded-xs shadow-2xs">
         <span className="text-[10.5px] font-semibold text-slate-500 mr-1">
-          Paper Zoom:
+          Zoom:
         </span>
         <button
           type="button"
-          onClick={() => onZoomStep(-1)}
-          className="p-1 hover:bg-slate-200 rounded-xs text-slate-600 transition-colors cursor-pointer"
-          title="Zoom Out Paper (or Ctrl+Scroll Down)"
+          onClick={() => onSetZoom(Math.max(50, zoomLevel - 10))}
+          className="p-1 hover:bg-slate-100 rounded-xs text-slate-600 transition-colors cursor-pointer"
+          title="Zoom Out (Ctrl+Scroll Down)"
         >
           <ZoomOut className="h-3.5 w-3.5" />
         </button>
-        <span
-          ref={zoomLabelRef}
-          className="text-[11px] font-mono text-slate-700 w-11 text-center font-bold"
+
+        <select
+          value={zoomLevel}
+          onChange={(e) => onSetZoom(Number(e.target.value))}
+          className="text-[11px] font-mono font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer text-center py-0.5"
         >
-          100%
-        </span>
+          <option value={50}>50%</option>
+          <option value={75}>75%</option>
+          <option value={90}>90%</option>
+          <option value={100}>100%</option>
+          <option value={110}>110%</option>
+          <option value={125}>125%</option>
+          <option value={150}>150%</option>
+          <option value={200}>200%</option>
+        </select>
+
         <button
           type="button"
-          onClick={() => onZoomStep(1)}
-          className="p-1 hover:bg-slate-200 rounded-xs text-slate-600 transition-colors cursor-pointer"
-          title="Zoom In Paper (or Ctrl+Scroll Up)"
+          onClick={() => onSetZoom(Math.min(200, zoomLevel + 10))}
+          className="p-1 hover:bg-slate-100 rounded-xs text-slate-600 transition-colors cursor-pointer"
+          title="Zoom In (Ctrl+Scroll Up)"
         >
           <ZoomIn className="h-3.5 w-3.5" />
         </button>
-        <button
-          type="button"
-          onClick={onZoomReset}
-          className="text-[10.5px] font-semibold text-blue-700 hover:underline ml-1 cursor-pointer"
-          title="Reset Paper Zoom to 100%"
-        >
-          Reset
-        </button>
+
+        {zoomLevel !== 100 && (
+          <button
+            type="button"
+            onClick={() => onSetZoom(100)}
+            className="text-[10.5px] font-semibold text-blue-700 hover:underline ml-1 cursor-pointer flex items-center gap-0.5"
+            title="Reset Zoom to 100%"
+          >
+            <RotateCcw className="h-2.5 w-2.5" />
+            <span>Reset</span>
+          </button>
+        )}
       </div>
-    </div>
+    </footer>
   );
 });
 
-// ── 2. Main Canvas Component ──
+// ── 2. Main Virtual Paper Canvas ──
 function ManuscriptEditorCanvasInner({
   editor,
   paperFormat,
@@ -175,144 +196,28 @@ function ManuscriptEditorCanvasInner({
   currentFont,
   currentSize,
   currentSpacing,
+  docTitle,
   onDropImageFile,
   onDropDocxFile,
 }: ManuscriptEditorCanvasProps) {
-  // Plain ref for zoom percentage — zero React re-renders on zoom hot path
-  const zoomRef = useRef<number>(100);
-  const zoomLabelRef = useRef<HTMLSpanElement | null>(null);
-
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
-  const canvasScrollRef = useRef<HTMLDivElement | null>(null);
-  const paperSheetRef = useRef<HTMLDivElement | null>(null);
-  const boundingBoxRef = useRef<HTMLDivElement | null>(null);
-  const rulerInnerRef = useRef<HTMLDivElement | null>(null);
-  const accDeltaRef = useRef<number>(0);
-  const zoomRafRef = useRef<number | null>(null);
-  const willChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Paper dimensions
+  // Dimensions based on paper format
   const currentDimensions =
     PAPER_DIMENSIONS[paperFormat]?.[paperOrientation] ||
     PAPER_DIMENSIONS.a4.portrait;
 
-  // Track natural unscaled sheet height via ResizeObserver with rAF throttling
-  const naturalSheetHeightRef = useRef<number>(currentDimensions.height);
+  // Fluid, hardware-accelerated Ctrl+Wheel Zoom listener on window
   useEffect(() => {
-    const el = paperSheetRef.current;
-    if (!el) return;
-
-    let roRaf: number | null = null;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const h =
-          entry.borderBoxSize?.[0]?.blockSize ||
-          entry.contentRect?.height ||
-          0;
-        if (h > 0 && Math.abs(h - naturalSheetHeightRef.current) > 4) {
-          naturalSheetHeightRef.current = h;
-          if (roRaf === null) {
-            roRaf = requestAnimationFrame(() => {
-              roRaf = null;
-              const bb = boundingBoxRef.current;
-              if (bb) {
-                const scale = zoomRef.current / 100;
-                bb.style.minHeight = `${Math.round(naturalSheetHeightRef.current * scale)}px`;
-              }
-            });
-          }
-        }
-      }
-    });
-
-    ro.observe(el);
-    return () => {
-      if (roRaf !== null) cancelAnimationFrame(roRaf);
-      ro.disconnect();
-    };
-  }, [currentDimensions.height]);
-
-  // ── Core atomic imperative zoom applier ──
-  // Updates sheet transform, bounding box, and ruler synchronously in the same rAF frame.
-  // Never uses React state, so React never reconciles or wipes out the inline transform.
-  const applyZoom = useCallback(
-    (targetZoom: number) => {
-      const next = Math.min(200, Math.max(50, targetZoom));
-      zoomRef.current = next;
-
-      // Update text label directly in DOM without React state
-      if (zoomLabelRef.current) {
-        zoomLabelRef.current.textContent = `${next}%`;
-      }
-
-      if (zoomRafRef.current !== null) {
-        cancelAnimationFrame(zoomRafRef.current);
-      }
-
-      zoomRafRef.current = requestAnimationFrame(() => {
-        zoomRafRef.current = null;
-        const sheet = paperSheetRef.current;
-        const bb = boundingBoxRef.current;
-        const ruler = rulerInnerRef.current;
-        if (!sheet || !bb) return;
-
-        const scale = next / 100;
-        const sheetW = currentDimensions.width;
-        const sheetH = naturalSheetHeightRef.current;
-
-        // Temporarily promote to compositor transform layer during active zoom
-        sheet.style.willChange = "transform";
-        if (willChangeTimeoutRef.current) clearTimeout(willChangeTimeoutRef.current);
-        willChangeTimeoutRef.current = setTimeout(() => {
-          if (sheet) sheet.style.willChange = "auto";
-        }, 300);
-
-        // Atomic layout update in exact same frame
-        sheet.style.transform = next !== 100 ? `scale(${scale})` : "";
-        bb.style.width = `${Math.round(sheetW * scale)}px`;
-        bb.style.minHeight = `${Math.round(sheetH * scale)}px`;
-        if (ruler) {
-          ruler.style.width = `${Math.round(sheetW * scale)}px`;
-        }
-      });
-    },
-    [currentDimensions.width]
-  );
-
-  // Whenever paper format / orientation changes, re-assert current zoom
-  useEffect(() => {
-    applyZoom(zoomRef.current);
-  }, [currentDimensions.width, currentDimensions.height, applyZoom]);
-
-  const handleZoomStep = useCallback(
-    (direction: 1 | -1) => {
-      applyZoom(zoomRef.current + direction * 10);
-    },
-    [applyZoom]
-  );
-
-  const handleZoomReset = useCallback(() => {
-    applyZoom(100);
-  }, [applyZoom]);
-
-  // ── High-Performance Wheel & Zoom Architecture ──
-  // Non-passive wheel listener attached to container to intercept Ctrl+Wheel and Trackpad pinch
-  // Normal scrolling (when Ctrl/Meta is NOT pressed) exits in 0.001ms for native 120 FPS hardware scrolling.
-  useEffect(() => {
-    const scrollEl = canvasScrollRef.current;
-    if (!scrollEl) return;
-
     let wheelRaf: number | null = null;
     let pendingDelta = 0;
 
     const handleWheel = (e: WheelEvent) => {
-      // Immediate fast-path: if neither Ctrl nor Meta is pressed, let browser handle native hardware scroll
+      // Only intercept if Ctrl or Command is pressed
       if (!e.ctrlKey && !e.metaKey) return;
 
-      // Intercept and prevent browser's native window/page zoom
       e.preventDefault();
-
       pendingDelta += e.deltaY;
 
       if (wheelRaf === null) {
@@ -321,26 +226,27 @@ function ManuscriptEditorCanvasInner({
           const delta = pendingDelta;
           pendingDelta = 0;
 
-          // Trackpad pinch vs discrete mouse wheel notch
-          const isTrackpad = Math.abs(delta) < 40;
-          let nextZoom: number;
-
-          if (isTrackpad) {
-            // Smooth continuous exponential scaling for trackpad pinch
-            const factor = Math.exp(-delta * 0.006);
-            nextZoom = Math.round(zoomRef.current * factor);
+          // Proportional zoom calculation
+          let zoomDelta = 0;
+          if (Math.abs(delta) < 50) {
+            zoomDelta = -delta * 0.35;
           } else {
-            // Discrete notches for mouse wheel (10% step per notch)
-            const direction = delta < 0 ? 1 : -1;
-            nextZoom = zoomRef.current + direction * 10;
+            const notchCount = Math.round(delta / 100);
+            zoomDelta = -notchCount * 10;
           }
 
-          applyZoom(nextZoom);
+          if (Math.abs(zoomDelta) < 1 && delta !== 0) {
+            zoomDelta = delta < 0 ? 1 : -1;
+          }
+
+          setZoomLevel((prev) =>
+            Math.min(200, Math.max(50, Math.round(prev + zoomDelta)))
+          );
         });
       }
     };
 
-    scrollEl.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("wheel", handleWheel, { passive: false });
 
     // Keyboard shortcuts (Ctrl +, Ctrl -, Ctrl 0)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -348,35 +254,38 @@ function ManuscriptEditorCanvasInner({
 
       if (e.key === "=" || e.key === "+") {
         e.preventDefault();
-        applyZoom(zoomRef.current + 10);
+        setZoomLevel((prev) => Math.min(200, prev + 10));
       } else if (e.key === "-") {
         e.preventDefault();
-        applyZoom(zoomRef.current - 10);
+        setZoomLevel((prev) => Math.max(50, prev - 10));
       } else if (e.key === "0") {
         e.preventDefault();
-        applyZoom(100);
+        setZoomLevel(100);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      scrollEl.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("keydown", handleKeyDown);
       if (wheelRaf !== null) cancelAnimationFrame(wheelRaf);
-      if (zoomRafRef.current !== null) cancelAnimationFrame(zoomRafRef.current);
-      if (willChangeTimeoutRef.current) clearTimeout(willChangeTimeoutRef.current);
     };
-  }, [applyZoom]);
+  }, []);
 
-  // Drag-and-drop
+  // Drag-and-drop file imports
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (
-      e.dataTransfer.types &&
-      Array.from(e.dataTransfer.types).includes("Files")
-    ) {
+    if (typeof window !== "undefined" && (window as any).__isInternalDragging) {
+      if (isDraggingOver) setIsDraggingOver(false);
+      return;
+    }
+    const hasFiles = e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files");
+    const hasRealFileItems = Array.from(e.dataTransfer.items || []).some(
+      (item) => item.kind === "file"
+    );
+    if (hasFiles && hasRealFileItems) {
       setIsDraggingOver(true);
     }
   };
@@ -404,12 +313,21 @@ function ManuscriptEditorCanvasInner({
     }
   };
 
-  const getMarginClass = () => {
-    if (pageMargins === "narrow") return "px-8 sm:px-12 py-10 sm:py-14";
-    if (pageMargins === "moderate") return "px-12 sm:px-16 py-12 sm:py-18";
-    return "px-14 sm:px-20 py-16 sm:py-24";
+  // Academic Margin Padding in Pixels
+  const getMarginStyle = () => {
+    if (viewMode === "continuous") {
+      return { padding: "48px 64px" };
+    }
+    if (pageMargins === "narrow") {
+      return { padding: "36px 36px" }; // 0.5 inch
+    }
+    if (pageMargins === "moderate") {
+      return { padding: "54px 54px" }; // 0.75 inch
+    }
+    return { padding: "72px 72px" }; // 1.0 inch standard APA/IEEE
   };
 
+  // Inches ruler
   const totalInches = Math.floor(currentDimensions.widthInches);
   const inchMarks = Array.from({ length: totalInches + 1 }, (_, i) => i);
 
@@ -418,12 +336,11 @@ function ManuscriptEditorCanvasInner({
       data-lenis-prevent="true"
       className="flex-1 flex flex-col min-h-0 bg-[#eef1f6] relative overflow-hidden font-sans"
     >
-      {/* ── Top Ruler (width synced imperatively) ── */}
+      {/* ── Top Ruler ── */}
       <div className="bg-[#f1f4f9] border-b border-slate-300/80 h-7 flex items-center justify-center shrink-0 select-none overflow-hidden shadow-2xs">
         <div
-          ref={rulerInnerRef}
-          style={{ width: `${currentDimensions.width}px` }}
-          className="px-6 flex items-center justify-between text-[9px] font-mono text-slate-500"
+          style={{ width: `${Math.round(currentDimensions.width * (zoomLevel / 100))}px` }}
+          className="px-6 flex items-center justify-between text-[9px] font-mono text-slate-500 transition-all duration-75"
         >
           <div className="flex items-center w-full justify-between border-t border-slate-300 pt-0.5">
             {inchMarks.map((inch) => (
@@ -441,23 +358,20 @@ function ManuscriptEditorCanvasInner({
         </div>
       </div>
 
-      {/* ── Main Scroll Viewport ── */}
+      {/* ── Scrollable Document Viewport ── */}
       <div
-        ref={canvasScrollRef}
         data-lenis-prevent="true"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        className={`manuscript-scroll-canvas flex-1 min-h-0 overflow-y-auto overflow-x-auto relative ${isDraggingOver ? "bg-blue-100/60" : ""
+          }`}
         style={{
-          overflowY: "scroll",
-          overflowX: "auto",
           scrollBehavior: "auto",
           overscrollBehavior: "contain",
-          touchAction: "pan-y",
         }}
-        className={`manuscript-scroll-canvas flex-1 min-h-0 relative ${isDraggingOver ? "bg-blue-100/60" : ""}`}
       >
-        {/* Drop Banner */}
+        {/* Drop Overlay */}
         {isDraggingOver && (
           <div className="fixed inset-x-0 top-24 flex justify-center z-40 pointer-events-none">
             <div className="bg-[#0b1b3d] text-white px-5 py-2.5 rounded-full shadow-2xl border border-blue-400 flex items-center gap-2 text-xs font-bold animate-bounce">
@@ -467,72 +381,72 @@ function ManuscriptEditorCanvasInner({
           </div>
         )}
 
-        {/* Centering wrapper (w-fit min-w-full prevents negative-scroll clipping on zoom) */}
-        <div className="min-h-full py-8 px-4 sm:px-8 w-fit min-w-full flex flex-col items-center">
-          {/* Bounding box to give the scroll container accurate dimensions */}
+        {/* Paper Centering Wrapper with Native CSS Zoom */}
+        <div className="min-h-full py-10 px-4 sm:px-8 w-full flex flex-col items-center">
           <div
-            ref={boundingBoxRef}
             style={{
-              width: `${currentDimensions.width}px`,
-              minHeight: `${currentDimensions.height}px`,
-              position: "relative",
-              margin: "0 auto",
+              zoom: zoomLevel / 100,
+              width: viewMode === "continuous" ? "92%" : `${currentDimensions.width}px`,
+              maxWidth: viewMode === "continuous" ? "1200px" : undefined,
             }}
+            className="flex flex-col items-center transition-transform duration-75 origin-top"
           >
-            {/* The actual paper sheet — transform preserved in JSX style so React never wipes it */}
+            {/* The Virtual Paper Sheet (Google Docs Style) */}
             <div
-              ref={paperSheetRef}
               id="manuscript-paper-sheet"
               style={{
-                width: `${currentDimensions.width}px`,
-                transformOrigin: "top left",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                transform: zoomRef.current !== 100 ? `scale(${zoomRef.current / 100})` : undefined,
+                width: "100%",
+                minHeight: viewMode === "continuous" ? "900px" : `${currentDimensions.height}px`,
+                ...getMarginStyle(),
               }}
-              className={`${
-                viewMode === "continuous"
-                  ? "bg-white border border-slate-300 shadow-[0_4px_24px_rgba(0,0,0,0.08)] rounded-xs"
-                  : ""
-              } ${isDraggingOver ? "ring-4 ring-blue-500/40" : ""}`}
+              className="manuscript-paper-sheet relative text-slate-900 selection:bg-blue-100/80"
             >
+              {/* Academic Page Header (Simulated Sheet Header) */}
+              <div className="border-b border-slate-200/80 pb-2 mb-8 flex items-center justify-between text-[8.5pt] text-slate-500 font-mono select-none">
+                <span className="font-semibold uppercase tracking-wider text-slate-600 truncate max-w-[60%]">
+                  {docTitle || "Academic Manuscript"}
+                </span>
+                <span className="text-slate-400 font-bold">PEER-REVIEW DRAFT</span>
+              </div>
+
+              {/* TipTap Content Area with Typography Properties */}
               <div
                 style={{
                   fontFamily: currentFont,
                   fontSize: currentSize,
                   lineHeight: currentSpacing,
                   columnCount: layoutColumns === "2" ? 2 : 1,
-                  columnGap: "24pt",
+                  columnGap: "28pt",
                   columnRule:
                     layoutColumns === "2" ? "0.5pt solid #e2e8f0" : "none",
                 }}
-                className={`focus:outline-none text-slate-900 selection:bg-blue-100 ${
-                  viewMode === "continuous"
-                    ? `min-h-264 ${getMarginClass()}`
-                    : ""
-                }`}
+                className="focus:outline-none"
               >
                 <EditorContent
                   editor={editor}
-                  className="manuscript-tiptap-content focus:outline-none"
+                  className="manuscript-tiptap-content focus:outline-none min-h-162.5"
                 />
+              </div>
+
+              {/* Academic Page Footer */}
+              <div className="border-t border-slate-200/80 pt-3 mt-12 flex items-center justify-between text-[8pt] text-slate-400 select-none">
+                <span>Peer-Reviewed Journal Document</span>
+                <span className="font-mono font-bold text-slate-600">Page 1</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Floating Table Tools */}
+        {/* Floating Table Controls */}
         <ManuscriptTableTools editor={editor} />
       </div>
 
-      {/* ── Status Bar (Isolated from Canvas) ── */}
+      {/* ── High-Performance Isolated Status Bar ── */}
       <ManuscriptEditorStatusBar
         editor={editor}
         currentDimensions={currentDimensions}
-        zoomLabelRef={zoomLabelRef}
-        onZoomStep={handleZoomStep}
-        onZoomReset={handleZoomReset}
+        zoomLevel={zoomLevel}
+        onSetZoom={setZoomLevel}
       />
     </div>
   );

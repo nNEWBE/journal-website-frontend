@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -10,11 +10,10 @@ import {
   Download,
   FileText,
   Printer,
-  RotateCcw,
   Save,
   Send,
 } from "lucide-react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Subscript from "@tiptap/extension-subscript";
@@ -28,8 +27,8 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
+import CharacterCount from "@tiptap/extension-character-count";
 import mammoth from "mammoth";
-import { PaginationPlus } from "tiptap-pagination-plus";
 
 import {
   type PaperFormat,
@@ -43,6 +42,7 @@ import {
 import { ManuscriptEditorToolbar } from "@/components/editor/manuscript-editor-toolbar";
 import { ManuscriptEditorCanvas } from "@/components/editor/manuscript-editor-canvas";
 import { ResizableImage } from "@/components/editor/extensions/resizable-image";
+import { ManuscriptPageBreak } from "@/components/editor/extensions/manuscript-page-break";
 import { ManuscriptFindReplace } from "@/components/editor/manuscript-find-replace";
 import {
   MANUSCRIPT_TEMPLATES,
@@ -63,7 +63,7 @@ export default function ManuscriptEditorPage() {
   // Document meta state
   const [docTitle, setDocTitle] = useState<string>("Untitled Academic Manuscript");
   const [contentHtml, setContentHtml] = useState<string>("");
-  const [selectedTemplate, setSelectedTemplate] = useState<ManuscriptTemplate>(
+  const [, setSelectedTemplate] = useState<ManuscriptTemplate>(
     MANUSCRIPT_TEMPLATES[0]
   );
   const [showTemplateModal, setShowTemplateModal] = useState<boolean>(false);
@@ -81,11 +81,11 @@ export default function ManuscriptEditorPage() {
 
   // Save state
   const [saveStatus, setSaveStatus] = useState<string>("Saved");
-  const [lastSavedTime, setLastSavedTime] = useState<string>("");
+  const [, setLastSavedTime] = useState<string>("");
   const updateDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<any>(null);
 
-  // Initialize TipTap Editor with full extensions suite + PaginationPlus
+  // Initialize TipTap Editor with clean, official, high-performance extensions
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -105,31 +105,13 @@ export default function ManuscriptEditorPage() {
       TableHeader,
       TableCell,
       ResizableImage,
-      PaginationPlus.configure({
-        enabled: true,
-        pageWidth: 794,
-        pageHeight: 1123,
-        pageGap: 28,
-        pageGapBorderSize: 1,
-        pageGapBorderColor: "#cbd5e1",
-        pageBreakBackground: "#eef1f6",
-        marginTop: 72,
-        marginBottom: 72,
-        marginLeft: 72,
-        marginRight: 72,
-        contentMarginTop: 12,
-        contentMarginBottom: 12,
-        headerLeft: `<span style="font-size: 8.5pt; color: #64748b; font-family: sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Academic Manuscript</span>`,
-        headerRight: `<span style="font-size: 8pt; color: #94a3b8; font-family: monospace; font-weight: bold;">PEER-REVIEW DRAFT</span>`,
-        footerLeft: `<span style="font-size: 8pt; color: #94a3b8; font-family: sans-serif;">Peer-Reviewed Journal Document</span>`,
-        footerRight: `<span style="font-size: 8.5pt; color: #334155; font-weight: 700; font-family: monospace;">Page {page}</span>`,
-      }),
+      ManuscriptPageBreak,
+      CharacterCount.configure(),
     ],
     content: "",
     immediatelyRender: false,
     editorProps: {
       handlePaste: (view, event) => {
-        // Collect any pasted image files
         const imageFiles: File[] = [];
         if (event.clipboardData?.files?.length) {
           for (let i = 0; i < event.clipboardData.files.length; i++) {
@@ -213,11 +195,11 @@ export default function ManuscriptEditorPage() {
       },
     },
     onUpdate: ({ editor }) => {
-      // Debounce the state update to avoid heavy serializations and React waterfall on every keystroke
+      // Debounce serialization to avoid heavy React reconciliation while typing
       if (updateDebounceRef.current) clearTimeout(updateDebounceRef.current);
       updateDebounceRef.current = setTimeout(() => {
         setContentHtml(editor.getHTML());
-      }, 400);
+      }, 500);
     },
   });
 
@@ -231,7 +213,7 @@ export default function ManuscriptEditorPage() {
     };
   }, []);
 
-  // Load draft or initial template on editor mount (deferred to microtask to prevent React 19 flushSync warning)
+  // Restore draft or load template on mount
   useEffect(() => {
     if (!editor) return;
 
@@ -270,7 +252,7 @@ export default function ManuscriptEditorPage() {
     });
   }, [editor]);
 
-  // Periodic Autosave
+  // Periodic Autosave (Debounced 1.5s)
   useEffect(() => {
     if (!contentHtml || !editor) return;
 
@@ -302,7 +284,7 @@ export default function ManuscriptEditorPage() {
       } catch (err) {
         console.error("Autosave failed:", err);
       }
-    }, 1200);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [
@@ -320,8 +302,8 @@ export default function ManuscriptEditorPage() {
   ]);
 
   // Manual Immediate Save (Ctrl+S)
-  const saveDraftImmediately = () => {
-    const html = editor?.getHTML() || contentHtml;
+  const saveDraftImmediately = useCallback(() => {
+    const html = editorRef.current?.getHTML() || contentHtml;
     try {
       localStorage.setItem(
         LOCAL_STORAGE_KEY,
@@ -350,103 +332,53 @@ export default function ManuscriptEditorPage() {
       console.error("Save failed:", err);
       toast.error("Failed to save manuscript draft.");
     }
-  };
+  }, [
+    contentHtml,
+    docTitle,
+    currentFont,
+    currentSize,
+    currentSpacing,
+    layoutColumns,
+    paperFormat,
+    paperOrientation,
+    pageMargins,
+    viewMode,
+  ]);
 
-  // Handle paper format change (A4, Letter, Legal, Executive, A5, A3)
-  const handleSetPaperFormat = (format: PaperFormat) => {
+  // Handle paper format change (A4, Letter, Legal, etc.)
+  const handleSetPaperFormat = useCallback((format: PaperFormat) => {
     setPaperFormat(format);
-    const dims = PAPER_DIMENSIONS[format][paperOrientation];
-    const margins = MARGIN_PRESETS[pageMargins];
-    if (editor) {
-      editor
-        .chain()
-        .focus()
-        .updatePageWidth(dims.width)
-        .updatePageHeight(dims.height)
-        .updateMargins({
-          top: margins.top,
-          bottom: margins.bottom,
-          left: margins.left,
-          right: margins.right,
-        })
-        .run();
-    }
+    const dims = PAPER_DIMENSIONS[format].portrait;
     toast.info(`Format set to ${dims.name} (${dims.width} × ${dims.height} px)`);
-  };
+  }, []);
 
   // Handle paper orientation change (Portrait, Landscape)
-  const handleSetPaperOrientation = (orientation: PaperOrientation) => {
+  const handleSetPaperOrientation = useCallback((orientation: PaperOrientation) => {
     setPaperOrientation(orientation);
-    const dims = PAPER_DIMENSIONS[paperFormat][orientation];
-    const margins = MARGIN_PRESETS[pageMargins];
-    if (editor) {
-      editor
-        .chain()
-        .focus()
-        .updatePageWidth(dims.width)
-        .updatePageHeight(dims.height)
-        .updateMargins({
-          top: margins.top,
-          bottom: margins.bottom,
-          left: margins.left,
-          right: margins.right,
-        })
-        .run();
-    }
     toast.info(
       `Orientation switched to ${orientation === "portrait" ? "Portrait" : "Landscape"}`
     );
-  };
+  }, []);
 
   // Handle margin change (Normal, Narrow, Moderate)
-  const handleSetPageMargins = (marginsKey: MarginPreset) => {
+  const handleSetPageMargins = useCallback((marginsKey: MarginPreset) => {
     setPageMargins(marginsKey);
     const margins = MARGIN_PRESETS[marginsKey];
-    if (editor) {
-      editor
-        .chain()
-        .focus()
-        .updateMargins({
-          top: margins.top,
-          bottom: margins.bottom,
-          left: margins.left,
-          right: margins.right,
-        })
-        .run();
-    }
     toast.info(`Margins adjusted to ${margins.label}`);
-  };
+  }, []);
 
-  // Handle view mode change (Print Layout Pages vs Web Layout Continuous)
-  const handleSetViewMode = (mode: ViewMode) => {
+  // Handle view mode change (Print Layout Pages vs Continuous Document)
+  const handleSetViewMode = useCallback((mode: ViewMode) => {
     setViewMode(mode);
-    if (editor) {
-      if (mode === "pages") {
-        editor.chain().focus().enablePagination().run();
-        toast.info("Switched to Print Layout (Multi-Page Sheets)");
-      } else {
-        editor.chain().focus().disablePagination().run();
-        toast.info("Switched to Web Layout (Continuous Document)");
-      }
+    if (mode === "pages") {
+      toast.info("Switched to Print Layout (Virtual Paper Sheet)");
+    } else {
+      toast.info("Switched to Web Layout (Continuous Canvas)");
     }
-  };
-
-  // Sync document title into page headers
-  useEffect(() => {
-    if (editor) {
-      queueMicrotask(() => {
-        if (!editor.isDestroyed) {
-          editor.commands.updateHeaderContent(
-            `<span style="font-size: 8.5pt; color: #64748b; font-family: sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">${docTitle || "Academic Manuscript"}</span>`,
-            `<span style="font-size: 8pt; color: #94a3b8; font-family: monospace; font-weight: bold;">PEER-REVIEW DRAFT</span>`
-          );
-        }
-      });
-    }
-  }, [docTitle, editor]);
+  }, []);
 
   // Open & Import Word (.docx) file
-  const handleOpenDocx = async (file: File) => {
+  const handleOpenDocx = useCallback(async (file: File) => {
     try {
       toast.info(`Opening Word file "${file.name}"...`);
       const arrayBuffer = await file.arrayBuffer();
@@ -461,8 +393,9 @@ export default function ManuscriptEditorPage() {
       const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[_\-]/g, " ");
       setDocTitle(cleanTitle);
 
-      if (editor) {
-        editor.commands.setContent(html);
+      const ed = editorRef.current;
+      if (ed) {
+        ed.commands.setContent(html);
         setContentHtml(html);
       }
       toast.success(`Successfully imported "${file.name}"!`);
@@ -470,10 +403,10 @@ export default function ManuscriptEditorPage() {
       console.error("Failed to import .docx:", err);
       toast.error("Failed to read Word file. Please verify it is a valid .docx document.");
     }
-  };
+  }, []);
 
   // Insert Image File
-  const handleInsertImageFile = async (file: File) => {
+  const handleInsertImageFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Only image files (.png, .jpg, .webp, .svg) can be inserted.");
       return;
@@ -481,10 +414,10 @@ export default function ManuscriptEditorPage() {
     try {
       toast.info(`Optimizing image "${file.name}"...`);
       const src = await optimizeImageFile(file);
-      if (src && editor) {
+      const ed = editorRef.current;
+      if (src && ed) {
         const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_\-]/g, " ");
-        editor
-          .chain()
+        ed.chain()
           .focus()
           .insertContent({
             type: "resizableImage",
@@ -503,59 +436,47 @@ export default function ManuscriptEditorPage() {
       console.error("Failed to insert image:", err);
       toast.error("Failed to process image file.");
     }
-  };
+  }, []);
 
   // Switch Academic Template
-  const handleSelectTemplate = (template: ManuscriptTemplate) => {
-    if (
-      contentHtml &&
-      !window.confirm(
-        `Load the "${template.name}" template? Any unsaved edits in your current document will be replaced.`
-      )
-    ) {
-      return;
-    }
+  const handleSelectTemplate = useCallback(
+    (template: ManuscriptTemplate) => {
+      if (
+        contentHtml &&
+        !window.confirm(
+          `Load the "${template.name}" template? Any unsaved edits in your current document will be replaced.`
+        )
+      ) {
+        return;
+      }
 
-    setSelectedTemplate(template);
-    setDocTitle(template.defaultTitle);
-    setContentHtml(template.initialHtml);
-    if (editor) {
-      editor.commands.setContent(template.initialHtml);
-    }
-    setShowTemplateModal(false);
-    toast.success(`Loaded ${template.name} template.`);
-  };
-
-  // Start with Blank Page
-  const handleBlankDocument = () => {
-    if (
-      window.confirm(
-        "Clear document and start with a blank paper? Your current draft will be cleared."
-      )
-    ) {
-      const blank = `<h1>Title of Academic Paper</h1><p>Begin typing your manuscript here...</p>`;
-      setContentHtml(blank);
-      setDocTitle("Untitled Manuscript");
-      if (editor) {
-        editor.commands.setContent(blank);
+      setSelectedTemplate(template);
+      setDocTitle(template.defaultTitle);
+      setContentHtml(template.initialHtml);
+      const ed = editorRef.current;
+      if (ed) {
+        ed.commands.setContent(template.initialHtml);
       }
       setShowTemplateModal(false);
-      toast.info("Created new blank manuscript.");
-    }
-  };
+      toast.success(`Loaded ${template.name} template.`);
+    },
+    [contentHtml]
+  );
 
   // Export as Word (.docx)
-  const handleExportDocx = () => {
-    const currentHtml = editor?.getHTML() || contentHtml;
+  const handleExportDocx = useCallback(() => {
+    const currentHtml = editorRef.current?.getHTML() || contentHtml;
     downloadAsDocx(currentHtml, docTitle);
     toast.success("Manuscript exported as Word Document (.docx)");
-  };
+  }, [contentHtml, docTitle]);
 
   // Attach to Submission & Return
-  const handleAttachToSubmission = () => {
-    const currentHtml = editor?.getHTML() || contentHtml;
+  const handleAttachToSubmission = useCallback(() => {
+    const currentHtml = editorRef.current?.getHTML() || contentHtml;
     if (!currentHtml || currentHtml.trim().length < 50) {
-      toast.error("Manuscript content is too brief to attach. Please write your paper sections first.");
+      toast.error(
+        "Manuscript content is too brief to attach. Please write your paper sections first."
+      );
       return;
     }
 
@@ -563,7 +484,7 @@ export default function ManuscriptEditorPage() {
       title: docTitle,
       html: currentHtml,
       filename: `${docTitle.trim().replace(/[^a-zA-Z0-9_\-\s]/g, "") || "manuscript"}.docx`,
-      wordCount: editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0,
+      wordCount: editorRef.current?.storage?.characterCount?.words?.() || 0,
       updatedAt: Date.now(),
     };
 
@@ -572,7 +493,15 @@ export default function ManuscriptEditorPage() {
     setTimeout(() => {
       router.push("/dashboard/submissions/new");
     }, 600);
-  };
+  }, [contentHtml, docTitle, router]);
+
+  const toggleFindReplace = useCallback(() => {
+    setShowFindReplace((prev) => !prev);
+  }, []);
+
+  const closeFindReplace = useCallback(() => {
+    setShowFindReplace(false);
+  }, []);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -603,7 +532,7 @@ export default function ManuscriptEditorPage() {
 
     window.addEventListener("keydown", handleGlobalShortcuts);
     return () => window.removeEventListener("keydown", handleGlobalShortcuts);
-  }, [docTitle, contentHtml, currentFont, currentSize, currentSpacing, layoutColumns, pageMargins, editor]);
+  }, [saveDraftImmediately]);
 
   const handleExit = () => {
     if (
@@ -712,7 +641,7 @@ export default function ManuscriptEditorPage() {
         editor={editor}
         onOpenDocx={handleOpenDocx}
         onInsertImageFile={handleInsertImageFile}
-        onToggleFindReplace={() => setShowFindReplace((prev) => !prev)}
+        onToggleFindReplace={toggleFindReplace}
         paperFormat={paperFormat}
         onSetPaperFormat={handleSetPaperFormat}
         paperOrientation={paperOrientation}
@@ -727,7 +656,7 @@ export default function ManuscriptEditorPage() {
         onSetLineSpacing={setCurrentSpacing}
       />
 
-      {/* ── 3. Academic Paper Sheet Canvas (Multi-Page A4 / Letter / Legal) ── */}
+      {/* ── 3. Academic Paper Sheet Canvas (High-Performance Google Docs Virtual Paper) ── */}
       <ManuscriptEditorCanvas
         editor={editor}
         paperFormat={paperFormat}
@@ -738,6 +667,7 @@ export default function ManuscriptEditorPage() {
         currentFont={currentFont}
         currentSize={currentSize}
         currentSpacing={currentSpacing}
+        docTitle={docTitle}
         onDropImageFile={handleInsertImageFile}
         onDropDocxFile={handleOpenDocx}
       />
@@ -745,7 +675,7 @@ export default function ManuscriptEditorPage() {
       {/* ── 4. MS Word-Style Find & Replace Floating Palette ── */}
       <ManuscriptFindReplace
         isOpen={showFindReplace}
-        onClose={() => setShowFindReplace(false)}
+        onClose={closeFindReplace}
         editor={editor}
       />
 
@@ -799,31 +729,9 @@ export default function ManuscriptEditorPage() {
                 </div>
               ))}
             </div>
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-              <button
-                type="button"
-                onClick={handleBlankDocument}
-                className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span>Start with Blank Page</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowTemplateModal(false)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xs font-medium cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}
-
-      {/* Editor-specific Toast placement so top-right action buttons are never obscured */}
-      <Toaster position="bottom-right" richColors closeButton />
     </div>
   );
 }

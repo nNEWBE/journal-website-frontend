@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import { Editor } from "@tiptap/react";
 import {
   AlignCenter,
@@ -139,7 +139,7 @@ const HIGHLIGHT_COLORS = [
   { label: "Rose Pink", value: "#fecdd3" },
 ];
 
-export function ManuscriptEditorToolbar({
+function ManuscriptEditorToolbarInner({
   editor,
   onOpenDocx,
   onInsertImageFile,
@@ -163,6 +163,28 @@ export function ManuscriptEditorToolbar({
   const [showTablePicker, setShowTablePicker] = useState<boolean>(false);
   const [tableGrid, setTableGrid] = useState<{ rows: number; cols: number }>({ rows: 3, cols: 3 });
   const [showSymbolsPicker, setShowSymbolsPicker] = useState<boolean>(false);
+  const [, setSelectionTick] = useState<number>(0);
+
+  // Throttled local tick to update active states (bold, italic, headings) without re-rendering page or canvas
+  useEffect(() => {
+    if (!editor) return;
+
+    let rafId: number | null = null;
+    const handleSelectionUpdate = () => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          setSelectionTick((t) => (t + 1) % 10000);
+        });
+      }
+    };
+
+    editor.on("selectionUpdate", handleSelectionUpdate);
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      editor.off("selectionUpdate", handleSelectionUpdate);
+    };
+  }, [editor]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docxInputRef = useRef<HTMLInputElement | null>(null);
@@ -705,13 +727,7 @@ export function ManuscriptEditorToolbar({
             <button
               type="button"
               onClick={() => {
-                editor
-                  .chain()
-                  .focus()
-                  .insertContent(
-                    `<div class="page-break" style="page-break-before: always; margin: 24pt 0; border-top: 1.5pt dashed #94a3b8; position: relative; text-align: center;"><span style="position: relative; top: -9pt; background: #fff; padding: 0 10pt; font-size: 8.5pt; font-family: monospace; color: #64748b; font-weight: bold; text-transform: uppercase;">--- Page Break ---</span></div><p></p>`
-                  )
-                  .run();
+                (editor.chain().focus() as any).setPageBreak().run();
               }}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xs text-xs font-medium transition-colors cursor-pointer"
               title="Insert Page Break (Ctrl+Enter)"
@@ -890,3 +906,5 @@ export function ManuscriptEditorToolbar({
     </div>
   );
 }
+
+export const ManuscriptEditorToolbar = memo(ManuscriptEditorToolbarInner);

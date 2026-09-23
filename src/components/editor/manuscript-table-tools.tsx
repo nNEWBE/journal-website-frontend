@@ -53,15 +53,13 @@ export function ManuscriptTableTools({ editor }: ManuscriptTableToolsProps) {
   const isTableActive = Boolean(editor && editor.isActive("table"));
 
   useEffect(() => {
-    if (!isTableActive) {
+    if (!editor || !isTableActive) {
       setPos(null);
       return;
     }
 
-    updatePosition();
-
     let rafId: number | null = null;
-    const handleScrollOrResize = () => {
+    const scheduleUpdate = () => {
       if (rafId === null) {
         rafId = requestAnimationFrame(() => {
           updatePosition();
@@ -70,14 +68,19 @@ export function ManuscriptTableTools({ editor }: ManuscriptTableToolsProps) {
       }
     };
 
-    window.addEventListener("scroll", handleScrollOrResize, { capture: true, passive: true });
-    window.addEventListener("resize", handleScrollOrResize, { passive: true });
+    scheduleUpdate();
+
+    editor.on("selectionUpdate", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, { capture: true, passive: true });
+    window.addEventListener("resize", scheduleUpdate, { passive: true });
+
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
+      editor.off("selectionUpdate", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      window.removeEventListener("resize", scheduleUpdate);
     };
-  }, [isTableActive, editor?.state.selection]);
+  }, [isTableActive, editor]);
 
   if (!editor || !editor.isActive("table") || !pos) return null;
 
