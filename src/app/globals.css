@@ -257,8 +257,12 @@ header.sticky,
 }
 
 #manuscript-paper-sheet img {
-  max-width: 100%;
   height: auto;
+}
+
+#manuscript-paper-sheet figure img,
+#manuscript-paper-sheet [data-resizable-image] img {
+  max-width: none !important;
 }
 
 ::selection {
@@ -1768,25 +1772,54 @@ select:focus-visible,
    ========================================================================== */
 .manuscript-tiptap-content {
   width: 100%;
+  font-size: 12pt;
 }
 
 .manuscript-tiptap-content .ProseMirror {
   outline: none !important;
-  min-height: 850px;
+  font-size: 12pt;
+  min-height: calc(var(--paper-page-height, 1123px) - var(--paper-margin-top, 96px) - var(--paper-margin-bottom, 96px));
 }
 
-/* Individual page sheet appearance (Google Docs / Word Online Virtual Paper) */
-.manuscript-paper-sheet {
+/* Individual page sheet appearance (MS Word Virtual Paper) */
+.manuscript-paper-sheet[data-view-mode="continuous"] {
   background-color: #ffffff;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
-  border: 1px solid #d8dee8;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.08), 
+    0 2px 4px -2px rgba(0, 0, 0, 0.05),
+    0 12px 28px -4px rgba(0, 0, 0, 0.12);
+  border: 1px solid #d1d5db;
   border-radius: 2px;
   box-sizing: border-box;
-  transition: width 0.15s ease-out, min-height 0.15s ease-out;
 }
 
-/* Page Break Divider (Google Docs Style) */
-.manuscript-page-break-divider {
+.manuscript-paper-sheet[data-view-mode="pages"] {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  background-image: none !important;
+}
+
+/* Individual MS Word Physical Paper Sheet Card */
+.manuscript-page-sheet-card {
+  background-color: #ffffff;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.08), 
+    0 2px 4px -2px rgba(0, 0, 0, 0.05),
+    0 12px 28px -4px rgba(0, 0, 0, 0.12);
+  border: 1px solid #d1d5db;
+  border-radius: 2px;
+  box-sizing: border-box;
+  position: absolute;
+  transition: width 0.15s ease-out, height 0.15s ease-out;
+}
+
+/* Page Break Divider (MS Word / Google Docs Style Multi-Page Split) */
+.manuscript-paper-sheet[data-view-mode="pages"] .manuscript-page-break-divider {
+  display: none !important;
+}
+
+.manuscript-paper-sheet[data-view-mode="continuous"] .manuscript-page-break-divider {
   position: relative;
   display: flex;
   align-items: center;
@@ -1798,29 +1831,99 @@ select:focus-visible,
 }
 
 .manuscript-page-break-badge {
-  position: absolute;
-  background-color: #e2e8f0;
-  color: #64748b;
-  font-size: 8.5pt;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 8pt;
   font-weight: 700;
-  font-family: monospace;
-  letter-spacing: 0.08em;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 2px 10px;
+  padding: 2.5px 12px;
   border-radius: 9999px;
   border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 @media print {
-  .manuscript-page-break-divider {
-    page-break-before: always;
-    break-before: page;
+  body, html {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  header,
+  footer,
+  .no-print,
+  .manuscript-table-tools,
+  .manuscript-corner-crop-marks {
+    display: none !important;
+  }
+
+  .manuscript-scroll-canvas {
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  .manuscript-paper-sheet {
+    box-shadow: none !important;
     border: none !important;
+    background-image: none !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: var(--paper-margin-top, 96px) var(--paper-margin-right, 96px) var(--paper-margin-bottom, 96px) var(--paper-margin-left, 96px) !important;
+  }
+
+  .manuscript-page-break-divider {
+    page-break-before: always !important;
+    break-before: page !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
     margin: 0 !important;
     height: 0 !important;
   }
+
+  [data-word-page-break="true"] {
+    margin-top: 0 !important;
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
   .manuscript-page-break-badge {
     display: none !important;
+  }
+
+  .manuscript-print-header {
+    display: block !important;
+    position: fixed;
+    top: 20px;
+    left: var(--paper-margin-left, 96px);
+    right: var(--paper-margin-right, 96px);
+    font-size: 8.5pt;
+    color: #64748b;
+    border-bottom: 0.5pt solid #cbd5e1;
+    padding-bottom: 4px;
+    font-family: inherit;
+    line-height: 1.2;
+    z-index: 9999;
+  }
+
+  .manuscript-print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 20px;
+    left: var(--paper-margin-left, 96px);
+    right: var(--paper-margin-right, 96px);
+    font-size: 8.5pt;
+    color: #64748b;
+    border-top: 0.5pt solid #cbd5e1;
+    padding-top: 4px;
+    font-family: inherit;
+    line-height: 1.2;
+    z-index: 9999;
   }
 }
 

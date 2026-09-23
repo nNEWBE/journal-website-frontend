@@ -35,14 +35,17 @@ import {
   type PaperOrientation,
   type MarginPreset,
   type ViewMode,
+  type ManuscriptHeaderFooterConfig,
   PAPER_DIMENSIONS,
   MARGIN_PRESETS,
+  DEFAULT_HEADER_FOOTER,
 } from "@/lib/manuscript-paper-sizes";
 
 import { ManuscriptEditorToolbar } from "@/components/editor/manuscript-editor-toolbar";
 import { ManuscriptEditorCanvas } from "@/components/editor/manuscript-editor-canvas";
 import { ResizableImage } from "@/components/editor/extensions/resizable-image";
 import { ManuscriptPageBreak } from "@/components/editor/extensions/manuscript-page-break";
+import { ManuscriptFontSize } from "@/components/editor/extensions/manuscript-font-size";
 import { ManuscriptFindReplace } from "@/components/editor/manuscript-find-replace";
 import {
   MANUSCRIPT_TEMPLATES,
@@ -78,6 +81,8 @@ export default function ManuscriptEditorPage() {
   const [paperOrientation, setPaperOrientation] = useState<PaperOrientation>("portrait");
   const [pageMargins, setPageMargins] = useState<MarginPreset>("normal");
   const [viewMode, setViewMode] = useState<ViewMode>("pages");
+  const [headerFooter, setHeaderFooter] = useState<ManuscriptHeaderFooterConfig>(DEFAULT_HEADER_FOOTER);
+  const [activeHeaderFooterFocus, setActiveHeaderFooterFocus] = useState<"header" | "footer" | null>(null);
 
   // Save state
   const [saveStatus, setSaveStatus] = useState<string>("Saved");
@@ -99,6 +104,7 @@ export default function ManuscriptEditorPage() {
       Color,
       Highlight.configure({ multicolor: true }),
       FontFamily,
+      ManuscriptFontSize,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Table.configure({ resizable: true }),
       TableRow,
@@ -236,6 +242,7 @@ export default function ManuscriptEditorPage() {
             if (parsed.paperOrientation) setPaperOrientation(parsed.paperOrientation);
             if (parsed.pageMargins) setPageMargins(parsed.pageMargins);
             if (parsed.viewMode) setViewMode(parsed.viewMode);
+            if (parsed.headerFooter) setHeaderFooter(parsed.headerFooter);
             setSaveStatus("Restored Draft");
             return;
           }
@@ -272,6 +279,7 @@ export default function ManuscriptEditorPage() {
             paperOrientation,
             pageMargins,
             viewMode,
+            headerFooter,
             updatedAt: Date.now(),
           })
         );
@@ -298,6 +306,7 @@ export default function ManuscriptEditorPage() {
     paperOrientation,
     pageMargins,
     viewMode,
+    headerFooter,
     editor,
   ]);
 
@@ -318,6 +327,7 @@ export default function ManuscriptEditorPage() {
           paperOrientation,
           pageMargins,
           viewMode,
+          headerFooter,
           updatedAt: Date.now(),
         })
       );
@@ -343,6 +353,7 @@ export default function ManuscriptEditorPage() {
     paperOrientation,
     pageMargins,
     viewMode,
+    headerFooter,
   ]);
 
   // Handle paper format change (A4, Letter, Legal, etc.)
@@ -654,6 +665,13 @@ export default function ManuscriptEditorPage() {
         onSetViewMode={handleSetViewMode}
         currentSpacing={currentSpacing}
         onSetLineSpacing={setCurrentSpacing}
+        currentFont={currentFont}
+        onSetFontFamily={setCurrentFont}
+        currentSize={currentSize}
+        onSetFontSize={setCurrentSize}
+        headerFooter={headerFooter}
+        onUpdateHeaderFooter={setHeaderFooter}
+        onFocusHeaderFooter={setActiveHeaderFooterFocus}
       />
 
       {/* ── 3. Academic Paper Sheet Canvas (High-Performance Google Docs Virtual Paper) ── */}
@@ -668,6 +686,10 @@ export default function ManuscriptEditorPage() {
         currentSize={currentSize}
         currentSpacing={currentSpacing}
         docTitle={docTitle}
+        headerFooter={headerFooter}
+        onUpdateHeaderFooter={setHeaderFooter}
+        activeHeaderFooterFocus={activeHeaderFooterFocus}
+        onClearHeaderFooterFocus={() => setActiveHeaderFooterFocus(null)}
         onDropImageFile={handleInsertImageFile}
         onDropDocxFile={handleOpenDocx}
       />

@@ -37,6 +37,9 @@ import {
   Table as TableIcon,
   Underline,
   Undo2,
+  FileText,
+  Hash,
+  Trash2,
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ManuscriptSymbolsPicker } from "./manuscript-symbols-picker";
@@ -47,7 +50,10 @@ import {
   type ViewMode,
   FORMAT_OPTIONS,
   ORIENTATION_OPTIONS,
+  MARGIN_OPTIONS,
   VIEW_MODE_OPTIONS,
+  DEFAULT_HEADER_FOOTER,
+  type ManuscriptHeaderFooterConfig,
 } from "@/lib/manuscript-paper-sizes";
 
 export type RibbonTab = "home" | "insert" | "layout" | "review";
@@ -69,6 +75,13 @@ interface ManuscriptEditorToolbarProps {
   onSetViewMode: (mode: ViewMode) => void;
   currentSpacing: string;
   onSetLineSpacing: (spacing: string) => void;
+  currentFont?: string;
+  onSetFontFamily?: (font: string) => void;
+  currentSize?: string;
+  onSetFontSize?: (size: string) => void;
+  headerFooter?: ManuscriptHeaderFooterConfig;
+  onUpdateHeaderFooter?: (config: ManuscriptHeaderFooterConfig) => void;
+  onFocusHeaderFooter?: (type: "header" | "footer") => void;
 }
 
 const STYLE_OPTIONS = [
@@ -92,14 +105,18 @@ const FONT_OPTIONS = [
 ];
 
 const FONT_SIZE_OPTIONS = [
+  { value: "8pt", label: "8 pt (Small Print)" },
   { value: "9pt", label: "9 pt (Footnotes / Captions)" },
-  { value: "10pt", label: "10 pt (IEEE Two-Column Body)" },
+  { value: "10pt", label: "10 pt (Two-Column Body)" },
   { value: "11pt", label: "11 pt (Standard Academic)" },
-  { value: "12pt", label: "12 pt (APA Double-Spaced Standard)" },
+  { value: "12pt", label: "12 pt (APA Double-Spaced)" },
   { value: "14pt", label: "14 pt (Subsection Heading)" },
   { value: "16pt", label: "16 pt (Section Heading)" },
   { value: "18pt", label: "18 pt (Paper Subtitle)" },
+  { value: "20pt", label: "20 pt (Large Heading)" },
   { value: "24pt", label: "24 pt (Paper Title)" },
+  { value: "28pt", label: "28 pt (Poster Title)" },
+  { value: "36pt", label: "36 pt (Display Header)" },
 ];
 
 const SPACING_OPTIONS = [
@@ -110,11 +127,6 @@ const SPACING_OPTIONS = [
   { value: "2.5", label: "2.5 Generous" },
 ];
 
-const MARGIN_OPTIONS = [
-  { value: "normal", label: "Normal (1 inch / 2.54 cm)" },
-  { value: "narrow", label: "Narrow (0.5 inch / 1.27 cm)" },
-  { value: "moderate", label: "Moderate (0.75 inch / 1.9 cm)" },
-];
 
 const COLUMN_OPTIONS = [
   { value: "1", label: "Single Column (Standard APA/Elsevier)" },
@@ -156,11 +168,24 @@ function ManuscriptEditorToolbarInner({
   onSetViewMode,
   currentSpacing,
   onSetLineSpacing,
+  currentFont = "'Times New Roman', Times, serif",
+  onSetFontFamily,
+  currentSize = "12pt",
+  onSetFontSize,
+  headerFooter,
+  onUpdateHeaderFooter,
+  onFocusHeaderFooter,
 }: ManuscriptEditorToolbarProps) {
   const [activeTab, setActiveTab] = useState<RibbonTab>("home");
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState<boolean>(false);
   const [showTablePicker, setShowTablePicker] = useState<boolean>(false);
+  const [showHeaderMenu, setShowHeaderMenu] = useState<boolean>(false);
+  const [showFooterMenu, setShowFooterMenu] = useState<boolean>(false);
+  const [showPageNumberMenu, setShowPageNumberMenu] = useState<boolean>(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+  const footerMenuRef = useRef<HTMLDivElement>(null);
+  const pageNumberMenuRef = useRef<HTMLDivElement>(null);
   const [tableGrid, setTableGrid] = useState<{ rows: number; cols: number }>({ rows: 3, cols: 3 });
   const [showSymbolsPicker, setShowSymbolsPicker] = useState<boolean>(false);
   const [, setSelectionTick] = useState<number>(0);
@@ -206,6 +231,15 @@ function ManuscriptEditorToolbarInner({
       if (tablePickerRef.current && !tablePickerRef.current.contains(target)) {
         setShowTablePicker(false);
       }
+      if (headerMenuRef.current && !headerMenuRef.current.contains(target)) {
+        setShowHeaderMenu(false);
+      }
+      if (footerMenuRef.current && !footerMenuRef.current.contains(target)) {
+        setShowFooterMenu(false);
+      }
+      if (pageNumberMenuRef.current && !pageNumberMenuRef.current.contains(target)) {
+        setShowPageNumberMenu(false);
+      }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -213,6 +247,9 @@ function ManuscriptEditorToolbarInner({
         setShowColorPicker(false);
         setShowHighlightPicker(false);
         setShowTablePicker(false);
+        setShowHeaderMenu(false);
+        setShowFooterMenu(false);
+        setShowPageNumberMenu(false);
       }
     };
 
@@ -235,6 +272,18 @@ function ManuscriptEditorToolbarInner({
     if (editor.isActive("blockquote")) return "blockquote";
     if (editor.isActive("codeBlock")) return "codeBlock";
     return "p";
+  };
+
+  const getActiveFontSize = (): string => {
+    const markSize = editor.getAttributes("textStyle").fontSize;
+    if (markSize) return markSize;
+
+    if (editor.isActive("heading", { level: 1 })) return "20pt";
+    if (editor.isActive("heading", { level: 2 })) return "14pt";
+    if (editor.isActive("heading", { level: 3 })) return "13pt";
+    if (editor.isActive("heading", { level: 4 })) return "11pt";
+
+    return "12pt";
   };
 
   const handleStyleChange = (val: string) => {
@@ -362,26 +411,72 @@ function ManuscriptEditorToolbarInner({
             </div>
 
             {/* Font Family Select */}
-            <div className="w-42.5 shrink-0">
+            <div className="w-44 shrink-0">
               <CustomSelect
-                value={editor.getAttributes("textStyle").fontFamily || "'Times New Roman', Times, serif"}
-                onChange={(font) => editor.chain().focus().setFontFamily(font).run()}
+                value={editor.getAttributes("textStyle").fontFamily || currentFont}
+                onChange={(font) => {
+                  editor.chain().focus().setFontFamily(font).run();
+                  if (editor.state.selection.empty) {
+                    onSetFontFamily?.(font);
+                  }
+                }}
                 options={FONT_OPTIONS}
                 size="toolbar"
               />
             </div>
 
             {/* Font Size Select */}
-            <div className="w-25 shrink-0">
+            <div className="w-28 shrink-0">
               <CustomSelect
-                value="12pt"
+                value={getActiveFontSize()}
                 onChange={(sz) => {
-                  // Apply inline font-size via custom style
-                  editor.chain().focus().setMark("textStyle", { style: `font-size: ${sz}` }).run();
+                  editor.chain().focus().setFontSize(sz).run();
                 }}
                 options={FONT_SIZE_OPTIONS}
                 size="toolbar"
               />
+            </div>
+
+            {/* Grow / Shrink Font Size Buttons (A+ / A-) */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const SIZES = ["8pt", "9pt", "10pt", "11pt", "12pt", "14pt", "16pt", "18pt", "20pt", "24pt", "28pt", "36pt"];
+                  const cur = getActiveFontSize();
+                  let curIdx = SIZES.findIndex((s) => s === cur);
+                  if (curIdx === -1) {
+                    const numCur = parseFloat(cur) || 12;
+                    curIdx = SIZES.findIndex((s) => parseFloat(s) >= numCur);
+                  }
+                  const nextSize = curIdx >= 0 && curIdx < SIZES.length - 1 ? SIZES[curIdx + 1] : SIZES[SIZES.length - 1];
+                  editor.chain().focus().setFontSize(nextSize).run();
+                }}
+                title="Increase Font Size (Ctrl+Shift+>)"
+                className="px-1.5 py-1 text-slate-200 hover:bg-white/10 rounded-xs text-[11px] font-bold cursor-pointer transition-colors flex items-center gap-0.5"
+              >
+                <span>A</span>
+                <span className="text-[9px] text-amber-400 font-black">+</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const SIZES = ["8pt", "9pt", "10pt", "11pt", "12pt", "14pt", "16pt", "18pt", "20pt", "24pt", "28pt", "36pt"];
+                  const cur = getActiveFontSize();
+                  let curIdx = SIZES.findIndex((s) => s === cur);
+                  if (curIdx === -1) {
+                    const numCur = parseFloat(cur) || 12;
+                    curIdx = SIZES.findIndex((s) => parseFloat(s) >= numCur);
+                  }
+                  const prevSize = curIdx > 0 ? SIZES[curIdx - 1] : SIZES[0];
+                  editor.chain().focus().setFontSize(prevSize).run();
+                }}
+                title="Decrease Font Size (Ctrl+Shift+<)"
+                className="px-1.5 py-1 text-slate-200 hover:bg-white/10 rounded-xs text-[11px] font-bold cursor-pointer transition-colors flex items-center gap-0.5"
+              >
+                <span>A</span>
+                <span className="text-[9px] text-amber-400 font-black">-</span>
+              </button>
             </div>
 
             <div className="h-5 w-px bg-slate-700/80 shrink-0" />
@@ -788,36 +883,320 @@ function ManuscriptEditorToolbarInner({
               <Quote className="h-3.5 w-3.5 text-blue-400" />
               <span>Callout Box</span>
             </button>
+
+            <div className="h-5 w-px bg-slate-700/80 shrink-0" />
+
+            {/* Header Menu */}
+            <div className="relative" ref={headerMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowHeaderMenu((prev) => !prev);
+                  setShowFooterMenu(false);
+                  setShowPageNumberMenu(false);
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xs text-xs font-medium transition-colors cursor-pointer ${headerFooter?.headerEnabled
+                  ? "bg-blue-600/40 text-blue-200 border border-blue-400/40"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+                  }`}
+                title="Add or Edit Document Header"
+              >
+                <FileText className="h-3.5 w-3.5 text-blue-400" />
+                <span>Header</span>
+                {headerFooter?.headerEnabled && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                )}
+              </button>
+
+              {showHeaderMenu && (
+                <div className="absolute top-9 left-0 z-50 bg-[#060e22] border border-slate-700 p-2 rounded-xs shadow-2xl space-y-1 w-54 text-left">
+                  <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                    Header Options
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        headerEnabled: true,
+                      });
+                      onFocusHeaderFooter?.("header");
+                      setShowHeaderMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
+                  >
+                    <span>{headerFooter?.headerEnabled ? "Edit Header" : "Add Header"}</span>
+                    <span className="text-[9.5px] text-slate-400 font-mono">Dbl-Click</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        headerEnabled: true,
+                        headerText: (editor?.getText().slice(0, 45).trim() || "Running Head") + "...",
+                        headerAlign: "right",
+                      });
+                      setShowHeaderMenu(false);
+                      onFocusHeaderFooter?.("header");
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Insert Running Head
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        headerEnabled: true,
+                        headerShowPageNumber: true,
+                        headerAlign: "right",
+                      });
+                      setShowHeaderMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Add Page Number (Top Right)
+                  </button>
+                  {headerFooter?.headerEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateHeaderFooter?.({
+                          ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                          headerEnabled: false,
+                          headerText: "",
+                          headerShowPageNumber: false,
+                        });
+                        setShowHeaderMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-xs flex items-center gap-1.5"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span>Remove Header</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Menu */}
+            <div className="relative" ref={footerMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFooterMenu((prev) => !prev);
+                  setShowHeaderMenu(false);
+                  setShowPageNumberMenu(false);
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xs text-xs font-medium transition-colors cursor-pointer ${headerFooter?.footerEnabled
+                  ? "bg-purple-600/40 text-purple-200 border border-purple-400/40"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+                  }`}
+                title="Add or Edit Document Footer"
+              >
+                <FileText className="h-3.5 w-3.5 text-purple-400" />
+                <span>Footer</span>
+                {headerFooter?.footerEnabled && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                )}
+              </button>
+
+              {showFooterMenu && (
+                <div className="absolute top-9 left-0 z-50 bg-[#060e22] border border-slate-700 p-2 rounded-xs shadow-2xl space-y-1 w-54 text-left">
+                  <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                    Footer Options
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        footerEnabled: true,
+                      });
+                      onFocusHeaderFooter?.("footer");
+                      setShowFooterMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs flex items-center justify-between"
+                  >
+                    <span>{headerFooter?.footerEnabled ? "Edit Footer" : "Add Footer"}</span>
+                    <span className="text-[9.5px] text-slate-400 font-mono">Dbl-Click</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        footerEnabled: true,
+                        footerShowPageNumber: true,
+                        footerAlign: "center",
+                      });
+                      setShowFooterMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Add Page Number (Center)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        footerEnabled: true,
+                        footerText: "Draft — Peer Review in Progress",
+                        footerAlign: "left",
+                      });
+                      setShowFooterMenu(false);
+                      onFocusHeaderFooter?.("footer");
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Insert Confidential / Draft Note
+                  </button>
+                  {headerFooter?.footerEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateHeaderFooter?.({
+                          ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                          footerEnabled: false,
+                          footerText: "",
+                          footerShowPageNumber: false,
+                        });
+                        setShowFooterMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-xs flex items-center gap-1.5"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span>Remove Footer</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Page Number Menu */}
+            <div className="relative" ref={pageNumberMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPageNumberMenu((prev) => !prev);
+                  setShowHeaderMenu(false);
+                  setShowFooterMenu(false);
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-xs text-xs font-medium transition-colors cursor-pointer ${headerFooter?.headerShowPageNumber || headerFooter?.footerShowPageNumber
+                  ? "bg-amber-500/30 text-amber-200 border border-amber-400/40"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+                  }`}
+                title="Insert Page Number"
+              >
+                <Hash className="h-3.5 w-3.5 text-amber-400" />
+                <span>Page #</span>
+              </button>
+
+              {showPageNumberMenu && (
+                <div className="absolute top-9 left-0 z-50 bg-[#060e22] border border-slate-700 p-2 rounded-xs shadow-2xl space-y-1 w-52 text-left">
+                  <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                    Page Numbering
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        footerEnabled: true,
+                        footerShowPageNumber: true,
+                        footerAlign: "center",
+                      });
+                      setShowPageNumberMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Bottom of Page (Center)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        footerEnabled: true,
+                        footerShowPageNumber: true,
+                        footerAlign: "right",
+                      });
+                      setShowPageNumberMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Bottom of Page (Right)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateHeaderFooter?.({
+                        ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                        headerEnabled: true,
+                        headerShowPageNumber: true,
+                        headerAlign: "right",
+                      });
+                      setShowPageNumberMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-xs"
+                  >
+                    Top of Page (Right)
+                  </button>
+                  {(headerFooter?.headerShowPageNumber || headerFooter?.footerShowPageNumber) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateHeaderFooter?.({
+                          ...(headerFooter || DEFAULT_HEADER_FOOTER),
+                          headerShowPageNumber: false,
+                          footerShowPageNumber: false,
+                        });
+                        setShowPageNumberMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-xs flex items-center gap-1.5"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span>Remove Page Numbers</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </>
         )}
 
         {/* ==================== LAYOUT TAB ==================== */}
         {activeTab === "layout" && (
-          <div className="flex items-center gap-3 overflow-x-auto py-0.5">
-            {/* 1. Paper Format (A4, Letter, Legal, Executive, A5, A3) */}
+          <div className="flex items-center gap-3 overflow-x-auto py-0.5 min-w-0">
+            {/* 1. Paper Format */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] font-semibold text-slate-300">Format:</span>
-              <div className="w-47.5">
+              <span className="text-[11px] font-semibold text-slate-300 shrink-0 whitespace-nowrap">Format:</span>
+              <div className="w-36.25 shrink-0">
                 <CustomSelect
                   value={paperFormat}
                   onChange={(val) => onSetPaperFormat(val as PaperFormat)}
                   options={FORMAT_OPTIONS}
                   size="toolbar"
+                  className="w-full"
                 />
               </div>
             </div>
 
             <div className="h-5 w-px bg-slate-700/80 shrink-0" />
 
-            {/* 2. Paper Orientation (Portrait, Landscape) */}
+            {/* 2. Paper Orientation */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] font-semibold text-slate-300">Orientation:</span>
-              <div className="w-38.75">
+              <span className="text-[11px] font-semibold text-slate-300 shrink-0 whitespace-nowrap">Orientation:</span>
+              <div className="w-27.5 shrink-0">
                 <CustomSelect
                   value={paperOrientation}
                   onChange={(val) => onSetPaperOrientation(val as PaperOrientation)}
                   options={ORIENTATION_OPTIONS}
                   size="toolbar"
+                  className="w-full"
                 />
               </div>
             </div>
@@ -826,13 +1205,14 @@ function ManuscriptEditorToolbarInner({
 
             {/* 3. Page Margins */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] font-medium text-slate-400">Margins:</span>
-              <div className="w-42.5">
+              <span className="text-[11px] font-semibold text-slate-300 shrink-0 whitespace-nowrap">Margins:</span>
+              <div className="w-31.25 shrink-0">
                 <CustomSelect
                   value={pageMargins}
                   onChange={(val) => onSetPageMargins(val as MarginPreset)}
                   options={MARGIN_OPTIONS}
                   size="toolbar"
+                  className="w-full"
                 />
               </div>
             </div>
@@ -841,28 +1221,30 @@ function ManuscriptEditorToolbarInner({
 
             {/* 4. Columns Toggle */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] font-medium text-slate-400">Columns:</span>
-              <div className="w-46.25">
+              <span className="text-[11px] font-semibold text-slate-300 shrink-0 whitespace-nowrap">Columns:</span>
+              <div className="w-27.5 shrink-0">
                 <CustomSelect
                   value={layoutColumns}
                   onChange={(val) => onSetLayoutColumns(val as "1" | "2")}
                   options={COLUMN_OPTIONS}
                   size="toolbar"
+                  className="w-full"
                 />
               </div>
             </div>
 
             <div className="h-5 w-px bg-slate-700/80 shrink-0" />
 
-            {/* 5. View Mode (Print Layout Pages vs Web Layout Continuous) */}
+            {/* 5. View Mode */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] font-semibold text-slate-300">View:</span>
-              <div className="w-46.25">
+              <span className="text-[11px] font-semibold text-slate-300 shrink-0 whitespace-nowrap">View:</span>
+              <div className="w-31.25 shrink-0">
                 <CustomSelect
                   value={viewMode}
                   onChange={(val) => onSetViewMode(val as ViewMode)}
                   options={VIEW_MODE_OPTIONS}
                   size="toolbar"
+                  className="w-full"
                 />
               </div>
             </div>

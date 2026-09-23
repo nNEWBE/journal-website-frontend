@@ -125,8 +125,8 @@ function ResizableImageComponentInner(props: NodeViewProps) {
         newWidth = startWidth + effDelta;
       }
 
-      // Constrain width
-      newWidth = Math.max(100, Math.min(850, Math.round(newWidth)));
+      // Constrain width (supports full page and breakout width)
+      newWidth = Math.max(80, Math.min(2000, Math.round(newWidth)));
       latestWidth = newWidth;
       setLiveWidth(newWidth);
     };
@@ -260,11 +260,18 @@ function ResizableImageComponentInner(props: NodeViewProps) {
     let liveOffsetX = startOffsetX;
     let liveOffsetY = startOffsetY;
 
+    const imgEl = imgRef.current;
+    const imgRect = imgEl?.getBoundingClientRect() || figureRef.current?.getBoundingClientRect();
+    const grabOffsetX = imgRect ? e.clientX - imgRect.left : 40;
+    const grabOffsetY = imgRect ? e.clientY - imgRect.top : 40;
+
     let targetBlock: HTMLElement | null = null;
     let targetIsTop = false;
 
     // Authentic MS Word vertical insertion caret (I-beam insertion point)
     let wordCaret: HTMLElement | null = null;
+    // Translucent image clone that moves directly with the cursor
+    let dragClone: HTMLElement | null = null;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
@@ -278,19 +285,48 @@ function ResizableImageComponentInner(props: NodeViewProps) {
           document.body.style.userSelect = "none";
           document.body.style.cursor = "move";
 
-          // MS Word visual feedback: image becomes translucent in-place while in transit
+          // MS Word visual feedback: original image becomes faint placeholder
           if (figureRef.current) {
-            figureRef.current.style.opacity = "0.45";
+            figureRef.current.style.opacity = "0.25";
             figureRef.current.style.filter = "grayscale(20%)";
           }
 
           if (!isFloatingMode) {
+            // Create translucent image replica that follows the cursor everywhere
+            dragClone = document.createElement("div");
+            dragClone.id = "manuscript-image-drag-clone";
+            const cloneW = imgRect ? Math.min(imgRect.width, 700) : Math.min(liveWidth, 700);
+            const cloneH = imgRect ? (imgRect.height * (cloneW / (imgRect.width || 1))) : 200;
+            dragClone.style.cssText = `
+              position: fixed;
+              left: 0;
+              top: 0;
+              width: ${cloneW}px;
+              height: ${cloneH}px;
+              z-index: 999999;
+              pointer-events: none;
+              opacity: 0.65;
+              border-radius: 3px;
+              border: 1.5px solid #2563eb;
+              box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+              transform: translate3d(${moveEvent.clientX - grabOffsetX}px, ${moveEvent.clientY - grabOffsetY}px, 0);
+              will-change: transform;
+              overflow: hidden;
+            `;
+            if (imgEl && imgEl.src) {
+              const cImg = document.createElement("img");
+              cImg.src = imgEl.src;
+              cImg.style.cssText = `width: 100%; height: 100%; object-fit: contain; background: white; display: block;`;
+              dragClone.appendChild(cImg);
+            }
+            document.body.appendChild(dragClone);
+
             // Create MS Word-style vertical insertion caret
             wordCaret = document.createElement("div");
             wordCaret.id = "manuscript-word-caret";
             wordCaret.style.cssText = `
               position: fixed;
-              width: 2px;
+              width: 2.5px;
               height: 24px;
               background: #0f172a;
               z-index: 999998;
@@ -321,6 +357,11 @@ function ResizableImageComponentInner(props: NodeViewProps) {
           figureRef.current.style.transform = `translate(${liveOffsetX}px, ${liveOffsetY}px)`;
         }
       } else {
+        // Move the image clone directly with the mouse cursor
+        if (dragClone) {
+          dragClone.style.transform = `translate3d(${moveEvent.clientX - grabOffsetX}px, ${moveEvent.clientY - grabOffsetY}px, 0)`;
+        }
+
         // Find block element under mouse
         const el = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
         const currentWrapper = figureRef.current;
@@ -361,6 +402,11 @@ function ResizableImageComponentInner(props: NodeViewProps) {
       if (figureRef.current) {
         figureRef.current.style.opacity = "";
         figureRef.current.style.filter = "";
+      }
+
+      if (dragClone) {
+        dragClone.remove();
+        dragClone = null;
       }
 
       if (wordCaret) {
@@ -424,13 +470,19 @@ function ResizableImageComponentInner(props: NodeViewProps) {
     }
   };
 
-  // Preset widths (25%, 50%, 75%, 100%)
+  // Preset widths (25%, 50%, 75%, 100%, Page)
   const handlePresetWidth = (pct: number) => {
-    const pageContentWidth = 720;
-    const w = Math.round((pageContentWidth * pct) / 100);
+    let w: number;
+    if (pct === 100) {
+      w = 680;
+    } else if (pct === 120) {
+      w = 794; // Full Page width
+    } else {
+      w = Math.round((680 * pct) / 100);
+    }
     setLiveWidth(w);
     updateAttributes({ width: w });
-    toast.success(`Image scaled to ${pct}% width`);
+    toast.success(`Image scaled to ${w}px`);
   };
 
   // Focus caption input directly in document
@@ -462,10 +514,13 @@ function ResizableImageComponentInner(props: NodeViewProps) {
 
   // Determine container styling based on wrap mode
   let wrapperStyle: React.CSSProperties = {
-    display: "block",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
     margin: "18pt auto",
     clear: "both",
-    textAlign: "center",
+    width: "100%",
+    overflow: "visible",
   };
 
   if (wrap === "wrap-left") {
@@ -474,7 +529,7 @@ function ResizableImageComponentInner(props: NodeViewProps) {
       display: "inline-block",
       margin: "6pt 18pt 10pt 0",
       clear: "none",
-      maxWidth: "55%",
+      maxWidth: "none",
     };
   } else if (wrap === "wrap-right") {
     wrapperStyle = {
@@ -482,7 +537,7 @@ function ResizableImageComponentInner(props: NodeViewProps) {
       display: "inline-block",
       margin: "6pt 0 10pt 18pt",
       clear: "none",
-      maxWidth: "55%",
+      maxWidth: "none",
     };
   } else if (wrap === "inline") {
     wrapperStyle = {
@@ -520,12 +575,12 @@ function ResizableImageComponentInner(props: NodeViewProps) {
       ref={figureRef}
       as="figure"
       style={wrapperStyle}
-      className={`relative inline-block select-none my-3 group ${
+      className={`relative select-none my-3 group ${
         selected ? "outline-none" : ""
       }`}
     >
       <div
-        style={{ width: `${liveWidth}px`, maxWidth: "100%" }}
+        style={{ width: `${liveWidth}px`, maxWidth: "none" }}
         className="relative inline-block leading-none"
       >
         {/* Main Image or Fallback */}
@@ -785,9 +840,17 @@ function ResizableImageComponentInner(props: NodeViewProps) {
                   type="button"
                   onClick={() => handlePresetWidth(100)}
                   className="px-1.5 py-0.5 rounded-xs hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                  title="Scale to 100% width"
+                  title="Scale to 100% text width"
                 >
                   100%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePresetWidth(120)}
+                  className="px-1.5 py-0.5 rounded-xs hover:bg-white/15 hover:text-white transition-colors cursor-pointer text-amber-300 font-bold"
+                  title="Scale to Full Page width (bleed to page margins)"
+                >
+                  Page
                 </button>
               </div>
 
@@ -925,9 +988,9 @@ export const ResizableImage = Node.create({
         "data-wrap": wrap || "center",
         "data-offset-x": String(offsetX || 0),
         "data-offset-y": String(offsetY || 0),
-        style: `width: ${width || 480}px; max-width: 100%; ${extraStyle}`,
+        style: `width: ${width || 480}px; ${extraStyle}`,
       }),
-      ["img", { src, alt, style: "width: 100%; height: auto; border: 0.5pt solid #cbd5e1;" }],
+      ["img", { src, alt, style: "width: 100%; height: auto; border: 0.5pt solid #cbd5e1; max-width: none;" }],
       caption ? ["figcaption", { style: "font-size: 10pt; font-style: italic; color: #475569; margin-top: 4pt;" }, caption] : "",
     ];
   },
