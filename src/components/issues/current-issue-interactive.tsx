@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -22,18 +22,49 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/layout/page-transition";
 import type { Article } from "@/lib/data";
+import type { ResolvedPage } from "@/lib/cms/page-content";
+import type issuesCurrentDefaults from "@/lib/cms/defaults/issues-current.json";
+
+const SIDEBAR_SECTION_KEYS = new Set([
+  "specifications",
+  "leadership",
+  "call-for-papers",
+  "previous-issues",
+]);
+
+/** Value styling of the static spec rows, by position (matches the original layout). */
+const SPEC_ROW_VALUE_CLASSES = [
+  "font-mono font-semibold text-slate-900",
+  "font-mono font-semibold text-slate-900",
+  "font-semibold text-slate-900",
+  "font-semibold text-emerald-700",
+  "font-mono text-slate-900",
+];
 
 interface CurrentIssueInteractiveProps {
   currentIssue: any;
   allArticles: Article[];
   otherIssues: any[];
+  content: ResolvedPage<typeof issuesCurrentDefaults>;
 }
 
 export function CurrentIssueInteractive({
   currentIssue,
   allArticles,
   otherIssues,
+  content,
 }: CurrentIssueInteractiveProps) {
+  const hero = content.hero;
+  const heroMeta = hero.meta;
+  const toc = content["table-of-contents"];
+  const tocMeta = toc.meta;
+  const specs = content.specifications;
+  const specRows = Array.isArray(specs.meta.rows) ? specs.meta.rows : [];
+  const leadership = content.leadership;
+  const leaders = Array.isArray(leadership.meta.people) ? leadership.meta.people : [];
+  const cfp = content["call-for-papers"];
+  const previous = content["previous-issues"];
+
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
@@ -71,19 +102,147 @@ export function CurrentIssueInteractive({
     setTimeout(() => setCopiedCitation(false), 2500);
   };
 
+
+  const cfpCta = cfp.meta.cta;
+  const leadershipCta = leadership.meta.cta;
+  const allIssuesLink = previous.meta.allIssuesLink;
+
+  const sidebarRenderers: Record<string, () => ReactNode> = {
+    /* Journal Specifications */
+    specifications: () => (
+              <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
+                <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3 flex items-center gap-1.5">
+                  <Library className="h-3.5 w-3.5" />
+                  <span>{specs.title}</span>
+                </p>
+                <dl className="divide-y divide-slate-100 text-xs">
+                  <div className="flex items-center justify-between py-2">
+                    <dt className="text-slate-500">{specs.meta.volumeIssueLabel}</dt>
+                    <dd className="font-semibold text-slate-900">
+                      {currentIssue.volume}, {currentIssue.issue}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <dt className="text-slate-500">{specs.meta.publicationDateLabel}</dt>
+                    <dd className="font-semibold text-slate-900">
+                      {currentIssue.month} {currentIssue.year}
+                    </dd>
+                  </div>
+                  {specRows.map((row, idx) => (
+                    <div key={`${row.label}-${idx}`} className="flex items-center justify-between py-2">
+                      <dt className="text-slate-500">{row.label}</dt>
+                      <dd className={SPEC_ROW_VALUE_CLASSES[idx] ?? "font-semibold text-slate-900"}>{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+    ),
+
+    /* Editorial Leadership */
+    leadership: () => (
+              <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
+                <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3 flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{leadership.title}</span>
+                </p>
+                <div className="space-y-3 text-xs">
+                  {leaders.map((person, idx) => (
+                    <div key={`${person.name}-${idx}`} className={idx > 0 ? "pt-2 border-t border-slate-100" : undefined}>
+                      <p className="font-academic font-bold text-slate-900">{person.name}</p>
+                      <p className="text-[11px] text-slate-500">{person.role}</p>
+                    </div>
+                  ))}
+                </div>
+                {leadershipCta?.label && (
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <Link
+                      href={leadershipCta.href || "/editorial-board"}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline"
+                    >
+                      <span>{leadershipCta.label}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                )}
+              </div>
+    ),
+
+    /* Call for Papers Box */
+    "call-for-papers": () => (
+              <div className="bg-[#0b1b3d] text-white p-5 shadow-2xs border border-slate-800">
+                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-300">
+                  {cfp.subtitle}
+                </p>
+                <h4 className="mt-1.5 font-academic text-base font-medium text-white">
+                  {cfp.title}
+                </h4>
+                <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
+                  {cfp.content}
+                </p>
+                {cfpCta?.label && (
+                  <Link
+                    href={cfpCta.href || "/dashboard/submissions/new"}
+                    className="mt-4 inline-flex items-center gap-1.5 bg-[#1e40af] hover:bg-[#1e3a8a] text-white px-4 py-2 text-xs font-semibold transition-colors w-full justify-center"
+                  >
+                    <span>{cfpCta.label}</span>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+              </div>
+    ),
+
+    /* Previous Editions */
+    "previous-issues": () =>
+      otherIssues.length > 1 ? (
+                <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af]">
+                      {previous.title}
+                    </p>
+                    {allIssuesLink?.label && (
+                      <Link
+                        href={allIssuesLink.href || "/issues"}
+                        className="text-[11px] font-semibold text-[#1e40af] hover:underline"
+                      >
+                        {allIssuesLink.label}
+                      </Link>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    {otherIssues.slice(1, 4).map((past: any) => (
+                      <Link
+                        key={past.id}
+                        href="/issues"
+                        className="block p-2.5 border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="flex items-center justify-between font-mono text-[10px] text-slate-400">
+                          <span>{past.volume} · {past.issue}</span>
+                          <span>{past.month} {past.year}</span>
+                        </div>
+                        <p className="mt-1 font-academic font-medium text-slate-900 group-hover:text-[#1e40af] truncate">
+                          {past.theme}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+      ) : null,
+  };
+
   return (
     <PageShell>
       {/* 1. Header & Issue Showcase */}
+      {hero.visible && (
       <section className="bg-white border-b border-slate-200/80 pt-8 pb-12 sm:pt-10 sm:pb-16">
         <div className="container-x">
           {/* Breadcrumb Navigation */}
           <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mb-6">
             <Link href="/" className="hover:text-[#1e40af] transition-colors">
-              Home
+              {heroMeta.breadcrumbHomeLabel}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <Link href="/issues" className="hover:text-[#1e40af] transition-colors">
-              Issues
+              {heroMeta.breadcrumbIssuesLabel}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <span className="text-slate-900 font-semibold">
@@ -95,7 +254,7 @@ export function CurrentIssueInteractive({
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-                CURRENT ISSUE
+                {hero.subtitle}
               </span>
               <div className="h-px w-12 bg-slate-300" />
             </div>
@@ -126,7 +285,7 @@ export function CurrentIssueInteractive({
                   <div className="flex items-center gap-2">
                     <div className="relative h-8 w-8 bg-white/10 border border-white/20 p-1">
                       <Image
-                        src="/gb-logo-official.png"
+                        src={heroMeta.coverLogoImage || "/gb-logo-official.png"}
                         alt="GB Logo"
                         fill
                         sizes="32px"
@@ -135,16 +294,16 @@ export function CurrentIssueInteractive({
                     </div>
                     <div>
                       <h2 className="font-academic text-base sm:text-lg font-bold tracking-wider text-white leading-tight">
-                        GB JOURNAL
+                        {heroMeta.coverJournalName}
                       </h2>
                       <p className="text-[7.5px] font-bold uppercase tracking-[0.16em] text-cyan-300">
-                        OF RESEARCH
+                        {heroMeta.coverJournalTagline}
                       </p>
                     </div>
                   </div>
                   <div className="text-right font-mono text-[7px] text-slate-300/80 leading-tight">
-                    <p>ISSN 2959-1082</p>
-                    <p>eISSN 2959-1074</p>
+                    <p>{heroMeta.coverIssnLine}</p>
+                    <p>{heroMeta.coverEissnLine}</p>
                   </div>
                 </div>
 
@@ -152,7 +311,7 @@ export function CurrentIssueInteractive({
                 <div className="absolute bottom-0 inset-x-0 z-10 p-4 sm:p-4.5 flex flex-col justify-end">
                   <div className="mb-3">
                     <p className="text-[7.5px] font-bold uppercase tracking-[0.16em] text-cyan-300">
-                      THEME & SPECIAL FOCUS
+                      {heroMeta.coverThemeLabel}
                     </p>
                     <h3 className="mt-1 font-academic text-[11px] font-medium leading-[1.3] text-white/95 line-clamp-3">
                       {allArticles[0]?.title || currentIssue.theme}
@@ -170,7 +329,7 @@ export function CurrentIssueInteractive({
             {/* Right Column: Issue Details & Metadata */}
             <FadeIn direction="up" delay={0.15} className="flex flex-col justify-center">
               <p className="text-[11.5px] sm:text-xs font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                Gono Bishwabidyalay Journal of Research
+                {hero.title}
               </p>
 
               <h2 className="mt-2 font-academic lining-nums text-4xl sm:text-5xl font-medium leading-[1.1] tracking-[-0.02em] text-slate-950">
@@ -178,7 +337,7 @@ export function CurrentIssueInteractive({
               </h2>
 
               <p className="mt-1.5 text-sm sm:text-base font-medium text-slate-600">
-                Published {currentIssue.month} {currentIssue.year} · Universal Open Access
+                {heroMeta.publishedPrefix} {currentIssue.month} {currentIssue.year} · {heroMeta.accessLabel}
               </p>
 
               {/* Metadata 2-Column Spec Block */}
@@ -189,7 +348,7 @@ export function CurrentIssueInteractive({
                   </span>
                   <div>
                     <p className="text-xs font-bold text-slate-800">
-                      Publication Date
+                      {heroMeta.publicationDateLabel}
                     </p>
                     <p className="text-xs text-slate-600 mt-0.5">
                       {currentIssue.month} 15, {currentIssue.year}
@@ -203,10 +362,10 @@ export function CurrentIssueInteractive({
                   </span>
                   <div>
                     <p className="text-xs font-bold text-slate-800">
-                      ISSN Information
+                      {heroMeta.issnLabel}
                     </p>
                     <p className="text-xs text-slate-600 mt-0.5">
-                      2959-1082 (Online) · 2959-1074 (Print)
+                      {heroMeta.issnValue}
                     </p>
                   </div>
                 </div>
@@ -214,8 +373,7 @@ export function CurrentIssueInteractive({
 
               {/* Description Body */}
               <p className="mt-6 text-xs sm:text-sm leading-relaxed text-slate-600">
-                {currentIssue.editorNote ||
-                  "This issue features peer-reviewed studies examining healthcare access in peri-urban Savar, pharmacy practice readiness for clinical antimicrobial stewardship, and mathematical crop modeling for climate-resilient agriculture."}
+                {currentIssue.editorNote || hero.content}
               </p>
 
               {/* Actions */}
@@ -225,7 +383,7 @@ export function CurrentIssueInteractive({
                   className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
                 >
                   <BookOpen className="h-4 w-4 text-white/90" />
-                  <span>Browse Articles ({allArticles.length})</span>
+                  <span>{heroMeta.browseArticlesLabel} ({allArticles.length})</span>
                 </a>
 
                 <button
@@ -236,44 +394,48 @@ export function CurrentIssueInteractive({
                   {copiedCitation ? (
                     <>
                       <Check className="h-4 w-4 text-emerald-600" />
-                      <span className="text-emerald-700">Citation Copied</span>
+                      <span className="text-emerald-700">{heroMeta.citationCopiedLabel}</span>
                     </>
                   ) : (
                     <>
                       <Copy className="h-4 w-4 text-slate-500" />
-                      <span>Copy Issue Citation</span>
+                      <span>{heroMeta.copyCitationLabel}</span>
                     </>
                   )}
                 </button>
 
-                <Link
-                  href="/dashboard/submissions/new"
-                  className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#1e40af] px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors"
-                >
-                  <Send className="h-4 w-4" />
-                  <span>Submit to Next Issue</span>
-                </Link>
+                {heroMeta.submitCta?.label && (
+                  <Link
+                    href={heroMeta.submitCta.href || "/dashboard/submissions/new"}
+                    className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#1e40af] px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>{heroMeta.submitCta.label}</span>
+                  </Link>
+                )}
               </div>
             </FadeIn>
           </div>
         </div>
       </section>
+      )}
 
       {/* 2. Main Content Area */}
       <section id="table-of-contents" className="bg-[#fbfcff] py-10 sm:py-14 border-b border-slate-200/80">
         <div className="container-x">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-8 items-start">
             {/* Left Column: Articles List */}
+            {toc.visible && (
             <div>
               {/* Header Bar */}
               <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-200/90 pb-4">
                 <div>
                   <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#1e40af] flex items-center gap-1.5">
                     <FileSearch className="h-3.5 w-3.5" />
-                    <span>ISSUE TABLE OF CONTENTS</span>
+                    <span>{toc.subtitle}</span>
                   </p>
                   <h2 className="mt-1 font-academic text-2xl sm:text-3xl font-medium tracking-[-0.02em] text-slate-950">
-                    {filteredArticles.length} Article{filteredArticles.length === 1 ? "" : "s"} Published
+                    {filteredArticles.length} {filteredArticles.length === 1 ? tocMeta.titleSingular : toc.title}
                   </h2>
                 </div>
 
@@ -290,7 +452,7 @@ export function CurrentIssueInteractive({
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search articles by title, author, or keyword..."
+                    placeholder={tocMeta.searchPlaceholder}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#1e40af] transition-all"
@@ -301,7 +463,7 @@ export function CurrentIssueInteractive({
                       onClick={() => setSearchQuery("")}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
                     >
-                      Clear
+                      {tocMeta.clearSearchLabel}
                     </button>
                   )}
                 </div>
@@ -317,7 +479,7 @@ export function CurrentIssueInteractive({
                         : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                     }`}
                   >
-                    All ({allArticles.length})
+                    {tocMeta.allTopicsLabel} ({allArticles.length})
                   </button>
                   {issueTopics.map((topic) => (
                     <button
@@ -341,10 +503,10 @@ export function CurrentIssueInteractive({
                 <div className="border border-dashed border-slate-300 bg-white p-12 text-center">
                   <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
                   <h3 className="mt-3 font-academic text-lg font-bold text-slate-800">
-                    No articles match your search
+                    {tocMeta.emptyTitle}
                   </h3>
                   <p className="mt-1 text-xs text-slate-500">
-                    Try broader search keywords or reset all filters.
+                    {tocMeta.emptyText}
                   </p>
                   <button
                     type="button"
@@ -354,7 +516,7 @@ export function CurrentIssueInteractive({
                     }}
                     className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#1e40af] bg-blue-50 border border-blue-200 px-3.5 py-1.5 hover:bg-blue-100 transition-colors cursor-pointer"
                   >
-                    <span>Reset filters</span>
+                    <span>{tocMeta.resetFiltersLabel}</span>
                   </button>
                 </div>
               ) : (
@@ -395,11 +557,11 @@ export function CurrentIssueInteractive({
                                   </span>
                                   <span className="inline-flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-200">
                                     <LockOpen className="h-3 w-3" />
-                                    Open Access
+                                    {tocMeta.openAccessLabel}
                                   </span>
                                 </div>
                                 <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-slate-500">
-                                  Pages {article.pages}
+                                  {tocMeta.pagesLabel} {article.pages}
                                 </span>
                               </div>
 
@@ -410,7 +572,7 @@ export function CurrentIssueInteractive({
                               </Link>
 
                               <p className="mt-1 text-xs font-semibold text-slate-600 truncate">
-                                By {article.authors.join(", ")}
+                                {tocMeta.authorsPrefix} {article.authors.join(", ")}
                               </p>
 
                               <p className="mt-1.5 text-xs leading-relaxed text-slate-600 line-clamp-2">
@@ -422,15 +584,15 @@ export function CurrentIssueInteractive({
                               <div className="flex items-center gap-3.5 text-xs text-slate-500">
                                 <span className="inline-flex items-center gap-1.5 font-medium" title={`${(article.metrics?.views || 0).toLocaleString()} Total Views`}>
                                   <Eye className="h-3.5 w-3.5 text-slate-400" />
-                                  <span>{(article.metrics?.views || 0).toLocaleString()} {article.metrics?.views === 1 ? "view" : "views"}</span>
+                                  <span>{(article.metrics?.views || 0).toLocaleString()} {article.metrics?.views === 1 ? tocMeta.viewSingular : tocMeta.viewPlural}</span>
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 font-medium" title={`${(article.metrics?.downloads || 0).toLocaleString()} Total Downloads`}>
                                   <Download className="h-3.5 w-3.5 text-slate-400" />
-                                  <span>{(article.metrics?.downloads || 0).toLocaleString()} {article.metrics?.downloads === 1 ? "download" : "downloads"}</span>
+                                  <span>{(article.metrics?.downloads || 0).toLocaleString()} {article.metrics?.downloads === 1 ? tocMeta.downloadSingular : tocMeta.downloadPlural}</span>
                                 </span>
                                 <span className="text-slate-400 hidden sm:inline">|</span>
                                 <span className="text-slate-500 font-mono text-[11px] hidden sm:inline truncate max-w-35">
-                                  DOI: {article.doi}
+                                  {tocMeta.doiLabel} {article.doi}
                                 </span>
                               </div>
 
@@ -440,7 +602,7 @@ export function CurrentIssueInteractive({
                                   aria-label={`Read ${article.title}`}
                                   className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline"
                                 >
-                                  <span>Read Full Article</span>
+                                  <span>{tocMeta.readArticleLabel}</span>
                                   <ArrowUpRight className="h-3.5 w-3.5" />
                                 </Link>
                               </div>
@@ -453,131 +615,15 @@ export function CurrentIssueInteractive({
                 </StaggerContainer>
               )}
             </div>
+            )}
 
             {/* Right Column: Sticky Sidebar */}
             <aside className="space-y-6 lg:sticky lg:top-24">
-              {/* Journal Specifications */}
-              <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
-                <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3 flex items-center gap-1.5">
-                  <Library className="h-3.5 w-3.5" />
-                  <span>Issue Specifications</span>
-                </p>
-                <dl className="divide-y divide-slate-100 text-xs">
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">Volume / Issue</dt>
-                    <dd className="font-semibold text-slate-900">
-                      {currentIssue.volume}, {currentIssue.issue}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">Publication Date</dt>
-                    <dd className="font-semibold text-slate-900">
-                      {currentIssue.month} {currentIssue.year}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">ISSN (Online)</dt>
-                    <dd className="font-mono font-semibold text-slate-900">2959-1082</dd>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">ISSN (Print)</dt>
-                    <dd className="font-mono font-semibold text-slate-900">2959-1074</dd>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">Review Model</dt>
-                    <dd className="font-semibold text-slate-900">Double-Blind</dd>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">Licensing</dt>
-                    <dd className="font-semibold text-emerald-700">CC BY 4.0 Open Access</dd>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <dt className="text-slate-500">Digital DOI Prefix</dt>
-                    <dd className="font-mono text-slate-900">10.5555/gbj.2026</dd>
-                  </div>
-                </dl>
-              </div>
-
-              {/* Editorial Leadership */}
-              <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
-                <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3 flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" />
-                  <span>Editorial Leadership</span>
-                </p>
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <p className="font-academic font-bold text-slate-900">Prof. Dr. Laila Rahman, PhD</p>
-                    <p className="text-[11px] text-slate-500">Editor-in-Chief · Faculty of Health Sciences</p>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100">
-                    <p className="font-academic font-bold text-slate-900">Prof. Saiful Islam, MPharm</p>
-                    <p className="text-[11px] text-slate-500">Managing Editor · Department of Pharmacy</p>
-                  </div>
-                </div>
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <Link
-                    href="/editorial-board"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline"
-                  >
-                    <span>Full Editorial Board</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Call for Papers Box */}
-              <div className="bg-[#0b1b3d] text-white p-5 shadow-2xs border border-slate-800">
-                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-300">
-                  CALL FOR PAPERS
-                </p>
-                <h4 className="mt-1.5 font-academic text-base font-medium text-white">
-                  Volume 5, Issue 1 (January 2027)
-                </h4>
-                <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
-                  Accepting manuscripts across Health, Pharmacy, Agriculture, and Computing.
-                </p>
-                <Link
-                  href="/dashboard/submissions/new"
-                  className="mt-4 inline-flex items-center gap-1.5 bg-[#1e40af] hover:bg-[#1e3a8a] text-white px-4 py-2 text-xs font-semibold transition-colors w-full justify-center"
-                >
-                  <span>Submit Manuscript</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-
-              {/* Previous Editions */}
-              {otherIssues.length > 1 && (
-                <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af]">
-                      Previous Issues
-                    </p>
-                    <Link
-                      href="/issues"
-                      className="text-[11px] font-semibold text-[#1e40af] hover:underline"
-                    >
-                      All Issues
-                    </Link>
-                  </div>
-                  <div className="space-y-2 text-xs">
-                    {otherIssues.slice(1, 4).map((past: any) => (
-                      <Link
-                        key={past.id}
-                        href="/issues"
-                        className="block p-2.5 border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
-                      >
-                        <div className="flex items-center justify-between font-mono text-[10px] text-slate-400">
-                          <span>{past.volume} · {past.issue}</span>
-                          <span>{past.month} {past.year}</span>
-                        </div>
-                        <p className="mt-1 font-academic font-medium text-slate-900 group-hover:text-[#1e40af] truncate">
-                          {past.theme}
-                        </p>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {content._order
+                .filter((key) => SIDEBAR_SECTION_KEYS.has(key))
+                .map((key) => (
+                  <Fragment key={key}>{sidebarRenderers[key]?.()}</Fragment>
+                ))}
             </aside>
           </div>
         </div>

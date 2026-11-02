@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import { IssuesArchiveClient } from "@/components/issues/issues-archive-client";
 import { getBackendUrl } from "@/lib/backend-url";
 import { type Issue } from "@/lib/data";
+import { getPageContent } from "@/lib/cms/page-content";
+import issuesDefaults from "@/lib/cms/defaults/issues.json";
 
 export const revalidate = 60;
 
@@ -68,6 +70,9 @@ async function fetchIssues(): Promise<Issue[]> {
 }
 
 export default async function IssuesPage() {
-  const issues = await fetchIssues();
-  return <IssuesArchiveClient initialIssues={issues} />;
+  const [issues, content] = await Promise.all([
+    fetchIssues(),
+    getPageContent(issuesDefaults),
+  ]);
+  return <IssuesArchiveClient initialIssues={issues} content={content} />;
 }

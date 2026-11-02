@@ -20,6 +20,7 @@ import { clearAuth, setUser as setReduxUser } from "@/redux/features/auth/authSl
 import { SiteHeaderNav } from "@/components/header/site-header-nav";
 import { HeaderSearchModal } from "@/components/header/header-search-modal";
 import { MobileNavDrawer } from "@/components/header/mobile-nav-drawer";
+import { useSiteContent } from "@/components/layout/site-content";
 import { CustomModal } from "@/components/ui/modal";
 import { PremiumLoader } from "@/components/ui/loader";
 import { toast } from "sonner";
@@ -29,6 +30,10 @@ export { mainNav, type NavItem, type NavSubItem } from "@/components/header/nav-
 export function SiteHeader() {
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector((state) => state.auth.user);
+  const header = useSiteContent().header;
+  const topLinks: { label: string; href: string }[] = Array.isArray(header.meta.topLinks)
+    ? header.meta.topLinks
+    : [];
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -153,19 +158,20 @@ export function SiteHeader() {
       `}</style>
 
       {/* Top institutional banner */}
+      {header.visible && (
       <div className="bg-[color:var(--color-gb-blue-deep)] text-white/70">
         <div className="container-x flex h-8 items-center justify-between text-[10px] font-bold tracking-wider">
           <div className="flex items-center gap-2">
             <GraduationCap className="h-3 w-3 text-[color:var(--color-gb-gold)]" />
             <span className="hidden sm:inline uppercase">
-              Gono Bishwabidyalay Research Publication System
+              {header.title}
             </span>
-            <span className="sm:hidden uppercase">GB Journal</span>
+            <span className="sm:hidden uppercase">{header.subtitle}</span>
           </div>
           <div className="flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-white/50">Signed in:</span>
+                <span className="text-white/50">{header.meta.signedInLabel}</span>
                 <span className="font-extrabold text-white/90">{user.name}</span>
                 <span className="text-[9px] uppercase bg-white/10 px-1.5 py-0.5 rounded font-black text-[color:var(--color-gb-gold)] border border-white/10">
                   {user.role}
@@ -173,23 +179,21 @@ export function SiteHeader() {
               </div>
             ) : (
               <div className="hidden items-center gap-4 md:flex">
-                <Link href="/about" className="hover:text-white transition-colors">
-                  ISSN 2959-1082
-                </Link>
-                <Link href="/policies" className="hover:text-white transition-colors">
-                  Ethics
-                </Link>
-                <Link href="/reviewers" className="hover:text-white transition-colors">
-                  Reviewers
-                </Link>
-                <Link href="/contact" className="hover:text-white transition-colors">
-                  Contact
-                </Link>
+                {topLinks.map((link, i) => (
+                  <Link
+                    key={`${link.href}-${link.label}-${i}`}
+                    href={link.href}
+                    className="hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
+      )}
 
       {/* Tri-color accent strip */}
       <div className="h-[2px] bg-gradient-to-r from-[color:var(--color-gb-blue)] via-[color:var(--color-gb-gold)] to-[color:var(--color-gb-red)]" />
@@ -219,14 +223,14 @@ export function SiteHeader() {
             </button>
 
             <Link
-              href={user ? "/dashboard/submissions/new" : "/login"}
+              href={user ? header.meta.submitHref || "/dashboard/submissions/new" : "/login"}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-3 py-2 text-[12px] font-extrabold text-white shadow-xs transition-all hover:bg-[color:var(--color-gb-blue)] sm:px-4"
               aria-label={
                 user ? "Submit a new manuscript" : "Sign in to submit a manuscript"
               }
             >
               <Send className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Submit</span>
+              <span className="hidden sm:inline">{header.meta.submitLabel}</span>
             </Link>
 
             {user ? (
@@ -237,7 +241,7 @@ export function SiteHeader() {
                   title="Go to Dashboard"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
-                  Dashboard
+                  {header.meta.dashboardLabel}
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -254,7 +258,7 @@ export function SiteHeader() {
                 title="Access Workspace"
               >
                 <UserIcon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
-                <span className="hidden min-[440px]:inline">Login</span>
+                <span className="hidden min-[440px]:inline">{header.meta.loginLabel}</span>
               </Link>
             )}
 

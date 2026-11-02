@@ -5,6 +5,8 @@ import { PageShell } from "@/components/layout/page-shell";
 import { CurrentIssueInteractive } from "@/components/issues/current-issue-interactive";
 import { getBackendUrl } from "@/lib/backend-url";
 import type { Article } from "@/lib/data";
+import { getPageContent } from "@/lib/cms/page-content";
+import issuesCurrentDefaults from "@/lib/cms/defaults/issues-current.json";
 
 export const revalidate = 60;
 
@@ -99,41 +101,51 @@ async function getCurrentIssueFromDb(): Promise<{
 }
 
 export default async function CurrentIssuePage() {
-  const { currentIssue, allArticles, otherIssues } =
-    await getCurrentIssueFromDb();
+  const [{ currentIssue, allArticles, otherIssues }, content] =
+    await Promise.all([
+      getCurrentIssueFromDb(),
+      getPageContent(issuesCurrentDefaults),
+    ]);
 
   if (!currentIssue) {
+    const noIssue = content["no-issue"];
+    const noIssueCtas = Array.isArray(noIssue.meta.ctas) ? noIssue.meta.ctas : [];
+    const [archiveCta, guidelinesCta] = noIssueCtas;
     return (
       <PageShell>
+        {noIssue.visible && (
         <div className="bg-[#fbfcff] py-20 border-b border-slate-200/80 min-h-[60vh] flex items-center justify-center">
           <div className="container-x max-w-lg text-center">
             <div className="bg-white border border-slate-200/90 p-8 sm:p-12 shadow-2xs">
               <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-4" />
               <h1 className="font-academic text-2xl font-medium text-slate-900">
-                No Current Issue Published
+                {noIssue.title}
               </h1>
               <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                The editorial board is currently preparing the next journal
-                issue. Please check back soon or explore our past archives and
-                author guidelines.
+                {noIssue.content}
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href="/issues"
-                  className="bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
-                >
-                  Browse Archives
-                </Link>
-                <Link
-                  href="/authors"
-                  className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
-                >
-                  Author Guidelines
-                </Link>
+                {archiveCta && (
+                  <Link
+                    href={archiveCta.href}
+                    className="bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                  >
+                    {archiveCta.label}
+                  </Link>
+                )}
+                {guidelinesCta && (
+                  <Link
+                    href={guidelinesCta.href}
+                    className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                  >
+                    {guidelinesCta.label}
+                  </Link>
+                )}
               </div>
             </div>
           </div>
         </div>
+        )}
       </PageShell>
     );
   }
@@ -143,6 +155,7 @@ export default async function CurrentIssuePage() {
       currentIssue={currentIssue}
       allArticles={allArticles}
       otherIssues={otherIssues}
+      content={content}
     />
   );
 }

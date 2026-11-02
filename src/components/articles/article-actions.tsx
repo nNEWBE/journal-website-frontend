@@ -29,12 +29,27 @@ function joinApaAuthors(authors: string[]) {
   return `${formatted.slice(0, -1).join(", ")}, & ${formatted.at(-1)}`;
 }
 
+/** CMS-editable button labels (article-detail page, "actions" section). */
+export interface ArticleActionLabels {
+  heroDownload?: string;
+  heroCite?: string;
+  heroCiteDone?: string;
+  heroShare?: string;
+  heroShareDone?: string;
+  sidebarDownload?: string;
+  sidebarCite?: string;
+  sidebarShare?: string;
+  sidebarDone?: string;
+}
+
 export function ArticleActions({
   article,
   variant = "default",
+  labels = {},
 }: {
   article: Article;
   variant?: "hero" | "default";
+  labels?: ArticleActionLabels;
 }) {
   const [copiedCite, setCopiedCite] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -89,7 +104,7 @@ export function ArticleActions({
           className="group inline-flex items-center gap-2.5 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-all shadow-md active:translate-y-px cursor-pointer"
         >
           <Download className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
-          <span>Download PDF</span>
+          <span>{labels.heroDownload ?? "Download PDF"}</span>
         </a>
 
         <button
@@ -102,7 +117,7 @@ export function ArticleActions({
           ) : (
             <Quote className="h-4 w-4 text-amber-300" />
           )}
-          <span>{copiedCite ? "Citation Copied" : "Cite Article"}</span>
+          <span>{copiedCite ? labels.heroCiteDone ?? "Citation Copied" : labels.heroCite ?? "Cite Article"}</span>
         </button>
 
         <button
@@ -115,7 +130,7 @@ export function ArticleActions({
           ) : (
             <Share2 className="h-4 w-4 text-blue-300" />
           )}
-          <span>{copiedShare ? "Link Copied" : "Share"}</span>
+          <span>{copiedShare ? labels.heroShareDone ?? "Link Copied" : labels.heroShare ?? "Share"}</span>
         </button>
       </div>
     );
@@ -132,7 +147,7 @@ export function ArticleActions({
         className="inline-flex w-full items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white py-3 text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer"
       >
         <Download className="h-4 w-4" />
-        <span>Download Full PDF</span>
+        <span>{labels.sidebarDownload ?? "Download Full PDF"}</span>
       </a>
 
       <div className="grid grid-cols-2 gap-2">
@@ -146,7 +161,7 @@ export function ArticleActions({
           ) : (
             <Quote className="h-3.5 w-3.5 text-slate-500" />
           )}
-          <span>{copiedCite ? "Copied" : "Cite"}</span>
+          <span>{copiedCite ? labels.sidebarDone ?? "Copied" : labels.sidebarCite ?? "Cite"}</span>
         </button>
 
         <button
@@ -159,7 +174,7 @@ export function ArticleActions({
           ) : (
             <Share2 className="h-3.5 w-3.5 text-slate-500" />
           )}
-          <span>{copiedShare ? "Copied" : "Share"}</span>
+          <span>{copiedShare ? labels.sidebarDone ?? "Copied" : labels.sidebarShare ?? "Share"}</span>
         </button>
       </div>
     </div>

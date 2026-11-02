@@ -11,6 +11,12 @@ interface ArticlesFilterFormProps {
   initialTopic: string;
   articleTypes: string[];
   topics: string[];
+  /** CMS-editable copy; the "All Types"/"All Topics" sentinels stay in code (used by filter logic). */
+  labels?: {
+    searchPlaceholder?: string;
+    searchButton?: string;
+    resetButton?: string;
+  };
 }
 
 export function ArticlesFilterForm({
@@ -19,6 +25,7 @@ export function ArticlesFilterForm({
   initialTopic,
   articleTypes,
   topics,
+  labels,
 }: ArticlesFilterFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -98,7 +105,7 @@ export function ArticlesFilterForm({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by title, author surname, DOI, or keyword..."
+            placeholder={labels?.searchPlaceholder ?? "Search by title, author surname, DOI, or keyword..."}
             className="w-full border-none bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:font-medium placeholder:text-slate-400 focus:outline-none focus:ring-0"
           />
           {q && (
@@ -141,7 +148,7 @@ export function ArticlesFilterForm({
             className="inline-flex min-h-11.5 flex-1 md:flex-none shrink-0 items-center justify-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] px-6 text-xs font-bold uppercase tracking-wider text-white shadow-2xs transition-colors cursor-pointer focus:outline-none disabled:opacity-75"
           >
             <Search className="h-3.5 w-3.5" />
-            <span>Search</span>
+            <span>{labels?.searchButton ?? "Search"}</span>
           </button>
           {hasActiveFilters && (
             <button
@@ -151,7 +158,7 @@ export function ArticlesFilterForm({
               className="inline-flex min-h-11.5 items-center justify-center px-3 border border-slate-200 text-slate-600 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1" />
-              <span>Reset</span>
+              <span>{labels?.resetButton ?? "Reset"}</span>
             </button>
           )}
         </div>

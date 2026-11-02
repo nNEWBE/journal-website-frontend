@@ -4,33 +4,43 @@ import Link from "next/link";
 import {
   Archive,
   ArrowUpRight,
-  Award,
-  BookOpen,
   CalendarDays,
-  CheckCircle2,
-  FileText,
   Globe2,
-  GraduationCap,
   Landmark,
   Library,
   Search,
   ShieldCheck,
-  Users,
 } from "lucide-react";
+import type { ResolvedSection } from "@/lib/cms/page-content";
+import { CmsText } from "@/lib/cms/cms-text";
+import { cmsIcon } from "@/lib/cms/icons";
+import type issuesDefaults from "@/lib/cms/defaults/issues.json";
+
+export type IssuesHeroMeta = typeof issuesDefaults.sections.hero.meta;
+
+const HIGHLIGHT_FALLBACK_ICONS = [CalendarDays, Globe2, ShieldCheck];
 
 interface IssuesHeroProps {
+  section: ResolvedSection<IssuesHeroMeta>;
   totalIssues: number;
   totalArticles: number;
-  currentVolume: string;
+  /** `null` when no issue is published yet (shows the CMS fallback text). */
+  currentVolume: string | null;
   totalYears: number;
 }
 
 export function IssuesHero({
+  section,
   totalIssues,
   totalArticles,
   currentVolume,
   totalYears,
 }: IssuesHeroProps) {
+  const m = section.meta;
+  const highlights = Array.isArray(m.highlights) ? m.highlights : [];
+  const ctas = Array.isArray(m.ctas) ? m.ctas : [];
+  const [primaryCta, secondaryCta, tertiaryCta] = ctas;
+
   return (
     <section
       aria-label="Issues & Volumes Hero"
@@ -43,61 +53,64 @@ export function IssuesHero({
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-[#1e40af] text-[10px] font-bold uppercase tracking-[0.16em] border border-slate-200/80">
                 <Library className="h-3.5 w-3.5" />
-                JOURNAL ARCHIVE & EDITIONS
+                {section.subtitle}
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
                 <Landmark className="h-3.5 w-3.5 text-slate-400" />
-                Gono Bishwabidyalay Official Repository
+                {m.repositoryNote}
               </span>
             </div>
 
             <h1 className="mt-5 font-academic text-3xl sm:text-4xl lg:text-[2.85rem] font-medium leading-[1.12] tracking-[-0.025em] text-slate-950">
-              Volumes & Published Issues Archive
+              {section.title}
             </h1>
 
             <p className="mt-5 text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl">
-              Browse the complete peer-reviewed publication record of the <strong className="text-slate-900 font-semibold">Gono Bishwabidyalay Journal of Research</strong>. Every volume unites multidisciplinary scholarship in health, pharmacy, agriculture, law, computing, and social welfare—freely accessible worldwide under Open Access.
+              <CmsText text={section.content} strongClassName="text-slate-900 font-semibold" />
             </p>
 
             {/* Quick Feature Badges */}
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-600 border-t border-slate-100 pt-5">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Biannual Schedule (Jan & Jul)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe2 className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">100% Open Access (CC BY 4.0)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Double-Blind Evaluated</span>
-              </div>
+              {highlights.map((item, idx) => {
+                const Icon = cmsIcon(item.icon, HIGHLIGHT_FALLBACK_ICONS[idx] ?? ShieldCheck);
+                return (
+                  <div key={`${item.label}-${idx}`} className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-[#1e40af]" />
+                    <span className="font-semibold text-slate-900">{item.label}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Action Buttons */}
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/issues/current"
-                className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <span>Read Current Issue</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/articles"
-                className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <Search className="h-3.5 w-3.5 text-slate-500" />
-                <span>Search All Articles</span>
-              </Link>
-              <a
-                href="#volume-archive"
-                className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <Archive className="h-3.5 w-3.5 text-slate-500" />
-                <span>Browse Past Volumes</span>
-              </a>
+              {primaryCta && (
+                <Link
+                  href={primaryCta.href}
+                  className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
+                >
+                  <span>{primaryCta.label}</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+              {secondaryCta && (
+                <Link
+                  href={secondaryCta.href}
+                  className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
+                >
+                  <Search className="h-3.5 w-3.5 text-slate-500" />
+                  <span>{secondaryCta.label}</span>
+                </Link>
+              )}
+              {tertiaryCta && (
+                <a
+                  href={tertiaryCta.href}
+                  className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
+                >
+                  <Archive className="h-3.5 w-3.5 text-slate-500" />
+                  <span>{tertiaryCta.label}</span>
+                </a>
+              )}
             </div>
           </div>
 
@@ -106,53 +119,53 @@ export function IssuesHero({
             <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 bg-[#0b1b3d] text-white flex items-center justify-center font-bold text-xs">
-                  GB
+                  {m.cardMonogram}
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                    ARCHIVAL CATALOG
+                    {m.cardEyebrow}
                   </p>
                   <p className="font-ui text-sm font-bold text-slate-900">
-                    Repository Overview
+                    {m.cardTitle}
                   </p>
                 </div>
               </div>
               <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
-                Active Archive
+                {m.cardBadge}
               </span>
             </div>
 
             {/* Spec Rows */}
             <div className="mt-4 divide-y divide-slate-200/70 text-xs">
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Current Edition</span>
-                <span className="font-mono font-bold text-[#1e40af]">{currentVolume}</span>
+                <span className="text-slate-500 font-medium">{m.currentEditionLabel}</span>
+                <span className="font-mono font-bold text-[#1e40af]">{currentVolume ?? m.noCurrentEditionText}</span>
               </div>
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Total Published Issues</span>
-                <span className="font-semibold text-slate-900">{totalIssues} Editions</span>
+                <span className="text-slate-500 font-medium">{m.totalIssuesLabel}</span>
+                <span className="font-semibold text-slate-900">{totalIssues} {m.totalIssuesSuffix}</span>
               </div>
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Historical Span</span>
-                <span className="font-semibold text-slate-900">{totalYears} Archive Years</span>
+                <span className="text-slate-500 font-medium">{m.historicalSpanLabel}</span>
+                <span className="font-semibold text-slate-900">{totalYears} {m.historicalSpanSuffix}</span>
               </div>
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Cataloged Articles</span>
-                <span className="font-semibold text-slate-900">{totalArticles} Papers</span>
+                <span className="text-slate-500 font-medium">{m.catalogedArticlesLabel}</span>
+                <span className="font-semibold text-slate-900">{totalArticles} {m.catalogedArticlesSuffix}</span>
               </div>
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Official ISSN</span>
-                <span className="font-mono font-semibold text-slate-900">2959-1082 (Online)</span>
+                <span className="text-slate-500 font-medium">{m.issnLabel}</span>
+                <span className="font-mono font-semibold text-slate-900">{m.issnValue}</span>
               </div>
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Preservation</span>
-                <span className="font-semibold text-emerald-700">CrossRef DOI Permanent</span>
+                <span className="text-slate-500 font-medium">{m.preservationLabel}</span>
+                <span className="font-semibold text-emerald-700">{m.preservationValue}</span>
               </div>
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-200/80 bg-white p-3.5 border text-[11px] text-slate-600 leading-relaxed">
-              <span className="font-bold text-slate-900 block mb-0.5">Permanent Access Guarantee:</span>
-              All retrospective editions remain permanently accessible, indexed under unique CrossRef DOIs with unhindered full-text PDF downloads.
+              <span className="font-bold text-slate-900 block mb-0.5">{m.guaranteeTitle}</span>
+              {m.guaranteeText}
             </div>
           </div>
         </div>

@@ -10,7 +10,14 @@ function sectionId(heading: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-export function ArticleContents({ sections }: { sections: Article["sections"] }) {
+export function ArticleContents({
+  sections,
+  referencesLabel = "References",
+}: {
+  sections: Article["sections"];
+  /** CMS-editable label for the trailing references entry. */
+  referencesLabel?: string;
+}) {
   const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
@@ -64,7 +71,7 @@ export function ArticleContents({ sections }: { sections: Article["sections"] })
       num: String(index + 1).padStart(2, "0"),
     })),
     {
-      heading: "References",
+      heading: referencesLabel,
       id: "references",
       num: String(sections.length + 1).padStart(2, "0"),
     },

@@ -3,6 +3,8 @@ import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { AboutJournalHero } from "@/components/about/about-journal-hero";
 import { AboutJournalStory } from "@/components/about/about-journal-story";
+import defaults from "@/lib/cms/defaults/about.json";
+import { getPageContent } from "@/lib/cms/page-content";
 
 export const metadata: Metadata = {
   title: "About the Journal | GB Journal of Research",
@@ -10,15 +12,31 @@ export const metadata: Metadata = {
     "Learn about the mission, scope, double-blind peer review, publishing charter, indexing, and academic stewardship of the Gono Bishwabidyalay Journal of Research.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const content = await getPageContent(defaults);
+
   return (
     <PageShell>
-      <FadeIn delay={0.05}>
-        <AboutJournalHero />
-      </FadeIn>
+      {content.hero.visible && (
+        <FadeIn delay={0.05}>
+          <AboutJournalHero section={content.hero} />
+        </FadeIn>
+      )}
 
       <FadeIn delay={0.15}>
-        <AboutJournalStory />
+        <AboutJournalStory
+          order={content._order}
+          sections={{
+            mission: content.mission,
+            benchmarks: content.benchmarks,
+            scope: content.scope,
+            leadership: content.leadership,
+            lifecycle: content.lifecycle,
+            charter: content.charter,
+            indexing: content.indexing,
+            stewardship: content.stewardship,
+          }}
+        />
       </FadeIn>
     </PageShell>
   );

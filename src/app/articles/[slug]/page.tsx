@@ -35,6 +35,10 @@ import { ArticleViewTracker } from "@/components/articles/article-view-tracker";
 import { articles, findArticle } from "@/lib/data";
 import type { Article } from "@/lib/data";
 import { getBackendUrl } from "@/lib/backend-url";
+import { cmsParagraphs, getPageContent, type ResolvedPage } from "@/lib/cms/page-content";
+import { CmsText } from "@/lib/cms/cms-text";
+import articleDetailDefaults from "@/lib/cms/defaults/article-detail.json";
+import { JournalCtaPanel } from "@/components/layout/journal-cta-panel";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -275,22 +279,24 @@ function sectionId(heading: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-function ArticleRecord({ article }: { article: Article }) {
+type SidebarCopy = ResolvedPage<typeof articleDetailDefaults>["sidebar"];
+
+function ArticleRecord({ article, copy }: { article: Article; copy: SidebarCopy }) {
   const recordItems = [
     ["DOI", article.doi],
     ["Pages", article.pages],
     ["Published", article.publishedAt],
     ["Volume", article.volume],
     ["Issue", article.issue],
-    ["Licensing", "CC BY 4.0 Open Access"],
-    ["Review", "Double-Blind Peer Reviewed"],
+    ["Licensing", copy.meta.recordLicensing],
+    ["Review", copy.meta.recordReview],
   ];
 
   return (
     <section className="bg-white border border-slate-200/90 shadow-2xs p-5">
       <div className="border-b border-slate-100 pb-3 mb-4">
         <h2 className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-          PUBLICATION RECORD
+          {copy.meta.recordHeading}
         </h2>
       </div>
 
@@ -355,7 +361,7 @@ function ArticleRecord({ article }: { article: Article }) {
 
         <div className="mt-4 flex items-center gap-2 bg-blue-50 border border-blue-100 p-2.5 text-xs font-semibold text-[#1e40af]">
           <ShieldCheck className="h-4 w-4 shrink-0 text-[#1e40af]" />
-          <span>CrossMark Verified Record</span>
+          <span>{copy.meta.verifiedLabel}</span>
         </div>
       </div>
     </section>
@@ -363,6 +369,7 @@ function ArticleRecord({ article }: { article: Article }) {
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
+  const contentPromise = getPageContent(articleDetailDefaults);
   const { slug } = await params;
   const article = await fetchArticleFromDb(slug);
 
@@ -378,6 +385,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   );
   const references = getArticleReferences(article.slug);
   const recommended = await getRelatedArticlesFromDb(article.topic, article.slug);
+  const content = await contentPromise;
+  const labels = content.labels;
+  const actionLabels = { ...content.actions.meta, heroDownload: content.actions.title };
 
   const siteOrigin = getSiteOrigin();
   const articleUrl = `${siteOrigin}/articles/${article.slug}`;
@@ -447,7 +457,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/15 text-emerald-300 text-[10px] font-bold uppercase tracking-[0.15em] border border-emerald-500/30">
                 <Globe2 className="h-3 w-3" />
-                Open Access (CC BY 4.0)
+                {labels.meta.openAccessBadge}
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 text-amber-300 text-[10px] font-bold uppercase tracking-[0.15em] border border-white/10">
                 <Tag className="h-3 w-3" />
@@ -498,7 +508,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
             {/* Action Buttons */}
             <div className="mt-6">
-              <ArticleActions article={article} variant="hero" />
+              <ArticleActions article={article} variant="hero" labels={actionLabels} />
             </div>
           </div>
 
@@ -591,12 +601,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 <div className="bg-[#0b1b3d] text-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 font-bold text-emerald-400">
                     <ShieldCheck className="h-4 w-4" />
-                    <span>Double-Blind Peer Reviewed</span>
+                    <span>{labels.meta.peerReviewBadge}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-300 font-medium">
                     <span>{article.department}</span>
                     <span>·</span>
-                    <span className="text-amber-300">Open Access (CC BY 4.0)</span>
+                    <span className="text-amber-300">{labels.meta.openAccessBadge}</span>
                   </div>
                 </div>
 
@@ -612,9 +622,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                       </span>
                       <div>
                         <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1e40af]">
-                          EXECUTIVE ABSTRACT
+                          {labels.title}
                         </h2>
-                        <p className="text-[10.5px] text-slate-400">Scholarly Summary</p>
+                        <p className="text-[10.5px] text-slate-400">{labels.subtitle}</p>
                       </div>
                     </div>
                     <p className="font-academic text-base sm:text-lg leading-relaxed text-slate-800 wrap-break-word whitespace-pre-wrap">
@@ -648,7 +658,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   {/* Keywords */}
                   <section className="py-8">
                     <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#1e40af] mb-3">
-                      INDEX KEYWORDS
+                      {labels.meta.keywordsHeading}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {article.keywords.map((kw) => (
@@ -663,27 +673,25 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   </section>
 
                   {/* Declarations */}
+                  {content.declarations.visible && (
                   <section className="py-8">
                     <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#1e40af] mb-4">
-                      ETHICAL DECLARATIONS & GOVERNANCE
+                      {content.declarations.title}
                     </h3>
                     <div className="bg-slate-50 border border-slate-200/80 p-4 space-y-2.5 text-xs text-slate-600">
-                      <p>
-                        <strong className="text-slate-900 font-semibold">Ethical Approval:</strong> Conducted under the ethical oversight and approval protocols of Gono Bishwabidyalay Institutional Review Board.
-                      </p>
-                      <p>
-                        <strong className="text-slate-900 font-semibold">Funding Declaration:</strong> This research received institutional faculty grant support. No external commercial sponsorship influenced study outcomes.
-                      </p>
-                      <p>
-                        <strong className="text-slate-900 font-semibold">Conflict of Interest:</strong> The authors declare no competing financial or personal interests related to this work.
-                      </p>
+                      {cmsParagraphs(content.declarations.content).map((paragraph, idx) => (
+                        <p key={idx}>
+                          <CmsText text={paragraph} strongClassName="text-slate-900 font-semibold" />
+                        </p>
+                      ))}
                     </div>
                   </section>
+                  )}
 
                   {/* References */}
                   <section id="references" className="py-8 scroll-mt-24">
                     <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#1e40af] mb-4">
-                      REFERENCES & BIBLIOGRAPHY
+                      {labels.meta.referencesHeading}
                     </h3>
                     <ol className="space-y-3">
                       {references.map((ref, idx) => (
@@ -708,50 +716,53 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               {/* Quick Actions Card */}
               <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
                 <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-4">
-                  ARTICLE ACTIONS
+                  {content.sidebar.title}
                 </p>
-                <ArticleActions article={article} />
+                <ArticleActions article={article} labels={actionLabels} />
               </div>
 
               {/* Table of Contents */}
               <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
                 <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3">
-                  ON THIS PAGE
+                  {content.sidebar.meta.contentsHeading}
                 </p>
-                <ArticleContents sections={article.sections} />
+                <ArticleContents
+                  sections={article.sections}
+                  referencesLabel={content.sidebar.meta.contentsReferencesLabel}
+                />
               </div>
 
               {/* Publication Record */}
-              <ArticleRecord article={article} />
+              <ArticleRecord article={article} copy={content.sidebar} />
 
               {/* Back to archive */}
               <Link
-                href="/articles"
+                href={content.sidebar.meta.backLink?.href || "/articles"}
                 className="inline-flex w-full items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors shadow-2xs"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Back to Research Archive</span>
+                <span>{content.sidebar.meta.backLink?.label}</span>
               </Link>
             </aside>
           </div>
 
           {/* ── 4. Related Articles ── */}
-          {recommended.length > 0 && (
+          {content.related.visible && recommended.length > 0 && (
             <div className="mt-14 pt-10 border-t border-slate-200/80">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af]">
-                    FURTHER SCHOLARSHIP
+                    {content.related.subtitle}
                   </p>
                   <h2 className="font-academic text-xl sm:text-2xl font-medium text-slate-950 mt-1">
-                    Related Articles in {article.topic}
+                    {content.related.title} {article.topic}
                   </h2>
                 </div>
                 <Link
-                  href="/articles"
+                  href={content.related.meta.link?.href || "/articles"}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline"
                 >
-                  <span>Browse All Articles</span>
+                  <span>{content.related.meta.link?.label}</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -792,129 +803,15 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </div>
 
       {/* ── 5. Call for Manuscripts CTA ── */}
-      <section
-        aria-label="Call for Papers CTA"
-        className="py-14 sm:py-20 bg-white"
-      >
-        <div className="container-x">
-          <div className="relative overflow-hidden bg-[#060e22] text-white border border-slate-800 shadow-[0_20px_50px_rgba(3,8,22,0.45)] p-8 sm:p-12 lg:p-14">
-            {/* Top gold-to-blue accent line */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-amber-400 via-blue-500 to-transparent" />
-
-            {/* Ambient background glow */}
-            <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-600/10 blur-[100px]" />
-            <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-amber-500/10 blur-[90px]" />
-
-            <div className="relative grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-14 items-center">
-              {/* Left Column: Call for Papers */}
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/10 border border-amber-400/25 text-amber-300 text-[10.5px] font-bold uppercase tracking-[0.18em]">
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>CALL FOR PAPERS · VOL. 2026/2027</span>
-                </div>
-
-                <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
-                  Contribute Your Research to GB Journal
-                </h2>
-
-                <p className="mt-4 text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-                  We invite original research articles, review papers, and short communications. Benefit from an impartial double-blind review process and unrestricted global open access.
-                </p>
-
-                {/* Feature Pill Tags */}
-                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
-                    <Clock className="h-3.5 w-3.5 text-amber-300" />
-                    14-Day Initial Review
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
-                    <Globe2 className="h-3.5 w-3.5 text-blue-400" />
-                    CC BY 4.0 Open Access
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                    Double-Blind Verification
-                  </span>
-                </div>
-
-                {/* Primary Actions */}
-                <div className="mt-8 flex flex-wrap items-center gap-3.5">
-                  <Link
-                    href="/dashboard/submissions/new"
-                    className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
-                  >
-                    <span>Submit Manuscript</span>
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
-                  <Link
-                    href="/authors"
-                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors"
-                  >
-                    <span>Author Guidelines</span>
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Right Column: Editorial Secretariat Contact Card */}
-              <div className="bg-white/5 border border-white/12 p-6 sm:p-8 backdrop-blur-sm flex flex-col justify-between shadow-2xs">
-                <div>
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                    <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">
-                      EDITORIAL SECRETARIAT
-                    </p>
-                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                      Author Desk
-                    </span>
-                  </div>
-
-                  <h3 className="mt-3 font-academic text-xl font-medium text-white">
-                    Manuscript Inquiries & Support
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-                    Have questions regarding scope, track assignment, or submission guidelines? Reach out directly.
-                  </p>
-
-                  <div className="mt-5 space-y-3.5 border-t border-white/10 pt-4 text-xs text-slate-200">
-                    <div className="flex items-start gap-3">
-                      <Mail className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Editorial Email</p>
-                        <a
-                          href="mailto:editorial@gonobishwabidyalay.edu.bd"
-                          className="text-xs text-white hover:text-amber-300 underline mt-0.5 block transition-colors"
-                        >
-                          editorial@gonobishwabidyalay.edu.bd
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Campus Location</p>
-                        <p className="text-xs text-slate-300 mt-0.5">
-                          Gono Bishwabidyalay, Nolam, Savar, Dhaka 1344, Bangladesh
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-white/10">
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 uppercase tracking-wider transition-colors"
-                  >
-                    <span>Contact Editorial Secretariat</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {content.cta.visible && (
+        <JournalCtaPanel
+          section={content.cta}
+          ariaLabel="Call for Papers CTA"
+          badgeFallbackIcon={FileText}
+          pillFallbackIcons={[Clock, Globe2, ShieldCheck]}
+          pillIconClasses={["text-amber-300", "text-blue-400", "text-emerald-400"]}
+        />
+      )}
     </PageShell>
   );
 }

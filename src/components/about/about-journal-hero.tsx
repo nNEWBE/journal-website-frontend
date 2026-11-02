@@ -6,14 +6,43 @@ import {
   BookOpen,
   Calendar,
   Clock,
-  FileCheck2,
   Globe2,
   Landmark,
   ShieldCheck,
   Users,
 } from "lucide-react";
+import type { ResolvedSection } from "@/lib/cms/page-content";
+import { CmsText } from "@/lib/cms/cms-text";
+import { cmsIcon } from "@/lib/cms/icons";
 
-export function AboutJournalHero() {
+type AboutDefaults = typeof import("@/lib/cms/defaults/about.json");
+type HeroMeta = AboutDefaults["sections"]["hero"]["meta"];
+
+const HIGHLIGHT_FALLBACK_ICONS = [ShieldCheck, Globe2, Calendar, Clock];
+
+const CTA_CLASSES: Record<string, string> = {
+  primary:
+    "inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors",
+  secondary:
+    "inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors",
+  tertiary:
+    "inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-5 py-3 text-xs font-semibold tracking-wide transition-colors",
+};
+
+const SPEC_VALUE_CLASSES: Record<string, string> = {
+  text: "font-semibold text-slate-900",
+  "text-right": "font-semibold text-slate-900 text-right",
+  mono: "font-mono font-bold text-slate-900",
+  "mono-accent": "font-mono font-bold text-[#1e40af]",
+  success: "font-semibold text-emerald-700",
+};
+
+export function AboutJournalHero({ section }: { section: ResolvedSection<HeroMeta> }) {
+  const meta = section.meta;
+  const highlights = Array.isArray(meta.highlights) ? meta.highlights : [];
+  const ctas = Array.isArray(meta.ctas) ? meta.ctas : [];
+  const specs = Array.isArray(meta.specs) ? meta.specs : [];
+
   return (
     <section
       aria-label="About the Journal Hero"
@@ -24,68 +53,68 @@ export function AboutJournalHero() {
           {/* Left Column: Heading & Narrative */}
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-[#1e40af] text-[10px] font-bold uppercase tracking-[0.16em] border border-slate-200/80">
-                <BookOpen className="h-3.5 w-3.5" />
-                ABOUT THE JOURNAL
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                <Landmark className="h-3.5 w-3.5 text-slate-400" />
-                Gono Bishwabidyalay Official Publication
-              </span>
+              {section.subtitle && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-[#1e40af] text-[10px] font-bold uppercase tracking-[0.16em] border border-slate-200/80">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  {section.subtitle}
+                </span>
+              )}
+              {meta.badge && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                  <Landmark className="h-3.5 w-3.5 text-slate-400" />
+                  {meta.badge}
+                </span>
+              )}
             </div>
 
             <h1 className="mt-5 font-academic text-3xl sm:text-4xl lg:text-[2.85rem] font-medium leading-[1.12] tracking-[-0.025em] text-slate-950">
-              Advancing interdisciplinary scholarship through rigorous peer review and open dissemination
+              {section.title}
             </h1>
 
-            <p className="mt-5 text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl">
-              The <strong className="text-slate-900 font-semibold">Gono Bishwabidyalay Journal of Research</strong> (GB Journal) is the flagship peer-reviewed, open-access scholarly publication of Gono Bishwabidyalay. We publish original research across health sciences, pharmacy, veterinary medicine, biotechnology, agriculture, engineering, and social development.
-            </p>
+            {section.content && (
+              <p className="mt-5 text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl">
+                <CmsText text={section.content} strongClassName="text-slate-900 font-semibold" />
+              </p>
+            )}
 
             {/* Quick Feature Badges */}
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-600 border-t border-slate-100 pt-5">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Double-Blind Peer Review</span>
+            {highlights.length > 0 && (
+              <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-600 border-t border-slate-100 pt-5">
+                {highlights.map((item, i) => {
+                  const Icon = cmsIcon(item.icon, HIGHLIGHT_FALLBACK_ICONS[i] ?? ShieldCheck);
+                  return (
+                    <div key={`${item.label}-${i}`} className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-[#1e40af]" />
+                      <span className="font-semibold text-slate-900">{item.label}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center gap-2">
-                <Globe2 className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Gold Open Access (CC BY 4.0)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Biannual (January & July)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Avg. 18 Days to First Decision</span>
-              </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/dashboard/submissions/new"
-                className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <span>Submit Manuscript</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/issues/current"
-                className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <span>Read Current Issue</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/editorial-board"
-                className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <Users className="h-3.5 w-3.5 text-slate-500" />
-                <span>Editorial Board</span>
-              </Link>
-            </div>
+            {ctas.length > 0 && (
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                {ctas.map((cta, i) => {
+                  const variant = CTA_CLASSES[cta.variant] ? cta.variant : i === 0 ? "primary" : "secondary";
+                  return (
+                    <Link key={`${cta.href}-${i}`} href={cta.href} className={CTA_CLASSES[variant]}>
+                      {variant === "tertiary" ? (
+                        <>
+                          <Users className="h-3.5 w-3.5 text-slate-500" />
+                          <span>{cta.label}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{cta.label}</span>
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Publication Specification Card */}
@@ -93,58 +122,47 @@ export function AboutJournalHero() {
             <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 bg-[#0b1b3d] text-white flex items-center justify-center font-bold text-xs">
-                  GB
+                  {meta.specMonogram}
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                    OFFICIAL RECORD
+                    {meta.specEyebrow}
                   </p>
                   <p className="font-ui text-sm font-bold text-slate-900">
-                    Journal Specifications
+                    {meta.specTitle}
                   </p>
                 </div>
               </div>
-              <span className="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
-                Active
-              </span>
+              {meta.specStatus && (
+                <span className="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                  {meta.specStatus}
+                </span>
+              )}
             </div>
 
             {/* Spec Rows */}
             <div className="mt-4 divide-y divide-slate-200/70 text-xs">
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Publisher</span>
-                <span className="font-semibold text-slate-900 text-right">Gono Bishwabidyalay Press</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Online ISSN</span>
-                <span className="font-mono font-bold text-slate-900">2959-1082</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Print ISSN</span>
-                <span className="font-mono font-bold text-slate-900">2959-1074</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">DOI Prefix</span>
-                <span className="font-mono font-bold text-[#1e40af]">10.5555/gbj</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Publication Frequency</span>
-                <span className="font-semibold text-slate-900">Biannual (2 Issues/Year)</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Review Model</span>
-                <span className="font-semibold text-slate-900">Double-Blind Peer Review</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Publishing Model</span>
-                <span className="font-semibold text-emerald-700">Open Access (CC BY 4.0)</span>
-              </div>
+              {specs.map((spec, i) => {
+                const valueClass = SPEC_VALUE_CLASSES[spec.style] ?? SPEC_VALUE_CLASSES.text;
+                return (
+                  <div key={`${spec.label}-${i}`} className="py-2.5 flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">{spec.label}</span>
+                    <span className={valueClass}>
+                      {spec.value}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-slate-200/80 bg-white p-3.5 border text-[11px] text-slate-600 leading-relaxed">
-              <span className="font-bold text-slate-900 block mb-0.5">Permanent Archiving:</span>
-              Articles are indexed in CrossRef, Google Scholar, BanglaJOL, and institutional university repositories.
-            </div>
+            {(meta.archiveLabel || meta.archiveText) && (
+              <div className="mt-5 pt-4 border-t border-slate-200/80 bg-white p-3.5 border text-[11px] text-slate-600 leading-relaxed">
+                {meta.archiveLabel && (
+                  <span className="font-bold text-slate-900 block mb-0.5">{meta.archiveLabel}</span>
+                )}
+                {meta.archiveText}
+              </div>
+            )}
           </div>
         </div>
       </div>

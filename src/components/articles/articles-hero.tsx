@@ -4,28 +4,45 @@ import Link from "next/link";
 import {
   Archive,
   ArrowUpRight,
-  Award,
   BookOpen,
-  CalendarDays,
-  CheckCircle2,
   FileSearch,
   FileText,
   Globe2,
-  GraduationCap,
   Landmark,
-  Library,
-  Search,
   ShieldCheck,
-  Tag,
-  Users,
 } from "lucide-react";
+import { CmsText } from "@/lib/cms/cms-text";
+import { cmsIcon } from "@/lib/cms/icons";
+import type { ResolvedSection } from "@/lib/cms/page-content";
+import type defaults from "@/lib/cms/defaults/articles.json";
+
+type HeroMeta = (typeof defaults)["sections"]["hero"]["meta"];
 
 interface ArticlesHeroProps {
   totalArticles: number;
   totalTopics: number;
+  section: ResolvedSection<HeroMeta>;
 }
 
-export function ArticlesHero({ totalArticles, totalTopics }: ArticlesHeroProps) {
+const HIGHLIGHT_FALLBACK_ICONS = [ShieldCheck, Globe2, Archive];
+const SPEC_VALUE_CLASSES = [
+  "font-semibold text-slate-900",
+  "font-semibold text-emerald-700",
+  "font-mono font-semibold text-slate-900",
+  "font-semibold text-slate-900",
+];
+const CTA_CLASSES = [
+  "inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors",
+  "inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors",
+  "inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-5 py-3 text-xs font-semibold tracking-wide transition-colors",
+];
+
+export function ArticlesHero({ totalArticles, totalTopics, section }: ArticlesHeroProps) {
+  const meta = section.meta;
+  const highlights = Array.isArray(meta.highlights) ? meta.highlights : [];
+  const ctas = Array.isArray(meta.ctas) ? meta.ctas : [];
+  const specs = Array.isArray(meta.specs) ? meta.specs : [];
+
   return (
     <section
       aria-label="Articles & Publications Hero"
@@ -36,64 +53,62 @@ export function ArticlesHero({ totalArticles, totalTopics }: ArticlesHeroProps) 
           {/* Left Column: Heading & Narrative */}
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-[#1e40af] text-[10px] font-bold uppercase tracking-[0.16em] border border-slate-200/80">
-                <FileSearch className="h-3.5 w-3.5" />
-                PEER-REVIEWED CORPUS
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                <Landmark className="h-3.5 w-3.5 text-slate-400" />
-                Gono Bishwabidyalay Scientific Repository
-              </span>
+              {section.subtitle && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-[#1e40af] text-[10px] font-bold uppercase tracking-[0.16em] border border-slate-200/80">
+                  <FileSearch className="h-3.5 w-3.5" />
+                  {section.subtitle}
+                </span>
+              )}
+              {meta.tagline && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                  <Landmark className="h-3.5 w-3.5 text-slate-400" />
+                  {meta.tagline}
+                </span>
+              )}
             </div>
 
             <h1 className="mt-5 font-academic text-3xl sm:text-4xl lg:text-[2.85rem] font-medium leading-[1.12] tracking-[-0.025em] text-slate-950">
-              Articles & Research Publications Archive
+              {section.title}
             </h1>
 
-            <p className="mt-5 text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl">
-              Search and explore the comprehensive multidisciplinary publication record of the <strong className="text-slate-900 font-semibold">Gono Bishwabidyalay Journal of Research</strong>. Every paper is double-blind peer reviewed, permanently registered with CrossRef DOIs, and distributed under full Open Access (CC BY 4.0).
-            </p>
+            {section.content && (
+              <p className="mt-5 text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl">
+                <CmsText text={section.content} strongClassName="text-slate-900 font-semibold" />
+              </p>
+            )}
 
             {/* Quick Feature Badges */}
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-600 border-t border-slate-100 pt-5">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Double-Blind Peer Reviewed</span>
+            {highlights.length > 0 && (
+              <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-600 border-t border-slate-100 pt-5">
+                {highlights.map((item, idx) => {
+                  const Icon = cmsIcon(item.icon, HIGHLIGHT_FALLBACK_ICONS[idx % HIGHLIGHT_FALLBACK_ICONS.length]);
+                  return (
+                    <div key={`${item.label}-${idx}`} className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-[#1e40af]" />
+                      <span className="font-semibold text-slate-900">{item.label}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center gap-2">
-                <Globe2 className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">Open Access (CC BY 4.0)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Archive className="h-4 w-4 text-[#1e40af]" />
-                <span className="font-semibold text-slate-900">CrossRef DOI Persistent</span>
-              </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/dashboard/submissions/new"
-                className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <span>Submit Manuscript</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/issues"
-                className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <BookOpen className="h-3.5 w-3.5 text-slate-500" />
-                <span>Browse by Issue</span>
-              </Link>
-              <Link
-                href="/authors"
-                className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-5 py-3 text-xs font-semibold tracking-wide transition-colors"
-              >
-                <FileText className="h-3.5 w-3.5 text-slate-500" />
-                <span>Author Guidelines</span>
-              </Link>
-            </div>
+            {ctas.length > 0 && (
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                {ctas.map((cta, idx) => (
+                  <Link
+                    key={`${cta.label}-${idx}`}
+                    href={cta.href || "#"}
+                    className={CTA_CLASSES[Math.min(idx, CTA_CLASSES.length - 1)]}
+                  >
+                    {idx === 1 && <BookOpen className="h-3.5 w-3.5 text-slate-500" />}
+                    {idx >= 2 && <FileText className="h-3.5 w-3.5 text-slate-500" />}
+                    <span>{cta.label}</span>
+                    {idx === 0 && <ArrowUpRight className="h-3.5 w-3.5" />}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Repository Specification Card */}
@@ -105,50 +120,46 @@ export function ArticlesHero({ totalArticles, totalTopics }: ArticlesHeroProps) 
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1e40af]">
-                    CATALOG METRICS
+                    {meta.cardEyebrow}
                   </p>
                   <p className="font-ui text-sm font-bold text-slate-900">
-                    Repository Overview
+                    {meta.cardTitle}
                   </p>
                 </div>
               </div>
-              <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
-                Peer Reviewed
-              </span>
+              {meta.cardBadge && (
+                <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
+                  {meta.cardBadge}
+                </span>
+              )}
             </div>
 
             {/* Spec Rows */}
             <div className="mt-4 divide-y divide-slate-200/70 text-xs">
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Cataloged Articles</span>
-                <span className="font-mono font-bold text-[#1e40af]">{totalArticles} Published</span>
+                <span className="text-slate-500 font-medium">{meta.articlesLabel}</span>
+                <span className="font-mono font-bold text-[#1e40af]">{totalArticles} {meta.articlesSuffix}</span>
               </div>
               <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Subject Disciplines</span>
-                <span className="font-semibold text-slate-900">{totalTopics} Research Tracks</span>
+                <span className="text-slate-500 font-medium">{meta.topicsLabel}</span>
+                <span className="font-semibold text-slate-900">{totalTopics} {meta.topicsSuffix}</span>
               </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Review Model</span>
-                <span className="font-semibold text-slate-900">Double-Blind Anonymous</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Reader Access</span>
-                <span className="font-semibold text-emerald-700">Immediate CC BY 4.0</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">ISSN Number</span>
-                <span className="font-mono font-semibold text-slate-900">2959-1082 (Online)</span>
-              </div>
-              <div className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-500 font-medium">DOI Registration</span>
-                <span className="font-semibold text-slate-900">10.5555/gbjr.*</span>
-              </div>
+              {specs.map((spec, idx) => (
+                <div key={`${spec.label}-${idx}`} className="py-2.5 flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">{spec.label}</span>
+                  <span className={SPEC_VALUE_CLASSES[idx] ?? "font-semibold text-slate-900"}>{spec.value}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-slate-200/80 bg-white p-3.5 border text-[11px] text-slate-600 leading-relaxed">
-              <span className="font-bold text-slate-900 block mb-0.5">Author Rights:</span>
-              Authors retain full copyright of published works. Immediate free PDF downloads and machine-readable metadata are provided for all records.
-            </div>
+            {(meta.noteLabel || meta.noteText) && (
+              <div className="mt-5 pt-4 border-t border-slate-200/80 bg-white p-3.5 border text-[11px] text-slate-600 leading-relaxed">
+                {meta.noteLabel && (
+                  <span className="font-bold text-slate-900 block mb-0.5">{meta.noteLabel}</span>
+                )}
+                {meta.noteText}
+              </div>
+            )}
           </div>
         </div>
       </div>

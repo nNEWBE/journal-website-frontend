@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -23,12 +23,33 @@ import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { type Article, type Issue } from "@/lib/data";
 import { IssuesHero } from "@/components/issues/issues-hero";
+import type { ResolvedPage } from "@/lib/cms/page-content";
+import { cmsIcon } from "@/lib/cms/icons";
+import type issuesDefaults from "@/lib/cms/defaults/issues.json";
+
+const STANDARD_FALLBACK_ICONS = [Globe2, ShieldCheck, Award];
+const CFP_PILL_FALLBACK_ICONS = [Clock, Globe2, ShieldCheck];
+const CFP_PILL_ICON_CLASSES = ["text-amber-300", "text-blue-400", "text-emerald-400"];
 
 interface IssuesArchiveClientProps {
   initialIssues: Issue[];
+  content: ResolvedPage<typeof issuesDefaults>;
 }
 
-export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps) {
+export function IssuesArchiveClient({ initialIssues, content }: IssuesArchiveClientProps) {
+  const heroSection = content.hero;
+  const featured = content.featured;
+  const featuredMeta = featured.meta;
+  const archive = content.archive;
+  const archiveMeta = archive.meta;
+  const standards = content.standards;
+  const standardCards = Array.isArray(standards.meta.cards) ? standards.meta.cards : [];
+  const cfp = content["call-for-papers"];
+  const cfpMeta = cfp.meta;
+  const cfpPills = Array.isArray(cfpMeta.pills) ? cfpMeta.pills : [];
+  const cfpCtas = Array.isArray(cfpMeta.ctas) ? cfpMeta.ctas : [];
+  const [cfpPrimaryCta, cfpSecondaryCta] = cfpCtas;
+
   const issuesList = initialIssues;
   const currentIssue = issuesList[0];
   const allYears = useMemo(
@@ -74,20 +95,22 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
     }));
   }, [filteredIssues]);
 
-  return (
-    <PageShell>
-      {/* ── 1. Hero Header ── */}
+  const renderers: Record<string, () => ReactNode> = {
+      /* ── 1. Hero Header ── */
+      hero: () => (
       <FadeIn delay={0.05}>
         <IssuesHero
+          section={heroSection}
           totalIssues={issuesList.length}
           totalArticles={totalArticles}
-          currentVolume={currentIssue ? `${currentIssue.volume} · ${currentIssue.issue}` : "Volume Archive"}
+          currentVolume={currentIssue ? `${currentIssue.volume} · ${currentIssue.issue}` : null}
           totalYears={allYears.length}
         />
       </FadeIn>
+      ),
 
-      {/* ── 2. Featured Edition: Current Issue Showcase ── */}
-      {currentIssue ? (
+      /* ── 2. Featured Edition: Current Issue Showcase ── */
+      featured: () => currentIssue ? (
         <section
           aria-label="Current Issue Featured Showcase"
           className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
@@ -96,10 +119,10 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-                  FEATURED EDITION
+                  {featured.subtitle}
                 </p>
                 <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
-                  Latest Published Issue
+                  {featured.title}
                 </h2>
               </div>
               <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 border border-slate-200/90 shadow-2xs">
@@ -127,7 +150,7 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
 
                   <div className="absolute top-3 right-3 z-20">
                     <span className="inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/40 px-2.5 py-1 text-[9.5px] font-mono font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
-                      Current Volume
+                      {featuredMeta.coverBadge}
                     </span>
                   </div>
 
@@ -145,13 +168,13 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e40af] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
                         <BookOpen className="h-3 w-3" />
-                        Now Publishing
+                        {featuredMeta.statusBadge}
                       </span>
                       <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider border border-slate-200/80">
-                        ISSN 2959-1082
+                        {featuredMeta.issnBadge}
                       </span>
                       <span className="bg-amber-50 text-amber-900 px-2.5 py-0.5 font-mono text-[10px] font-bold border border-amber-200">
-                        {currentIssue.articleCount} Peer-Reviewed Articles
+                        {currentIssue.articleCount} {featuredMeta.articleCountSuffix}
                       </span>
                     </div>
 
@@ -162,14 +185,14 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                     </Link>
 
                     <p className="mt-3.5 text-xs sm:text-sm leading-relaxed text-slate-600 max-w-3xl">
-                      Explore a curated multidisciplinary volume featuring empirical contributions, clinical investigations, and theoretical syntheses in community healthcare access, pharmacy stewardship, resilient agriculture, and public welfare.
+                      {featured.content}
                     </p>
 
                     {/* Included Articles Preview */}
                     {currentIssue.articles && currentIssue.articles.length > 0 && (
                       <div className="mt-5 bg-slate-50/70 border border-slate-200/80 p-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                          Selected Articles in this Issue:
+                          {featuredMeta.selectedArticlesLabel}
                         </p>
                         <div className="space-y-2">
                           {currentIssue.articles.slice(0, 3).map((art: Article) => (
@@ -197,21 +220,23 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       <span className="flex items-center gap-1.5">
                         <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                        Double-blind Reviewed
+                        {featuredMeta.reviewLabel}
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Globe2 className="h-4 w-4 text-[#1e40af]" />
-                        Open Access (CC BY 4.0)
+                        {featuredMeta.licenseLabel}
                       </span>
                     </div>
 
-                    <Link
-                      href="/issues/current"
-                      className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
-                    >
-                      <span>Read Full Issue</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </Link>
+                    {featuredMeta.cta?.label && (
+                      <Link
+                        href={featuredMeta.cta.href || "/issues/current"}
+                        className="inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+                      >
+                        <span>{featuredMeta.cta.label}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -227,17 +252,18 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
             <div className="bg-white border border-slate-200/90 p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-2xs">
               <BookOpen className="h-10 w-10 text-slate-400 mx-auto mb-3" />
               <h3 className="font-academic text-xl sm:text-2xl font-medium text-slate-900">
-                No Published Issues Available
+                {featuredMeta.emptyTitle}
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed">
-                There are currently no published journal editions in the repository. New issues and curated volumes will appear here once compiled and published by the editorial team.
+                {featuredMeta.emptyText}
               </p>
             </div>
           </div>
         </section>
-      )}
+      ),
 
-      {/* ── 3. Volume & Year Archive Directory ── */}
+      /* ── 3. Volume & Year Archive Directory ── */
+      archive: () => (
       <section
         id="volume-archive"
         aria-label="Volume Archive"
@@ -247,14 +273,14 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-                ARCHIVAL DIRECTORY
+                {archive.subtitle}
               </p>
               <h2 className="mt-2 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-[-0.02em] text-slate-950">
-                Browse Archive by Year & Volume
+                {archive.title}
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md">
-              Access all historical volumes and past editions. Every publication remains fully indexed, citable, and available without paywalls.
+              {archive.content}
             </p>
           </div>
 
@@ -271,7 +297,7 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                All Years ({issuesList.length})
+                {archiveMeta.allYearsLabel} ({issuesList.length})
               </button>
               {allYears.map((year) => {
                 const count = issuesList.filter((i) => i.year === year).length;
@@ -298,7 +324,7 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Filter issues..."
+                  placeholder={archiveMeta.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-white border border-slate-200 py-1.5 pl-8 pr-7 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:border-[#1e40af] focus:outline-none"
@@ -343,9 +369,9 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
           {groupedIssuesByYear.length === 0 && (
             <div className="my-12 border border-dashed border-slate-300 bg-white p-12 text-center">
               <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
-              <h3 className="mt-3 font-academic text-lg font-bold text-slate-800">No issues found</h3>
+              <h3 className="mt-3 font-academic text-lg font-bold text-slate-800">{archiveMeta.emptyTitle}</h3>
               <p className="mt-1 text-xs text-slate-500">
-                No published editions matched your search query &quot;{searchQuery}&quot;.
+                {archiveMeta.emptyText} &quot;{searchQuery}&quot;.
               </p>
               <button
                 type="button"
@@ -355,7 +381,7 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                 }}
                 className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#1e40af] hover:underline"
               >
-                Clear all filters
+                {archiveMeta.clearFiltersLabel}
               </button>
             </div>
           )}
@@ -376,10 +402,10 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                       </div>
                       <div>
                         <h3 className="font-academic text-lg font-medium text-slate-950">
-                          {year} Volume Archive
+                          {year} {archiveMeta.yearHeadingSuffix}
                         </h3>
                         <p className="text-xs text-slate-500 font-mono">
-                          {yearIssues.length} Published Edition{yearIssues.length === 1 ? "" : "s"} · {volumeLabel}
+                          {yearIssues.length} {yearIssues.length === 1 ? archiveMeta.editionSingular : archiveMeta.editionPlural} · {volumeLabel}
                         </p>
                       </div>
                     </div>
@@ -420,11 +446,11 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                                     </span>
                                     {isCurrent ? (
                                       <span className="text-[9.5px] font-bold uppercase text-emerald-700">
-                                        Current
+                                        {archiveMeta.currentLabel}
                                       </span>
                                     ) : (
                                       <span className="text-[9.5px] font-mono text-slate-400 uppercase">
-                                        Archived
+                                        {archiveMeta.archivedLabel}
                                       </span>
                                     )}
                                   </div>
@@ -442,10 +468,10 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
 
                             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                               <span className="text-slate-600 font-medium">
-                                <strong className="text-slate-950 font-bold">{iss.articleCount}</strong> Articles
+                                <strong className="text-slate-950 font-bold">{iss.articleCount}</strong> {archiveMeta.articlesLabel}
                               </span>
                               <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] group-hover:underline">
-                                <span>Read issue</span>
+                                <span>{archiveMeta.readIssueLabel}</span>
                                 <ArrowUpRight className="h-3 w-3" />
                               </span>
                             </div>
@@ -483,7 +509,7 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                                   <span className="text-xs text-slate-400 font-mono">({iss.month})</span>
                                   {isCurrent && (
                                     <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                                      Current
+                                      {archiveMeta.currentLabel}
                                     </span>
                                   )}
                                 </div>
@@ -494,9 +520,9 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                             </div>
 
                             <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0 text-xs">
-                              <span className="text-slate-500 font-mono">{iss.articleCount} Articles</span>
+                              <span className="text-slate-500 font-mono">{iss.articleCount} {archiveMeta.articlesLabel}</span>
                               <span className="inline-flex items-center gap-1 font-semibold text-[#1e40af] group-hover:translate-x-0.5 transition-transform">
-                                Explore <ChevronRight className="h-3.5 w-3.5" />
+                                {archiveMeta.exploreLabel} <ChevronRight className="h-3.5 w-3.5" />
                               </span>
                             </div>
                           </Link>
@@ -510,8 +536,10 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
           </div>
         </div>
       </section>
+      ),
 
-      {/* ── 4. Digital Preservation & Open Access Standards ── */}
+      /* ── 4. Digital Preservation & Open Access Standards ── */
+      standards: () => (
       <section
         aria-label="Preservation Standards"
         className="py-14 sm:py-20 bg-[#fbfcff] border-b border-slate-200/80"
@@ -520,64 +548,46 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8 sm:pb-10 border-b border-slate-200/80">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-                PRESERVATION STANDARDS
+                {standards.subtitle}
               </p>
               <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.5rem] font-medium tracking-[-0.02em] text-slate-950">
-                Permanent Indexing & Open Access Guarantees
+                {standards.title}
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md">
-              Every volume is safeguarded in international digital archives with permanent metadata resolution and unrestricted author copyright.
+              {standards.content}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-10">
-            <div className="bg-white border border-slate-200/90 p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
-              <div>
-                <span className="flex h-11 w-11 items-center justify-center bg-[#0b1b3d] text-white mb-5">
-                  <Globe2 className="h-5 w-5" />
-                </span>
-                <h3 className="font-academic text-base sm:text-lg font-medium text-slate-950 leading-snug">
-                  Open Access & CC BY 4.0
-                </h3>
-                <p className="mt-3 text-xs leading-relaxed text-slate-600">
-                  Articles are freely and immediately available worldwide without subscriptions or embargoes. Authors retain copyright in full.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200/90 p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
-              <div>
-                <span className="flex h-11 w-11 items-center justify-center bg-[#0b1b3d] text-white mb-5">
-                  <ShieldCheck className="h-5 w-5" />
-                </span>
-                <h3 className="font-academic text-base sm:text-lg font-medium text-slate-950 leading-snug">
-                  Permanent CrossRef DOI Archiving
-                </h3>
-                <p className="mt-3 text-xs leading-relaxed text-slate-600">
-                  Every published volume and article receives a persistent Crossref Digital Object Identifier for unbreakable scholarly citation.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200/90 p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
-              <div>
-                <span className="flex h-11 w-11 items-center justify-center bg-[#0b1b3d] text-white mb-5">
-                  <Award className="h-5 w-5" />
-                </span>
-                <h3 className="font-academic text-base sm:text-lg font-medium text-slate-950 leading-snug">
-                  Double-Blind Peer Review Rigor
-                </h3>
-                <p className="mt-3 text-xs leading-relaxed text-slate-600">
-                  All articles undergo rigorous double-blind assessment by independent disciplinary experts before inclusion in a published issue.
-                </p>
-              </div>
-            </div>
+            {standardCards.map((card, idx) => {
+              const Icon = cmsIcon(card.icon, STANDARD_FALLBACK_ICONS[idx] ?? ShieldCheck);
+              return (
+                <div
+                  key={`${card.title}-${idx}`}
+                  className="bg-white border border-slate-200/90 p-6 sm:p-7 shadow-2xs flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="flex h-11 w-11 items-center justify-center bg-[#0b1b3d] text-white mb-5">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="font-academic text-base sm:text-lg font-medium text-slate-950 leading-snug">
+                      {card.title}
+                    </h3>
+                    <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                      {card.text}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
+      ),
 
-      {/* ── 5. Call for Upcoming Issue Manuscripts CTA ── */}
+      /* ── 5. Call for Upcoming Issue Manuscripts CTA ── */
+      "call-for-papers": () => (
       <section
         aria-label="Call for Papers CTA"
         className="py-14 sm:py-20 bg-white"
@@ -596,49 +606,54 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/10 border border-amber-400/25 text-amber-300 text-[10.5px] font-bold uppercase tracking-[0.18em]">
                   <FileText className="h-3.5 w-3.5" />
-                  <span>CALL FOR PAPERS · VOL. 2026/2027</span>
+                  <span>{cfp.subtitle}</span>
                 </div>
 
                 <h2 className="mt-4 font-academic text-3xl sm:text-4xl lg:text-[2.65rem] font-medium tracking-tight text-white leading-[1.15]">
-                  Submit Your Research for the Upcoming Volume
+                  {cfp.title}
                 </h2>
 
                 <p className="mt-4 text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-                  Submissions are actively invited across health sciences, clinical medicine, pharmacy, agriculture, law, computing, and social welfare for the upcoming biannual volume.
+                  {cfp.content}
                 </p>
 
                 {/* Feature Pill Tags */}
                 <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
-                    <Clock className="h-3.5 w-3.5 text-amber-300" />
-                    Rapid 14-Day Initial Review
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
-                    <Globe2 className="h-3.5 w-3.5 text-blue-400" />
-                    Global Open Access Reach
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                    Free Open Access Publishing
-                  </span>
+                  {cfpPills.map((pill, idx) => {
+                    const Icon = cmsIcon(pill.icon, CFP_PILL_FALLBACK_ICONS[idx] ?? ShieldCheck);
+                    const iconClass = CFP_PILL_ICON_CLASSES[idx % CFP_PILL_ICON_CLASSES.length];
+                    return (
+                      <span
+                        key={`${pill.label}-${idx}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-slate-200 text-[11px] font-semibold"
+                      >
+                        <Icon className={`h-3.5 w-3.5 ${iconClass}`} />
+                        {pill.label}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {/* Primary Actions */}
                 <div className="mt-8 flex flex-wrap items-center gap-3.5">
-                  <Link
-                    href="/dashboard/submissions/new"
-                    className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
-                  >
-                    <span>Submit Your Manuscript</span>
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
-                  <Link
-                    href="/authors"
-                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors"
-                  >
-                    <span>Author Guidelines</span>
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
+                  {cfpPrimaryCta && (
+                    <Link
+                      href={cfpPrimaryCta.href}
+                      className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#060e22] px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                      <span>{cfpPrimaryCta.label}</span>
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {cfpSecondaryCta && (
+                    <Link
+                      href={cfpSecondaryCta.href}
+                      className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors"
+                    >
+                      <span>{cfpSecondaryCta.label}</span>
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  )}
                 </div>
               </div>
 
@@ -647,30 +662,30 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                 <div>
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-300">
-                      EDITORIAL SECRETARIAT
+                      {cfpMeta.contactEyebrow}
                     </p>
                     <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                      Volume Desk
+                      {cfpMeta.contactTag}
                     </span>
                   </div>
 
                   <h3 className="mt-3 font-academic text-xl font-medium text-white">
-                    Special Issue & Volume Inquiries
+                    {cfpMeta.contactTitle}
                   </h3>
                   <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-                    Proposing a thematic special issue or seeking past volume prints? Contact the editorial staff directly.
+                    {cfpMeta.contactText}
                   </p>
 
                   <div className="mt-5 space-y-3.5 border-t border-white/10 pt-4 text-xs text-slate-200">
                     <div className="flex items-start gap-3">
                       <Mail className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Editorial Email</p>
+                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">{cfpMeta.emailLabel}</p>
                         <a
-                          href="mailto:editorial@gonobishwabidyalay.edu.bd"
+                          href={`mailto:${cfpMeta.email}`}
                           className="text-xs text-white hover:text-amber-300 underline mt-0.5 block transition-colors"
                         >
-                          editorial@gonobishwabidyalay.edu.bd
+                          {cfpMeta.email}
                         </a>
                       </div>
                     </div>
@@ -678,29 +693,39 @@ export function IssuesArchiveClient({ initialIssues }: IssuesArchiveClientProps)
                     <div className="flex items-start gap-3">
                       <MapPin className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Campus Location</p>
+                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">{cfpMeta.locationLabel}</p>
                         <p className="text-xs text-slate-300 mt-0.5">
-                          Gono Bishwabidyalay, Nolam, Savar, Dhaka 1344, Bangladesh
+                          {cfpMeta.location}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-white/10">
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 uppercase tracking-wider transition-colors"
-                  >
-                    <span>Contact Editorial Office</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
+                {cfpMeta.contactCta?.label && (
+                  <div className="mt-6 pt-4 border-t border-white/10">
+                    <Link
+                      href={cfpMeta.contactCta.href || "/contact"}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 uppercase tracking-wider transition-colors"
+                    >
+                      <span>{cfpMeta.contactCta.label}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
+      ),
+  };
+
+  return (
+    <PageShell>
+      {content._order.map((key) => (
+        <Fragment key={key}>{renderers[key]?.()}</Fragment>
+      ))}
     </PageShell>
   );
 }

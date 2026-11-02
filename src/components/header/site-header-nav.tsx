@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { useNavigation, getNavIcon, getIsRouteActive } from "./nav-data";
+import { useSiteContent } from "@/components/layout/site-content";
 
 export function SiteHeaderNav() {
   const pathname = usePathname();
   const { navItems } = useNavigation();
+  const dropdownTag = useSiteContent().header.meta.dropdownTag;
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [direction, setDirection] = useState<"left" | "right">("right");
 
@@ -93,7 +95,7 @@ export function SiteHeaderNav() {
                       {item.dropdownHeader || item.label}
                     </p>
                     <span className="text-[8.5px] font-bold uppercase tracking-widest text-slate-400 font-mono shrink-0">
-                      GB Journal
+                      {dropdownTag}
                     </span>
                   </div>
 

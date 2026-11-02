@@ -8,6 +8,7 @@ import {
 import { StoreProvider } from "@/redux/provider";
 import { Toaster } from "sonner";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
+import { SiteContentLoader } from "@/components/layout/site-content-loader";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -58,7 +59,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <StoreProvider>
           <SmoothScroll />
-          {children}
+          <SiteContentLoader>{children}</SiteContentLoader>
           <Toaster
             position="top-right"
             richColors

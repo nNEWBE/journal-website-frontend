@@ -180,6 +180,10 @@ const cmsPages = [
   { id: "issues", label: "Issues Archive", icon: Layers, href: "/dashboard/cms/issues", pageKey: "issues" },
   { id: "articles", label: "Articles & Papers", icon: FileText, href: "/dashboard/cms/articles", pageKey: "articles" },
   { id: "contact", label: "Contact Office", icon: Phone, href: "/dashboard/cms/contact", pageKey: "contact" },
+  { id: "issues-current", label: "Current Issue", icon: BookMarked, href: "/dashboard/cms/issues-current", pageKey: "issues-current" },
+  { id: "article-detail", label: "Article Page", icon: FileText, href: "/dashboard/cms/article-detail", pageKey: "article-detail" },
+  { id: "not-found", label: "404 Page", icon: Compass, href: "/dashboard/cms/not-found", pageKey: "not-found" },
+  { id: "site", label: "Header & Footer", icon: Layers, href: "/dashboard/cms/site", pageKey: "site" },
 ];
 
 function StatusPill({ status }: { status: string }) {

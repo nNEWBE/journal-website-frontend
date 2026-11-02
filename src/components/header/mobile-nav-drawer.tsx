@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, LayoutDashboard, LogOut, User as UserIcon } from "lucide-react";
 import { useNavigation, getNavIcon, getIsRouteActive } from "./nav-data";
 import type { User } from "@/lib/auth";
+import { useSiteContent } from "@/components/layout/site-content";
 
 interface MobileNavDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function MobileNavDrawer({
 }: MobileNavDrawerProps) {
   const pathname = usePathname();
   const { navItems } = useNavigation();
+  const headerMeta = useSiteContent().header.meta;
   const [openMobileSub, setOpenMobileSub] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -127,7 +129,7 @@ export function MobileNavDrawer({
               className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-[color:var(--color-gb-blue-dark)] hover:bg-[color:var(--color-gb-blue-soft)]"
             >
               <LayoutDashboard className="h-4 w-4" />
-              Go to Dashboard
+              {headerMeta.mobileDashboardLabel}
             </Link>
             <button
               onClick={() => {
@@ -137,7 +139,7 @@ export function MobileNavDrawer({
               className="flex w-full items-center gap-2 rounded-lg px-4 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50 cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
-              Log Out
+              {headerMeta.mobileLogoutLabel}
             </button>
           </div>
         ) : (
@@ -147,7 +149,7 @@ export function MobileNavDrawer({
             className="flex items-center gap-2 justify-center rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[color:var(--color-gb-blue)] hover:bg-[color:var(--color-gb-blue-dark)] mt-2 transition-colors"
           >
             <UserIcon className="h-4 w-4" />
-            Login to Workspace
+            {headerMeta.mobileLoginLabel}
           </Link>
         )}
       </nav>

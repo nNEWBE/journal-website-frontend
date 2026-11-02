@@ -13,17 +13,40 @@ import {
 } from "lucide-react";
 import type { BoardMember } from "@/lib/data";
 
+/** CMS-editable copy (editorial-board page, "leadership" section). */
+export interface LeadershipCopy {
+  eyebrow: string;
+  title: string;
+  viewProfileLabel: string;
+  contactLink: { label: string; href: string };
+  emptyTitle: string;
+  emptyText: string;
+}
+
+const DEFAULT_COPY: LeadershipCopy = {
+  eyebrow: "EXECUTIVE LEADERSHIP",
+  title: "Executive Editorial Leadership",
+  viewProfileLabel: "View Full Profile",
+  contactLink: { label: "Contact Desk", href: "/contact" },
+  emptyTitle: "Editorial Leadership Roster Updating",
+  emptyText:
+    "The editorial executive committee appointments are currently being updated for the upcoming publication cycle.",
+};
+
 interface EditorInChiefCardProps {
   chief?: BoardMember;
   managing?: BoardMember;
+  copy?: Partial<LeadershipCopy>;
 }
 
 function LeadershipCard({
   member,
   badgeVariant,
+  copy,
 }: {
   member: BoardMember;
   badgeVariant: "gold" | "blue";
+  copy: LeadershipCopy;
 }) {
   const imageSrc =
     member.imageUrl ||
@@ -124,41 +147,42 @@ function LeadershipCard({
           href={detailHref}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-2xs rounded-xs group/btn"
         >
-          <span>View Full Profile</span>
+          <span>{copy.viewProfileLabel}</span>
           <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
         </Link>
 
         <Link
-          href="/contact"
+          href={copy.contactLink?.href || "/contact"}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#1e40af] transition-colors"
         >
           <Mail className="h-3.5 w-3.5 text-slate-400" />
-          <span>Contact Desk</span>
+          <span>{copy.contactLink?.label}</span>
         </Link>
       </div>
     </div>
   );
 }
 
-export function EditorInChiefCard({ chief, managing }: EditorInChiefCardProps) {
+export function EditorInChiefCard({ chief, managing, copy: copyOverride }: EditorInChiefCardProps) {
+  const copy: LeadershipCopy = { ...DEFAULT_COPY, ...copyOverride };
   if (!chief && !managing) {
     return (
       <section aria-label="Executive Editorial Leadership" className="space-y-8">
         <div className="pb-6 border-b border-slate-200/80">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-            EXECUTIVE LEADERSHIP
+            {copy.eyebrow}
           </p>
           <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.4rem] font-medium tracking-[-0.02em] text-slate-950">
-            Executive Editorial Leadership
+            {copy.title}
           </h2>
         </div>
         <div className="bg-white border border-dashed border-slate-300 p-8 text-center">
           <Users className="h-10 w-10 text-slate-300 mx-auto mb-3" />
           <h3 className="font-academic text-lg font-medium text-slate-800">
-            Editorial Leadership Roster Updating
+            {copy.emptyTitle}
           </h3>
           <p className="mt-1 text-xs text-slate-500 max-w-md mx-auto">
-            The editorial executive committee appointments are currently being updated for the upcoming publication cycle.
+            {copy.emptyText}
           </p>
         </div>
       </section>
@@ -170,17 +194,17 @@ export function EditorInChiefCard({ chief, managing }: EditorInChiefCardProps) {
       {/* Section Header */}
       <div className="pb-6 border-b border-slate-200/80">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-          EXECUTIVE LEADERSHIP
+          {copy.eyebrow}
         </p>
         <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.4rem] font-medium tracking-[-0.02em] text-slate-950">
-          Executive Editorial Leadership
+          {copy.title}
         </h2>
       </div>
 
       {/* Leadership Cards Grid: 2 in a row on md and lg screens */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-        {chief && <LeadershipCard member={chief} badgeVariant="gold" />}
-        {managing && <LeadershipCard member={managing} badgeVariant="blue" />}
+        {chief && <LeadershipCard member={chief} badgeVariant="gold" copy={copy} />}
+        {managing && <LeadershipCard member={managing} badgeVariant="blue" copy={copy} />}
       </div>
     </section>
   );

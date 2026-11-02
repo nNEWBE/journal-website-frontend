@@ -67,6 +67,8 @@ import { featuredJournals } from "@/components/home/home-featured-journals";
 import { communityArticles } from "@/components/home/home-research-community";
 import { FAQ_ITEMS } from "@/components/home/home-faq-section";
 import { CmsSectionTabs } from "./cms-section-tabs";
+import { CmsMetaFieldEditor } from "./cms-meta-field-editor";
+import { CMS_PAGE_DEFAULTS, getPageDefaults, getSectionDefault } from "@/lib/cms/registry";
 import { broadcastSectionVisibility, broadcastSectionOrderChange, CMS_HOME_CACHE_KEY } from "@/lib/cms-visibility";
 import { AcademicDataLoader } from "@/components/ui/loader";
 import { CustomModal } from "@/components/ui/modal";
@@ -106,6 +108,11 @@ const CORE_SECTION_KEYS = new Set([
   "peer-review-protocol",
   "reviewer-benefits",
 ]);
+
+/** Sections defined by a page's JSON defaults are part of the page layout and can't be deleted. */
+function isCoreSection(pageKey: string, sectionKey: string): boolean {
+  return CORE_SECTION_KEYS.has(sectionKey) || !!getSectionDefault(pageKey, sectionKey);
+}
 
 export interface EditableTopic {
   id: string;
@@ -435,6 +442,10 @@ export const ALL_PAGE_SECTION_CONFIGS: Record<
 };
 
 export function getSectionMeta(pageKey: string, sectionKey: string, sectionTitle?: string): HomeSectionMeta {
+  const jsonDef = getSectionDefault(pageKey, sectionKey);
+  if (jsonDef) {
+    return { label: jsonDef.label, icon: Layers, shortDesc: jsonDef.description || jsonDef.title };
+  }
   const pageConfig = ALL_PAGE_SECTION_CONFIGS[pageKey];
   if (pageConfig && pageConfig[sectionKey]) {
     return pageConfig[sectionKey];
@@ -537,6 +548,20 @@ const PAGE_TABS = [
     color: "emerald",
   },
 ];
+
+// Pages defined only by JSON defaults (e.g. header/footer, 404) get a tab automatically.
+CMS_PAGE_DEFAULTS.forEach((page) => {
+  if (!PAGE_TABS.some((t) => t.id === page.pageKey)) {
+    PAGE_TABS.push({
+      id: page.pageKey,
+      label: page.label,
+      route: page.route,
+      icon: Layers,
+      description: page.description || "",
+      color: "slate",
+    });
+  }
+});
 
 // Canonical sequence of sections matching the live homepage and page layouts
 export const CANONICAL_SECTION_ORDER: Record<string, string[]> = {
@@ -1193,8 +1218,12 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     toast.success(`Parameter "${newCustomKey.trim()}" added.`);
   };
 
+  // Pages wired through JSON defaults edit every meta field with the generic structured editor.
+  const isJsonForm = !!getPageDefaults(formPageKey);
+
   const knownSectionKeys = useMemo(() => {
     const set = new Set(["selectedArticleIds", "featuredSlides"]);
+    if (getPageDefaults(formPageKey)) return set;
     if (formSectionKey === "journal-stats") {
       ["turnaroundDays", "acceptanceRate", "reviewersActive", "indexedArticles", "articlesPublished", "globalReaders", "newsletterTitle", "newsletterSubtitle"].forEach((k) => set.add(k));
     } else if (formSectionKey === "hero-main") {
@@ -1317,7 +1346,10 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
     return sections.map((sec) => {
       const pageConfig = ALL_PAGE_SECTION_CONFIGS[activeTab];
-      const knownDef = pageConfig?.[sec.sectionKey] || HOME_SECTION_CONFIG[sec.sectionKey];
+      const jsonDef = getSectionDefault(activeTab, sec.sectionKey);
+      const knownDef = jsonDef
+        ? { label: jsonDef.label, icon: Layers, shortDesc: jsonDef.description || jsonDef.title }
+        : pageConfig?.[sec.sectionKey] || HOME_SECTION_CONFIG[sec.sectionKey];
 
       if (knownDef) {
         return {
@@ -1344,7 +1376,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
         label,
         icon: FileText,
         shortDesc: sec.subtitle || `${sec.title || sec.sectionKey} section`,
-        isCustom: !CORE_SECTION_KEYS.has(sec.sectionKey),
+        isCustom: !isCoreSection(activeTab, sec.sectionKey),
         published: sec.published,
       };
     });
@@ -1407,6 +1439,20 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
   // Open Edit Modal
   const openEditModal = (section: PageContentDTO) => {
+    // Surface default fields the stored section doesn't have yet (the live page already falls back to them).
+    let metaForForm = section.metaJson || "";
+    const defaultMeta = getSectionDefault(section.pageKey, section.sectionKey)?.meta;
+    if (defaultMeta && Object.keys(defaultMeta).length > 0) {
+      let stored: Record<string, unknown> = {};
+      try {
+        stored = section.metaJson ? JSON.parse(section.metaJson) : {};
+      } catch {
+        stored = {};
+      }
+      if (Object.keys(defaultMeta).some((k) => !(k in stored))) {
+        metaForForm = JSON.stringify({ ...defaultMeta, ...stored });
+      }
+    }
     setEditingSection(section);
     setIsCreatingNew(false);
     setFormPageKey(section.pageKey);
@@ -1414,7 +1460,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
     setFormTitle(section.title);
     setFormSubtitle(section.subtitle || "");
     setFormContent(section.content || "");
-    setFormMetaJson(section.metaJson || "");
+    setFormMetaJson(metaForForm);
     setFormDisplayOrder(section.displayOrder || 1);
     setFormPublished(section.published);
     setInitForm({
@@ -1423,7 +1469,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
       title: section.title,
       subtitle: section.subtitle || "",
       content: section.content || "",
-      metaJson: section.metaJson || "",
+      metaJson: metaForForm,
       displayOrder: section.displayOrder || 1,
       published: section.published,
     });
@@ -4015,7 +4061,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                         <span>Edit Content</span>
                       </button>
 
-                      {!CORE_SECTION_KEYS.has(section.sectionKey) && section.id && (
+                      {!isCoreSection(section.pageKey, section.sectionKey) && section.id && (
                         <button
                           onClick={() => setSectionToDelete(section)}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-700 px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
@@ -4052,7 +4098,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                                   {k.replace(/([A-Z])/g, " $1")}:
                                 </span>
                                 <span className="font-semibold text-slate-800 truncate max-w-[150px]">
-                                  {Array.isArray(v) ? `${v.length} items` : String(v)}
+                                  {Array.isArray(v) ? `${v.length} items` : v && typeof v === "object" ? `${Object.keys(v).length} fields` : String(v)}
                                 </span>
                               </span>
                             ))}
@@ -4523,7 +4569,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             </div>
 
             {/* Case A: Journal Benchmarks & Turnaround Metrics */}
-            {formSectionKey === "journal-stats" && (
+            {!isJsonForm && formSectionKey === "journal-stats" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4638,7 +4684,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case: Latest Research Settings */}
-            {formSectionKey === "latest-research" && (
+            {!isJsonForm && formSectionKey === "latest-research" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4669,7 +4715,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case: Current Issue Details */}
-            {formSectionKey === "current-issue" && (
+            {!isJsonForm && formSectionKey === "current-issue" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4791,7 +4837,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case: Research Community Spotlight */}
-            {formSectionKey === "research-community" && (
+            {!isJsonForm && formSectionKey === "research-community" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4822,7 +4868,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case B: Hero Main Settings */}
-            {formSectionKey === "hero-main" && (
+            {!isJsonForm && formSectionKey === "hero-main" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4892,7 +4938,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case C: Call For Papers */}
-            {formSectionKey === "call-for-papers" && (
+            {!isJsonForm && formSectionKey === "call-for-papers" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4949,7 +4995,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case D: Editorial Office / Contact Info */}
-            {(formSectionKey === "office-info" || formPageKey === "contact") && (
+            {!isJsonForm && (formSectionKey === "office-info" || formPageKey === "contact") && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -5006,7 +5052,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case E: Research Scope Tracks / Explore Topics (List / Tags) */}
-            {(formSectionKey === "scope-tracks" || formSectionKey === "explore-topics" || Array.isArray(parsedMeta.tracks)) && (
+            {!isJsonForm && (formSectionKey === "scope-tracks" || formSectionKey === "explore-topics" || Array.isArray(parsedMeta.tracks)) && (
               <div className="space-y-2 pt-1">
                 <label className="block text-[11px] font-bold text-slate-700">
                   Disciplines & Research Tracks / Topics
@@ -5070,7 +5116,7 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             )}
 
             {/* Case: Frequently Asked Questions (FAQ) */}
-            {formSectionKey === "home-faq" && (
+            {!isJsonForm && formSectionKey === "home-faq" && (
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold text-slate-700">
@@ -5138,32 +5184,25 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
             {customMetaEntries.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-slate-200/80">
                 <label className="block text-[11px] font-bold text-slate-700">
-                  Additional Parameters
+                  {isJsonForm ? "Section Fields, Lists & Links" : "Additional Parameters"}
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-3.5">
                   {customMetaEntries.map(([key, val]) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        disabled
-                        value={key}
-                        className="w-1/3 rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs text-slate-600 font-mono"
-                      />
-                      <input
-                        type="text"
-                        value={typeof val === "object" ? JSON.stringify(val) : String(val)}
-                        onChange={(e) => updateMetaField(key, e.target.value)}
-                        className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeMetaField(key)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Delete parameter"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    <CmsMetaFieldEditor
+                      key={`${formSectionKey}-${key}`}
+                      fieldKey={key}
+                      value={val}
+                      onChange={(next) => {
+                        try {
+                          const current = formMetaJson ? JSON.parse(formMetaJson) : {};
+                          current[key] = next;
+                          setFormMetaJson(JSON.stringify(current));
+                        } catch {
+                          setFormMetaJson(JSON.stringify({ [key]: next }));
+                        }
+                      }}
+                      onRemove={isJsonForm && getSectionDefault(formPageKey, formSectionKey)?.meta?.[key] !== undefined ? undefined : () => removeMetaField(key)}
+                    />
                   ))}
                 </div>
               </div>

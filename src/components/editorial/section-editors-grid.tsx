@@ -14,11 +14,32 @@ import {
 } from "lucide-react";
 import type { BoardMember } from "@/lib/data";
 
-interface SectionEditorsGridProps {
-  editors: BoardMember[];
+/** CMS-editable copy (editorial-board page, "section-editors" section). */
+export interface SectionEditorsCopy {
+  eyebrow: string;
+  title: string;
+  trackLabel: string;
+  oversightLabel: string;
+  viewProfileLabel: string;
+  emptyText: string;
 }
 
-export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
+const DEFAULT_COPY: SectionEditorsCopy = {
+  eyebrow: "DISCIPLINE CHAIRS",
+  title: "Section Editors & Subject Specialists",
+  trackLabel: "Track:",
+  oversightLabel: "COPE Oversight",
+  viewProfileLabel: "View Profile",
+  emptyText: "No section editors currently assigned in this category.",
+};
+
+interface SectionEditorsGridProps {
+  editors: BoardMember[];
+  copy?: Partial<SectionEditorsCopy>;
+}
+
+export function SectionEditorsGrid({ editors, copy: copyOverride }: SectionEditorsGridProps) {
+  const copy: SectionEditorsCopy = { ...DEFAULT_COPY, ...copyOverride };
   const [selectedFaculty, setSelectedFaculty] = useState<string>("all");
 
   const faculties = [
@@ -49,10 +70,10 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
       {/* Section Header */}
       <div className="pb-6 border-b border-slate-200/80">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
-          DISCIPLINE CHAIRS
+          {copy.eyebrow}
         </p>
         <h2 className="mt-2 font-academic text-2xl sm:text-3xl lg:text-[2.4rem] font-medium tracking-[-0.02em] text-slate-950">
-          Section Editors & Subject Specialists
+          {copy.title}
         </h2>
       </div>
 
@@ -82,7 +103,7 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
         <div className="bg-white border border-dashed border-slate-300 p-8 text-center">
           <Users className="h-8 w-8 text-slate-300 mx-auto mb-2" />
           <p className="text-xs text-slate-500">
-            No section editors currently assigned in this category.
+            {copy.emptyText}
           </p>
         </div>
       ) : (
@@ -144,7 +165,7 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
                   {editor.expertise && (
                     <div className="mt-4 border-t border-slate-100 pt-3">
                       <p className="text-[11.5px] text-slate-500 line-clamp-1">
-                        <span className="font-semibold text-slate-600">Track:</span>{" "}
+                        <span className="font-semibold text-slate-600">{copy.trackLabel}</span>{" "}
                         {editor.expertise}
                       </p>
                     </div>
@@ -154,13 +175,13 @@ export function SectionEditorsGrid({ editors }: SectionEditorsGridProps) {
                 <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
                     <ShieldCheck className="h-3 w-3" />
-                    COPE Oversight
+                    {copy.oversightLabel}
                   </span>
                   <Link
                     href={detailHref}
                     className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1e40af] hover:underline"
                   >
-                    <span>View Profile</span>
+                    <span>{copy.viewProfileLabel}</span>
                     <ArrowUpRight className="h-3 w-3" />
                   </Link>
                 </div>
