@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cms:sync": "node scripts/sync-cms-defaults.mjs"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",

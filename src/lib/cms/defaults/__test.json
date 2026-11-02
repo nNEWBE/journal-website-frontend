@@ -1,0 +1,1 @@
+{ "pageKey": "x", "label": "X", "route": "/", "sections": { "hero": { "label": "Hero", "title": "T", "meta": { "badge": "B", "ctas": [{ "label": "a", "href": "/" }] } }, "plain": { "label": "P", "title": "Q" } } }
