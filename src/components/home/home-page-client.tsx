@@ -6,11 +6,8 @@ import { HomeLatestResearch } from "@/components/home/home-latest-research";
 import { HomeCurrentIssue } from "@/components/home/home-current-issue";
 import { HomeMostRead } from "@/components/home/home-most-read";
 import { HomeExploreTopics } from "@/components/home/home-explore-topics";
-import { HomeFeaturedJournals } from "@/components/home/home-featured-journals";
 import { HomeCallsForPapers } from "@/components/home/home-calls-for-papers";
-import { HomeResearchCommunity } from "@/components/home/home-research-community";
 import { HomeFaqSection } from "@/components/home/home-faq-section";
-import { HomeMetricsNewsletter } from "@/components/home/home-metrics-newsletter";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { useHomeSectionVisibility } from "@/lib/cms-visibility";
@@ -23,11 +20,8 @@ const CANONICAL_HOME_ORDER = [
   "current-issue",
   "most-read",
   "explore-topics",
-  "featured-journals",
   "call-for-papers",
-  "research-community",
   "home-faq",
-  "journal-stats",
 ];
 
 const SECTION_COMPONENTS: Record<string, React.ReactNode> = {
@@ -38,13 +32,10 @@ const SECTION_COMPONENTS: Record<string, React.ReactNode> = {
   "most-read": <HomeMostRead />,
   "explore-topics": <HomeExploreTopics />,
   "topics": <HomeExploreTopics />,
-  "featured-journals": <HomeFeaturedJournals />,
   "call-for-papers": <HomeCallsForPapers />,
   "calls-for-papers": <HomeCallsForPapers />,
-  "research-community": <HomeResearchCommunity />,
   "home-faq": <HomeFaqSection />,
   "faq": <HomeFaqSection />,
-  "journal-stats": <HomeMetricsNewsletter />,
   "scope-tracks": <HomeExploreTopics />,
 };
 
@@ -114,16 +105,10 @@ export function HomePageClient({
         return <HomeMostRead articles={articles} />;
       case "explore-topics":
         return <HomeExploreTopics />;
-      case "featured-journals":
-        return <HomeFeaturedJournals />;
       case "call-for-papers":
         return <HomeCallsForPapers />;
-      case "research-community":
-        return <HomeResearchCommunity />;
       case "home-faq":
         return <HomeFaqSection />;
-      case "journal-stats":
-        return <HomeMetricsNewsletter />;
       default:
         return null;
     }

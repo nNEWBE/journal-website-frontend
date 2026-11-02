@@ -32,6 +32,16 @@
   --shadow-soft: 0 20px 55px rgba(17, 27, 82, 0.14);
 }
 
+/* Public-site palette (the values the pages already render), exposed as utilities:
+   text-gb-accent, bg-gb-navy, hover:bg-gb-navy-hover, bg-gb-night, bg-gb-tint. */
+@theme {
+  --color-gb-accent: #1e40af;
+  --color-gb-navy: #0b1b3d;
+  --color-gb-navy-hover: #162c60;
+  --color-gb-night: #060e22;
+  --color-gb-tint: #fbfcff;
+}
+
 @theme inline {
   --radius-none: 0px;
   --radius-xs: 0px;
@@ -2058,3 +2068,22 @@ select:focus-visible,
   background-color: #2563eb !important;
 }
 
+/* Site header: wavy underline under the active nav item and the dropdown item entrance. */
+@keyframes waveFlow {
+  from { background-position-x: 0; }
+  to { background-position-x: -20px; }
+}
+
+.animate-wave-flow {
+  animation: waveFlow 0.8s linear infinite;
+}
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}

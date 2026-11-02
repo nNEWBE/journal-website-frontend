@@ -18,14 +18,13 @@ import {
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
 import { boardMembers, type BoardMember } from "@/lib/data";
-import { EditorialBoardHero } from "@/components/editorial/editorial-board-hero";
+import { PageHero, JournalCtaPanel } from "@/components/site";
 import { EditorInChiefCard } from "@/components/editorial/editor-in-chief-card";
 import { SectionEditorsGrid } from "@/components/editorial/section-editors-grid";
 import { getBackendUrl } from "@/lib/backend-url";
 import { getPageContent } from "@/lib/cms/page-content";
 import editorialDefaults from "@/lib/cms/defaults/editorial-board.json";
 import { EditorialGovernanceCharter } from "@/components/editorial/editorial-governance-charter";
-import { JournalCtaPanel } from "@/components/layout/journal-cta-panel";
 
 export const revalidate = 60;
 
@@ -90,40 +89,45 @@ export default async function EditorialBoardPage() {
       {/* ── 1. Hero Header ── */}
       {content.hero.visible && (
         <FadeIn delay={0.05}>
-          <EditorialBoardHero section={content.hero} />
+          <PageHero
+            section={content.hero}
+            ariaLabel="Editorial Board Hero"
+            eyebrowIcon={Users}
+            highlightIcons={[ShieldCheck, Scale, GraduationCap]}
+          />
         </FadeIn>
       )}
 
       {(leadership.visible || sectionEditorsCopy.visible) && (
-      <div className="bg-[#fbfcff] py-14 sm:py-20 border-b border-slate-200/80">
-        <div className="container-x space-y-16 sm:space-y-20">
-          {/* ── 2. Executive Leadership ── */}
-          {leadership.visible && (
-            <FadeIn delay={0.1}>
-              <EditorInChiefCard
-                chief={chief}
-                managing={managing}
-                copy={{ ...leadership.meta, eyebrow: leadership.subtitle, title: leadership.title }}
-              />
-            </FadeIn>
-          )}
+        <div className="bg-gb-tint py-14 sm:py-20 border-b border-slate-200/80">
+          <div className="container-x space-y-16 sm:space-y-20">
+            {/* ── 2. Executive Leadership ── */}
+            {leadership.visible && (
+              <FadeIn delay={0.1}>
+                <EditorInChiefCard
+                  chief={chief}
+                  managing={managing}
+                  copy={{ ...leadership.meta, eyebrow: leadership.subtitle, title: leadership.title }}
+                />
+              </FadeIn>
+            )}
 
-          {/* ── 3. Section Editors Grid ── */}
-          {sectionEditorsCopy.visible && (
-            <FadeIn delay={0.15}>
-              <SectionEditorsGrid
-                editors={sectionEditors}
-                copy={{
-                  ...sectionEditorsCopy.meta,
-                  eyebrow: sectionEditorsCopy.subtitle,
-                  title: sectionEditorsCopy.title,
-                }}
-              />
-            </FadeIn>
-          )}
+            {/* ── 3. Section Editors Grid ── */}
+            {sectionEditorsCopy.visible && (
+              <FadeIn delay={0.15}>
+                <SectionEditorsGrid
+                  editors={sectionEditors}
+                  copy={{
+                    ...sectionEditorsCopy.meta,
+                    eyebrow: sectionEditorsCopy.subtitle,
+                    title: sectionEditorsCopy.title,
+                  }}
+                />
+              </FadeIn>
+            )}
 
+          </div>
         </div>
-      </div>
       )}
 
       {/* ── 5. Editorial Governance Charter ── */}
@@ -138,7 +142,6 @@ export default async function EditorialBoardPage() {
           ariaLabel="Join Reviewer Panel and Contact"
           badgeFallbackIcon={Users}
           pillFallbackIcons={[ShieldCheck, Award, Clock]}
-          pillIconClasses={["text-emerald-400", "text-amber-300", "text-blue-400"]}
         />
       )}
     </PageShell>

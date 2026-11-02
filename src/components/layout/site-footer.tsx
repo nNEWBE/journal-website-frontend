@@ -49,7 +49,7 @@ function FooterLinkColumn({
   return (
     <div className="lg:col-span-2">
       <div className="flex items-center gap-2 border-b border-white/10 pb-2.5 mb-3.5">
-        <span className="flex h-5.5 w-5.5 items-center justify-center rounded-sm bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+        <span className="flex h-5.5 w-5.5 items-center justify-center bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
           <Icon className="h-3 w-3" />
         </span>
         <span className="text-xs font-bold uppercase tracking-normal text-white">
@@ -79,7 +79,7 @@ export function SiteFooter() {
       /* Brand Column (3 cols) */
       <div className="lg:col-span-3 space-y-4">
         <Link href="/" className="inline-flex items-center gap-3.5 group">
-          <div className="relative shrink-0 overflow-hidden rounded-md bg-white p-1.5 shadow-md ring-1 ring-white/15 h-12 w-12 flex items-center justify-center">
+          <div className="relative shrink-0 overflow-hidden bg-white p-1.5 shadow-md ring-1 ring-white/15 h-12 w-12 flex items-center justify-center">
             <img
               src={brand.meta.logoImage || "/gb-logo-official.png"}
               alt={brand.meta.logoAlt}
@@ -136,7 +136,7 @@ export function SiteFooter() {
       /* Contact (3 cols) */
       <div className="lg:col-span-3">
         <div className="flex items-center gap-2 border-b border-white/10 pb-2.5 mb-3.5">
-          <span className="flex h-5.5 w-5.5 items-center justify-center rounded-sm bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+          <span className="flex h-5.5 w-5.5 items-center justify-center bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
             <Mail className="h-3 w-3" />
           </span>
           <span className="text-xs font-bold uppercase tracking-normal text-white">
@@ -149,7 +149,7 @@ export function SiteFooter() {
               href={`mailto:${contact.meta.email}`}
               className="group flex items-center gap-2.5 hover:text-white transition-colors"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-white/5 border border-white/10 text-slate-400 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-white/5 border border-white/10 text-slate-400 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
                 <Mail className="h-3 w-3" />
               </span>
               <span className="text-[11.5px] truncate font-medium text-slate-300 group-hover:text-amber-200 transition-colors">
@@ -160,7 +160,7 @@ export function SiteFooter() {
 
           {contact.meta.address && (
             <div className="flex items-start gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-white/5 border border-white/10 text-slate-400 mt-0.5">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-white/5 border border-white/10 text-slate-400 mt-0.5">
                 <MapPin className="h-3 w-3" />
               </span>
               <span className="text-[11.5px] leading-relaxed text-slate-300">
@@ -174,7 +174,7 @@ export function SiteFooter() {
               href={contact.meta.phoneHref || `tel:${contact.meta.phone.replace(/[^+\d]/g, "")}`}
               className="group flex items-center gap-2.5 hover:text-white transition-colors"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-white/5 border border-white/10 text-slate-400 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-white/5 border border-white/10 text-slate-400 group-hover:text-amber-400 group-hover:border-amber-400/30 transition-all">
                 <Phone className="h-3 w-3" />
               </span>
               <span className="text-[11.5px] font-medium text-slate-300 group-hover:text-amber-200 transition-colors">
@@ -188,7 +188,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="bg-[#050d21] text-white border-t border-slate-800/90">
+    <footer className="bg-gb-night text-white border-t border-slate-800/90">
       <div className="container-x py-12 sm:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-6">
           {content._order.map((key) => {
@@ -200,7 +200,7 @@ export function SiteFooter() {
 
       {/* Sub-Footer Bottom Bar */}
       {bottom.visible && (
-        <div className="border-t border-slate-800/90 py-5 bg-[#030819]">
+        <div className="border-t border-slate-800/90 py-5 bg-black/25">
           <div className="container-x flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-1 text-center md:text-left">
               <span>© {new Date().getFullYear()} {bottom.title}</span>

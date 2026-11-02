@@ -1,7 +1,8 @@
 import { Metadata } from "next";
+import { Calendar, Clock, Globe2, Landmark, ShieldCheck } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { FadeIn } from "@/components/layout/page-transition";
-import { AboutJournalHero } from "@/components/about/about-journal-hero";
+import { JournalCtaPanel, PageHero } from "@/components/site";
 import { AboutJournalStory } from "@/components/about/about-journal-story";
 import defaults from "@/lib/cms/defaults/about.json";
 import { getPageContent } from "@/lib/cms/page-content";
@@ -19,7 +20,11 @@ export default async function AboutPage() {
     <PageShell>
       {content.hero.visible && (
         <FadeIn delay={0.05}>
-          <AboutJournalHero section={content.hero} />
+          <PageHero
+            section={content.hero}
+            ariaLabel="About the journal"
+            highlightIcons={[ShieldCheck, Globe2, Calendar, Clock]}
+          />
         </FadeIn>
       )}
 
@@ -28,16 +33,25 @@ export default async function AboutPage() {
           order={content._order}
           sections={{
             mission: content.mission,
-            benchmarks: content.benchmarks,
             scope: content.scope,
             leadership: content.leadership,
             lifecycle: content.lifecycle,
             charter: content.charter,
             indexing: content.indexing,
-            stewardship: content.stewardship,
           }}
         />
       </FadeIn>
+
+      {content.cta.visible && (
+        <FadeIn delay={0.05}>
+          <JournalCtaPanel
+            section={content.cta}
+            ariaLabel="Institutional stewardship and submission"
+            badgeFallbackIcon={Landmark}
+            pillFallbackIcons={[ShieldCheck, Globe2]}
+          />
+        </FadeIn>
+      )}
     </PageShell>
   );
 }

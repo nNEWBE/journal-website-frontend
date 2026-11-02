@@ -31,9 +31,6 @@ export function SiteHeader() {
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector((state) => state.auth.user);
   const header = useSiteContent().header;
-  const topLinks: { label: string; href: string }[] = Array.isArray(header.meta.topLinks)
-    ? header.meta.topLinks
-    : [];
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -139,30 +136,13 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full transition-all duration-300">
-      <style>{`
-        @keyframes waveFlow {
-          from { background-position-x: 0; }
-          to { background-position-x: -20px; }
-        }
-        .animate-wave-flow {
-          animation: waveFlow 0.8s linear infinite;
-        }
-        @keyframes slideInFromRight {
-          from { opacity: 0; transform: translateX(28px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInFromLeft {
-          from { opacity: 0; transform: translateX(-28px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
 
       {/* Top institutional banner */}
       {header.visible && (
-      <div className="bg-[color:var(--color-gb-blue-deep)] text-white/70">
+      <div className="bg-gb-navy text-white/70">
         <div className="container-x flex h-8 items-center justify-between text-[10px] font-bold tracking-wider">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-3 w-3 text-[color:var(--color-gb-gold)]" />
+            <GraduationCap className="h-3 w-3 text-gb-gold" />
             <span className="hidden sm:inline uppercase">
               {header.title}
             </span>
@@ -173,22 +153,14 @@ export function SiteHeader() {
               <div className="flex items-center gap-2">
                 <span className="text-white/50">{header.meta.signedInLabel}</span>
                 <span className="font-extrabold text-white/90">{user.name}</span>
-                <span className="text-[9px] uppercase bg-white/10 px-1.5 py-0.5 rounded font-black text-[color:var(--color-gb-gold)] border border-white/10">
+                <span className="text-[9px] uppercase bg-white/10 px-1.5 py-0.5 font-black text-gb-gold border border-white/10">
                   {user.role}
                 </span>
               </div>
             ) : (
-              <div className="hidden items-center gap-4 md:flex">
-                {topLinks.map((link, i) => (
-                  <Link
-                    key={`${link.href}-${link.label}-${i}`}
-                    href={link.href}
-                    className="hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
+              header.meta.issnLabel && (
+                <span className="hidden md:inline">{header.meta.issnLabel}</span>
+              )
             )}
           </div>
         </div>
@@ -200,7 +172,7 @@ export function SiteHeader() {
 
       {/* Main Navigation Bar */}
       <div
-        className={`border-b border-[color:var(--border)] bg-white/95 backdrop-blur-xl transition-all duration-200 ${
+        className={`border-b border-slate-200 bg-white/95 backdrop-blur-xl transition-all duration-200 ${
           scrolled ? "shadow-lg shadow-slate-900/10" : ""
         }`}
       >
@@ -216,7 +188,7 @@ export function SiteHeader() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] text-[color:var(--ink-muted)] hover:bg-slate-50 hover:text-[color:var(--color-gb-blue)] transition-colors cursor-pointer"
+              className="inline-flex h-9 w-9 items-center justify-center border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-gb-accent transition-colors cursor-pointer"
               title="Search manuscripts (Ctrl+K)"
             >
               <Search className="h-4 w-4" />
@@ -224,7 +196,7 @@ export function SiteHeader() {
 
             <Link
               href={user ? header.meta.submitHref || "/dashboard/submissions/new" : "/login"}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-gb-blue-deep)] px-3 py-2 text-[12px] font-extrabold text-white shadow-xs transition-all hover:bg-[color:var(--color-gb-blue)] sm:px-4"
+              className="inline-flex items-center gap-1.5 bg-gb-navy px-3 py-2 text-[12px] font-extrabold text-white shadow-xs transition-all hover:bg-gb-navy-hover sm:px-4"
               aria-label={
                 user ? "Submit a new manuscript" : "Sign in to submit a manuscript"
               }
@@ -237,7 +209,7 @@ export function SiteHeader() {
               <>
                 <Link
                   href="/dashboard"
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--border)] bg-white hover:bg-slate-50 px-3.5 py-2 text-[12px] font-bold text-[color:var(--color-gb-blue-dark)] transition-colors"
+                  className="hidden md:inline-flex items-center gap-1.5 border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-[12px] font-bold text-gb-navy transition-colors"
                   title="Go to Dashboard"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
@@ -245,7 +217,7 @@ export function SiteHeader() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 transition-colors cursor-pointer"
+                  className="hidden md:inline-flex items-center gap-1.5 border border-red-200 bg-white hover:bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 transition-colors cursor-pointer"
                   title="Log Out"
                 >
                   <LogOut className="h-3.5 w-3.5" />
@@ -254,10 +226,10 @@ export function SiteHeader() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--border)] bg-white px-2.5 py-2 text-[12px] font-bold text-[color:var(--color-gb-blue-dark)] transition-colors hover:bg-slate-50 min-[440px]:px-3.5"
+                className="inline-flex items-center gap-1.5 border border-slate-200 bg-white px-2.5 py-2 text-[12px] font-bold text-gb-navy transition-colors hover:bg-slate-50 min-[440px]:px-3.5"
                 title="Access Workspace"
               >
-                <UserIcon className="h-3.5 w-3.5 text-[color:var(--color-gb-blue)]" />
+                <UserIcon className="h-3.5 w-3.5 text-gb-accent" />
                 <span className="hidden min-[440px]:inline">{header.meta.loginLabel}</span>
               </Link>
             )}
@@ -265,7 +237,7 @@ export function SiteHeader() {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="inline-flex lg:hidden h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] text-[color:var(--color-gb-blue-dark)] hover:bg-slate-50 transition-colors cursor-pointer"
+              className="inline-flex lg:hidden h-9 w-9 items-center justify-center border border-slate-200 text-gb-navy hover:bg-slate-50 transition-colors cursor-pointer"
               title="Toggle Menu"
             >
               {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -296,8 +268,8 @@ export function SiteHeader() {
         className="max-w-md"
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-3.5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900">
-            <div className="p-2 bg-rose-100 rounded-lg shrink-0 text-rose-600">
+          <div className="flex items-start gap-3.5 p-3.5 bg-rose-50 border border-rose-200 text-rose-900">
+            <div className="p-2 bg-rose-100 shrink-0 text-rose-600">
               <LogOut className="h-5 w-5" />
             </div>
             <div className="text-xs space-y-1">
@@ -312,14 +284,14 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => setIsLogoutModalOpen(false)}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleConfirmLogout}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Yes, Sign Out</span>

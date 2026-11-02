@@ -186,7 +186,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
   return createPortal(
     <div
       data-lenis-prevent
-      className="fixed inset-0 z-[999999] flex items-start justify-center p-3 sm:p-6 pt-12 sm:pt-20 bg-[#060e22]/75 backdrop-blur-md animate-in fade-in-50 duration-200"
+      className="fixed inset-0 z-[999999] flex items-start justify-center p-3 sm:p-6 pt-12 sm:pt-20 bg-gb-night/75 backdrop-blur-md animate-in fade-in-50 duration-200"
       onClick={onClose}
     >
       <div
@@ -196,7 +196,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
       >
         {/* Search input header */}
         <div className="flex items-center gap-3 border-b border-slate-200 px-4 sm:px-5 py-3.5 bg-slate-50/50">
-          <Search className="h-5 w-5 shrink-0 text-[#1e40af]" />
+          <Search className="h-5 w-5 shrink-0 text-gb-accent" />
           <input
             ref={inputRef}
             type="text"
@@ -231,7 +231,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer border ${
                   isActive
-                    ? "bg-[#0b1b3d] text-white border-[#0b1b3d] shadow-2xs"
+                    ? "bg-gb-navy text-white border-gb-navy shadow-2xs"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
@@ -287,7 +287,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
           {/* Results List */}
           {loading && articleList.length === 0 ? (
             <div className="py-16 text-center border border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center">
-              <Loader2 className="h-8 w-8 text-[#1e40af] animate-spin mb-3" />
+              <Loader2 className="h-8 w-8 text-gb-accent animate-spin mb-3" />
               <p className="text-sm font-bold text-slate-800 font-academic">
                 Loading indexed manuscripts...
               </p>
@@ -310,7 +310,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
                   setSearchQuery("");
                   setSelectedCategory("All");
                 }}
-                className="mt-3 text-xs font-bold text-[#1e40af] hover:underline cursor-pointer"
+                className="mt-3 text-xs font-bold text-gb-accent hover:underline cursor-pointer"
               >
                 Reset search filters
               </button>
@@ -322,7 +322,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
                   key={art.id}
                   href={`/articles/${art.slug}`}
                   onClick={onClose}
-                  className="flex items-start gap-3.5 sm:gap-4 border border-slate-200/90 border-l-3 border-l-slate-200/90 hover:border-l-[#1e40af] bg-white p-3 sm:p-3.5 hover:bg-slate-50/80 transition-all group cursor-pointer shadow-2xs"
+                  className="flex items-start gap-3.5 sm:gap-4 border border-slate-200/90 border-l-3 border-l-slate-200/90 hover:border-l-gb-accent bg-white p-3 sm:p-3.5 hover:bg-slate-50/80 transition-all group cursor-pointer shadow-2xs"
                 >
                   {/* Article Thumbnail Image */}
                   <div className="relative aspect-[4/3] w-24 sm:w-28 shrink-0 overflow-hidden bg-slate-950 border border-slate-200 shadow-2xs">
@@ -339,14 +339,14 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
                   {/* Content Details */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="bg-blue-50 text-[#1e40af] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border border-blue-100">
+                      <span className="bg-blue-50 text-gb-accent px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border border-blue-100">
                         {art.topic}
                       </span>
                       <span className="text-[10px] font-mono text-slate-400">
                         {art.volume} · {art.publishedAt}
                       </span>
                     </div>
-                    <h4 className="font-academic text-sm sm:text-[14.5px] font-medium text-slate-950 group-hover:text-[#1e40af] transition-colors leading-snug line-clamp-2">
+                    <h4 className="font-academic text-sm sm:text-[14.5px] font-medium text-slate-950 group-hover:text-gb-accent transition-colors leading-snug line-clamp-2">
                       {art.title}
                     </h4>
                     <p className="mt-1 text-xs text-slate-500 font-medium truncate">
@@ -354,7 +354,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0 pt-1 text-slate-400 group-hover:text-[#1e40af] transition-colors">
+                  <div className="flex items-center gap-1 shrink-0 pt-1 text-slate-400 group-hover:text-gb-accent transition-colors">
                     <span className="text-[10.5px] font-semibold hidden sm:inline-block">Read</span>
                     <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </div>
@@ -378,7 +378,7 @@ export function HeaderSearchModal({ isOpen, onClose }: HeaderSearchModalProps) {
           <Link
             href="/articles"
             onClick={onClose}
-            className="inline-flex items-center gap-1 font-bold text-[#1e40af] hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-gb-accent hover:underline"
           >
             <span>View All Articles</span>
             <ArrowUpRight className="h-3.5 w-3.5" />

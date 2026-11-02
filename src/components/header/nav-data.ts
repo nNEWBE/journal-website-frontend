@@ -153,10 +153,18 @@ export const defaultMainNav: NavItem[] = [
         enabled: true,
       },
       {
+        clientId: "sub-issues-current",
+        label: "Current Issue",
+        href: "/issues/current",
+        description: "Papers in the latest published issue",
+        iconName: "BookOpen",
+        enabled: true,
+      },
+      {
         clientId: "sub-issues-2",
         label: "Search Articles",
         href: "/articles",
-        description: "Filter indexed papers by topic, DOI & keywords",
+        description: "Find published papers by title, author or keyword",
         iconName: "FileText",
         enabled: true,
       },
@@ -312,11 +320,7 @@ export function getIsRouteActive(
     if (pathname.startsWith("/issues") || pathname.startsWith("/articles")) {
       return target === "Issues & Articles";
     }
-    if (
-      pathname.startsWith("/authors") ||
-      pathname.startsWith("/submit") ||
-      pathname.startsWith("/dashboard")
-    ) {
+    if (pathname.startsWith("/authors") || pathname.startsWith("/dashboard")) {
       return target === "For Authors";
     }
     if (pathname.startsWith("/contact")) {

@@ -29,16 +29,14 @@ import {
   topics,
   type Article,
 } from "@/lib/data";
-import { ArticlesHero } from "@/components/articles/articles-hero";
 import { getBackendUrl } from "@/lib/backend-url";
 import { getPageContent } from "@/lib/cms/page-content";
 import articlesDefaults from "@/lib/cms/defaults/articles.json";
 import {
-  ArticlesSpecificationsCard,
   ArticlesStandardsBand,
-  ArticlesSubmitCard,
+  ArticlesSubjectsCard,
 } from "@/components/articles/articles-listing-blocks";
-import { JournalCtaPanel } from "@/components/layout/journal-cta-panel";
+import { JournalCtaPanel, PageHero, type HeroSpec } from "@/components/site";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -111,8 +109,8 @@ async function fetchArticlesFromDb(
         ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
         : typeof item.authors === "string"
           ? (item.authors.includes(",")
-              ? item.authors.split(",").map((s: string) => s.trim())
-              : [item.authors.trim()])
+            ? item.authors.split(",").map((s: string) => s.trim())
+            : [item.authors.trim()])
           : [];
 
       return {
@@ -165,21 +163,35 @@ export default async function ArticlesPage({
   const content = await contentPromise;
   const resultsCopy = content.results;
 
+  const heroSpecs: HeroSpec[] = [
+    {
+      label: content.hero.meta.articlesLabel || "Published articles",
+      value: String(results.length),
+      tone: "accent",
+    },
+    {
+      label: content.hero.meta.topicsLabel || "Subject areas",
+      value: String(availableTopics.length),
+    },
+  ];
+
   return (
     <PageShell>
       {/* ── 1. Hero Header ── */}
       {content.hero.visible && (
         <FadeIn delay={0.05}>
-          <ArticlesHero
-            totalArticles={results.length}
-            totalTopics={availableTopics.length}
+          <PageHero
             section={content.hero}
+            ariaLabel="Articles & Publications Hero"
+            eyebrowIcon={FileSearch}
+            highlightIcons={[ShieldCheck, Globe2, Clock]}
+            specsBefore={heroSpecs}
           />
         </FadeIn>
       )}
 
       {/* ── 2. Content & Filters ── */}
-      <section className="bg-[#fbfcff] py-10 sm:py-14 border-b border-slate-200/80">
+      <section className="bg-gb-tint py-10 sm:py-14 border-b border-slate-200/80">
         <div className="container-x">
           {/* Filter form */}
           <FadeIn delay={0.1}>
@@ -198,39 +210,39 @@ export default async function ArticlesPage({
             {/* Main Column: Results */}
             <div>
               {resultsCopy.visible && (
-              <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-200/90 pb-4">
-                <div>
-                  <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#1e40af] flex items-center gap-1.5">
-                    <FileSearch className="h-3.5 w-3.5" />
-                    <span>{hasFilters ? resultsCopy.subtitle : resultsCopy.title}</span>
-                  </p>
-                  <h2 className="mt-1 font-academic text-2xl sm:text-3xl font-medium tracking-[-0.02em] text-slate-950">
-                    {results.length} article{results.length === 1 ? "" : "s"} found
-                  </h2>
-                  {hasFilters && (
-                    <p className="mt-1 text-xs text-slate-500 font-mono">
-                      {resultsCopy.meta.filteredByLabel} {[q, type, topic].filter(Boolean).join(" · ")}
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-200/90 pb-4">
+                  <div>
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-gb-accent flex items-center gap-1.5">
+                      <FileSearch className="h-3.5 w-3.5" />
+                      <span>{hasFilters ? resultsCopy.subtitle : resultsCopy.title}</span>
                     </p>
+                    <h2 className="mt-1 font-academic text-2xl sm:text-3xl font-medium tracking-[-0.02em] text-slate-950">
+                      {results.length} article{results.length === 1 ? "" : "s"} found
+                    </h2>
+                    {hasFilters && (
+                      <p className="mt-1 text-xs text-slate-500 font-mono">
+                        {resultsCopy.meta.filteredByLabel} {[q, type, topic].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+
+                  {hasFilters ? (
+                    <Link
+                      href="/articles"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 hover:bg-rose-100 transition-colors"
+                    >
+                      <span>{resultsCopy.meta.clearFiltersLabel}</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={resultsCopy.meta.browseLink?.href || "/issues"}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-gb-accent bg-white border border-slate-200 px-3 py-1.5 hover:bg-slate-50 transition-colors shadow-2xs"
+                    >
+                      <span>{resultsCopy.meta.browseLink?.label}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
                   )}
                 </div>
-
-                {hasFilters ? (
-                  <Link
-                    href="/articles"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 hover:bg-rose-100 transition-colors"
-                  >
-                    <span>{resultsCopy.meta.clearFiltersLabel}</span>
-                  </Link>
-                ) : (
-                  <Link
-                    href={resultsCopy.meta.browseLink?.href || "/issues"}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] bg-white border border-slate-200 px-3 py-1.5 hover:bg-slate-50 transition-colors shadow-2xs"
-                  >
-                    <span>{resultsCopy.meta.browseLink?.label}</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                )}
-              </div>
               )}
 
               {results.length === 0 ? (
@@ -244,7 +256,7 @@ export default async function ArticlesPage({
                   </p>
                   <Link
                     href={resultsCopy.meta.emptyCta?.href || "/articles"}
-                    className="mt-5 inline-flex items-center gap-2 bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors"
+                    className="mt-5 inline-flex items-center gap-2 bg-gb-navy hover:bg-gb-navy-hover text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors"
                   >
                     <span>{resultsCopy.meta.emptyCta?.label}</span>
                   </Link>
@@ -265,41 +277,11 @@ export default async function ArticlesPage({
               <FadeIn delay={0.2} direction="left">
                 {/* Browse by subject */}
                 {content.subjects.visible && (
-                <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] flex items-center gap-1.5">
-                      <Tag className="h-3.5 w-3.5" />
-                      <span>{content.subjects.title}</span>
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {availableTopics.map((t) => {
-                      const isActive = topic.toLowerCase() === t.toLowerCase();
-                      return (
-                        <Link
-                          key={t}
-                          href={isActive ? "/articles" : `/articles?topic=${encodeURIComponent(t)}`}
-                          className={`px-2.5 py-1 text-[11px] font-semibold transition-all border ${isActive
-                            ? "bg-[#0b1b3d] text-white border-[#0b1b3d]"
-                            : "bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100 hover:text-slate-900"
-                            }`}
-                        >
-                          {t}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-                )}
-
-                {/* Journal credentials widget */}
-                {content.specifications.visible && (
-                  <ArticlesSpecificationsCard section={content.specifications} />
-                )}
-
-                {/* Callout Box */}
-                {content["submit-card"].visible && (
-                  <ArticlesSubmitCard section={content["submit-card"]} />
+                  <ArticlesSubjectsCard
+                    title={content.subjects.title}
+                    topics={availableTopics}
+                    activeTopic={topic}
+                  />
                 )}
               </FadeIn>
             </aside>
@@ -319,7 +301,6 @@ export default async function ArticlesPage({
           ariaLabel="Call for Papers CTA"
           badgeFallbackIcon={FileText}
           pillFallbackIcons={[Clock, Globe2, ShieldCheck]}
-          pillIconClasses={["text-amber-300", "text-blue-400", "text-emerald-400"]}
         />
       )}
     </PageShell>

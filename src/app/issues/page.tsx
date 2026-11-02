@@ -27,12 +27,13 @@ async function fetchIssues(): Promise<Issue[]> {
 
     return data.map((iss: any) => ({
       id: String(iss.id || iss.issueKey),
-      volume: iss.volumeLabel || (iss.volume ? `Volume ${iss.volume}` : "Volume 4"),
-      issue: iss.issueLabel || (iss.number ? `Issue ${iss.number}` : "Issue 1"),
-      year: String(iss.year || "2026"),
-      month: iss.month || "July",
-      theme: iss.theme || iss.title || "Scholarly Research",
+      volume: iss.volumeLabel || (iss.volume ? `Volume ${iss.volume}` : ""),
+      issue: iss.issueLabel || (iss.number ? `Issue ${iss.number}` : ""),
+      year: iss.year ? String(iss.year) : "",
+      month: iss.month || "",
+      theme: iss.theme || iss.title || "",
       coverImage: iss.coverImageUrl || "/covers/medical.png",
+      editorNote: iss.editorNote || undefined,
       articleCount: iss.articleCount || (iss.articles ? iss.articles.length : 0),
       articles: Array.isArray(iss.articles)
         ? iss.articles.map((item: any) => ({
@@ -46,11 +47,11 @@ async function fetchIssues(): Promise<Issue[]> {
               ? item.authors.map((a: any) => (typeof a === "string" ? a : a.name || ""))
               : [],
             abstract: item.abstract || item.abstractText || "",
-            issue: item.issue || item.issueLabel || "Current Issue",
-            volume: item.volume || item.volumeLabel || "Volume 4",
-            pages: item.pages || "1-10",
-            doi: item.doi || "10.5555/gbj.2026.001",
-            publishedAt: item.publishedAt || "2026",
+            issue: item.issue || item.issueLabel || "",
+            volume: item.volume || item.volumeLabel || "",
+            pages: item.pages || "",
+            doi: item.doi || "",
+            publishedAt: item.publishedAt || "",
             metrics: {
               views: item.metrics?.views ?? 0,
               downloads: item.metrics?.downloads ?? 0,

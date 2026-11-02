@@ -59,12 +59,6 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { contentApi, articlesApi, type PageContentDTO } from "@/lib/api";
 import { articles as initialArticles, type Article } from "@/lib/data";
-import { specialIssueCalls } from "@/components/home/home-calls-for-papers";
-import { latestArticles } from "@/components/home/home-latest-research";
-import { mostReadArticles } from "@/components/home/home-most-read";
-import { topicList } from "@/components/home/home-explore-topics";
-import { featuredJournals } from "@/components/home/home-featured-journals";
-import { communityArticles } from "@/components/home/home-research-community";
 import { FAQ_ITEMS } from "@/components/home/home-faq-section";
 import { CmsSectionTabs } from "./cms-section-tabs";
 import { CmsMetaFieldEditor } from "./cms-meta-field-editor";
@@ -86,11 +80,8 @@ const CORE_SECTION_KEYS = new Set([
   "current-issue",
   "most-read",
   "explore-topics",
-  "featured-journals",
   "call-for-papers",
-  "research-community",
   "home-faq",
-  "journal-stats",
   "scope-tracks",
   "overview",
   "mission",
@@ -122,14 +113,14 @@ export interface EditableTopic {
 }
 
 export const DEFAULT_TOPICS: EditableTopic[] = [
-  { id: "ai", name: "Artificial Intelligence", iconName: "Brain", href: "/articles?topic=Technology" },
-  { id: "medicine", name: "Medicine", iconName: "Stethoscope", href: "/articles?topic=Medical+Sciences" },
-  { id: "engineering", name: "Engineering", iconName: "Cog", href: "/articles?topic=Technology" },
-  { id: "climate-science", name: "Climate Science", iconName: "Globe2", href: "/articles?topic=Agriculture" },
-  { id: "data-science", name: "Data Science", iconName: "BarChart3", href: "/articles?topic=Technology" },
-  { id: "social-research", name: "Social Research", iconName: "Users", href: "/articles?topic=Social+Sciences" },
+  { id: "ai", name: "Artificial Intelligence", iconName: "Brain", href: "/articles?topic=Artificial+Intelligence" },
+  { id: "medicine", name: "Medicine", iconName: "Stethoscope", href: "/articles?topic=Medicine" },
+  { id: "engineering", name: "Engineering", iconName: "Cog", href: "/articles?topic=Engineering" },
+  { id: "climate-science", name: "Climate Science", iconName: "Globe2", href: "/articles?topic=Climate+Science" },
+  { id: "data-science", name: "Data Science", iconName: "BarChart3", href: "/articles?topic=Data+Science" },
+  { id: "social-research", name: "Social Research", iconName: "Users", href: "/articles?topic=Social+Research" },
   { id: "public-health", name: "Public Health", iconName: "ShieldPlus", href: "/articles?topic=Public+Health" },
-  { id: "business", name: "Business", iconName: "Briefcase", href: "/articles?topic=Social+Sciences" },
+  { id: "business", name: "Business", iconName: "Briefcase", href: "/articles?topic=Business" },
 ];
 
 export const TOPIC_ICON_OPTIONS = [
@@ -196,30 +187,15 @@ export const HOME_SECTION_CONFIG: Record<string, HomeSectionMeta> = {
     icon: Tag,
     shortDesc: "Discipline categories and research faculty tracks",
   },
-  "featured-journals": {
-    label: "Featured",
-    icon: Library,
-    shortDesc: "Specialized biannual series and journal editions",
-  },
   "call-for-papers": {
     label: "Call for Papers",
     icon: Megaphone,
     shortDesc: "Active thematic call deadlines and fast-track submission",
   },
-  "research-community": {
-    label: "Community",
-    icon: Users,
-    shortDesc: "Faculty spotlights and annual symposium announcements",
-  },
   "home-faq": {
     label: "FAQ",
     icon: HelpCircle,
     shortDesc: "Frequently asked questions for prospective authors",
-  },
-  "journal-stats": {
-    label: "Metrics & Stats",
-    icon: BarChart2,
-    shortDesc: "Editorial turnaround benchmarks, stats & newsletter alert",
   },
   "scope-tracks": {
     label: "Research Scope",
@@ -571,11 +547,8 @@ export const CANONICAL_SECTION_ORDER: Record<string, string[]> = {
     "current-issue",
     "most-read",
     "explore-topics",
-    "featured-journals",
     "call-for-papers",
-    "research-community",
     "home-faq",
-    "journal-stats",
     "scope-tracks",
   ],
   about: [
@@ -670,6 +643,36 @@ interface SectionHeaderBarProps {
   onMoveOrder: (index: number, direction: "up" | "down") => void;
   onTogglePublish: (section: PageContentDTO) => void;
   onEdit: () => void;
+}
+
+/** Compact read-only summary of a home section whose content is filled from live data. */
+function HomeSectionPreviewDetails({
+  rows,
+  note,
+  content,
+}: {
+  rows: { label: string; value: string }[];
+  note: string;
+  content?: string | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {rows.map((row) => (
+          <div key={row.label} className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs min-w-0">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{row.label}</p>
+            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">{row.value}</p>
+          </div>
+        ))}
+      </div>
+      {content && (
+        <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+          {content}
+        </div>
+      )}
+      <p className="text-[11px] text-slate-500">{note}</p>
+    </div>
+  );
 }
 
 function SectionHeaderBar({
@@ -1224,24 +1227,18 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
   const knownSectionKeys = useMemo(() => {
     const set = new Set(["selectedArticleIds", "featuredSlides"]);
     if (getPageDefaults(formPageKey)) return set;
-    if (formSectionKey === "journal-stats") {
-      ["turnaroundDays", "acceptanceRate", "reviewersActive", "indexedArticles", "articlesPublished", "globalReaders", "newsletterTitle", "newsletterSubtitle"].forEach((k) => set.add(k));
-    } else if (formSectionKey === "hero-main") {
+    if (formSectionKey === "hero-main") {
       ["badge", "issnPrint", "issnOnline", "primaryCtaText", "secondaryCtaText"].forEach((k) => set.add(k));
     } else if (formSectionKey === "call-for-papers") {
       ["badge", "deadline", "targetVolume", "fastTrack"].forEach((k) => set.add(k));
     } else if (formSectionKey === "latest-research") {
       ["viewAllText", "viewAllHref", "selectedArticleIds"].forEach((k) => set.add(k));
     } else if (formSectionKey === "current-issue") {
-      ["journalName", "volumeIssue", "issueDate", "publicationDate", "issnPrint", "issnOnline", "featuredPaperTitle", "doiPrefix", "browseHref", "pdfHref"].forEach((k) => set.add(k));
+      ["issnPrint", "issnOnline", "browseHref"].forEach((k) => set.add(k));
     } else if (formSectionKey === "most-read") {
       ["articleCount", "selectedArticleIds"].forEach((k) => set.add(k));
     } else if (formSectionKey === "explore-topics" || formSectionKey === "scope-tracks" || Array.isArray(parsedMeta.tracks)) {
       set.add("tracks");
-    } else if (formSectionKey === "featured-journals") {
-      ["category"].forEach((k) => set.add(k));
-    } else if (formSectionKey === "research-community") {
-      ["spotlightAuthor", "spotlightTitle", "symposium"].forEach((k) => set.add(k));
     } else if (formSectionKey === "home-faq") {
       set.add("faqs");
     } else if (formSectionKey === "office-info" || formPageKey === "contact") {
@@ -2266,196 +2263,32 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
                 return (
                   <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={FileText}
-                        title={section.title || "Latest Research"}
-                        subtitle={
-                          section.subtitle ||
-                          "Recent breakthroughs and peer-reviewed scholarly papers from our global community."
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            {latestArticles.length} Manuscripts Active
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                    {/* 4-Column Key Parameters */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <Shield className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Editorial Standard
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Double-Blind Peer Review
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                          <FileText className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Featured Manuscripts
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {latestArticles.length} Recent Papers
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Access License
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Open Access (CC-BY 4.0)
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                          <ExternalLink className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            View All Catalog Link
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {meta.viewAllText || "View all articles"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Editorial Scope & Description */}
-                    {section.content && (
-                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
-                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                          <FileText className="h-3.5 w-3.5 text-blue-600" />
-                          <span>Curatorial Scope & Editorial Description</span>
-                        </div>
-                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                          {section.content}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Manuscripts List */}
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                            Latest Manuscripts Featured on Homepage
-                          </h5>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                            {latestArticles.length} Live Papers
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                          4-column research showcase displayed to public visitors
+                    <SectionHeaderBar
+                      icon={FileText}
+                      title={section.title || "Latest Research"}
+                      subtitle={section.subtitle || "Newest published articles"}
+                      badge={
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                          Live data
                         </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {latestArticles.map((art, artIdx) => (
-                          <div
-                            key={art.id}
-                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                          >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-                                <div className="flex flex-col items-center justify-center shrink-0">
-                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
-                                    {String(artIdx + 1).padStart(2, "0")}
-                                  </span>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                                    Paper
-                                  </span>
-                                </div>
-
-                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
-                                  <img
-                                    src={art.image}
-                                    alt=""
-                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
-                                      {art.tags}
-                                    </span>
-                                    <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                                      Peer Reviewed
-                                    </span>
-                                  </div>
-
-                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                                    {art.title}
-                                  </h5>
-
-                                  <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
-                                    <span className="flex items-center gap-1 text-slate-600 truncate max-w-[280px]">
-                                      <Users className="h-3 w-3 text-slate-400 shrink-0" />
-                                      <span className="truncate">{art.authors}</span>
-                                    </span>
-                                    <span className="flex items-center gap-1 text-slate-500">
-                                      <Library className="h-3 w-3 text-slate-400 shrink-0" />
-                                      <span>{art.journal}</span>
-                                    </span>
-                                    <span className="flex items-center gap-1 text-slate-400">
-                                      <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-                                      <span>{art.date}</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                                <a
-                                  href={art.articleHref}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
-                                >
-                                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                                  <span>View Article</span>
-                                </a>
-                                <a
-                                  href={art.pdfHref}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors shadow-2xs cursor-pointer"
-                                >
-                                  <FileText className="h-3 w-3 text-slate-500" />
-                                  <span>Download PDF</span>
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                      }
+                      section={section}
+                      secIndex={secIndex}
+                      totalSections={sections.length}
+                      onMoveOrder={handleMoveSectionOrder}
+                      onTogglePublish={handleTogglePublish}
+                      onEdit={() => openEditModal(section)}
+                    />
+                    <HomeSectionPreviewDetails
+                      rows={[
+                      { label: "Source", value: "Newest published articles" },
+                      { label: "Cards shown", value: "4" },
+                      { label: "View-all text", value: meta.viewAllText || "View all articles" },
+                      { label: "View-all link", value: meta.viewAllHref || "/articles" },
+                      ]}
+                      note="Cards are filled automatically from the newest published articles. When nothing is published yet, the homepage shows an empty state."
+                      content={section.content}
+                    />
                   </div>
                 );
               })()}
@@ -2469,181 +2302,34 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   meta = {};
                 }
 
-                const journalName = meta.journalName || "Nexus Journal of Molecular Sciences";
-                const volumeIssue = meta.volumeIssue || "Vol. 12, No. 4";
-                const issueDate = meta.issueDate || section.subtitle || "May 2025";
-                const publicationDate = meta.publicationDate || "May 15, 2025";
-                const issnPrint = meta.issnPrint || "2073-8447";
-                const issnOnline = meta.issnOnline || "2790-2188";
-                const featuredPaperTitle =
-                  meta.featuredPaperTitle ||
-                  "Machine learning-guided discovery of allosteric inhibitors targeting emergent viral polymerases";
-                const browseHref = meta.browseHref || "/issues/current";
-
                 return (
                   <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={BookOpen}
-                        title={section.title || "Current Issue — Active Edition"}
-                        subtitle={
-                          section.subtitle ||
-                          "Active volume, issue metadata, cover graphic, and PDF downloads."
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            {volumeIssue}
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                    {/* 4-Column Key Parameters */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <Library className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Journal Masthead
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {journalName}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                          <BookOpen className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Volume & Issue
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {volumeIssue}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                          <Calendar className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Publication Date
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {publicationDate}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                          <Tag className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Registered ISSNs
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            P: {issnPrint} | O: {issnOnline}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Editorial Scope Card */}
-                    <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
-                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                        <FileText className="h-3.5 w-3.5 text-blue-600" />
-                        <span>Editorial Scope & Issue Overview</span>
-                      </div>
-                      <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                        {section.content ||
-                          "This issue features cutting-edge research at the intersection of molecular biology, chemical biology, and computational science. Highlighted studies explore emerging therapeutic targets, novel biomolecular mechanisms, and innovative methodologies advancing precision medicine and translational discovery."}
-                      </div>
-                    </div>
-
-                    {/* Lead Paper & Magazine Cover Showcase */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                            Active Issue Publication Showcase
-                          </h5>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                            Lead Issue Release
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                          Cover visualizer and lead paper featured on the homepage
+                    <SectionHeaderBar
+                      icon={BookOpen}
+                      title={section.title || "Current Issue"}
+                      subtitle={section.subtitle || "The issue marked current under Issues"}
+                      badge={
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                          Live data
                         </span>
-                      </div>
-
-                      <div className="flex flex-col md:flex-row gap-5 items-center">
-                        <div className="relative w-32 aspect-[3/4] shrink-0 rounded-xl overflow-hidden border border-slate-300 shadow-md bg-[#061026]">
-                          <img
-                            src="/images/hero/molecular_inhibitors.jpg"
-                            alt="Current Issue Cover"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 p-2 flex flex-col justify-between">
-                            <span className="text-[9px] font-bold text-cyan-300 tracking-wider">GBJ</span>
-                            <span className="text-[8px] font-medium text-white/90">{volumeIssue}</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2.5 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
-                              Featured Lead Research Paper
-                            </span>
-                            <span className="text-[10.5px] text-slate-500 font-medium">
-                              {journalName} • {issueDate}
-                            </span>
-                          </div>
-
-                          <h4 className="text-sm font-bold text-slate-900 leading-snug">
-                            {featuredPaperTitle}
-                          </h4>
-
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            Lead breakthrough paper featured on the issue cover with open-access repository distribution and full editorial commentary.
-                          </p>
-
-                          <div className="flex items-center gap-2.5 pt-1">
-                            <a
-                              href={browseHref}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs cursor-pointer"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              <span>Browse Complete Issue</span>
-                            </a>
-                            <a
-                              href="/articles/community-healthcare-access-savar"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                            >
-                              <FileText className="h-3.5 w-3.5 text-slate-400" />
-                              <span>Read Featured Paper</span>
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      }
+                      section={section}
+                      secIndex={secIndex}
+                      totalSections={sections.length}
+                      onMoveOrder={handleMoveSectionOrder}
+                      onTogglePublish={handleTogglePublish}
+                      onEdit={() => openEditModal(section)}
+                    />
+                    <HomeSectionPreviewDetails
+                      rows={[
+                      { label: "Source", value: "Issue marked current" },
+                      { label: "ISSN (Print)", value: meta.issnPrint || "2959-1074" },
+                      { label: "ISSN (Online)", value: meta.issnOnline || "2959-1082" },
+                      { label: "Browse link", value: meta.browseHref || "/issues/current" },
+                      ]}
+                      note="Volume, issue, date, cover and lead article come from the issue marked current under Issues. When no issue is current, the homepage shows an empty state."
+                      content={section.content}
+                    />
                   </div>
                 );
               })()}
@@ -2659,181 +2345,32 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
 
                 return (
                   <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={TrendingUp}
-                        title={section.title || "Most Read — Trending Publications"}
-                        subtitle={
-                          section.subtitle ||
-                          "Trending manuscripts and highest cited publications across the academic network."
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            {mostReadArticles.length} Ranked Manuscripts
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                    {/* 4-Column Key Parameters */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <TrendingUp className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Ranked Articles
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {mostReadArticles.length} Trending Papers
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                          <Eye className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Peak Readership
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            12.4K+ Global Readers
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                          <Calendar className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Evaluation Window
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Past 90 Days Rolling
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                          <BarChart2 className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Ranking Metric
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Views & Citations
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Editorial Scope (if present) */}
-                    {section.content && (
-                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
-                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                          <FileText className="h-3.5 w-3.5 text-blue-600" />
-                          <span>Editorial Description</span>
-                        </div>
-                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                          {section.content}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Ranked Articles List */}
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                            Ranked Manuscripts Featured on Homepage
-                          </h5>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                            Top {mostReadArticles.length} Trending
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                          Ordered by global readership and citation engagement
+                    <SectionHeaderBar
+                      icon={TrendingUp}
+                      title={section.title || "Most Read Research"}
+                      subtitle={section.subtitle || "Published articles ranked by views"}
+                      badge={
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                          Live data
                         </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {mostReadArticles.map((item, rIdx) => (
-                          <div
-                            key={item.rank}
-                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                          >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-                                <div className="flex flex-col items-center justify-center shrink-0">
-                                  <span
-                                    className={cn(
-                                      "flex h-7 w-7 items-center justify-center rounded-xl font-mono text-xs font-bold shadow-2xs text-white",
-                                      rIdx === 0 ? "bg-amber-500" : "bg-[#1e40af]"
-                                    )}
-                                  >
-                                    {item.rank}
-                                  </span>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                                    Rank #{rIdx + 1}
-                                  </span>
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
-                                      {item.type}
-                                    </span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 flex items-center gap-1">
-                                      <Eye className="h-3 w-3 text-slate-400" />
-                                      <span>{item.views}</span>
-                                    </span>
-                                  </div>
-
-                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                                    {item.title}
-                                  </h5>
-
-                                  <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
-                                    <span className="flex items-center gap-1 text-slate-600">
-                                      <Library className="h-3 w-3 text-slate-400 shrink-0" />
-                                      <span>{item.journal}</span>
-                                    </span>
-                                    <span className="flex items-center gap-1 text-slate-400">
-                                      <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-                                      <span>{item.date}</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                                <a
-                                  href={item.href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
-                                >
-                                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                                  <span>Read Paper</span>
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                      }
+                      section={section}
+                      secIndex={secIndex}
+                      totalSections={sections.length}
+                      onMoveOrder={handleMoveSectionOrder}
+                      onTogglePublish={handleTogglePublish}
+                      onEdit={() => openEditModal(section)}
+                    />
+                    <HomeSectionPreviewDetails
+                      rows={[
+                      { label: "Ranked by", value: "Article views" },
+                      { label: "Rows shown", value: String(meta.articleCount || 5) },
+                      { label: "Source", value: "All published articles" },
+                      { label: "View-all link", value: "/articles" },
+                      ]}
+                      note="Rows are ranked automatically by live view counts across all published articles."
+                      content={section.content}
+                    />
                   </div>
                 );
               })()}
@@ -3067,541 +2604,43 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   );
                 })()}
 
-              {/* 6. FEATURED JOURNALS SECTION */}
-              {section.pageKey === "home" && section.sectionKey === "featured-journals" && (() => {
-                return (
-                  <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={Library}
-                        title={section.title || "Featured Journals — Specialized Editions"}
-                        subtitle={
-                          section.subtitle ||
-                          "Specialized biannual series and peer-reviewed journal editions."
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            {featuredJournals.length} Active Journals
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                    {/* 4-Column Key Parameters */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <Library className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Featured Serials
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {featuredJournals.length} Indexed Serials
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                          <Shield className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Editorial Model
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Continuous Online Publishing
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                          <Globe className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Global Impact
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Worldwide Citation Index
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                          <BookOpen className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Access Model
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Open Access Repository
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Editorial Scope */}
-                    {section.content && (
-                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
-                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                          <FileText className="h-3.5 w-3.5 text-blue-600" />
-                          <span>Editorial Overview</span>
-                        </div>
-                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                          {section.content}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Journal Cards List */}
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                            Specialized Journals Featured on Homepage
-                          </h5>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                            {featuredJournals.length} Active Serials
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                          High-impact peer-reviewed journals published under Nexus Press
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {featuredJournals.map((fj, fjIdx) => (
-                          <div
-                            key={fj.id}
-                            className="group rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                          >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                              <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-                                <div className="relative h-20 w-16 sm:h-22 sm:w-18 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
-                                  <img
-                                    src={fj.image}
-                                    alt=""
-                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
-                                      {fj.category}
-                                    </span>
-                                    <span className="text-[10.5px] font-semibold text-slate-500 flex items-center gap-1">
-                                      <BookOpen className="h-3 w-3 text-slate-400" />
-                                      <span>{fj.latestIssue}</span>
-                                    </span>
-                                  </div>
-
-                                  <h5 className="text-sm font-bold text-slate-900 leading-snug">
-                                    {fj.title}
-                                  </h5>
-
-                                  <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
-                                    {fj.description}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                                <a
-                                  href={fj.href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
-                                >
-                                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                                  <span>View Journal</span>
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
               {/* 7. CALL FOR PAPERS SECTION */}
-              {section.pageKey === "home" &&
-                (section.sectionKey === "call-for-papers" ||
-                  section.sectionKey === "calls-for-papers") &&
-                (() => {
-                  let meta: Record<string, any> = {};
-                  try {
-                    meta = section.metaJson ? JSON.parse(section.metaJson) : {};
-                  } catch {
-                    meta = {};
-                  }
+              {section.pageKey === "home" && (section.sectionKey === "call-for-papers" || section.sectionKey === "calls-for-papers") && (() => {
+                let meta: Record<string, any> = {};
+                try {
+                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
+                } catch {
+                  meta = {};
+                }
 
-                  const badge = meta.badge || "Active Call";
-                  const deadline = meta.deadline || "October 31, 2026";
-                  const targetVolume = meta.targetVolume || "Volume 14, Issue 2";
-                  const fastTrack = meta.fastTrack || "Available / 2-Week Window";
-
-                  return (
-                    <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={Megaphone}
-                        title={section.title || "Call for Papers — Upcoming Issue"}
-                        subtitle={
-                          section.subtitle ||
-                          "Submission Deadline: October 31, 2026 | Fast-Track Review Available"
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            {badge}
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                      {/* 4-Column Key Parameters Cards Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Tag className="h-4.5 w-4.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              Call Status Badge
-                            </p>
-                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                              {badge}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                            <Calendar className="h-4.5 w-4.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              Submission Deadline
-                            </p>
-                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                              {deadline}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                            <BookOpen className="h-4.5 w-4.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              Target Volume & Issue
-                            </p>
-                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                              {targetVolume}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="h-4.5 w-4.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              Fast-Track Review
-                            </p>
-                            <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                              {fastTrack}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Editorial Scope & Invitation Card */}
-                      {section.content && (
-                        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
-                          <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                            <FileText className="h-3.5 w-3.5 text-blue-600" />
-                            <span>Editorial Scope & Manuscript Invitation</span>
-                          </div>
-                          <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                            {section.content}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Thematic Special Issue Tracks List */}
-                      <div className="space-y-3 pt-1">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                              Thematic Special Issues Featured on Homepage
-                            </h5>
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                              {specialIssueCalls.length} Special Issues
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                            Multidisciplinary thematic research calls
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3">
-                          {specialIssueCalls.map((call, cIdx) => (
-                            <div
-                              key={call.id}
-                              className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                            >
-                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                                <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs shrink-0">
-                                    {String(cIdx + 1).padStart(2, "0")}
-                                  </span>
-
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                      <span
-                                        className={cn(
-                                          "text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 border border-blue-200/80",
-                                          call.badgeColor
-                                        )}
-                                      >
-                                        {call.badge}
-                                      </span>
-                                      <span className="text-[11px] font-medium text-slate-500">
-                                        {call.journal}
-                                      </span>
-                                    </div>
-
-                                    <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-1">
-                                      {call.title}
-                                    </h5>
-
-                                    <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1 flex-wrap">
-                                      <span className="flex items-center gap-1 text-slate-600">
-                                        <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-                                        <span>Submission Deadline: {call.deadline}</span>
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                                  <a
-                                    href={call.href || "/articles"}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer shadow-2xs"
-                                  >
-                                    <ExternalLink className="h-3 w-3 text-slate-400" />
-                                    <span>View Track</span>
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              {/* 8. RESEARCH COMMUNITY SECTION */}
-              {section.pageKey === "home" && section.sectionKey === "research-community" && (() => {
                 return (
                   <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={Users}
-                        title={section.title || "From Our Research Community"}
-                        subtitle={
-                          section.subtitle ||
-                          "Faculty spotlights, author interviews, and annual symposium announcements."
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            {communityArticles.length} Community Highlights
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                    {/* 4-Column Key Parameters */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <Users className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Active Features
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            {communityArticles.length} Spotlight Stories
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                          <Play className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Media Formats
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Interviews, Recaps & Video
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                          <Megaphone className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Outreach Lead
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Author Outreach Committee
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                          <Globe className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Community Reach
-                          </p>
-                          <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                            Global Academic Network
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Editorial Scope */}
-                    {section.content && (
-                      <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs space-y-2">
-                        <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                          <FileText className="h-3.5 w-3.5 text-blue-600" />
-                          <span>Editorial Description</span>
-                        </div>
-                        <div className="text-xs text-slate-700 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                          {section.content}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Community Articles List */}
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                            Community Highlights Featured on Homepage
-                          </h5>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                            {communityArticles.length} Featured Highlights
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                          Author interviews, symposium recaps, and video discussions
+                    <SectionHeaderBar
+                      icon={Megaphone}
+                      title={section.title || "Call for Papers"}
+                      subtitle={section.subtitle || "Open call for the next issue"}
+                      badge={
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
+                          {meta.badge || "Call for papers"}
                         </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {communityArticles.map((ca, caIdx) => (
-                          <div
-                            key={ca.id}
-                            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200"
-                          >
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-                                <div className="flex flex-col items-center justify-center shrink-0">
-                                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#1e40af] text-white font-mono text-xs font-bold shadow-2xs">
-                                    {String(caIdx + 1).padStart(2, "0")}
-                                  </span>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                                    Story
-                                  </span>
-                                </div>
-
-                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs">
-                                  <img
-                                    src={ca.image}
-                                    alt=""
-                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/80">
-                                      {ca.tag}
-                                    </span>
-                                    {ca.isVideo && (
-                                      <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200/60 flex items-center gap-1">
-                                        <Play className="h-2.5 w-2.5" />
-                                        <span>Video Recording</span>
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <h5 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-1">
-                                    {ca.title}
-                                  </h5>
-
-                                  <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
-                                    {ca.description}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                                <a
-                                  href={ca.href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
-                                >
-                                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                                  <span>{ca.actionText}</span>
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                      }
+                      section={section}
+                      secIndex={secIndex}
+                      totalSections={sections.length}
+                      onMoveOrder={handleMoveSectionOrder}
+                      onTogglePublish={handleTogglePublish}
+                      onEdit={() => openEditModal(section)}
+                    />
+                    <HomeSectionPreviewDetails
+                      rows={[
+                      { label: "Badge", value: meta.badge || "—" },
+                      { label: "Deadline", value: meta.deadline || "Not set (row hidden)" },
+                      { label: "Target issue", value: meta.targetVolume || "Not set (row hidden)" },
+                      { label: "Fast-track", value: meta.fastTrack || "Not set (row hidden)" },
+                      ]}
+                      note="Shown on the homepage as one call card with a submission button. Empty fields are hidden."
+                      content={section.content}
+                    />
                   </div>
                 );
               })()}
@@ -3761,173 +2800,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   );
                 })()}
 
-              {/* 10. JOURNAL STATS & NEWSLETTER SECTION */}
-              {section.pageKey === "home" && section.sectionKey === "journal-stats" && (() => {
-                let meta: Record<string, any> = {};
-                try {
-                  meta = section.metaJson ? JSON.parse(section.metaJson) : {};
-                } catch {
-                  meta = {};
-                }
-
-                const articlesPublished = meta.articlesPublished || "12,486+";
-                const globalReaders = meta.globalReaders || "85,000+";
-                const acceptanceRate = meta.acceptanceRate || "34%";
-                const reviewersActive = meta.reviewersActive || "140+";
-                const newsletterTitle = meta.newsletterTitle || "Stay Updated — Research Newsletter";
-                const newsletterSubtitle =
-                  meta.newsletterSubtitle ||
-                  "Subscribe to our newsletter for the latest research highlights, journal updates, and open access content.";
-
-                return (
-                  <div className="space-y-4">
-                      {/* Section Header Bar */}
-                      <SectionHeaderBar
-                        icon={BarChart2}
-                        title={section.title || "Advancing knowledge. Driving impact."}
-                        subtitle={
-                          section.subtitle ||
-                          "Key highlights, editorial turnaround benchmarks & newsletter alert."
-                        }
-                        badge={
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/80">
-                            Live Impact Metrics
-                          </span>
-                        }
-                        section={section}
-                        secIndex={secIndex}
-                        totalSections={sections.length}
-                        onMoveOrder={handleMoveSectionOrder}
-                        onTogglePublish={handleTogglePublish}
-                        onEdit={() => openEditModal(section)}
-                      />
-
-                    {/* 4 Live Key Metrics Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
-                        <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Articles Published
-                          </p>
-                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
-                            {articlesPublished}
-                          </p>
-                          <p className="text-[10.5px] text-slate-500 font-medium">Peer-Reviewed Papers</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                          <Globe className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Global Readers
-                          </p>
-                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
-                            {globalReaders}
-                          </p>
-                          <p className="text-[10.5px] text-slate-500 font-medium">Annual Active Scholars</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
-                        <div className="h-10 w-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Acceptance Rate
-                          </p>
-                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
-                            {acceptanceRate}
-                          </p>
-                          <p className="text-[10.5px] text-slate-500 font-medium">Selective Peer Review</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center gap-3.5">
-                        <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                          <Users className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Active Reviewers
-                          </p>
-                          <p className="text-base font-extrabold text-slate-900 truncate font-mono">
-                            {reviewersActive}
-                          </p>
-                          <p className="text-[10.5px] text-slate-500 font-medium">Subject Specialists</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Editorial Turnaround Benchmarks Card */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                            Editorial Turnaround & SLA Benchmarks
-                          </h5>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200/70">
-                            Verified Academic SLAs
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                          Average turnaround from submission to publication
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs">
-                            <Clock className="h-3.5 w-3.5 text-blue-600" />
-                            <span>Initial Desk Screening</span>
-                          </div>
-                          <p className="text-sm font-bold text-slate-900 font-mono mt-1">3–5 Business Days</p>
-                          <p className="text-[10.5px] text-slate-500 mt-0.5">Editorial scope and plagiarism clearance</p>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs">
-                            <Clock className="h-3.5 w-3.5 text-indigo-600" />
-                            <span>First Review Decision</span>
-                          </div>
-                          <p className="text-sm font-bold text-slate-900 font-mono mt-1">4–6 Weeks</p>
-                          <p className="text-[10.5px] text-slate-500 mt-0.5">Independent double-blind peer review</p>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                            <span>Production to DOI</span>
-                          </div>
-                          <p className="text-sm font-bold text-slate-900 font-mono mt-1">48 Hours</p>
-                          <p className="text-[10.5px] text-slate-500 mt-0.5">Online publication post-acceptance</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Newsletter Box Preview */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs space-y-2">
-                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                        <Mail className="h-3.5 w-3.5 text-blue-600" />
-                        <span>{newsletterTitle}</span>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70">
-                          Active Dispatch Portal
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                        {newsletterSubtitle}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-
               {/* 11. GENERAL SECTION LAYOUT (FALLBACK FOR ANY OTHER PAGE OR CUSTOM SECTIONS) */}
               {!(
                 section.pageKey === "home" &&
@@ -3938,13 +2810,10 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   "most-read",
                   "explore-topics",
                   "scope-tracks",
-                  "featured-journals",
                   "call-for-papers",
                   "calls-for-papers",
-                  "research-community",
                   "home-faq",
                   "faq",
-                  "journal-stats",
                 ].includes(section.sectionKey)
               ) && (
                 <div
@@ -4568,121 +3437,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
               </div>
             </div>
 
-            {/* Case A: Journal Benchmarks & Turnaround Metrics */}
-            {!isJsonForm && formSectionKey === "journal-stats" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    First Decision Turnaround
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 18 Days"
-                    value={parsedMeta.turnaroundDays || ""}
-                    onChange={(e) => updateMetaField("turnaroundDays", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Average peer review speed</span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Overall Acceptance Rate
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 34%"
-                    value={parsedMeta.acceptanceRate || ""}
-                    onChange={(e) => updateMetaField("acceptanceRate", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Scientific selectivity benchmark</span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Active Peer Reviewers
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 140+"
-                    value={parsedMeta.reviewersActive || ""}
-                    onChange={(e) => updateMetaField("reviewersActive", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Global reviewer pool size</span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Indexed Scientific Articles
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 380+"
-                    value={parsedMeta.indexedArticles || ""}
-                    onChange={(e) => updateMetaField("indexedArticles", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Total papers indexed</span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Total Articles Published
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 12,486+"
-                    value={parsedMeta.articlesPublished || ""}
-                    onChange={(e) => updateMetaField("articlesPublished", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Total scholarly outputs</span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Global Readers & Downloads
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 85,000+"
-                    value={parsedMeta.globalReaders || ""}
-                    onChange={(e) => updateMetaField("globalReaders", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">International reader footprint</span>
-                </div>
-
-                <div className="sm:col-span-2 pt-1 border-t border-slate-100">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Newsletter Box Headline
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Stay informed with GB Journal research alerts"
-                    value={parsedMeta.newsletterTitle || ""}
-                    onChange={(e) => updateMetaField("newsletterTitle", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Newsletter Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Receive curated research highlights and call announcements..."
-                    value={parsedMeta.newsletterSubtitle || ""}
-                    onChange={(e) => updateMetaField("newsletterSubtitle", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-              </div>
-            )}
-
             {/* Case: Latest Research Settings */}
             {!isJsonForm && formSectionKey === "latest-research" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -4719,58 +3473,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Journal Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Nexus Journal of Molecular Sciences"
-                    value={parsedMeta.journalName || ""}
-                    onChange={(e) => updateMetaField("journalName", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Volume & Issue Designation
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Vol. 12, No. 4"
-                    value={parsedMeta.volumeIssue || ""}
-                    onChange={(e) => updateMetaField("volumeIssue", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Issue Release Date / Month
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. May 2025"
-                    value={parsedMeta.issueDate || ""}
-                    onChange={(e) => updateMetaField("issueDate", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Publication Date
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. May 15, 2025"
-                    value={parsedMeta.publicationDate || ""}
-                    onChange={(e) => updateMetaField("publicationDate", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Print ISSN
                   </label>
                   <input
@@ -4778,32 +3480,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                     placeholder="e.g. 2073-8447"
                     value={parsedMeta.issnPrint || ""}
                     onChange={(e) => updateMetaField("issnPrint", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Online ISSN
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 2790-2188"
-                    value={parsedMeta.issnOnline || ""}
-                    onChange={(e) => updateMetaField("issnOnline", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Featured Research Paper Headline
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Machine learning-guided discovery of allosteric inhibitors..."
-                    value={parsedMeta.featuredPaperTitle || ""}
-                    onChange={(e) => updateMetaField("featuredPaperTitle", e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
@@ -4821,49 +3497,6 @@ export function PageContentCMSPanel({ initialPageKey = "home" }: { initialPageKe
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Download Issue PDF URL
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. /pdfs/current-issue.pdf"
-                    value={parsedMeta.pdfHref || ""}
-                    onChange={(e) => updateMetaField("pdfHref", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Case: Research Community Spotlight */}
-            {!isJsonForm && formSectionKey === "research-community" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Spotlight Author
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Dr. Aisha Rahman, PhD"
-                    value={parsedMeta.spotlightAuthor || ""}
-                    onChange={(e) => updateMetaField("spotlightAuthor", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Annual Symposium Title
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Annual Research Symposium 2026"
-                    value={parsedMeta.symposium || ""}
-                    onChange={(e) => updateMetaField("symposium", e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
               </div>
             )}
 

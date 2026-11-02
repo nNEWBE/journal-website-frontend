@@ -38,7 +38,7 @@ import { getBackendUrl } from "@/lib/backend-url";
 import { cmsParagraphs, getPageContent, type ResolvedPage } from "@/lib/cms/page-content";
 import { CmsText } from "@/lib/cms/cms-text";
 import articleDetailDefaults from "@/lib/cms/defaults/article-detail.json";
-import { JournalCtaPanel } from "@/components/layout/journal-cta-panel";
+import { JournalCtaPanel } from "@/components/site";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -295,7 +295,7 @@ function ArticleRecord({ article, copy }: { article: Article; copy: SidebarCopy 
   return (
     <section className="bg-white border border-slate-200/90 shadow-2xs p-5">
       <div className="border-b border-slate-100 pb-3 mb-4">
-        <h2 className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#1e40af]">
+        <h2 className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-gb-accent">
           {copy.meta.recordHeading}
         </h2>
       </div>
@@ -346,7 +346,7 @@ function ArticleRecord({ article, copy }: { article: Article; copy: SidebarCopy 
                     href={`https://doi.org/${value}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-mono text-[#1e40af] hover:underline"
+                    className="inline-flex items-center gap-1 font-mono text-gb-accent hover:underline"
                   >
                     <span>{value}</span>
                     <ExternalLink className="h-3 w-3 shrink-0" />
@@ -359,8 +359,8 @@ function ArticleRecord({ article, copy }: { article: Article; copy: SidebarCopy 
           ))}
         </dl>
 
-        <div className="mt-4 flex items-center gap-2 bg-blue-50 border border-blue-100 p-2.5 text-xs font-semibold text-[#1e40af]">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-[#1e40af]" />
+        <div className="mt-4 flex items-center gap-2 bg-blue-50 border border-blue-100 p-2.5 text-xs font-semibold text-gb-accent">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-gb-accent" />
           <span>{copy.meta.verifiedLabel}</span>
         </div>
       </div>
@@ -436,7 +436,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {/* ── 1. Article Hero Header ── */}
       <section
-        className="relative overflow-hidden bg-[#060e22] text-white border-b border-slate-800 py-12 sm:py-16 lg:py-20"
+        className="relative overflow-hidden bg-gb-night text-white border-b border-slate-800 py-12 sm:py-16 lg:py-20"
         aria-labelledby="article-title"
       >
         {/* Top gold-to-blue accent line */}
@@ -524,7 +524,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             />
             {/* 3D Spine overlay */}
             <span className="pointer-events-none absolute inset-y-0 left-0 z-20 w-3 bg-linear-to-r from-black/80 via-black/30 to-transparent border-r border-white/10" />
-            <div className="absolute inset-0 bg-linear-to-t from-[#060e22] via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-gb-night via-transparent to-transparent" />
             <div className="absolute bottom-3 left-3 right-3 z-20 p-2.5 bg-slate-950/85 border border-white/15 backdrop-blur-md">
               <p className="text-[9px] font-bold uppercase tracking-wider text-amber-300">{article.department}</p>
               <p className="text-xs font-bold text-white mt-0.5">{article.volume} · {article.issue}</p>
@@ -534,7 +534,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </section>
 
       {/* ── 2. Floating Metrics Bar ── */}
-      <div className="bg-[#fbfcff] pb-20 pt-8 border-b border-slate-200/80">
+      <div className="bg-gb-tint pb-20 pt-8 border-b border-slate-200/80">
         <div className="container-x">
           <div className="bg-white border border-slate-200/90 shadow-2xs mb-8">
             <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
@@ -598,7 +598,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <div>
               <article className="bg-white border border-slate-200/90 shadow-2xs">
                 {/* Status Bar */}
-                <div className="bg-[#0b1b3d] text-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="bg-gb-navy text-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 font-bold text-emerald-400">
                     <ShieldCheck className="h-4 w-4" />
                     <span>{labels.meta.peerReviewBadge}</span>
@@ -617,11 +617,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     className="p-6 sm:p-10 border-b border-slate-200/80 bg-slate-50/60"
                   >
                     <div className="flex items-center gap-3 mb-4">
-                      <span className="flex h-8 w-8 items-center justify-center bg-[#0b1b3d] text-amber-300">
+                      <span className="flex h-8 w-8 items-center justify-center bg-gb-navy text-amber-300">
                         <Quote className="h-4 w-4" />
                       </span>
                       <div>
-                        <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1e40af]">
+                        <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-gb-accent">
                           {labels.title}
                         </h2>
                         <p className="text-[10.5px] text-slate-400">{labels.subtitle}</p>
@@ -642,7 +642,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                       className="py-8 first:pt-0 last:pb-0 scroll-mt-24"
                     >
                       <div className="flex items-center gap-3 mb-4">
-                        <span className="flex h-7 w-7 items-center justify-center bg-blue-50 border border-blue-200 font-mono text-xs font-bold text-[#1e40af]">
+                        <span className="flex h-7 w-7 items-center justify-center bg-blue-50 border border-blue-200 font-mono text-xs font-bold text-gb-accent">
                           {String(index + 1).padStart(2, "0")}
                         </span>
                         <h2 className="font-academic text-xl sm:text-2xl font-medium text-slate-950">
@@ -657,7 +657,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
                   {/* Keywords */}
                   <section className="py-8">
-                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#1e40af] mb-3">
+                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-gb-accent mb-3">
                       {labels.meta.keywordsHeading}
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -674,23 +674,23 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
                   {/* Declarations */}
                   {content.declarations.visible && (
-                  <section className="py-8">
-                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#1e40af] mb-4">
-                      {content.declarations.title}
-                    </h3>
-                    <div className="bg-slate-50 border border-slate-200/80 p-4 space-y-2.5 text-xs text-slate-600">
-                      {cmsParagraphs(content.declarations.content).map((paragraph, idx) => (
-                        <p key={idx}>
-                          <CmsText text={paragraph} strongClassName="text-slate-900 font-semibold" />
-                        </p>
-                      ))}
-                    </div>
-                  </section>
+                    <section className="py-8">
+                      <h3 className="text-[11px] font-bold uppercase tracking-wider text-gb-accent mb-4">
+                        {content.declarations.title}
+                      </h3>
+                      <div className="bg-slate-50 border border-slate-200/80 p-4 space-y-2.5 text-xs text-slate-600">
+                        {cmsParagraphs(content.declarations.content).map((paragraph, idx) => (
+                          <p key={idx}>
+                            <CmsText text={paragraph} strongClassName="text-slate-900 font-semibold" />
+                          </p>
+                        ))}
+                      </div>
+                    </section>
                   )}
 
                   {/* References */}
                   <section id="references" className="py-8 scroll-mt-24">
-                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#1e40af] mb-4">
+                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-gb-accent mb-4">
                       {labels.meta.referencesHeading}
                     </h3>
                     <ol className="space-y-3">
@@ -699,7 +699,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                           key={idx}
                           className="flex items-start gap-3 bg-slate-50/70 border border-slate-200/70 p-3.5 text-xs text-slate-700 leading-relaxed"
                         >
-                          <span className="font-mono font-bold text-[#1e40af] shrink-0">
+                          <span className="font-mono font-bold text-gb-accent shrink-0">
                             [{idx + 1}]
                           </span>
                           <span>{ref}</span>
@@ -715,7 +715,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <aside className="space-y-6 lg:sticky lg:top-24">
               {/* Quick Actions Card */}
               <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
-                <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-4">
+                <p className="text-[10.5px] font-bold uppercase tracking-wider text-gb-accent border-b border-slate-100 pb-3 mb-4">
                   {content.sidebar.title}
                 </p>
                 <ArticleActions article={article} labels={actionLabels} />
@@ -723,7 +723,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
               {/* Table of Contents */}
               <div className="bg-white border border-slate-200/90 p-5 shadow-2xs">
-                <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af] border-b border-slate-100 pb-3 mb-3">
+                <p className="text-[10.5px] font-bold uppercase tracking-wider text-gb-accent border-b border-slate-100 pb-3 mb-3">
                   {content.sidebar.meta.contentsHeading}
                 </p>
                 <ArticleContents
@@ -751,7 +751,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <div className="mt-14 pt-10 border-t border-slate-200/80">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#1e40af]">
+                  <p className="text-[10.5px] font-bold uppercase tracking-wider text-gb-accent">
                     {content.related.subtitle}
                   </p>
                   <h2 className="font-academic text-xl sm:text-2xl font-medium text-slate-950 mt-1">
@@ -760,7 +760,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 </div>
                 <Link
                   href={content.related.meta.link?.href || "/articles"}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-gb-accent hover:underline"
                 >
                   <span>{content.related.meta.link?.label}</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
@@ -784,10 +784,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-[#1e40af] text-[9px] font-bold uppercase tracking-wider border border-blue-100">
+                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-gb-accent text-[9px] font-bold uppercase tracking-wider border border-blue-100">
                         {item.type}
                       </span>
-                      <h3 className="font-academic text-sm sm:text-base font-medium text-slate-950 mt-1.5 group-hover:text-[#1e40af] transition-colors leading-snug line-clamp-2">
+                      <h3 className="font-academic text-sm sm:text-base font-medium text-slate-950 mt-1.5 group-hover:text-gb-accent transition-colors leading-snug line-clamp-2">
                         {item.title}
                       </h3>
                       <p className="mt-1 text-xs text-slate-500 font-medium truncate">
@@ -809,7 +809,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           ariaLabel="Call for Papers CTA"
           badgeFallbackIcon={FileText}
           pillFallbackIcons={[Clock, Globe2, ShieldCheck]}
-          pillIconClasses={["text-amber-300", "text-blue-400", "text-emerald-400"]}
         />
       )}
     </PageShell>

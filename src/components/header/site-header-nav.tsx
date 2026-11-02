@@ -46,10 +46,10 @@ export function SiteHeaderNav() {
               target={item.openInNewTab ? "_blank" : undefined}
               rel={item.openInNewTab ? "noopener noreferrer" : undefined}
               className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-bold tracking-tight transition-colors cursor-pointer ${isActive
-                ? "text-[color:var(--bangla-red)]"
+                ? "text-gb-red"
                 : isRouteActive
-                  ? "text-[color:var(--color-gb-blue)] font-extrabold"
-                  : "text-slate-800 hover:text-[color:var(--color-gb-blue)]"
+                  ? "text-gb-accent font-extrabold"
+                  : "text-slate-800 hover:text-gb-accent"
                 }`}
             >
               <span className="relative py-0.5">
@@ -71,9 +71,9 @@ export function SiteHeaderNav() {
               {hasDropdown && (
                 <ChevronDown
                   className={`h-3.5 w-3.5 transition-transform duration-250 ${isActive
-                    ? "rotate-180 text-[color:var(--bangla-red)] opacity-100"
+                    ? "rotate-180 text-gb-red opacity-100"
                     : isRouteActive
-                      ? "text-[color:var(--color-gb-blue)] opacity-90"
+                      ? "text-gb-accent opacity-90"
                       : "text-slate-400 opacity-75"
                     }`}
                 />
@@ -88,10 +88,10 @@ export function SiteHeaderNav() {
                   }`}
               >
                 <div className="bg-white border border-slate-300/90 shadow-[0_16px_40px_rgba(11,18,61,0.14)] overflow-hidden">
-                  <div className="h-[2.5px] w-full bg-[#0b1b3d]" />
+                  <div className="h-[2.5px] w-full bg-gb-navy" />
 
                   <div className="px-3.5 py-2 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#1e40af] truncate max-w-[230px]">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gb-accent truncate max-w-[230px]">
                       {item.dropdownHeader || item.label}
                     </p>
                     <span className="text-[8.5px] font-bold uppercase tracking-widest text-slate-400 font-mono shrink-0">
@@ -117,14 +117,14 @@ export function SiteHeaderNav() {
                             animationDelay: isActive ? `${idxSub * 40}ms` : "0ms",
                           }}
                           className={`group/sub flex items-start gap-3 p-3 transition-all duration-150 cursor-pointer border-l-3 ${isSubActive
-                            ? "bg-blue-50/70 border-[#1e40af]"
+                            ? "bg-blue-50/70 border-gb-accent"
                             : "border-transparent hover:bg-slate-50/90 hover:border-slate-400"
                             }`}
                         >
                           <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center border transition-all duration-150 mt-0.5 ${isSubActive
-                              ? "bg-[#0b1b3d] text-white border-[#0b1b3d] shadow-2xs"
-                              : "bg-[#0b1b3d] border-[#0b1b3d] text-white group-hover/sub:bg-[#1e40af] group-hover/sub:border-[#1e40af]"
+                              ? "bg-gb-navy text-white border-gb-navy shadow-2xs"
+                              : "bg-gb-navy border-gb-navy text-white group-hover/sub:bg-gb-accent group-hover/sub:border-gb-accent"
                               }`}
                           >
                             <SubIcon className="h-4 w-4 text-white" />
@@ -133,8 +133,8 @@ export function SiteHeaderNav() {
                           <div className="min-w-0 flex-1">
                             <p
                               className={`text-[13px] font-bold tracking-tight transition-colors duration-150 ${isSubActive
-                                ? "text-[#0b1b3d]"
-                                : "text-slate-900 group-hover/sub:text-[#1e40af]"
+                                ? "text-gb-navy"
+                                : "text-slate-900 group-hover/sub:text-gb-accent"
                                 }`}
                             >
                               {sub.label}
@@ -154,7 +154,7 @@ export function SiteHeaderNav() {
                     <div className="border-t border-slate-200/80 bg-slate-50/80 px-4 py-2.5 flex items-center justify-between">
                       <Link
                         href={item.footerHref}
-                        className="text-[11.5px] font-bold text-[#1e40af] hover:underline inline-flex items-center gap-1.5 group/foot"
+                        className="text-[11.5px] font-bold text-gb-accent hover:underline inline-flex items-center gap-1.5 group/foot"
                       >
                         <span>{item.footerLabel || "View More"}</span>
                         <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/foot:translate-x-0.5 group-hover/foot:-translate-y-0.5" />

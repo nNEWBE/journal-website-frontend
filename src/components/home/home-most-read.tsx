@@ -26,7 +26,7 @@ export const mostReadArticles: MostReadItem[] = [
       "Community healthcare access patterns around Savar: A mixed-method university catchment study",
     journal: "GB Journal of Research",
     date: "July 2026",
-    views: "2,846 views",
+    views: "0 views",
     href: "/articles/community-healthcare-access-savar",
   },
 ];
@@ -49,17 +49,41 @@ export function HomeMostRead({
     }
   }, [propArticles]);
 
+  // How many ranked rows to show (admin-configurable via the section's "articleCount").
+  const articleCount = (() => {
+    try {
+      const meta = section?.metaJson ? JSON.parse(section.metaJson) : {};
+      const n = parseInt(String(meta.articleCount ?? ""), 10);
+      return Number.isFinite(n) && n > 0 ? Math.min(n, 20) : 5;
+    } catch {
+      return 5;
+    }
+  })();
+
   useEffect(() => {
-    // Refresh with fresh database metrics on client mount
-    articlesApi
-      .list({ size: 20 }, { cache: "no-store" })
-      .then((res) => {
-        if (res?.content && res.content.length > 0) {
-          setArticles(res.content);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    // Rank across the whole repository by live view counts (not just the newest page),
+    // and refresh when the tab regains focus so counts stay current.
+    let active = true;
+    const loadMostViewed = () => {
+      articlesApi
+        .list({ size: articleCount, sort: "views" }, { cache: "no-store" })
+        .then((res) => {
+          if (active && res?.content && res.content.length > 0) {
+            setArticles(res.content);
+          }
+        })
+        .catch(() => {});
+    };
+    loadMostViewed();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") loadMostViewed();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [articleCount]);
 
   useEffect(() => {
     if (activeSection) {
@@ -88,14 +112,14 @@ export function HomeMostRead({
     articles && articles.length > 0
       ? [...articles]
           .sort((a, b) => (b.metrics?.views ?? 0) - (a.metrics?.views ?? 0))
-          .slice(0, 5)
+          .slice(0, articleCount)
           .map((art, idx) => ({
             rank: String(idx + 1).padStart(2, "0"),
             type: (art.type || "RESEARCH ARTICLE").toUpperCase(),
             title: art.title,
             journal: "GB Journal of Research",
             date: art.publishedAt || "July 2026",
-            views: `${art.metrics?.views?.toLocaleString() ?? 0} views`,
+            views: `${(art.metrics?.views ?? 0).toLocaleString("en-US")} ${(art.metrics?.views ?? 0) === 1 ? "view" : "views"}`,
             href: `/articles/${art.slug}`,
           }))
       : mostReadArticles;

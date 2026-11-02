@@ -70,13 +70,10 @@ export const KNOWN_HOME_SECTION_KEYS = [
   "most-read",
   "explore-topics",
   "topics",
-  "featured-journals",
   "call-for-papers",
   "calls-for-papers",
-  "research-community",
   "home-faq",
   "faq",
-  "journal-stats",
   "scope-tracks",
 ];
 

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
-import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Clock, FileText, Globe2, ShieldCheck } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
+import { ButtonLink, EmptyState, JournalCtaPanel, PageSection } from "@/components/site";
 import { CurrentIssueInteractive } from "@/components/issues/current-issue-interactive";
 import { getBackendUrl } from "@/lib/backend-url";
 import type { Article } from "@/lib/data";
@@ -44,13 +44,13 @@ async function getCurrentIssueFromDb(): Promise<{
           ...rawCurrent,
           volume:
             rawCurrent.volumeLabel ||
-            (rawCurrent.volume ? `Volume ${rawCurrent.volume}` : "Volume 4"),
+            (rawCurrent.volume ? `Volume ${rawCurrent.volume}` : ""),
           issue:
             rawCurrent.issueLabel ||
-            (rawCurrent.number ? `Issue ${rawCurrent.number}` : "Issue 1"),
-          month: rawCurrent.month || "July",
-          year: String(rawCurrent.year || "2026"),
-          theme: rawCurrent.theme || "Current Scholarly Edition",
+            (rawCurrent.number ? `Issue ${rawCurrent.number}` : ""),
+          month: rawCurrent.month || "",
+          year: rawCurrent.year ? String(rawCurrent.year) : "",
+          theme: rawCurrent.theme || rawCurrent.title || "",
         }
       : null;
 
@@ -68,11 +68,11 @@ async function getCurrentIssueFromDb(): Promise<{
               )
             : [],
           abstract: item.abstract || item.abstractText || "",
-          issue: item.issue || item.issueLabel || "Current Issue",
-          volume: item.volume || item.volumeLabel || "Volume 4",
-          pages: item.pages || "1-10",
-          doi: item.doi || "10.5555/gbj.2026.001",
-          publishedAt: item.publishedAt || "2026",
+          issue: item.issue || item.issueLabel || "",
+          volume: item.volume || item.volumeLabel || "",
+          pages: item.pages || "",
+          doi: item.doi || "",
+          publishedAt: item.publishedAt || "",
           metrics: {
             views: item.metrics?.views ?? 0,
             downloads: item.metrics?.downloads ?? 0,
@@ -88,9 +88,9 @@ async function getCurrentIssueFromDb(): Promise<{
     const otherIssues = issueList.map((iss: any) => ({
       ...iss,
       volume:
-        iss.volumeLabel || (iss.volume ? `Volume ${iss.volume}` : "Volume 4"),
+        iss.volumeLabel || (iss.volume ? `Volume ${iss.volume}` : ""),
       issue:
-        iss.issueLabel || (iss.number ? `Issue ${iss.number}` : "Issue 1"),
+        iss.issueLabel || (iss.number ? `Issue ${iss.number}` : ""),
     }));
 
     return { currentIssue, allArticles, otherIssues };
@@ -110,41 +110,30 @@ export default async function CurrentIssuePage() {
   if (!currentIssue) {
     const noIssue = content["no-issue"];
     const noIssueCtas = Array.isArray(noIssue.meta.ctas) ? noIssue.meta.ctas : [];
-    const [archiveCta, guidelinesCta] = noIssueCtas;
     return (
       <PageShell>
         {noIssue.visible && (
-        <div className="bg-[#fbfcff] py-20 border-b border-slate-200/80 min-h-[60vh] flex items-center justify-center">
-          <div className="container-x max-w-lg text-center">
-            <div className="bg-white border border-slate-200/90 p-8 sm:p-12 shadow-2xs">
-              <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <h1 className="font-academic text-2xl font-medium text-slate-900">
-                {noIssue.title}
-              </h1>
-              <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                {noIssue.content}
-              </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                {archiveCta && (
-                  <Link
-                    href={archiveCta.href}
-                    className="bg-[#0b1b3d] hover:bg-[#162c60] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
-                  >
-                    {archiveCta.label}
-                  </Link>
-                )}
-                {guidelinesCta && (
-                  <Link
-                    href={guidelinesCta.href}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
-                  >
-                    {guidelinesCta.label}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          <PageSection tone="tint" ariaLabel="No current issue">
+            <EmptyState icon={BookOpen} title={noIssue.title} text={noIssue.content} titleAs="h1">
+              {noIssueCtas.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  {noIssueCtas.map((cta, idx) => (
+                    <ButtonLink key={`${cta.label}-${idx}`} href={cta.href} variant={idx === 0 ? "primary" : "secondary"}>
+                      {cta.label}
+                    </ButtonLink>
+                  ))}
+                </div>
+              )}
+            </EmptyState>
+          </PageSection>
+        )}
+        {content.cta.visible && (
+          <JournalCtaPanel
+            section={content.cta}
+            ariaLabel="Call for Papers CTA"
+            badgeFallbackIcon={FileText}
+            pillFallbackIcons={[Clock, Globe2, ShieldCheck]}
+          />
         )}
       </PageShell>
     );

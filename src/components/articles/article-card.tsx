@@ -1,13 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  CalendarDays,
-  Download,
-  Eye,
-  FileText,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowUpRight, CalendarDays, Download, Eye, FileText } from "lucide-react";
 import type { Article } from "@/lib/data";
 
 export function ArticleCard({
@@ -45,20 +38,22 @@ export function ArticleCard({
           <div className="flex flex-col justify-between h-full min-w-0">
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e40af] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider border border-blue-100">
+                <span className="inline-flex items-center gap-1.5 bg-blue-50 text-gb-accent px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider border border-blue-100">
                   <FileText className="h-3 w-3" />
                   {article.type}
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-slate-500">
-                  <CalendarDays className="h-3 w-3 text-slate-400" />
-                  {article.publishedAt}
-                </span>
+                {article.publishedAt && (
+                  <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-slate-500">
+                    <CalendarDays className="h-3 w-3 text-slate-400" />
+                    {article.publishedAt}
+                  </span>
+                )}
               </div>
 
               <Link href={`/articles/${article.slug}`} className="mt-1.5 block">
-                <h2 className="font-academic text-base sm:text-[17px] font-medium leading-snug text-slate-950 group-hover:text-[#1e40af] transition-colors line-clamp-2">
+                <h3 className="font-academic text-base sm:text-[17px] font-medium leading-snug text-slate-950 group-hover:text-gb-accent transition-colors line-clamp-2">
                   {article.title}
-                </h2>
+                </h3>
               </Link>
 
               <p className="mt-1 text-xs font-semibold text-slate-600 truncate">
@@ -85,7 +80,7 @@ export function ArticleCard({
               <Link
                 href={`/articles/${article.slug}`}
                 aria-label={`Read ${article.title}`}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[#1e40af] hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-gb-accent hover:underline"
               >
                 <span>Read Full Article</span>
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -118,18 +113,20 @@ export function ArticleCard({
         </Link>
 
         <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1 bg-blue-50 text-[#1e40af] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border border-blue-100">
+          <span className="inline-flex items-center gap-1 bg-blue-50 text-gb-accent px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border border-blue-100">
             {article.type}
           </span>
-          <span className="text-[10px] font-mono text-slate-400">
-            {article.publishedAt}
-          </span>
+          {article.publishedAt && (
+            <span className="text-[10px] font-mono text-slate-400">
+              {article.publishedAt}
+            </span>
+          )}
         </div>
 
         <Link href={`/articles/${article.slug}`} className="mt-1.5 block">
-          <h2 className="font-academic text-[15px] font-medium leading-snug text-slate-950 group-hover:text-[#1e40af] transition-colors line-clamp-2">
+          <h3 className="font-academic text-[15px] font-medium leading-snug text-slate-950 group-hover:text-gb-accent transition-colors line-clamp-2">
             {article.title}
-          </h2>
+          </h3>
         </Link>
 
         <p className="mt-1 text-xs font-medium text-slate-600 line-clamp-1">
@@ -139,11 +136,11 @@ export function ArticleCard({
 
       <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
         <span className="font-mono text-[9.5px] text-slate-500 truncate max-w-35">
-          {article.doi}
+          {article.doi || "—"}
         </span>
         <Link
           href={`/articles/${article.slug}`}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1e40af] hover:underline"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-gb-accent hover:underline"
         >
           <span>View</span>
           <ArrowUpRight className="h-3 w-3" />
